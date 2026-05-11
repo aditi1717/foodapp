@@ -85,7 +85,7 @@ export const getPublicLandingSettingsController = async (req, res, next) => {
                 { $match: { zoneId: new mongoose.Types.ObjectId(zoneId), orderStatus: 'delivered' } },
                 { $group: { _id: '$restaurantId', orderCount: { $sum: 1 } } },
                 { $sort: { orderCount: -1 } },
-                { $limit: 12 }
+                { $limit: 2 }
             ]);
             recommendedRestaurantIds = topRestaurants.map((r) => r._id);
         }

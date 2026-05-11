@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, Layout, Tag, ChefHat, Megaphone, Search } from "lucide-react"
+import { Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, Layout, Tag, ChefHat, Megaphone, Search, Zap } from "lucide-react"
 import api from "@food/api"
 import { adminAPI } from "@food/api"
 import { getModuleToken } from "@food/utils/auth"
@@ -59,7 +59,13 @@ export default function LandingPageManagement() {
   const under250BannersFileInputRef = useRef(null)
 
   // Settings
-  const [settings, setSettings] = useState({ exploreMoreHeading: "Explore More", recommendedRestaurantIds: [], headerVideoUrl: "", defaultUnderPriceLimit: DEFAULT_PRICE_LIMIT })
+  const [settings, setSettings] = useState({
+    exploreMoreHeading: "Explore More",
+    recommendedRestaurantIds: [],
+    headerVideoUrl: "",
+    defaultUnderPriceLimit: DEFAULT_PRICE_LIMIT,
+    recommendationMode: "manual" // New
+  })
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [headerVideoUploading, setHeaderVideoUploading] = useState(false)
@@ -69,6 +75,10 @@ export default function LandingPageManagement() {
 
   const [allRestaurants, setAllRestaurants] = useState([])
   const [restaurantsLoading, setRestaurantsLoading] = useState(false)
+
+  // Zones
+  const [zones, setZones] = useState([])
+  const [selectedZoneId, setSelectedZoneId] = useState("")
 
   // Gourmet Restaurants
   const [gourmetRestaurants, setGourmetRestaurants] = useState([])
@@ -143,7 +153,24 @@ export default function LandingPageManagement() {
     fetchUnder250Banners()
     fetchAllRestaurants()
     fetchSettings()
+    fetchZones()
   }, [])
+
+  // Refetch settings when zone changes
+  useEffect(() => {
+    fetchSettings(selectedZoneId)
+  }, [selectedZoneId])
+
+  const fetchZones = async () => {
+    try {
+      const response = await adminAPI.getZones()
+      if (response.data?.success && response.data.data?.zones) {
+        setZones(response.data.data.zones)
+      }
+    } catch (err) {
+      debugError('Error fetching zones:', err)
+    }
+  }
 
   // Fetch Top 10 and Gourmet when Explore More tab is active; refetch restaurants so dropdown is populated
   useEffect(() => {
@@ -904,11 +931,12 @@ export default function LandingPageManagement() {
   }
 
   // ==================== SETTINGS ====================
-  const fetchSettings = async () => {
+  const fetchSettings = async (zoneId = "") => {
     try {
       setSettingsLoading(true)
       setError(null)
-      const response = await api.get('/food/hero-banners/landing/settings', getAuthConfig())
+      const url = `/food/hero-banners/landing/settings${zoneId ? `?zoneId=${zoneId}` : ""}`
+      const response = await api.get(url, getAuthConfig())
       if (response.data.success) {
         const nextSettings = response.data.data?.settings || response.data.data || {}
         setSettings({
@@ -916,13 +944,20 @@ export default function LandingPageManagement() {
           recommendedRestaurantIds: Array.isArray(nextSettings.recommendedRestaurantIds) ? nextSettings.recommendedRestaurantIds : [],
           headerVideoUrl: nextSettings.headerVideoUrl || "",
           defaultUnderPriceLimit: normalizePriceLimit(nextSettings.defaultUnderPriceLimit, DEFAULT_PRICE_LIMIT),
+          recommendationMode: nextSettings.recommendationMode || "manual", // New
         })
         setUnder250UploadPriceLimit(String(normalizePriceLimit(nextSettings.defaultUnderPriceLimit, DEFAULT_PRICE_LIMIT)))
       }
     } catch (err) {
       // Silently handle 401/404 errors - endpoints may not exist yet, use default settings
       if (err.response?.status === 401 || err.response?.status === 404) {
-        setSettings({ exploreMoreHeading: "Explore More", recommendedRestaurantIds: [], headerVideoUrl: "", defaultUnderPriceLimit: DEFAULT_PRICE_LIMIT }) // Use default settings
+        setSettings({
+          exploreMoreHeading: "Explore More",
+          recommendedRestaurantIds: [],
+          headerVideoUrl: "",
+          defaultUnderPriceLimit: DEFAULT_PRICE_LIMIT,
+          recommendationMode: "manual"
+        }) // Use default settings
         setError(null) // Clear any previous error
       } else {
         // Filter out token-related errors
@@ -939,10 +974,12 @@ export default function LandingPageManagement() {
       setSettingsSaving(true)
       setError(null)
       setSuccess(null)
-      const response = await api.patch('/food/hero-banners/landing/settings', {
+      const url = `/food/hero-banners/landing/settings${selectedZoneId ? `?zoneId=${selectedZoneId}` : ""}`
+      const response = await api.patch(url, {
         exploreMoreHeading: settings.exploreMoreHeading,
         recommendedRestaurantIds: Array.isArray(settings.recommendedRestaurantIds) ? settings.recommendedRestaurantIds : [],
         defaultUnderPriceLimit: normalizePriceLimit(settings.defaultUnderPriceLimit, DEFAULT_PRICE_LIMIT),
+        recommendationMode: settings.recommendationMode || "manual", // New
       }, getAuthConfig())
       if (response.data.success) {
         const savedSettings = response.data.data?.settings || response.data.data || {}
@@ -954,6 +991,7 @@ export default function LandingPageManagement() {
             ? savedSettings.recommendedRestaurantIds
             : prev.recommendedRestaurantIds,
           defaultUnderPriceLimit: normalizePriceLimit(savedSettings.defaultUnderPriceLimit, prev.defaultUnderPriceLimit),
+          recommendationMode: savedSettings.recommendationMode || prev.recommendationMode,
         }))
         setSuccess('Settings saved successfully!')
         setTimeout(() => setSuccess(null), 3000)
@@ -1635,64 +1673,129 @@ export default function LandingPageManagement() {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="recommended-search">Recommended For You Restaurants</Label>
-                    <p className="text-xs text-slate-500 mt-1 mb-2">
-                      Choose multiple restaurants to display below filters on the user home page.
-                    </p>
+                  <hr className="border-slate-100" />
 
-                    <div className="relative mb-3">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input
-                        id="recommended-search"
-                        value={recommendedSearchQuery}
-                        onChange={(e) => setRecommendedSearchQuery(e.target.value)}
-                        placeholder="Search restaurants..."
-                        className="pl-9"
-                      />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="zone-select">Select Zone to Manage</Label>
+                      <select
+                        id="zone-select"
+                        value={selectedZoneId}
+                        onChange={(e) => setSelectedZoneId(e.target.value)}
+                        className="mt-2 w-full h-10 px-3 rounded-md border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      >
+                        <option value="">Global (Default)</option>
+                        {zones.map((zone) => (
+                          <option key={zone._id} value={zone._id}>
+                            {zone.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-slate-400 mt-1">Leave empty for global defaults</p>
                     </div>
 
-                    {recommendedRestaurantsSelected.length > 0 && (
-                      <div className="mb-3 flex flex-wrap gap-2">
-                        {recommendedRestaurantsSelected.map((restaurant) => (
-                          <button
-                            key={restaurant._id}
-                            type="button"
-                            onClick={() => toggleRecommendedRestaurant(restaurant._id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 text-xs hover:bg-brand-100"
-                          >
-                            <span>{restaurant.name}</span>
-                            <span className="text-brand-500">x</span>
-                          </button>
-                        ))}
+                    <div>
+                      <Label>Recommendation Mode</Label>
+                      <div className="flex items-center gap-4 mt-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="recommendationMode"
+                            value="manual"
+                            checked={settings.recommendationMode === "manual"}
+                            onChange={(e) => setSettings(prev => ({ ...prev, recommendationMode: e.target.value }))}
+                            className="w-4 h-4 text-brand-600 focus:ring-brand-500"
+                          />
+                          <span className="text-sm font-medium text-slate-700">Manual Selection</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="recommendationMode"
+                            value="automatic"
+                            checked={settings.recommendationMode === "automatic"}
+                            onChange={(e) => setSettings(prev => ({ ...prev, recommendationMode: e.target.value }))}
+                            className="w-4 h-4 text-brand-600 focus:ring-brand-500"
+                          />
+                          <span className="text-sm font-medium text-slate-700">Automatic (Most Ordered)</span>
+                        </label>
                       </div>
-                    )}
-
-                    <div className="max-h-72 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
-                      {filteredRestaurantsForRecommended.length === 0 ? (
-                        <div className="p-4 text-sm text-slate-500 text-center">No restaurants found</div>
-                      ) : (
-                        filteredRestaurantsForRecommended.map((restaurant) => {
-                          const isChecked = (settings.recommendedRestaurantIds || []).includes(restaurant._id)
-                          return (
-                            <label
-                              key={restaurant._id}
-                              className="flex items-center justify-between gap-3 px-3 py-2 cursor-pointer hover:bg-slate-50"
-                            >
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-slate-800 truncate">{restaurant.name}</p>
-                                 <p className="text-xs text-slate-500 truncate">{restaurant._id || "No ID"}</p>
-                              </div>
-                              <Checkbox
-                                checked={isChecked}
-                                onCheckedChange={() => toggleRecommendedRestaurant(restaurant._id)}
-                              />
-                            </label>
-                          )
-                        })
-                      )}
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Automatic mode shows top ordered restaurants in this zone
+                      </p>
                     </div>
                   </div>
+
+                  <hr className="border-slate-100" />
+
+                  {settings.recommendationMode === "manual" ? (
+                    <div>
+                      <Label htmlFor="recommended-search">Recommended For You Restaurants</Label>
+                      <p className="text-xs text-slate-500 mt-1 mb-2">
+                        Choose multiple restaurants to display below filters on the user home page.
+                      </p>
+
+                      <div className="relative mb-3">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          id="recommended-search"
+                          value={recommendedSearchQuery}
+                          onChange={(e) => setRecommendedSearchQuery(e.target.value)}
+                          placeholder="Search restaurants..."
+                          className="pl-9"
+                        />
+                      </div>
+
+                      {recommendedRestaurantsSelected.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {recommendedRestaurantsSelected.map((restaurant) => (
+                            <button
+                              key={restaurant._id}
+                              type="button"
+                              onClick={() => toggleRecommendedRestaurant(restaurant._id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 text-xs hover:bg-brand-100"
+                            >
+                              <span>{restaurant.name}</span>
+                              <span className="text-brand-500">x</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="max-h-72 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+                        {filteredRestaurantsForRecommended.length === 0 ? (
+                          <div className="p-4 text-sm text-slate-500 text-center">No restaurants found</div>
+                        ) : (
+                          filteredRestaurantsForRecommended.map((restaurant) => {
+                            const isChecked = (settings.recommendedRestaurantIds || []).includes(restaurant._id)
+                            return (
+                              <label
+                                key={restaurant._id}
+                                className="flex items-center justify-between gap-3 px-3 py-2 cursor-pointer hover:bg-slate-50"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-slate-800 truncate">{restaurant.name}</p>
+                                  <p className="text-xs text-slate-500 truncate">{restaurant._id || "No ID"}</p>
+                                </div>
+                                <Checkbox
+                                  checked={isChecked}
+                                  onCheckedChange={() => toggleRecommendedRestaurant(restaurant._id)}
+                                />
+                              </label>
+                            )
+                          })
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+                      <Zap className="w-8 h-8 text-brand-500 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-slate-700">Automatic Mode Active</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        The system will automatically display the top 2 most-ordered restaurants for the selected zone.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
