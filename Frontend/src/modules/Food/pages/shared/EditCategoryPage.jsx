@@ -9,7 +9,7 @@ import {
   Image as ImageIcon,
   X,
 } from "lucide-react"
-import { restaurantAPI, adminAPI, uploadAPI } from "@food/api"
+import { adminAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 import DocumentUploadActions from "@food/components/DocumentUploadActions"
 import BRAND_THEME from "@/config/brandTheme"
@@ -17,7 +17,6 @@ import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation
 
 const defaultFormData = {
   name: "",
-  type: "", // Text label
   foodTypeScope: "Both", // Enum
   image: "",
   isActive: true,
@@ -49,10 +48,16 @@ export default function EditCategoryPage() {
   }
 
   useEffect(() => {
+    if (!isAdmin) {
+      toast.error("Only admins can create or edit categories")
+      navigate("/food/restaurant/explore", { replace: true })
+      return
+    }
+
     if (isEditing) {
       fetchCategory()
     }
-  }, [id])
+  }, [id, isAdmin, navigate])
 
   const fetchCategory = async () => {
     try {
@@ -63,16 +68,11 @@ export default function EditCategoryPage() {
         const res = await adminAPI.getCategories()
         const list = res?.data?.data?.categories || res?.data?.categories || []
         category = list.find(c => String(c.id || c._id) === id)
-      } else {
-        const res = await restaurantAPI.getAllCategories()
-        const list = res?.data?.data?.categories || res?.data?.categories || []
-        category = list.find(c => String(c.id || c._id) === id)
       }
 
       if (category) {
         setFormData({
           name: category.name || "",
-          type: category.type || "",
           foodTypeScope: category.foodTypeScope || "Both",
           image: category.image || "",
           isActive: category.isActive ?? category.status ?? true,
@@ -135,7 +135,6 @@ export default function EditCategoryPage() {
 
       const payload = {
         name: formData.name.trim(),
-        type: formData.type.trim(),
         foodTypeScope: formData.foodTypeScope,
         sortOrder: Number(formData.sortOrder || 0),
         image: imageUrl,
@@ -152,14 +151,6 @@ export default function EditCategoryPage() {
         } else {
           await adminAPI.createCategory(payload)
           toast.success("Category created successfully")
-        }
-      } else {
-        if (isEditing) {
-          await restaurantAPI.updateCategory(id, payload)
-          toast.success("Category updated successfully")
-        } else {
-          await restaurantAPI.createCategory(payload)
-          toast.success("Category created successfully. Pending admin approval.")
         }
       }
 
@@ -187,7 +178,7 @@ export default function EditCategoryPage() {
     <div className="min-h-screen bg-slate-50 pb-20">
       {/* Header */}
       <div className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={handleBack} className="rounded-full p-2 hover:bg-slate-100 transition-colors">
             <ArrowLeft className="h-6 w-6 text-slate-700" />
           </button>
@@ -202,13 +193,13 @@ export default function EditCategoryPage() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto p-4 sm:p-6">
+      <div className="max-w-5xl mx-auto p-4 sm:p-5">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden"
         >
-          <form onSubmit={handleSubmit} className="p-6 space-y-8">
+          <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-6">
             {/* Image Upload Section */}
             <div className="space-y-3">
               <label className="text-sm font-bold text-slate-700 ml-1">Category Image *</label>
@@ -251,7 +242,7 @@ export default function EditCategoryPage() {
               </p>
             </div>
 
-            <div className="grid gap-6">
+            <div className="grid gap-4">
               {/* Category Name */}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700 ml-1">Category Name</label>
@@ -260,18 +251,6 @@ export default function EditCategoryPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Main Course, Appetizers, Drinks"
-                  className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all font-medium"
-                />
-              </div>
-
-              {/* Category Type Label */}
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Category Type (Label)</label>
-                <input
-                  type="text"
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  placeholder="e.g. Starters, Desserts, Pizza"
                   className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all font-medium"
                 />
               </div>

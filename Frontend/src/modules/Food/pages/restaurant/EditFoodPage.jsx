@@ -42,7 +42,8 @@ const defaultFormData = {
   variations: [],
   tags: [],
   nutrition: [],
-  allergies: []
+  allergies: [],
+  subCategory: "",
 }
 
 const fallbackCategoryOptions = [
@@ -117,6 +118,7 @@ export default function EditFoodPage() {
             tags: existingFood.tags || [],
             nutrition: existingFood.nutrition || [],
             allergies: existingFood.allergies || [],
+            subCategory: existingFood.subCategoryId || existingFood.subCategory || "",
           })
         }
       } catch {
@@ -147,6 +149,7 @@ export default function EditFoodPage() {
             id: category?._id || category?.id,
             name: String(category?.name || "").trim(),
             foodTypeScope: category?.foodTypeScope || "Both",
+            parentId: category?.parentCategoryId || category?.parentId || category?.subCategoryOf || null,
           }))
           .filter((category) => category.id && category.name)
 
@@ -291,7 +294,8 @@ export default function EditFoodPage() {
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false)
   const categoryOptions = (() => {
     const currentCategory = String(formData.category || "").trim()
-    const source = availableCategories.length > 0 ? availableCategories : fallbackCategoryOptions
+    const source = (availableCategories.length > 0 ? availableCategories : fallbackCategoryOptions)
+      .filter(cat => !cat.parentId) // Only top-level categories
     if (!currentCategory) return source
 
     const alreadyPresent = source.some(
@@ -311,6 +315,12 @@ export default function EditFoodPage() {
       },
       ...source,
     ]
+  })()
+
+  const subCategoryOptions = (() => {
+    const currentCategory = String(formData.category || "").trim()
+    if (!currentCategory) return []
+    return availableCategories.filter(cat => String(cat.parentId) === currentCategory)
   })()
 
   const handleImageUpload = (field, file) => {
@@ -413,12 +423,30 @@ export default function EditFoodPage() {
       return
     }
 
+    const matchedSubCategory = subCategoryOptions.find(
+      (sub) => String(sub?.id || "").trim() === String(formData.subCategory || "").trim(),
+    )
+
+    if (subCategoryOptions.length > 0 && !matchedSubCategory) {
+      toast.error("Please select a subcategory for this category")
+      return
+    }
+
+    const subCategoryPayload = matchedSubCategory ? {
+      subCategoryId: matchedSubCategory.id,
+      subCategoryName: matchedSubCategory.name,
+    } : {
+      subCategoryId: undefined,
+      subCategoryName: undefined,
+    }
+
     if (isNewFood) {
       try {
         const res = await restaurantAPI.createFood({
           ...foodDataToSave,
           categoryId: matchedCategory.id,
           categoryName: matchedCategory.name,
+          ...subCategoryPayload,
         })
         const created = res?.data?.data?.food || res?.data?.food
         window.dispatchEvent(new CustomEvent("foodsChanged"))
@@ -439,6 +467,7 @@ export default function EditFoodPage() {
         ...foodDataToSave,
         categoryId: matchedCategory.id,
         categoryName: matchedCategory.name,
+        ...subCategoryPayload,
       })
       const updated = res?.data?.data?.food || res?.data?.food
       window.dispatchEvent(new CustomEvent("foodsChanged"))
@@ -573,6 +602,27 @@ export default function EditFoodPage() {
                     </p>
                   )}
                 </div>
+
+                {subCategoryOptions.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sub Category <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.subCategory}
+                      onChange={(e) => handleInputChange("subCategory", e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none"
+                      required
+                    >
+                      <option value="">Select Subcategory</option>
+                      {subCategoryOptions.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

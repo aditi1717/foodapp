@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { useNavigate, useParams, useLocation } from "react-router-dom"
 import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -57,6 +57,7 @@ export default function ItemDetailsPage() {
   const groupId = location.state?.groupId
   const defaultCategory = location.state?.category || "Select category"
   const defaultCategoryId = location.state?.categoryId || ""
+  const defaultSubCategory = location.state?.subCategory || ""
   const fileInputRef = useRef(null)
 
   // Initialize state with empty values - will be populated from API
@@ -64,7 +65,8 @@ export default function ItemDetailsPage() {
   const [itemName, setItemName] = useState("")
   const [category, setCategory] = useState(defaultCategory)
   const [selectedCategoryId, setSelectedCategoryId] = useState(defaultCategoryId)
-  const [subCategory, setSubCategory] = useState("")
+  const [subCategory, setSubCategory] = useState(defaultSubCategory)
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState("")
   const [servesInfo, setServesInfo] = useState("")
   const [itemSizeQuantity, setItemSizeQuantity] = useState("")
   const [itemSizeUnit, setItemSizeUnit] = useState("piece")
@@ -104,6 +106,47 @@ export default function ItemDetailsPage() {
   const [loadingItem, setLoadingItem] = useState(false)
   const [keyboardInset, setKeyboardInset] = useState(0)
 
+  const parentCategoryOptions = useMemo(
+    () =>
+      (Array.isArray(categories) ? categories : []).filter((cat) => {
+        const isSubcategory = Boolean(cat?.isSubcategory)
+        const parentRef = String(cat?.parentCategoryId || cat?.parentId || "").trim()
+        return !isSubcategory && !parentRef
+      }),
+    [categories],
+  )
+
+  const subCategoryOptions = useMemo(
+    () =>
+      (Array.isArray(categories) ? categories : []).filter((cat) => {
+        const parentRef = String(cat?.parentCategoryId || cat?.parentId || "").trim()
+        return parentRef && parentRef === String(selectedCategoryId || "").trim()
+      }),
+    [categories, selectedCategoryId],
+  )
+
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      setSelectedSubCategoryId("")
+      setSubCategory("")
+      return
+    }
+
+    if (subCategoryOptions.length === 0) {
+      setSelectedSubCategoryId("")
+      setSubCategory("")
+      return
+    }
+
+    if (
+      selectedSubCategoryId &&
+      !subCategoryOptions.some((subCategoryOption) => String(subCategoryOption.id) === String(selectedSubCategoryId))
+    ) {
+      setSelectedSubCategoryId("")
+      setSubCategory("")
+    }
+  }, [selectedCategoryId, selectedSubCategoryId, subCategoryOptions])
+
   const maxNameLength = 70
   const maxDescriptionLength = 1000
   const descriptionLength = itemDescription.length
@@ -119,6 +162,7 @@ export default function ItemDetailsPage() {
     setCategory(item.category || item.categoryName || defaultCategory)
     setSelectedCategoryId(item.categoryId || "")
     setSubCategory(item.subCategory || item.category || item.categoryName || "Starters")
+    setSelectedSubCategoryId(item.subCategoryId || "")
     setServesInfo(item.servesInfo || "")
     setItemSizeQuantity(item.itemSizeQuantity || "")
     setItemSizeUnit(item.itemSizeUnit || "piece")
@@ -249,14 +293,21 @@ export default function ItemDetailsPage() {
             id: cat._id || cat.id,
             name: cat.name,
             foodTypeScope: cat.foodTypeScope || "Both",
+            isSubcategory: Boolean(cat?.isSubcategory),
+            parentCategoryId: String(cat?.parentCategoryId || cat?.parentId || ""),
+            parentId: String(cat?.parentId || ""),
           }))
 
           debugLog('Formatted restaurant categories:', formattedCategories)
           setCategories(formattedCategories)
           if (!selectedCategoryId && formattedCategories.length > 0) {
+            const primaryCategories = formattedCategories.filter((cat) => {
+              const parentRef = String(cat?.parentCategoryId || cat?.parentId || "").trim()
+              return !cat?.isSubcategory && !parentRef
+            })
             const preferredName = String(category || defaultCategory || "").trim()
-            const matchedByName = formattedCategories.find((cat) => cat.name === preferredName)
-            const nextCategory = matchedByName || (isNewItem ? formattedCategories[0] : null)
+            const matchedByName = primaryCategories.find((cat) => cat.name === preferredName)
+            const nextCategory = matchedByName || (isNewItem ? primaryCategories[0] : null)
             if (nextCategory) {
               setSelectedCategoryId(nextCategory.id)
               setCategory(nextCategory.name)
@@ -482,8 +533,17 @@ export default function ItemDetailsPage() {
     const selectedCategory = categories.find(c => c.id === catId)
     setSelectedCategoryId(selectedCategory?.id || "")
     setCategory(selectedCategory?.name || "")
-    setSubCategory(subCat)
+    setSubCategory(subCat || "")
+    setSelectedSubCategoryId("")
     setIsCategoryPopupOpen(false)
+  }
+
+  const handleSubCategorySelect = (subCategoryId) => {
+    const matchedSubCategory = subCategoryOptions.find(
+      (sub) => String(sub?.id || "") === String(subCategoryId || ""),
+    )
+    setSelectedSubCategoryId(String(matchedSubCategory?.id || ""))
+    setSubCategory(String(matchedSubCategory?.name || ""))
   }
 
   const handleServesSelect = (option) => {
@@ -593,6 +653,8 @@ export default function ItemDetailsPage() {
         : null
       const categoryId = matchedCategory?.id || matchedCategory?._id || null
       const categoryName = matchedCategory?.name || category || ""
+      const resolvedSubCategory = String(subCategory || "").trim()
+      const resolvedSubCategoryId = String(selectedSubCategoryId || "").trim()
 
       if (!categoryId) {
         toast.error("Please select an approved category first")
@@ -659,6 +721,8 @@ export default function ItemDetailsPage() {
           preparationTime: preparationTime || "",
           categoryId: categoryId || undefined,
           categoryName,
+          subCategory: resolvedSubCategory || undefined,
+          subCategoryId: resolvedSubCategoryId || undefined,
         })
         const created = createRes?.data?.data?.food || createRes?.data?.food
         itemId = String(created?._id || created?.id || "")
@@ -681,6 +745,8 @@ export default function ItemDetailsPage() {
           preparationTime: preparationTime || "",
           categoryId: categoryId || undefined,
           categoryName,
+          subCategory: resolvedSubCategory || undefined,
+          subCategoryId: resolvedSubCategoryId || undefined,
         })
       }
 
@@ -929,6 +995,25 @@ export default function ItemDetailsPage() {
               <ChevronDown className="w-5 h-5 text-gray-500" />
             </button>
           </div>
+          {subCategoryOptions.length > 0 ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Subcategory
+              </label>
+              <select
+                value={selectedSubCategoryId}
+                onChange={(e) => handleSubCategorySelect(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              >
+                <option value="">Select subcategory</option>
+                {subCategoryOptions.map((subCategoryOption) => (
+                  <option key={subCategoryOption.id} value={subCategoryOption.id}>
+                    {subCategoryOption.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
 
           {/* Item Name */}
           <div>
@@ -1223,24 +1308,16 @@ export default function ItemDetailsPage() {
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
                   </div>
-                ) : categories.length === 0 ? (
+                ) : parentCategoryOptions.length === 0 ? (
                   <div className="text-center py-12 space-y-4">
                     <p className="text-sm text-gray-500">No categories available</p>
-                    <button
-                      onClick={() => {
-                        setIsCategoryPopupOpen(false)
-                        navigate('/restaurant/menu-categories')
-                      }}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg font-semibold transition-colors"
-                      style={{ background: BRAND_THEME.gradients.primary }}
-                    >
-                      <Plus className="w-5 h-5" />
-                      Add Category
-                    </button>
+                    <p className="text-xs text-gray-500">
+                      Categories are managed by admin. Please contact admin to add one.
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {categories.map((cat) => (
+                    {parentCategoryOptions.map((cat) => (
                       <button
                         key={cat.id}
                         onClick={() => handleCategorySelect(cat.id, cat.name)}
@@ -1386,5 +1463,3 @@ export default function ItemDetailsPage() {
     </div>
   )
 }
-
-

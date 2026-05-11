@@ -266,6 +266,10 @@ export const serializeCategoryForResponse = (category = {}, options = {}) => {
         sortOrder: category.sortOrder || 0,
         visibilityStartTime: normalizeCategoryVisibilityTime(category.visibilityStartTime),
         visibilityEndTime: normalizeCategoryVisibilityTime(category.visibilityEndTime),
+        // Subcategory support
+        isSubcategory: Boolean(category.isSubcategory || category.parentCategoryId || category.parentId),
+        parentCategoryId: category.parentCategoryId || null,
+        parentId: category.parentId || null,
         itemCount: options.includeCounts ? Number(stats?.totalFoods || 0) : undefined,
         approvedFoodCount: options.includeCounts ? Number(stats?.approvedFoods || 0) : undefined,
         createdAt: category.createdAt,

@@ -34,7 +34,10 @@ export const adminSidebarMenu = [
         type: "expandable",
         label: "Categories",
         icon: "FolderTree",
-        subItems: [{ label: "Category", path: "/admin/food/categories" }],
+        subItems: [
+          { label: "Category", path: "/admin/food/categories" },
+          { label: "Sub Category", path: "/admin/food/categories/subcategory" },
+        ],
       },
     ],
   },

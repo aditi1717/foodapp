@@ -2074,15 +2074,6 @@ export default function Inventory() {
                 )}
               </button>
 
-              {activeTab === "add-ons" && (
-                <button
-                  onClick={() => setIsAddAddonOpen((v) => !v)}
-                  className="h-12 rounded-[20px] px-4 text-sm font-semibold text-white shadow-[0_18px_32px_-24px_rgba(41,121,251,0.45)] transition-colors"
-                  style={{ background: BRAND_THEME.gradients.primary, minWidth: "128px" }}
-                >
-                  {isAddAddonOpen ? "Close add-on form" : "Add add-on"}
-                </button>
-              )}
               {activeTab === "add-ons" && (loadingAddons ? (
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
@@ -2711,6 +2702,91 @@ export default function Inventory() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {activeTab === "add-ons" && isAddAddonOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={resetAddonForm}
+              className="fixed inset-0 bg-brand-900/50 z-[70]"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-[71] max-h-[78vh] overflow-y-auto pb-[calc(1rem+env(safe-area-inset-bottom)+1rem)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-white px-4 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-bold text-gray-900 text-center">Add add-on</h2>
+              </div>
+
+              <div className="px-4 py-4 space-y-3">
+                <input
+                  type="text"
+                  value={addonName}
+                  onChange={(e) => setAddonName(e.target.value)}
+                  placeholder="Add-on name"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none"
+                />
+                <textarea
+                  value={addonDescription}
+                  onChange={(e) => setAddonDescription(e.target.value)}
+                  placeholder="Description (optional)"
+                  rows={3}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={addonPrice}
+                  onChange={(e) => setAddonPrice(e.target.value)}
+                  placeholder="Price"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none"
+                />
+
+                {addonImagePreview ? (
+                  <img
+                    src={addonImagePreview}
+                    alt="Add-on preview"
+                    className="h-24 w-24 rounded-xl object-cover ring-1 ring-slate-200"
+                  />
+                ) : null}
+
+                <DocumentUploadActions
+                  onFileSelect={handleAddonDocumentSelect}
+                  galleryInputRef={addonImageInputRef}
+                  fileNamePrefix="addon-image"
+                />
+
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={resetAddonForm}
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveAddon}
+                    disabled={savingAddon}
+                    className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                    style={{ background: BRAND_THEME.gradients.primary }}
+                  >
+                    {savingAddon ? "Saving..." : "Submit for approval"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Floating Menu Button & Popup (hidden on Add-ons tab) */}
       {activeTab !== "add-ons" && (
         <div className="fixed right-4 bottom-24 z-30 flex flex-col items-end gap-2">
@@ -2799,6 +2875,19 @@ export default function Inventory() {
               </>
             )}
           </AnimatePresence>
+        </div>
+      )}
+
+      {activeTab === "add-ons" && (
+        <div className="fixed right-4 bottom-24 z-30">
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setIsAddAddonOpen(true)}
+            className="rounded-full px-5 py-3 text-sm font-semibold text-white"
+            style={{ background: BRAND_THEME.gradients.primary, boxShadow: `0 22px 40px -24px ${BRAND_THEME.colors.brand.primaryDark}8c` }}
+          >
+            + Add add-on
+          </motion.button>
         </div>
       )}
 

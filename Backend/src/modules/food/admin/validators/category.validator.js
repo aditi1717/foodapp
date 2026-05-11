@@ -16,6 +16,8 @@ const listSchema = z.object({
     zoneId: z.string().optional(),
     isApproved: booleanQuerySchema.optional(),
     approvalStatus: z.enum(['pending', 'approved', 'rejected']).optional(),
+    parentCategoryId: z.string().optional(),
+    isSubcategory: booleanQuerySchema.optional(),
     page: z.coerce.number().int().min(1).optional(),
     limit: z.coerce.number().int().min(1).max(1000).optional()
 });
@@ -38,7 +40,11 @@ const upsertSchema = z.object({
         .string()
         .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'visibilityEndTime must be in HH:mm format')
         .or(z.literal(''))
-        .optional()
+        .optional(),
+    // Subcategory fields
+    parentCategoryId: z.string().max(100).optional(),
+    parentId: z.string().max(100).optional(),
+    isSubcategory: z.boolean().optional()
 });
 
 const rejectSchema = z.object({

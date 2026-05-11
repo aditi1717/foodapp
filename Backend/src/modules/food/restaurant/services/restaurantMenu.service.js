@@ -47,16 +47,19 @@ const buildMenuFromFoods = async (foods = []) => {
                 name: sectionName,
                 image: categoryDoc?.image || '',
                 sortOrder: Number.isFinite(Number(categoryDoc?.sortOrder)) ? Number(categoryDoc.sortOrder) : Number.MAX_SAFE_INTEGER,
-                items: []
+                items: [],
+                subsectionsMap: new Map()
             });
         }
 
-        byCategory.get(groupKey).items.push({
+        const normalizedItem = {
             id: String(food._id),
             _id: food._id,
             categoryId: categoryId || null,
             categoryName: sectionName,
             category: sectionName,
+            subCategoryId: food.subCategoryId ? String(food.subCategoryId) : null,
+            subCategoryName: food.subCategoryName || '',
             name: food.name,
             description: food.description || '',
             price: getFoodDisplayPrice(food),
@@ -73,7 +76,25 @@ const buildMenuFromFoods = async (foods = []) => {
             preparationTime: food.preparationTime || '',
             createdAt: food.createdAt,
             updatedAt: food.updatedAt
-        });
+        };
+
+        const subCategoryId = food?.subCategoryId ? String(food.subCategoryId) : '';
+        const subCategoryName = (food?.subCategoryName || '').trim();
+
+        if (subCategoryId || subCategoryName) {
+            const subKey = subCategoryId || `name:${subCategoryName.toLowerCase()}`;
+            const group = byCategory.get(groupKey);
+            if (!group.subsectionsMap.has(subKey)) {
+                group.subsectionsMap.set(subKey, {
+                    id: subCategoryId || null,
+                    name: subCategoryName,
+                    items: []
+                });
+            }
+            group.subsectionsMap.get(subKey).items.push(normalizedItem);
+        } else {
+            byCategory.get(groupKey).items.push(normalizedItem);
+        }
     }
 
     const orderedGroups = Array.from(byCategory.values()).sort((a, b) => {
@@ -81,20 +102,33 @@ const buildMenuFromFoods = async (foods = []) => {
         return String(a.name || '').localeCompare(String(b.name || ''));
     });
 
-    const sections = orderedGroups.map((group, idx) => ({
-        id: group.id || `section-${idx}`,
-        categoryId: group.id || null,
-        name: group.name,
-        image: group.image || '',
-        sortOrder: Number.isFinite(Number(group.sortOrder)) ? Number(group.sortOrder) : 0,
-        itemCount: group.items.length,
-        items: group.items.sort((a, b) => {
-            const at = new Date(a.createdAt || a.requestedAt || 0).getTime();
-            const bt = new Date(b.createdAt || b.requestedAt || 0).getTime();
-            return bt - at;
-        }),
-        subsections: []
-    }));
+    const sections = orderedGroups.map((group, idx) => {
+        const subsections = Array.from(group.subsectionsMap.values()).map((sub, subIdx) => ({
+            id: sub.id || `subsection-${idx}-${subIdx}`,
+            name: sub.name,
+            items: sub.items.sort((a, b) => {
+                const at = new Date(a.createdAt || a.requestedAt || 0).getTime();
+                const bt = new Date(b.createdAt || b.requestedAt || 0).getTime();
+                return bt - at;
+            }),
+            itemCount: sub.items.length
+        }));
+
+        return {
+            id: group.id || `section-${idx}`,
+            categoryId: group.id || null,
+            name: group.name,
+            image: group.image || '',
+            sortOrder: Number.isFinite(Number(group.sortOrder)) ? Number(group.sortOrder) : 0,
+            itemCount: group.items.length + subsections.reduce((acc, sub) => acc + sub.itemCount, 0),
+            items: group.items.sort((a, b) => {
+                const at = new Date(a.createdAt || a.requestedAt || 0).getTime();
+                const bt = new Date(b.createdAt || b.requestedAt || 0).getTime();
+                return bt - at;
+            }),
+            subsections
+        };
+    });
 
     const categories = sections.map((section) => ({
         id: section.categoryId || section.id,

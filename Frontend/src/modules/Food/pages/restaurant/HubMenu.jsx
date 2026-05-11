@@ -6,7 +6,6 @@ import {
   Grid3x3,
   ChevronDown,
   ChevronUp,
-  MoreVertical,
   Edit,
   Plus,
   Utensils,
@@ -1364,18 +1363,6 @@ export default function HubMenu() {
                     ) : (
                       <ChevronDown className="w-5 h-5 text-gray-600" />
                     )}
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleOpenCategoryOptions(group)
-                    }}
-                    className="p-1 rounded-full hover:bg-gray-100 transition-colors z-10 relative"
-                    aria-label="Category options"
-                  >
-                    <MoreVertical className="w-5 h-5 text-gray-600" />
                   </button>
                 </div>
               </div>

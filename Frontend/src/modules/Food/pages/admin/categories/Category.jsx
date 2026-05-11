@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { createPortal } from "react-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import {
-  BadgeCheck,
   Download,
-  Globe,
   Loader2,
   Pencil,
   Plus,
@@ -30,13 +28,6 @@ const defaultFormData = {
 }
 
 
-const approvalBadgeClass = (status) => {
-  const value = String(status || "pending").toLowerCase()
-  if (value === "approved") return "bg-emerald-50 text-emerald-700 border-emerald-200"
-  if (value === "rejected") return "bg-rose-50 text-rose-700 border-rose-200"
-  return "bg-amber-50 text-amber-700 border-amber-200"
-}
-
 const scopeBadgeClass = (scope) => {
   if (scope === "Veg") return "bg-green-50 text-green-700 border-green-200"
   if (scope === "Non-Veg") return "bg-red-50 text-red-700 border-red-200"
@@ -50,7 +41,6 @@ export default function Category() {
   const [searchQuery, setSearchQuery] = useState("")
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showPendingOnly, setShowPendingOnly] = useState(false)
 
   useEffect(() => {
     const adminToken = localStorage.getItem("admin_accessToken")
@@ -69,17 +59,15 @@ export default function Category() {
       fetchCategories()
     }, 300)
     return () => window.clearTimeout(timer)
-  }, [searchQuery, showPendingOnly])
+  }, [searchQuery])
 
   const filteredCategories = useMemo(() => {
     const query = String(searchQuery || "").trim().toLowerCase()
     if (!query) return categories
     return categories.filter((category) => {
-      const creator = category?.createdByRestaurant?.name || category?.restaurant?.name || ""
       return (
         String(category?.name || "").toLowerCase().includes(query) ||
         String(category?.foodTypeScope || "").toLowerCase().includes(query) ||
-        String(creator || "").toLowerCase().includes(query) ||
         String(category?.id || "").toLowerCase().includes(query)
       )
     })
@@ -90,11 +78,25 @@ export default function Category() {
       setLoading(true)
       const params = {}
       if (searchQuery) params.search = searchQuery
-      if (showPendingOnly) params.approvalStatus = "pending"
 
       const response = await adminAPI.getCategories(params)
       const list = response?.data?.data?.categories || response?.data?.categories || []
-      setCategories(Array.isArray(list) ? list : [])
+      const normalizedList = Array.isArray(list) ? list : []
+      const adminOnlyCategories = normalizedList.filter((category) => {
+        const isRestaurantCategory = Boolean(category?.createdByRestaurantId || category?.restaurantId)
+        const parentRef = String(
+          category?.parentCategoryId || category?.parentId || category?.parentCategory || category?.subCategoryOf || "",
+        ).trim()
+        const categoryId = String(category?.id || category?._id || "").trim()
+        const isSelfParent = categoryId && parentRef && categoryId === parentRef
+        const isSubCategory =
+          Boolean(category?.isSubcategory || category?.isSubCategory) ||
+          String(category?.type || "").toLowerCase().includes("sub") ||
+          (Boolean(parentRef) && !isSelfParent)
+
+        return !isRestaurantCategory && !isSubCategory
+      })
+      setCategories(adminOnlyCategories)
     } catch (error) {
       if (error?.response?.status === 401) {
         toast.error("Authentication required. Please login again.")
@@ -155,51 +157,6 @@ export default function Category() {
     }
   }
 
-  const handleApprove = async (id) => {
-    try {
-      const response = await adminAPI.approveCategory(String(id))
-      if (response?.data?.success) {
-        toast.success("Category approved successfully")
-        fetchCategories()
-      }
-    } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to approve category")
-    }
-  }
-
-  const handleReject = async (category) => {
-    const reason = window.prompt(`Reject "${category?.name}" with a reason:`)
-    if (reason == null) return
-    if (!String(reason).trim()) {
-      toast.error("Rejection reason is required")
-      return
-    }
-
-    try {
-      const response = await adminAPI.rejectCategory(String(category?.id || category?._id), reason)
-      if (response?.data?.success) {
-        toast.success("Category rejected successfully")
-        fetchCategories()
-      }
-    } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to reject category")
-    }
-  }
-
-  const handleMakeGlobal = async (category) => {
-    if (!window.confirm(`Make "${category?.name}" global for every restaurant?`)) return
-
-    try {
-      const response = await adminAPI.makeCategoryGlobal(String(category?.id || category?._id))
-      if (response?.data?.success) {
-        toast.success("Category is now global")
-        fetchCategories()
-      }
-    } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to make category global")
-    }
-  }
-
   const handleDelete = async (id) => {
     const categoryName = categories.find((category) => String(category?.id) === String(id))?.name || "this category"
     if (!window.confirm(`Delete "${categoryName}"? This action cannot be undone.`)) return
@@ -229,13 +186,13 @@ export default function Category() {
         index + 1,
         category?.name || "N/A",
         category?.foodTypeScope || "Both",
-        category?.isGlobal ? "Global" : "Private",
-        category?.approvalStatus || "pending",
+        "Admin",
+        category?.status ? "Active" : "Inactive",
       ])
 
       autoTable(doc, {
         startY: 35,
-        head: [["SL", "Category", "Diet Scope", "Visibility", "Approval"]],
+        head: [["SL", "Category", "Diet Scope", "Owner", "Status"]],
         body: tableData,
         theme: "striped",
         headStyles: {
@@ -265,28 +222,11 @@ export default function Category() {
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Categories</h1>
             <p className="mt-2 max-w-2xl text-sm font-medium text-slate-500">
-              Review restaurant-created categories, approve them for use, or make them global to share across the entire platform.
+              Manage admin categories that are available on the restaurant side.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-slate-200 p-1">
-              <button
-                type="button"
-                onClick={() => setShowPendingOnly(false)}
-                className={`rounded-full px-3 py-2 text-xs font-semibold ${!showPendingOnly ? "bg-slate-900 text-white" : "text-slate-600"}`}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowPendingOnly(true)}
-                className={`rounded-full px-3 py-2 text-xs font-semibold ${showPendingOnly ? "bg-amber-600 text-white" : "text-slate-600"}`}
-              >
-                Pending
-              </button>
-            </div>
-
             <div className="relative min-w-[220px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -323,35 +263,29 @@ export default function Category() {
           <table className="min-w-full table-fixed">
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
-                <th className="w-[25%] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">Category</th>
-                <th className="w-[17%] px-4 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">Owner</th>
-                <th className="w-[10%] px-4 py-4 text-center text-[11px] font-bold uppercase tracking-wider text-slate-600">Diet</th>
-                <th className="w-[10%] px-4 py-4 text-center text-[11px] font-bold uppercase tracking-wider text-slate-600">Status</th>
-                <th className="w-[13%] px-4 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">Approval</th>
-                <th className="w-[20%] px-5 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-600">Actions</th>
+                <th className="w-[36%] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">Category</th>
+                <th className="w-[16%] px-4 py-4 text-center text-[11px] font-bold uppercase tracking-wider text-slate-600">Diet</th>
+                <th className="w-[12%] px-4 py-4 text-center text-[11px] font-bold uppercase tracking-wider text-slate-600">Status</th>
+                <th className="w-[24%] px-5 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
+                  <td colSpan={4} className="px-6 py-20 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-brand-600" />
                     <p className="mt-2 text-sm text-slate-500">Loading categories...</p>
                   </td>
                 </tr>
               ) : filteredCategories.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
+                  <td colSpan={4} className="px-6 py-20 text-center">
                     <p className="text-lg font-semibold text-slate-700">No categories found</p>
                     <p className="mt-1 text-sm text-slate-500">Try a different search or create a new category.</p>
                   </td>
                 </tr>
               ) : (
                 filteredCategories.map((category) => {
-                  const creatorName = category?.createdByRestaurant?.name || category?.restaurant?.name || "Admin"
-                  const approvalStatus = category?.approvalStatus || "pending"
-                  const isRestaurantCategory = Boolean(category?.createdByRestaurantId || category?.restaurantId)
-
                   return (
                     <tr key={category.id} className="align-top hover:bg-slate-50/80">
                       <td className="px-5 py-5">
@@ -375,21 +309,6 @@ export default function Category() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-5 text-sm text-slate-600">
-                        <div className="space-y-1">
-                          <p className="font-medium leading-6 text-slate-800">{creatorName}</p>
-                          <p className="text-xs text-slate-400">
-                            {category?.isGlobal ? "Global category" : "Private to creator"}
-                          </p>
-                          {category?.isGlobal && isRestaurantCategory && (
-                            <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700">
-                              <Globe className="mr-1 h-3.5 w-3.5" />
-                              Shared
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
                       <td className="px-4 py-5 text-center">
                         <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${scopeBadgeClass(category?.foodTypeScope)}`}>
                           {category?.foodTypeScope || "Both"}
@@ -404,46 +323,8 @@ export default function Category() {
                           <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${category?.status ? "translate-x-6" : "translate-x-1"}`} />
                         </button>
                       </td>
-                      <td className="px-4 py-5">
-                        <div className="space-y-2">
-                          <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${approvalBadgeClass(approvalStatus)}`}>
-                            {approvalStatus === "approved" && <BadgeCheck className="mr-1 h-3.5 w-3.5" />}
-                            {approvalStatus.charAt(0).toUpperCase() + approvalStatus.slice(1)}
-                          </span>
-                          {category?.rejectionReason && (
-                            <p className="max-w-[180px] text-xs leading-5 text-rose-600">{category.rejectionReason}</p>
-                          )}
-                        </div>
-                      </td>
                       <td className="px-5 py-5">
                         <div className="flex flex-col items-end gap-2">
-                          <div className="flex flex-wrap justify-end gap-2">
-                            {approvalStatus !== "approved" && (
-                              <button
-                                onClick={() => handleApprove(category.id)}
-                                className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors"
-                              >
-                                Approve
-                              </button>
-                            )}
-                            {isRestaurantCategory && approvalStatus !== "rejected" && (
-                              <button
-                                onClick={() => handleReject(category)}
-                                className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
-                              >
-                                Reject
-                              </button>
-                            )}
-                            {isRestaurantCategory && !category?.isGlobal && approvalStatus === "approved" && (
-                              <button
-                                onClick={() => handleMakeGlobal(category)}
-                                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center gap-1.5"
-                              >
-                                <Globe className="h-3.5 w-3.5" />
-                                Make Global
-                              </button>
-                            )}
-                          </div>
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => handleEdit(category)}

@@ -15,6 +15,8 @@ const createFoodForm = () => ({
   restaurantId: "",
   categoryId: "",
   categoryName: "",
+  subCategoryId: "",
+  subCategoryName: "",
   name: "",
   price: "",
   variants: [],
@@ -132,6 +134,8 @@ export default function FoodsList() {
               restaurantName: f.restaurantName || "Unknown Restaurant",
               categoryId: String(f.categoryId || ""),
               categoryName: f.categoryName || "",
+              subCategoryId: String(f.subCategoryId || ""),
+              subCategoryName: f.subCategory || f.subCategoryName || "",
               price: getFoodDisplayPrice(f),
               variants: getFoodVariants(f),
               foodType: f.foodType || "Non-Veg",
@@ -249,6 +253,41 @@ export default function FoodsList() {
     return restaurantsForFilter
   }, [restaurantsForFilter])
 
+  const parentCategoryOptions = useMemo(
+    () =>
+      (Array.isArray(categoryOptions) ? categoryOptions : []).filter((categoryOption) => {
+        const parentRef = String(
+          categoryOption?.parentCategoryId ||
+          categoryOption?.parentId ||
+          categoryOption?.parentCategory ||
+          categoryOption?.subCategoryOf ||
+          "",
+        ).trim()
+        const explicitSubCategory =
+          Boolean(categoryOption?.isSubcategory) ||
+          Boolean(categoryOption?.isSubCategory) ||
+          String(categoryOption?.type || "").toLowerCase().includes("sub") ||
+          String(categoryOption?.categoryType || "").toLowerCase().includes("sub")
+        return !explicitSubCategory && !parentRef
+      }),
+    [categoryOptions],
+  )
+
+  const subCategoryOptions = useMemo(
+    () =>
+      (Array.isArray(categoryOptions) ? categoryOptions : []).filter((categoryOption) => {
+        const parentRef = String(
+          categoryOption?.parentCategoryId ||
+          categoryOption?.parentId ||
+          categoryOption?.parentCategory ||
+          categoryOption?.subCategoryOf ||
+          "",
+        ).trim()
+        return parentRef && parentRef === String(foodForm.categoryId || "").trim()
+      }),
+    [categoryOptions, foodForm.categoryId],
+  )
+
   const openAddFoodModal = () => {
     setFoodFormMode("add")
     setEditingFood(null)
@@ -270,6 +309,8 @@ export default function FoodsList() {
       restaurantId: String(food.restaurantId || ""),
       categoryId: String(food.categoryId || ""),
       categoryName: String(food.categoryName || ""),
+      subCategoryId: String(food.subCategoryId || ""),
+      subCategoryName: String(food.subCategory || food.subCategoryName || ""),
       name: String(food.name || ""),
       price: String(food.price || ""),
       variants: getFoodVariants(food).map(createVariantDraft),
@@ -314,6 +355,14 @@ export default function FoodsList() {
                   name: String(c.name || "").trim(),
                   isGlobal,
                   restaurantId: rId,
+                  isSubcategory: Boolean(c?.isSubcategory),
+                  isSubCategory: Boolean(c?.isSubCategory),
+                  type: String(c?.type || ""),
+                  categoryType: String(c?.categoryType || ""),
+                  parentCategoryId: String(c?.parentCategoryId || c?.parentId || ""),
+                  parentId: String(c?.parentId || ""),
+                  parentCategory: String(c?.parentCategory || c?.parentCategory?._id || c?.parentCategory?.id || ""),
+                  subCategoryOf: String(c?.subCategoryOf || ""),
                 }
               })
               .filter((c) => {
@@ -378,6 +427,11 @@ export default function FoodsList() {
       return
     }
 
+    if (subCategoryOptions.length > 0 && !foodForm.subCategoryId) {
+      toast.error("Please select a subcategory for this category")
+      return
+    }
+
     const normalizedVariants = (Array.isArray(foodForm.variants) ? foodForm.variants : [])
       .map((variant) => ({
         id: String(variant?.id || variant?._id || "").trim(),
@@ -422,6 +476,8 @@ export default function FoodsList() {
         restaurantId: foodForm.restaurantId,
         categoryId: foodForm.categoryId || undefined,
         categoryName: String(foodForm.categoryName || "").trim(),
+        subCategoryId: String(foodForm.subCategoryId || "").trim() || undefined,
+        subCategoryName: String(foodForm.subCategoryName || "").trim() || undefined,
         name: foodForm.name.trim(),
         price: hasVariants ? undefined : parsedPrice,
         variants: normalizedVariants.map((variant) => ({
@@ -562,6 +618,9 @@ export default function FoodsList() {
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   Category
                 </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                  Sub Category
+                </th>
                 <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   Action
                 </th>
@@ -570,7 +629,7 @@ export default function FoodsList() {
             <tbody className="bg-white divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center">
+                  <td colSpan={7} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <Loader2 className="w-8 h-8 animate-spin text-brand-600 mb-2" />
                       <p className="text-sm text-slate-500">Loading foods...</p>
@@ -579,7 +638,7 @@ export default function FoodsList() {
                 </tr>
               ) : filteredFoods.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center">
+                  <td colSpan={7} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
                       <p className="text-sm text-slate-500">No food items match your search or restaurant filter</p>
@@ -622,6 +681,11 @@ export default function FoodsList() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-slate-800">{food.categoryName || "-"}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-slate-800">{food.subCategoryName || "-"}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -738,6 +802,7 @@ export default function FoodsList() {
                 <p><span className="font-semibold text-slate-700">Restaurant:</span> <span className="text-slate-900">{selectedFood.restaurantName || "-"}</span></p>
                 <p><span className="font-semibold text-slate-700">Price:</span> <span className="text-slate-900">{selectedFood.variants?.length ? `Starting from \u20B9${selectedFood.price}` : `\u20B9${selectedFood.price}`}</span></p>
                 <p><span className="font-semibold text-slate-700">Category:</span> <span className="text-slate-900">{selectedFood.categoryName || "-"}</span></p>
+                <p><span className="font-semibold text-slate-700">Sub Category:</span> <span className="text-slate-900">{selectedFood.subCategoryName || "-"}</span></p>
                 <p><span className="font-semibold text-slate-700">Food Type:</span> <span className="text-slate-900">{selectedFood.foodType || "-"}</span></p>
                 <p><span className="font-semibold text-slate-700">Approval:</span> <span className="text-slate-900 capitalize">{selectedFood.approvalStatus || "-"}</span></p>
               </div>
@@ -791,7 +856,16 @@ export default function FoodsList() {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Restaurant</label>
                 <select
                   value={foodForm.restaurantId}
-                  onChange={(e) => setFoodForm((prev) => ({ ...prev, restaurantId: e.target.value, categoryId: "", categoryName: "" }))}
+                  onChange={(e) =>
+                    setFoodForm((prev) => ({
+                      ...prev,
+                      restaurantId: e.target.value,
+                      categoryId: "",
+                      categoryName: "",
+                      subCategoryId: "",
+                      subCategoryName: "",
+                    }))
+                  }
                   disabled={foodFormMode === "edit"}
                   className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white disabled:bg-slate-100"
                 >
@@ -827,7 +901,7 @@ export default function FoodsList() {
                       autoFocus
                     />
                     <div className="max-h-56 overflow-y-auto">
-                      {categoryOptions
+                      {parentCategoryOptions
                         .filter((c) => {
                           const q = String(categorySearch || "").trim().toLowerCase()
                           if (!q) return true
@@ -838,7 +912,13 @@ export default function FoodsList() {
                             key={c.id}
                             type="button"
                             onClick={() => {
-                              setFoodForm((prev) => ({ ...prev, categoryId: c.id, categoryName: c.name }))
+                              setFoodForm((prev) => ({
+                                ...prev,
+                                categoryId: c.id,
+                                categoryName: c.name,
+                                subCategoryId: "",
+                                subCategoryName: "",
+                              }))
                               setCategoryPopoverOpen(false)
                             }}
                             className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-slate-100 flex items-center justify-between ${
@@ -853,12 +933,44 @@ export default function FoodsList() {
                             )}
                           </button>
                         ))}
-                      {categoryOptions.length === 0 && (
+                      {parentCategoryOptions.length === 0 && (
                         <div className="px-3 py-2 text-sm text-slate-500">No categories found</div>
                       )}
                     </div>
                   </PopoverContent>
                 </Popover>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Subcategory</label>
+                <select
+                  value={foodForm.subCategoryId}
+                  onChange={(e) => {
+                    const selectedId = e.target.value
+                    const selectedSubCategory = subCategoryOptions.find(
+                      (subCategoryOption) => String(subCategoryOption.id) === String(selectedId),
+                    )
+                    setFoodForm((prev) => ({
+                      ...prev,
+                      subCategoryId: selectedId,
+                      subCategoryName: selectedSubCategory?.name || "",
+                    }))
+                  }}
+                  disabled={!foodForm.categoryId || subCategoryOptions.length === 0}
+                  className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {!foodForm.categoryId
+                      ? "Select category first"
+                      : subCategoryOptions.length === 0
+                        ? "No subcategory available"
+                        : "Select subcategory"}
+                  </option>
+                  {subCategoryOptions.map((subCategoryOption) => (
+                    <option key={subCategoryOption.id} value={subCategoryOption.id}>
+                      {subCategoryOption.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Food Name</label>
@@ -1035,4 +1147,3 @@ export default function FoodsList() {
     </div>
   )
 }
-

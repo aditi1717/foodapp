@@ -3124,6 +3124,15 @@ export async function getCategories(query) {
             filter.zoneId = new mongoose.Types.ObjectId(zid);
         }
     }
+    if (query.isSubcategory !== undefined) {
+        filter.isSubcategory = !!query.isSubcategory;
+    }
+    if (query.parentCategoryId && String(query.parentCategoryId).trim()) {
+        const pid = String(query.parentCategoryId).trim();
+        if (mongoose.Types.ObjectId.isValid(pid)) {
+            filter.$or = [...(filter.$or || []), { parentCategoryId: new mongoose.Types.ObjectId(pid) }, { parentId: new mongoose.Types.ObjectId(pid) }];
+        }
+    }
     if (query.approvalStatus) {
         const approvalStatus = String(query.approvalStatus);
         if (approvalStatus === 'pending') {
@@ -3192,6 +3201,16 @@ export async function getCategories(query) {
 export async function createCategory(body) {
     const name = typeof body.name === 'string' ? body.name.trim() : '';
     if (!name) throw new ValidationError('Category name is required');
+
+    // Handle parent category (subcategory support)
+    const parentCategoryId = body.parentCategoryId && String(body.parentCategoryId).trim()
+        ? (() => {
+            const pid = String(body.parentCategoryId).trim();
+            if (!mongoose.Types.ObjectId.isValid(pid)) throw new ValidationError('Invalid parentCategoryId');
+            return new mongoose.Types.ObjectId(pid);
+        })()
+        : undefined;
+
     const doc = new FoodCategory({
         name,
         image: typeof body.image === 'string' ? body.image.trim() : '',
@@ -3210,6 +3229,10 @@ export async function createCategory(body) {
         sortOrder: Number.isFinite(Number(body.sortOrder)) ? Number(body.sortOrder) : 0,
         visibilityStartTime: normalizeCategoryVisibilityTime(body.visibilityStartTime),
         visibilityEndTime: normalizeCategoryVisibilityTime(body.visibilityEndTime),
+        // Subcategory support
+        parentCategoryId,
+        parentId: parentCategoryId,
+        isSubcategory: body.isSubcategory === true || body.isSubcategory === 'true' || Boolean(parentCategoryId),
         // Admin-created categories are globally available immediately.
         approvalStatus: 'approved',
         isApproved: true,
@@ -3325,6 +3348,23 @@ export async function updateCategory(id, body) {
     if (body.visibilityEndTime !== undefined) {
         doc.visibilityEndTime = normalizeCategoryVisibilityTime(body.visibilityEndTime);
     }
+    // Subcategory support
+    if (body.parentCategoryId !== undefined) {
+        const pid = String(body.parentCategoryId || '').trim();
+        if (!pid) {
+            doc.parentCategoryId = undefined;
+            doc.parentId = undefined;
+            doc.isSubcategory = false;
+        } else {
+            if (!mongoose.Types.ObjectId.isValid(pid)) throw new ValidationError('Invalid parentCategoryId');
+            doc.parentCategoryId = new mongoose.Types.ObjectId(pid);
+            doc.parentId = doc.parentCategoryId;
+            doc.isSubcategory = true;
+        }
+    } else if (body.isSubcategory !== undefined) {
+        doc.isSubcategory = !!body.isSubcategory;
+    }
+
     if (!doc.createdByRestaurantId && doc.restaurantId) {
         doc.createdByRestaurantId = doc.restaurantId;
     }
@@ -3601,6 +3641,8 @@ export async function getFoods(query) {
         restaurantName: restaurantMap.get(String(f.restaurantId)) || 'Unknown Restaurant',
         categoryId: f.categoryId || null,
         categoryName: f.categoryName || '',
+        subCategoryId: f.subCategoryId || null,
+        subCategoryName: f.subCategoryName || '',
         name: f.name,
         description: f.description || '',
         price: getFoodDisplayPrice(f),
@@ -3618,9 +3660,11 @@ export async function getFoods(query) {
     return { foods, total, page, limit };
 }
 
-const resolveAdminFoodCategory = async ({ categoryId, categoryName, foodType, pureVegRestaurant }) => {
+const resolveAdminFoodCategory = async ({ categoryId, categoryName, subCategoryId, subCategoryName, foodType, pureVegRestaurant }) => {
     let resolvedCategoryId = null;
     let resolvedCategoryName = typeof categoryName === 'string' ? categoryName.trim() : '';
+    let resolvedSubCategoryId = null;
+    let resolvedSubCategoryName = typeof subCategoryName === 'string' ? subCategoryName.trim() : '';
     let categoryDoc = null;
 
     if (categoryId) {
@@ -3637,6 +3681,19 @@ const resolveAdminFoodCategory = async ({ categoryId, categoryName, foodType, pu
         resolvedCategoryName = categoryDoc.name || resolvedCategoryName;
     }
 
+    if (subCategoryId) {
+        if (!mongoose.Types.ObjectId.isValid(subCategoryId)) {
+            throw new ValidationError('Invalid subcategory id');
+        }
+        const subCategoryDoc = await FoodCategory.findById(subCategoryId)
+            .select('name')
+            .lean();
+        if (subCategoryDoc?._id) {
+            resolvedSubCategoryId = subCategoryDoc._id;
+            resolvedSubCategoryName = subCategoryDoc.name || resolvedSubCategoryName;
+        }
+    }
+
     if (!resolvedCategoryName) {
         throw new ValidationError('Category is required');
     }
@@ -3650,9 +3707,24 @@ const resolveAdminFoodCategory = async ({ categoryId, categoryName, foodType, pu
         }
     }
 
+    if (resolvedCategoryId && !resolvedSubCategoryId) {
+        const hasSubCategories = await FoodCategory.exists({
+            $or: [
+                { parentCategoryId: resolvedCategoryId },
+                { parentId: resolvedCategoryId },
+                { subCategoryOf: resolvedCategoryId }
+            ]
+        });
+        if (hasSubCategories) {
+            throw new ValidationError('Subcategory is mandatory for this category');
+        }
+    }
+
     return {
         categoryId: resolvedCategoryId,
-        categoryName: resolvedCategoryName
+        categoryName: resolvedCategoryName,
+        subCategoryId: resolvedSubCategoryId,
+        subCategoryName: resolvedSubCategoryName
     };
 };
 
@@ -3728,9 +3800,11 @@ export async function createFood(body) {
 
     let categoryName = typeof body.categoryName === 'string' ? body.categoryName.trim() : '';
     if (!categoryName && typeof body.category === 'string') categoryName = body.category.trim();
-    const { categoryId, categoryName: resolvedCategoryName } = await resolveAdminFoodCategory({
+    const { categoryId, categoryName: resolvedCategoryName, subCategoryId, subCategoryName } = await resolveAdminFoodCategory({
         categoryId: body.categoryId,
         categoryName,
+        subCategoryId: body.subCategoryId,
+        subCategoryName: body.subCategoryName,
         foodType,
         pureVegRestaurant: restaurant.pureVegRestaurant === true
     });
@@ -3739,6 +3813,8 @@ export async function createFood(body) {
         restaurantId,
         categoryId,
         categoryName: resolvedCategoryName,
+        subCategoryId,
+        subCategoryName,
         name,
         description: typeof body.description === 'string' ? body.description.trim() : '',
         price,
@@ -3776,18 +3852,26 @@ export async function updateFood(id, body) {
     if (body.foodType !== undefined) doc.foodType = targetFoodType;
     if (body.isAvailable !== undefined) doc.isAvailable = body.isAvailable !== false;
     if (body.preparationTime !== undefined) doc.preparationTime = String(body.preparationTime || '').trim();
-    if (body.categoryId !== undefined || body.categoryName !== undefined || body.category !== undefined || body.foodType !== undefined) {
+    if (body.categoryId !== undefined || body.categoryName !== undefined || body.category !== undefined || body.subCategoryId !== undefined || body.subCategoryName !== undefined || body.foodType !== undefined) {
         const nextCategoryName = body.categoryName !== undefined
             ? String(body.categoryName || '').trim()
             : (body.category !== undefined ? String(body.category || '').trim() : doc.categoryName);
-        const { categoryId, categoryName } = await resolveAdminFoodCategory({
+        const nextSubCategoryName = body.subCategoryName !== undefined
+            ? String(body.subCategoryName || '').trim()
+            : doc.subCategoryName;
+
+        const { categoryId, categoryName, subCategoryId, subCategoryName } = await resolveAdminFoodCategory({
             categoryId: body.categoryId !== undefined ? body.categoryId : doc.categoryId,
             categoryName: nextCategoryName,
+            subCategoryId: body.subCategoryId !== undefined ? body.subCategoryId : doc.subCategoryId,
+            subCategoryName: nextSubCategoryName,
             foodType: targetFoodType,
             pureVegRestaurant: restaurant.pureVegRestaurant === true
         });
         doc.categoryId = categoryId;
         doc.categoryName = categoryName;
+        doc.subCategoryId = subCategoryId;
+        doc.subCategoryName = subCategoryName;
     }
     await doc.save();
     return doc.toObject();

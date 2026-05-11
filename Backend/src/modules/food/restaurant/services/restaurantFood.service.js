@@ -123,10 +123,12 @@ const getAccessibleCategoryFilter = (context) => ({
 const resolveCategoryForRestaurant = async (context, body = {}) => {
     const categoryIdRaw = toStr(body.categoryId);
     const categoryNameRaw = toStr(body.categoryName);
+    const subCategoryIdRaw = toStr(body.subCategoryId);
+    const subCategoryNameRaw = toStr(body.subCategoryName);
     const foodType = normalizeFoodType(body.foodType);
 
     if (!categoryIdRaw && !categoryNameRaw) {
-        return { categoryObjectId: undefined, categoryName: '' };
+        return { categoryObjectId: undefined, categoryName: '', subCategoryObjectId: undefined, subCategoryName: '' };
     }
 
     const baseFilter = {
@@ -178,9 +180,35 @@ const resolveCategoryForRestaurant = async (context, body = {}) => {
         throw new ValidationError(`This ${category.foodTypeScope} category cannot accept ${foodType} food`);
     }
 
+    let subCategory = null;
+    if (subCategoryIdRaw) {
+        if (!mongoose.Types.ObjectId.isValid(subCategoryIdRaw)) {
+            throw new ValidationError('Invalid subcategory id');
+        }
+        subCategory = await FoodCategory.findOne({
+            _id: new mongoose.Types.ObjectId(subCategoryIdRaw),
+            ...baseFilter
+        }).lean();
+    }
+
+    if (!subCategory?._id) {
+        const hasSubCategories = await FoodCategory.exists({
+            $or: [
+                { parentCategoryId: category._id },
+                { parentId: category._id },
+                { subCategoryOf: category._id }
+            ]
+        });
+        if (hasSubCategories) {
+            throw new ValidationError('Subcategory is mandatory for this category');
+        }
+    }
+
     return {
         categoryObjectId: category._id,
         categoryName: category.name || '',
+        subCategoryObjectId: subCategory?._id,
+        subCategoryName: subCategory?.name || '',
         category
     };
 };
@@ -199,12 +227,14 @@ export async function createRestaurantFood(restaurantId, body = {}) {
     const isAvailable = body.isAvailable !== false;
     const foodType = normalizeFoodType(body.foodType);
     const preparationTime = toStr(body.preparationTime);
-    const { categoryObjectId, categoryName } = await resolveCategoryForRestaurant(context, { ...body, foodType });
+    const { categoryObjectId, categoryName, subCategoryObjectId, subCategoryName } = await resolveCategoryForRestaurant(context, { ...body, foodType });
 
     const doc = await FoodItem.create({
         restaurantId,
         categoryId: categoryObjectId,
         categoryName: categoryName || '',
+        subCategoryId: subCategoryObjectId,
+        subCategoryName: subCategoryName || '',
         name,
         description,
         price,
@@ -283,21 +313,30 @@ export async function updateRestaurantFood(restaurantId, foodId, body = {}) {
     if (
         body.categoryId !== undefined ||
         body.categoryName !== undefined ||
+        body.subCategoryId !== undefined ||
+        body.subCategoryName !== undefined ||
         body.foodType !== undefined
     ) {
-        const { categoryObjectId, categoryName } = await resolveCategoryForRestaurant(context, {
+        const { categoryObjectId, categoryName, subCategoryObjectId, subCategoryName } = await resolveCategoryForRestaurant(context, {
             categoryId: body.categoryId !== undefined ? body.categoryId : existing.categoryId,
             categoryName: body.categoryName !== undefined ? body.categoryName : existing.categoryName,
+            subCategoryId: body.subCategoryId !== undefined ? body.subCategoryId : existing.subCategoryId,
+            subCategoryName: body.subCategoryName !== undefined ? body.subCategoryName : existing.subCategoryName,
             foodType: targetFoodType
         });
         
-        if (String(categoryObjectId || '') !== String(existing.categoryId || '')) {
+        if (
+            String(categoryObjectId || '') !== String(existing.categoryId || '') ||
+            String(subCategoryObjectId || '') !== String(existing.subCategoryId || '')
+        ) {
             update.categoryId = categoryObjectId;
             update.categoryName = categoryName || '';
+            update.subCategoryId = subCategoryObjectId;
+            update.subCategoryName = subCategoryName || '';
         }
     }
 
-    const SENSITIVE_FIELDS = ['name', 'description', 'image', 'price', 'variants', 'foodType', 'categoryId', 'categoryName'];
+    const SENSITIVE_FIELDS = ['name', 'description', 'image', 'price', 'variants', 'foodType', 'categoryId', 'categoryName', 'subCategoryId', 'subCategoryName'];
     const hasSensitiveChanges = Object.keys(update).some(key => SENSITIVE_FIELDS.includes(key));
     const shouldResubmitForApproval = hasSensitiveChanges;
 
