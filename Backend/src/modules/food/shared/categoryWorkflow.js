@@ -221,8 +221,8 @@ export const serializeCategoryForResponse = (category = {}, options = {}) => {
         : false;
 
     return {
-        id: category._id || category.id,
-        _id: category._id || category.id,
+        id: String(category._id || category.id),
+        _id: String(category._id || category.id),
         name: category.name,
         image: category.image || '',
         type: category.type || '',
@@ -248,7 +248,7 @@ export const serializeCategoryForResponse = (category = {}, options = {}) => {
             : Number(stats?.totalFoods || 0) === 0,
         restaurant: category?.restaurantId?._id
             ? {
-                _id: category.restaurantId._id,
+                _id: String(category.restaurantId._id),
                 name: category.restaurantId.restaurantName || '',
                 ownerName: category.restaurantId.ownerName || '',
                 ownerPhone: category.restaurantId.ownerPhone || ''
@@ -256,20 +256,21 @@ export const serializeCategoryForResponse = (category = {}, options = {}) => {
             : null,
         createdByRestaurant: category?.createdByRestaurantId?._id
             ? {
-                _id: category.createdByRestaurantId._id,
+                _id: String(category.createdByRestaurantId._id),
                 name: category.createdByRestaurantId.restaurantName || '',
                 ownerName: category.createdByRestaurantId.ownerName || '',
                 ownerPhone: category.createdByRestaurantId.ownerPhone || ''
             }
             : null,
-        zoneId: category.zoneId || null,
+        zoneId: category.zoneId ? String(category.zoneId) : null,
         sortOrder: category.sortOrder || 0,
         visibilityStartTime: normalizeCategoryVisibilityTime(category.visibilityStartTime),
         visibilityEndTime: normalizeCategoryVisibilityTime(category.visibilityEndTime),
         // Subcategory support
-        isSubcategory: Boolean(category.isSubcategory || category.parentCategoryId || category.parentId),
-        parentCategoryId: category.parentCategoryId || null,
-        parentId: category.parentId || null,
+        isSubcategory: Boolean(category.isSubcategory || category.parentCategoryId || category.parentId || category.subCategoryOf),
+        parentCategoryId: category.parentCategoryId ? String(category.parentCategoryId) : null,
+        parentId: category.parentId ? String(category.parentId) : null,
+        subCategoryOf: category.subCategoryOf ? String(category.subCategoryOf) : null,
         itemCount: options.includeCounts ? Number(stats?.totalFoods || 0) : undefined,
         approvedFoodCount: options.includeCounts ? Number(stats?.approvedFoods || 0) : undefined,
         createdAt: category.createdAt,

@@ -19,6 +19,17 @@ const foodLandingSettingsSchema = new mongoose.Schema(
             ref: 'FoodRestaurant',
             default: []
         },
+        zoneId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'FoodZone',
+            index: true,
+            default: null
+        },
+        recommendationMode: {
+            type: String,
+            enum: ['manual', 'automatic'],
+            default: 'manual'
+        },
         showHeroBanners: {
             type: Boolean,
             default: true

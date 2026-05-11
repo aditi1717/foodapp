@@ -926,7 +926,7 @@ export default function Home() {
     Promise.all([
       publicGetOnce("/food/explore-icons/public")
         .catch(() => ({ data: { data: {} } })),
-      publicGetOnce("/food/landing/settings/public")
+      publicGetOnce(`/food/landing/settings/public${zoneId ? `?zoneId=${zoneId}` : ""}`)
         .catch(() => ({ data: { data: {} } })),
     ])
       .then(([exploreRes, settingsRes]) => {

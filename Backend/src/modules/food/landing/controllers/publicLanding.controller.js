@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { getPublicGourmetRestaurants } from '../services/gourmet.service.js';
 import { getLandingSettings } from '../services/landingSettings.service.js';
 import { FoodHeroBanner } from '../models/heroBanner.model.js';
@@ -65,16 +66,49 @@ export const getPublicGourmetController = async (req, res, next) => {
     }
 };
 
+import { FoodOrder } from '../../orders/models/order.model.js';
+
 export const getPublicLandingSettingsController = async (req, res, next) => {
     try {
-        const settings = await getLandingSettings();
-        const ids = settings?.recommendedRestaurantIds || [];
-        let recommendedRestaurants = [];
-        if (Array.isArray(ids) && ids.length > 0) {
-            recommendedRestaurants = await FoodRestaurant.find({ _id: { $in: ids }, status: 'approved' })
-                .select('restaurantName area city profileImage coverImages menuImages slug rating cuisines pureVegRestaurant')
-                .lean();
+        const { zoneId } = req.query;
+        let settings = await getLandingSettings(zoneId);
+
+        // Fallback to global settings if zone-specific settings don't exist or are empty (optional, depending on requirement)
+        // But the user said they want it zone-wise, so we stay with what we found.
+
+        let recommendedRestaurantIds = settings?.recommendedRestaurantIds || [];
+        const mode = settings?.recommendationMode || 'manual';
+
+        if (mode === 'automatic' && zoneId) {
+            // Calculate top 12 restaurants by order count in this zone
+            const topRestaurants = await FoodOrder.aggregate([
+                { $match: { zoneId: new mongoose.Types.ObjectId(zoneId), orderStatus: 'delivered' } },
+                { $group: { _id: '$restaurantId', orderCount: { $sum: 1 } } },
+                { $sort: { orderCount: -1 } },
+                { $limit: 12 }
+            ]);
+            recommendedRestaurantIds = topRestaurants.map((r) => r._id);
         }
+
+        let recommendedRestaurants = [];
+        if (Array.isArray(recommendedRestaurantIds) && recommendedRestaurantIds.length > 0) {
+            recommendedRestaurants = await FoodRestaurant.find({
+                _id: { $in: recommendedRestaurantIds },
+                status: 'approved',
+                // Ensure the restaurant belongs to the zone if it's a zone-specific request
+                ...(zoneId ? { zoneId: new mongoose.Types.ObjectId(zoneId) } : {})
+            })
+                .select('restaurantName area city profileImage coverImages menuImages slug rating cuisines pureVegRestaurant zoneId')
+                .lean();
+
+            // Maintain the order if it was manual or sort by orderCount if automatic
+            if (mode === 'manual') {
+                recommendedRestaurants.sort((a, b) => {
+                    return recommendedRestaurantIds.indexOf(a._id.toString()) - recommendedRestaurantIds.indexOf(b._id.toString());
+                });
+            }
+        }
+
         const payload = {
             ...settings,
             headerVideoPublicId: undefined,

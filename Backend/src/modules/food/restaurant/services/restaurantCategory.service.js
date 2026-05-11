@@ -169,17 +169,43 @@ export async function listPublicCategories(query = {}) {
     const search = typeof query.search === 'string' ? query.search.trim() : '';
     const zoneIdRaw = typeof query.zoneId === 'string' ? query.zoneId.trim() : '';
 
-    const approvedCategoryIds = await FoodItem.distinct('categoryId', {
-        approvalStatus: 'approved',
-        categoryId: { $ne: null }
-    });
+    const [approvedCategoryIds, approvedSubCategoryIds] = await Promise.all([
+        FoodItem.distinct('categoryId', {
+            approvalStatus: 'approved',
+            categoryId: { $ne: null }
+        }),
+        FoodItem.distinct('subCategoryId', {
+            approvalStatus: 'approved',
+            subCategoryId: { $ne: null }
+        })
+    ]);
 
-    if (!approvedCategoryIds.length) {
+    const totalApprovedIds = Array.from(new Set([
+        ...approvedCategoryIds.map(id => String(id)),
+        ...approvedSubCategoryIds.map(id => String(id))
+    ])).filter(Boolean).map(id => toObjectId(id));
+
+    if (!totalApprovedIds.length) {
         return { categories: [], total: 0, page, limit };
     }
 
+    // Find parents of approved categories to ensure hierarchy is preserved
+    const approvedCategories = await FoodCategory.find({ _id: { $in: totalApprovedIds } })
+        .select('parentId parentCategoryId subCategoryOf')
+        .lean();
+    
+    const parentIds = approvedCategories
+        .map(c => c.parentId || c.parentCategoryId || c.subCategoryOf)
+        .filter(id => id && mongoose.Types.ObjectId.isValid(String(id)))
+        .map(id => toObjectId(id));
+
+    const allRelevantIds = Array.from(new Set([
+        ...totalApprovedIds.map(id => String(id)),
+        ...parentIds.map(id => String(id))
+    ])).map(id => toObjectId(id));
+
     const filter = {
-        _id: { $in: approvedCategoryIds },
+        _id: { $in: allRelevantIds },
         isActive: true,
         $and: [{ $or: GLOBAL_CATEGORY_FILTER }, { $or: APPROVED_CATEGORY_FILTER }]
     };
@@ -192,7 +218,7 @@ export async function listPublicCategories(query = {}) {
 
     const list = await FoodCategory.find(filter)
         .sort({ sortOrder: 1, createdAt: -1 })
-        .select('name image type foodTypeScope zoneId sortOrder visibilityStartTime visibilityEndTime createdAt updatedAt')
+        .select('name image type foodTypeScope zoneId sortOrder visibilityStartTime visibilityEndTime isSubcategory parentId parentCategoryId subCategoryOf createdAt updatedAt')
         .lean();
 
     await backfillLegacyCategoryWorkflow(list);
