@@ -199,7 +199,7 @@ export default function PhoneNumbersPage() {
             <div className="flex-1">
               <h2 className="text-base font-bold text-gray-900">Restaurant page number</h2>
               <p className="text-xs text-gray-600 mt-1">
-                Number for Iggymet customers to call your restaurant.
+                Number for Foodapp customers to call your restaurant.
               </p>
             </div>
           </div>
