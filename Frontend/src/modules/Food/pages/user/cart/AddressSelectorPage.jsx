@@ -200,6 +200,7 @@ export default function AddressSelectorPage() {
   const [keywordAddressSuggestions, setKeywordAddressSuggestions] = useState([])
   const [isKeywordSearching, setIsKeywordSearching] = useState(false)
   const [lockMapToAutocomplete, setLockMapToAutocomplete] = useState(true)
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [GOOGLE_MAPS_API_KEY, setGOOGLE_MAPS_API_KEY] = useState(null)
   const [formScrollTop, setFormScrollTop] = useState(0)
   const [keyboardInset, setKeyboardInset] = useState(0)
@@ -783,6 +784,8 @@ export default function AddressSelectorPage() {
     }
   }, [showAddressForm])
 
+  const isKeyboardActive = keyboardInset > 50 && !isSearchFocused
+
   if (showAddressForm) {
     const mapHeight = baseMapHeight 
     return (
@@ -797,20 +800,14 @@ export default function AddressSelectorPage() {
         </div>
 
         <div
-          ref={formBodyRef}
-          onScroll={(e) => {
-            setFormScrollTop(e.currentTarget.scrollTop)
-          }}
-          className="flex-1 overflow-y-auto"
-          style={{ paddingBottom: `${24 + keyboardInset}px` }}
+          className="flex-1 overflow-hidden"
+          style={{ paddingBottom: `${16 + keyboardInset}px` }}
         >
-          {/* Map Section - Parallax enabled */}
+          {/* Map Section - Collapses when keyboard is active to fit form on single page */}
           <div
-            className="flex-shrink-0 relative z-0"
+            className={`flex-shrink-0 relative z-20 transition-all duration-300 ${isKeyboardActive ? 'h-0 opacity-0 pointer-events-none overflow-hidden' : ''}`}
             style={{ 
-              height: `${mapHeight}px`,
-              transform: `translateY(${formScrollTop * 0.4}px)`,
-              opacity: clamp(1 - (formScrollTop / 500), 0.4, 1)
+              height: isKeyboardActive ? '0px' : `${mapHeight}px`
             }}
           >
             <div className="absolute top-4 left-4 right-4 z-20">
@@ -821,6 +818,8 @@ export default function AddressSelectorPage() {
                 <Input
                   value={addressAutocompleteValue}
                   onChange={(e) => setAddressAutocompleteValue(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
                   placeholder="Search area, street, landmark..."
                   className="pl-10 h-12 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-md border-none rounded-xl shadow-lg focus:ring-2 transition-all"
                   style={{ '--tw-ring-color': BRAND_THEME.tokens.cart.primaryText }}
@@ -903,7 +902,7 @@ export default function AddressSelectorPage() {
             </div>
           </div>
 
-          <div className="relative bg-white dark:bg-[#0a0a0a] rounded-t-[32px] -mt-8 z-10 p-4 space-y-4 shadow-[0_-12px_24px_-10px_rgba(0,0,0,0.1)]">
+          <div className="relative bg-white dark:bg-[#0a0a0a] p-4 space-y-4">
             <div>
               <Label className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 block">Complete Address</Label>
               <Input 
@@ -961,37 +960,41 @@ export default function AddressSelectorPage() {
               />
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-800/40 p-3.5 rounded-xl border border-gray-100 dark:border-gray-800/50 text-xs flex flex-wrap gap-x-4 gap-y-2 justify-between items-center text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">City</span>
-                <span className="font-bold text-gray-900 dark:text-gray-100">{addressFormData.city || "—"}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">State</span>
-                <span className="font-bold text-gray-900 dark:text-gray-100">{addressFormData.state || "—"}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">Pincode</span>
-                <span className="font-bold text-gray-900 dark:text-gray-100">{addressFormData.zipCode || "—"}</span>
-              </div>
-            </div>
+            {!isKeyboardActive && (
+              <>
+                <div className="bg-gray-50 dark:bg-gray-800/40 p-3.5 rounded-xl border border-gray-100 dark:border-gray-800/50 text-xs flex flex-wrap gap-x-4 gap-y-2 justify-between items-center text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">City</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100">{addressFormData.city || "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">State</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100">{addressFormData.state || "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">Pincode</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100">{addressFormData.zipCode || "—"}</span>
+                  </div>
+                </div>
 
-            <div>
-               <Label className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 block">Save address as</Label>
-               <div className="flex gap-2">
-                 {["Home", "Work", "Other"].map(l => (
-                   <Button 
-                     key={l}
-                     variant={addressFormData.label === l ? "default" : "outline"}
-                     onClick={() => setAddressFormData({...addressFormData, label: l})}
-                     className="flex-1"
-                     style={addressFormData.label === l ? {backgroundColor: BRAND_THEME.tokens.cart.primaryText, color: 'white'} : {}}
-                   >
-                     {l}
-                   </Button>
-                 ))}
-               </div>
-            </div>
+                <div>
+                   <Label className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 block">Save address as</Label>
+                   <div className="flex gap-2">
+                     {["Home", "Work", "Other"].map(l => (
+                       <Button 
+                         key={l}
+                         variant={addressFormData.label === l ? "default" : "outline"}
+                         onClick={() => setAddressFormData({...addressFormData, label: l})}
+                         className="flex-1"
+                         style={addressFormData.label === l ? {backgroundColor: BRAND_THEME.tokens.cart.primaryText, color: 'white'} : {}}
+                       >
+                         {l}
+                       </Button>
+                     ))}
+                   </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
