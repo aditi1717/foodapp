@@ -801,7 +801,7 @@ export default function AddressSelectorPage() {
 
         <div
           className="flex-1 overflow-hidden"
-          style={{ paddingBottom: `${16 + keyboardInset}px` }}
+          style={{ paddingBottom: "16px" }}
         >
           {/* Map Section - Collapses when keyboard is active to fit form on single page */}
           <div
@@ -1001,7 +1001,6 @@ export default function AddressSelectorPage() {
         <div
           className="sticky bottom-0 z-20 flex-shrink-0 border-t bg-white/95 p-4 backdrop-blur dark:border-gray-800 dark:bg-[#1a1a1a]/95"
           style={{
-            bottom: `${keyboardInset}px`,
             paddingBottom: `calc(1rem + env(safe-area-inset-bottom))`,
           }}
         >
