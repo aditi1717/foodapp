@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation as useRouterLocation } from "react-router-dom"
 import { ChevronLeft, ChevronRight, Plus, MapPin, MoreHorizontal, Navigation, Home, Building2, Briefcase, Phone, X, Crosshair, Search } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
@@ -170,9 +170,10 @@ const persistSelectedLocation = (locationData) => {
 
 export default function AddressSelectorPage() {
   const navigate = useNavigate()
+  const routerLocation = useRouterLocation()
   const goBack = useAppBackNavigation()
   const { location, loading, requestLocation } = useGeoLocation()
-  const { addresses = [], addAddress, updateAddress, setDefaultAddress } = useProfile()
+  const { userProfile, addresses = [], addAddress, updateAddress, setDefaultAddress } = useProfile()
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [editingAddressId, setEditingAddressId] = useState(null)
   const [mapPosition, setMapPosition] = useState([22.7196, 75.8577]) // Default Indore coordinates [lat, lng]
@@ -430,6 +431,11 @@ export default function AddressSelectorPage() {
   }
 
   const handleAddAddressClick = () => {
+    if (!userProfile) {
+      toast.error("To save address, you have to login")
+      navigate("/user/auth/login", { state: { from: routerLocation.pathname } })
+      return
+    }
     setEditingAddressId(null)
     setAddressFormData({
       street: "",
@@ -446,6 +452,11 @@ export default function AddressSelectorPage() {
   }
 
   const handleEditAddressClick = (address) => {
+    if (!userProfile) {
+      toast.error("To save address, you have to login")
+      navigate("/user/auth/login", { state: { from: routerLocation.pathname } })
+      return
+    }
     if (!address || typeof address !== "object") return
 
     const id = getAddressId(address)
@@ -684,6 +695,11 @@ export default function AddressSelectorPage() {
 
   const handleAddressFormSubmit = async (e) => {
     e.preventDefault()
+    if (!userProfile) {
+      toast.error("To save address, you have to login")
+      navigate("/user/auth/login", { state: { from: routerLocation.pathname } })
+      return
+    }
     if (!addressFormData.street?.trim()) {
       toast.error("Complete address is required")
       return
@@ -738,8 +754,8 @@ export default function AddressSelectorPage() {
     if (!showAddressForm) return
     const updateBaseMapHeight = () => {
       const vh = typeof window !== "undefined" ? window.innerHeight : 800
-      const target = Math.round(vh * 0.45)
-      setBaseMapHeight(Math.max(260, Math.min(420, target)))
+      const target = Math.round(vh * 0.22)
+      setBaseMapHeight(Math.max(160, Math.min(220, target)))
     }
     updateBaseMapHeight()
     window.addEventListener("resize", updateBaseMapHeight)
@@ -771,7 +787,7 @@ export default function AddressSelectorPage() {
     const mapHeight = baseMapHeight 
     return (
       <AnimatedPage
-        className="fixed inset-0 z-50 bg-white dark:bg-[#0a0a0a] flex flex-col h-screen overflow-hidden"
+        className="fixed inset-0 z-50 bg-white dark:bg-[#0a0a0a] flex flex-col h-[100dvh] overflow-hidden"
       >
         <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={handleCancelAddressForm} className="rounded-full">
@@ -887,7 +903,7 @@ export default function AddressSelectorPage() {
             </div>
           </div>
 
-          <div className="relative bg-white dark:bg-[#0a0a0a] rounded-t-[32px] -mt-8 z-10 p-4 space-y-6 shadow-[0_-12px_24px_-10px_rgba(0,0,0,0.1)]">
+          <div className="relative bg-white dark:bg-[#0a0a0a] rounded-t-[32px] -mt-8 z-10 p-4 space-y-4 shadow-[0_-12px_24px_-10px_rgba(0,0,0,0.1)]">
             <div>
               <Label className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 block">Complete Address</Label>
               <Input 
@@ -901,7 +917,7 @@ export default function AddressSelectorPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1 block">Building / Apartment</Label>
                 <Input
@@ -945,45 +961,19 @@ export default function AddressSelectorPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1 block">City</Label>
-                <Input 
-                  value={addressFormData.city} 
-                  onChange={e => setAddressFormData({...addressFormData, city: e.target.value})} 
-                  onFocus={() => scrollFieldIntoView("city")}
-                  ref={(el) => { manualFieldRefs.current.city = el }}
-                  className="h-12 rounded-xl bg-gray-50 cursor-not-allowed"
-                  readOnly
-                  required 
-                />
+            <div className="bg-gray-50 dark:bg-gray-800/40 p-3.5 rounded-xl border border-gray-100 dark:border-gray-800/50 text-xs flex flex-wrap gap-x-4 gap-y-2 justify-between items-center text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">City</span>
+                <span className="font-bold text-gray-900 dark:text-gray-100">{addressFormData.city || "—"}</span>
               </div>
-              <div>
-                <Label className="text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1 block">State</Label>
-                <Input 
-                  value={addressFormData.state} 
-                  onChange={e => setAddressFormData({...addressFormData, state: e.target.value})} 
-                  onFocus={() => scrollFieldIntoView("state")}
-                  ref={(el) => { manualFieldRefs.current.state = el }}
-                  className="h-12 rounded-xl bg-gray-50 cursor-not-allowed"
-                  readOnly
-                  required 
-                />
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">State</span>
+                <span className="font-bold text-gray-900 dark:text-gray-100">{addressFormData.state || "—"}</span>
               </div>
-            </div>
-
-            <div>
-              <Label className="text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1 block">Pincode / ZIP</Label>
-              <Input 
-                placeholder="Pincode" 
-                value={addressFormData.zipCode || ""} 
-                onChange={e => setAddressFormData({...addressFormData, zipCode: e.target.value})} 
-                onFocus={() => scrollFieldIntoView("zipCode")}
-                ref={(el) => { manualFieldRefs.current.zipCode = el }}
-                className="h-12 rounded-xl bg-gray-50 cursor-not-allowed"
-                readOnly
-                required
-              />
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">Pincode</span>
+                <span className="font-bold text-gray-900 dark:text-gray-100">{addressFormData.zipCode || "—"}</span>
+              </div>
             </div>
 
             <div>
