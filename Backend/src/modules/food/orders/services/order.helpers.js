@@ -6,6 +6,7 @@ import {
 } from "../../../../core/notifications/firebase.service.js";
 import { getIO, rooms } from '../../../../config/socket.js';
 import { addOrderJob } from '../../../../queues/producers/order.producer.js';
+import { createInboxNotifications } from '../../../../core/notifications/notification.service.js';
 
 export function enqueueOrderEvent(action, payload = {}) {
   try {
@@ -263,29 +264,57 @@ export async function notifyRestaurantNewOrder(orderDoc) {
   try {
     if (!orderDoc || !canExposeOrderToRestaurant(orderDoc)) return;
 
+    const restaurantId = orderDoc.restaurantId?.toString?.() || String(orderDoc.restaurantId || '');
+    const orderMongoId = orderDoc._id?.toString?.() || '';
+    const displayOrderId = orderDoc.orderId || orderDoc.order_id || orderMongoId;
+
     const io = getIO();
     if (io) {
       const payload = {
         ...orderDoc.toObject(),
-        orderMongoId: orderDoc._id?.toString?.() || undefined,
-        orderId: orderDoc.orderId || orderDoc.order_id || orderDoc._id?.toString?.(),
+        orderMongoId,
+        orderId: displayOrderId,
       };
       logger.info(
-        `[RestaurantOrders] Emitting new_order to ${rooms.restaurant(orderDoc.restaurantId)} for order ${orderDoc._id?.toString?.() || ''}`,
+        `[RestaurantOrders] Emitting new_order to ${rooms.restaurant(orderDoc.restaurantId)} for order ${orderMongoId}`,
       );
       io.to(rooms.restaurant(orderDoc.restaurantId)).emit("new_order", payload);
+      io.to(rooms.restaurant(orderDoc.restaurantId)).emit("play_notification_sound", {
+        orderId: displayOrderId,
+        orderMongoId,
+      });
+    }
+
+    // Persist notification in database so the bell badge shows the correct unread count
+    try {
+      await createInboxNotifications({
+        notifications: [
+          {
+            ownerType: 'RESTAURANT',
+            ownerId: restaurantId,
+            title: 'New order received 🛎️',
+            message: `Order #${displayOrderId} is waiting for your review.`,
+            link: `/restaurant/orders/${orderMongoId}`,
+            category: 'order',
+            source: 'ORDER_NEW',
+            metadata: { orderId: displayOrderId, orderMongoId },
+          },
+        ],
+      });
+    } catch (inboxErr) {
+      logger.warn(`[RestaurantOrders] createInboxNotifications failed for order ${orderMongoId}: ${inboxErr?.message || inboxErr}`);
     }
 
     await notifyOwnersSafely(
       [{ ownerType: "RESTAURANT", ownerId: orderDoc.restaurantId }],
       {
         title: "New order received",
-        body: `Order #${orderDoc.orderId || orderDoc.order_id || orderDoc._id} is waiting for review.`,
+        body: `Order #${displayOrderId} is waiting for review.`,
         data: {
           type: "new_order",
-          orderId: orderDoc._id.toString(),
-          orderMongoId: orderDoc._id?.toString?.() || "",
-          link: `/restaurant/orders/${orderDoc._id?.toString?.() || ""}`,
+          orderId: displayOrderId,
+          orderMongoId,
+          link: `/restaurant/orders/${orderMongoId}`,
         },
       },
     );

@@ -149,6 +149,15 @@ const buildMessagePayload = (payload = {}, token) => {
     const image =
         sanitizeString(payload.icon || payload.notification?.image || payload.notification?.icon || data.image || data.imageUrl);
 
+    // Determine if this is an order notification for proper Android channel routing
+    const isOrderNotification = (
+        data.type === 'new_order' ||
+        data.type === 'order_update' ||
+        data.type === 'new_order_available' ||
+        String(payload.title || '').toLowerCase().includes('order')
+    );
+    const androidChannelId = isOrderNotification ? 'orders' : 'default';
+
     // If payload.dataOnly is true, we omit the 'notification' block.
     // This prevents FCM from auto-displaying while allowing app code to show a 'Local Notification'.
     const message = { token };
@@ -164,16 +173,21 @@ const buildMessagePayload = (payload = {}, token) => {
         message.data = data;
     }
 
+    // Android: high priority so the device wakes from doze mode
     message.android = {
         priority: 'high',
         notification: {
-            channel_id: 'default',
+            channel_id: androidChannelId,
             sound: 'default',
             default_vibrate_timings: true,
-            default_light_settings: true
+            default_light_settings: true,
+            notification_priority: 'PRIORITY_HIGH',
+            visibility: 'PUBLIC',
+            ...(image ? { image } : {}),
         }
     };
 
+    // WebPush: high urgency so desktop browsers wake up
     message.webpush = {
         headers: {
             Urgency: 'high'
@@ -181,8 +195,30 @@ const buildMessagePayload = (payload = {}, token) => {
         notification: {
             title: notification.title,
             body: notification.body,
-            icon: image || payload.icon || '/favicon.ico'
+            icon: image || payload.icon || '/favicon.ico',
+            requireInteraction: isOrderNotification,
+            ...(image ? { image } : {}),
         }
+    };
+
+    // APNs (iOS): high priority content-available
+    message.apns = {
+        headers: {
+            'apns-priority': '10',
+            'apns-push-type': 'alert',
+        },
+        payload: {
+            aps: {
+                alert: {
+                    title: notification.title,
+                    body: notification.body,
+                },
+                sound: 'default',
+                badge: 1,
+                'content-available': 1,
+                'mutable-content': 1,
+            },
+        },
     };
 
     return message;
@@ -232,7 +268,12 @@ export const listOwnerTokens = async ({ ownerType, ownerId, platform }) => {
     const model = getOwnerModel(ownerType);
     if (!model) return [];
     const doc = await model.findById(ownerId).select('fcmTokens fcmTokenMobile').lean();
-    return readTokensFromDoc(doc, platform);
+    const webCount = Array.isArray(doc?.fcmTokens) ? doc.fcmTokens.length : 0;
+    const mobileCount = Array.isArray(doc?.fcmTokenMobile) ? doc.fcmTokenMobile.length : 0;
+    console.log(`[FCM-DEBUG] listOwnerTokens: ownerType=${ownerType}, ownerId=${ownerId}, platform=${platform || 'all'}, webTokens=${webCount}, mobileTokens=${mobileCount}`);
+    const tokens = readTokensFromDoc(doc, platform);
+    console.log(`[FCM-DEBUG] listOwnerTokens: resolved ${tokens.length} token(s) to send`);
+    return tokens;
 };
 
 export const upsertFirebaseDeviceToken = async ({ ownerType, ownerId, token, platform = 'web' }) => {

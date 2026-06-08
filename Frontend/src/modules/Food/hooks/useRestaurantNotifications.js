@@ -840,6 +840,8 @@ export const useRestaurantNotifications = () => {
     socketRef.current.on('new_order', (orderData) => {
       debugLog('?? New order received:', orderData);
       setNewOrder(orderData);
+      // Refresh bell badge so the unread count reflects the new DB notification
+      dispatchNotificationInboxRefresh();
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('restaurantNewOrderReceived', {
@@ -861,6 +863,8 @@ export const useRestaurantNotifications = () => {
       };
       if (normalizedData?.orderId || normalizedData?.orderMongoId) {
         setNewOrder((prev) => prev || normalizedData);
+        // Refresh bell badge
+        dispatchNotificationInboxRefresh();
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
             new CustomEvent('restaurantNewOrderReceived', {
