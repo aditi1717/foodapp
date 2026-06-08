@@ -716,17 +716,6 @@ export async function registerWebPushForCurrentModule(pathname = window.location
   const accessToken = localStorage.getItem(`${moduleName}_accessToken`);
   if (!accessToken) return;
 
-  // Always attempt native mobile token registration first (Flutter WebView on Android/iOS).
-  // This runs regardless of whether browser push is also available, so the mobile FCM token
-  // is always stored in fcmTokenMobile even when the WebView also supports browser push APIs.
-  if (isFlutterWebView()) {
-    try {
-      await registerNativeWebViewFcmToken(moduleName);
-    } catch (e) {
-      pushDebugWarn(PUSH_DEBUG_PREFIX, "Native WebView FCM token registration failed", { error: e?.message || e });
-    }
-  }
-
   const supportsBrowserPush = isSupportedBrowser() && isSecureContextForPush();
 
   if (supportsBrowserPush) {
@@ -799,10 +788,8 @@ export async function registerWebPushForCurrentModule(pathname = window.location
     return registrationInFlight;
   }
 
-  // Non-WebView fallback: register native token when browser web push isn't available
-  // and we are NOT already in a Flutter WebView (already handled above).
-  if (!isFlutterWebView()) {
-    await registerNativeWebViewFcmToken(moduleName);
-  }
+  // Flutter WebView fallback: register native token when browser web push isn't available.
+  // This keeps restaurant/delivery FCM alerts working even when Web Push APIs are limited.
+  await registerNativeWebViewFcmToken(moduleName);
   return null;
 }
