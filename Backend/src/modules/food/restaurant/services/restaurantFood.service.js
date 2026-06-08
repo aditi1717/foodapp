@@ -30,6 +30,46 @@ const normalizeFoodType = (v) => {
     return 'Non-Veg';
 };
 
+const normalizeBulkOrderPricing = (raw = undefined, { existing = undefined } = {}) => {
+    if (raw === undefined) return undefined;
+
+    const enabled = raw?.enabled === true;
+    if (!enabled) {
+        return {
+            enabled: false,
+            minQuantity: null,
+            bulkPrice: null
+        };
+    }
+
+    const minQuantity = Number(raw?.minQuantity);
+    if (!Number.isInteger(minQuantity) || minQuantity < 1) {
+        throw new ValidationError('Bulk minimum quantity must be at least 1');
+    }
+
+    const bulkPrice = Number(raw?.bulkPrice);
+    if (!Number.isFinite(bulkPrice) || bulkPrice < 0) {
+        throw new ValidationError('Bulk order price is invalid');
+    }
+
+    const normalized = {
+        enabled: true,
+        minQuantity,
+        bulkPrice
+    };
+
+    if (
+        existing &&
+        Boolean(existing.enabled) === normalized.enabled &&
+        Number(existing.minQuantity) === normalized.minQuantity &&
+        Number(existing.bulkPrice) === normalized.bulkPrice
+    ) {
+        return existing;
+    }
+
+    return normalized;
+};
+
 const getCreateFoodPricing = (body = {}) => {
     const variants = normalizeFoodVariantsInput(extractRawFoodVariants(body));
     if (variants.length > 0) {
@@ -200,6 +240,7 @@ export async function createRestaurantFood(restaurantId, body = {}) {
     const isAvailable = body.isAvailable !== false;
     const foodType = normalizeFoodType(body.foodType);
     const preparationTime = toStr(body.preparationTime);
+    const bulkOrderPricing = normalizeBulkOrderPricing(body.bulkOrderPricing);
     const { categoryObjectId, categoryName } = await resolveCategoryForRestaurant(context, { ...body, foodType });
 
     const doc = await FoodItem.create({
@@ -218,6 +259,7 @@ export async function createRestaurantFood(restaurantId, body = {}) {
         foodType,
         isAvailable,
         preparationTime,
+        bulkOrderPricing,
         approvalStatus: 'pending',
         requestedAt: new Date()
     });
@@ -279,6 +321,14 @@ export async function updateRestaurantFood(restaurantId, foodId, body = {}) {
         const prepTime = toStr(body.preparationTime);
         if (prepTime !== toStr(existing.preparationTime)) update.preparationTime = prepTime;
     }
+    if (body.bulkOrderPricing !== undefined) {
+        const nextBulkOrderPricing = normalizeBulkOrderPricing(body.bulkOrderPricing, {
+            existing: existing.bulkOrderPricing
+        });
+        if (JSON.stringify(nextBulkOrderPricing) !== JSON.stringify(existing.bulkOrderPricing || { enabled: false, minQuantity: null, bulkPrice: null })) {
+            update.bulkOrderPricing = nextBulkOrderPricing;
+        }
+    }
 
     const targetFoodType = body.foodType !== undefined ? normalizeFoodType(body.foodType) : normalizeFoodType(existing.foodType);
     if (body.foodType !== undefined && targetFoodType !== existing.foodType) {
@@ -312,7 +362,7 @@ export async function updateRestaurantFood(restaurantId, foodId, body = {}) {
         update.subcategoryName = toStr(body.subcategoryName);
     }
 
-    const SENSITIVE_FIELDS = ['name', 'description', 'image', 'price', 'variants', 'foodType', 'categoryId', 'categoryName'];
+    const SENSITIVE_FIELDS = ['name', 'description', 'image', 'price', 'variants', 'foodType', 'categoryId', 'categoryName', 'bulkOrderPricing'];
     const hasSensitiveChanges = Object.keys(update).some(key => SENSITIVE_FIELDS.includes(key));
     const shouldResubmitForApproval = hasSensitiveChanges;
 

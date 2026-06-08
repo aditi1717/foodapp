@@ -66,6 +66,15 @@ const buildMenuFromFoods = async (foods = [], options = {}) => {
             price: getFoodDisplayPrice(food),
             variants: serializeFoodVariants(food.variants),
             variations: serializeFoodVariants(food.variants),
+            bulkOrderPricing: {
+                enabled: food?.bulkOrderPricing?.enabled === true,
+                minQuantity: Number.isFinite(Number(food?.bulkOrderPricing?.minQuantity))
+                    ? Number(food.bulkOrderPricing.minQuantity)
+                    : null,
+                bulkPrice: Number.isFinite(Number(food?.bulkOrderPricing?.bulkPrice))
+                    ? Number(food.bulkOrderPricing.bulkPrice)
+                    : null
+            },
             image: food.image || '',
             foodType: food.foodType || 'Non-Veg',
             isAvailable: food.isAvailable !== false,

@@ -8,6 +8,9 @@ const orderItemSchema = new mongoose.Schema(
         variantName: { type: String, default: '', trim: true },
         variantPrice: { type: Number, min: 0, default: 0 },
         price: { type: Number, required: true, min: 0 },
+        isBulkOrder: { type: Boolean, default: false },
+        bulkPrice: { type: Number, default: null, min: 0 },
+        bulkMinQuantity: { type: Number, default: null, min: 1 },
         quantity: { type: Number, required: true, min: 1 },
         isVeg: { type: Boolean, default: true },
         image: { type: String, default: '' },
@@ -359,6 +362,7 @@ const orderSchema = new mongoose.Schema(
         cancellationReason: { type: String, default: '', trim: true },
         sendCutlery: { type: Boolean, default: true },
         deliveryFleet: { type: String, default: 'standard', trim: true },
+        isBulkOrder: { type: Boolean, default: false, index: true },
         isScheduled: { type: Boolean, default: false },
         isActivated: { type: Boolean, default: false },
         scheduledAt: { type: Date, default: null },
@@ -406,6 +410,7 @@ orderSchema.index({ 'dispatch.deliveryPartnerId': 1, orderStatus: 1 });
 orderSchema.index({ 'dispatch.status': 1, orderStatus: 1 });
 orderSchema.index({ 'payment.status': 1, createdAt: -1 });
 orderSchema.index({ 'payment.method': 1, createdAt: -1 });
+orderSchema.index({ isBulkOrder: 1, createdAt: -1 });
 
 export const FoodOrder = mongoose.model('FoodOrder', orderSchema);
 

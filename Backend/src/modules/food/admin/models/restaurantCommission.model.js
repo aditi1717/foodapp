@@ -1,5 +1,17 @@
 import mongoose from 'mongoose';
 
+const commissionValueSchema = new mongoose.Schema(
+    {
+        type: {
+            type: String,
+            enum: ['percentage', 'amount'],
+            default: 'percentage'
+        },
+        value: { type: Number, default: 0 }
+    },
+    { _id: false }
+);
+
 const restaurantCommissionSchema = new mongoose.Schema(
     {
         restaurantId: {
@@ -10,12 +22,12 @@ const restaurantCommissionSchema = new mongoose.Schema(
             index: true
         },
         defaultCommission: {
-            type: {
-                type: String,
-                enum: ['percentage', 'amount'],
-                default: 'percentage'
-            },
-            value: { type: Number, default: 0 }
+            type: commissionValueSchema,
+            default: () => ({ type: 'percentage', value: 0 })
+        },
+        bulkOrderCommission: {
+            type: commissionValueSchema,
+            default: null
         },
         notes: { type: String, trim: true, default: '' },
         status: { type: Boolean, default: true, index: true }

@@ -1,0 +1,170 @@
+Bulk Order Pricing Feature
+This plan adds a Bulk Order Pricing system to the Food App. When a restaurant sets a bulk order price and minimum quantity for a food item, users in the cart can opt into bulk ordering if their quantity meets the threshold — getting the discounted bulk price with scheduled delivery only and no Cash-on-Delivery.
+
+User Review Required
+IMPORTANT
+
+Bulk order constraints (hard rules):
+
+Immediate delivery is disabled for bulk orders — only scheduled delivery is allowed.
+Cash on Delivery (COD) is NOT available for bulk orders.
+Commission for bulk orders will be a separate configurable field in the Admin Restaurant Commission page.
+WARNING
+
+This touches the FoodItem MongoDB schema (adding new fields), the FoodOrder schema (adding isBulkOrder flag), the FoodRestaurantCommission schema (adding bulkOrderCommission field), and multiple frontend pages. Please ensure a DB migration / backward-compat check is done before deploying.
+
+Resolved Design Decisions
+#	Question	Decision
+1	When bulk order is activated, does the whole cart switch or just the item?	Whole cart switches to bulk order mode
+2	Can items without bulk pricing be in the cart during bulk order mode?	No — only items that support bulk pricing can be in a bulk order cart
+3	If no bulk commission is set for a restaurant, does it fall back to default?	Yes — falls back to defaultCommission
+Proposed Changes
+1. Backend — Food Item Model
+[MODIFY] 
+food.model.js
+Add a bulkOrderPricing sub-document to the foodSchema:
+
+js
+
+bulkOrderPricing: {
+  enabled: { type: Boolean, default: false },
+  minQuantity: { type: Number, default: null, min: 1 },   // minimum qty to unlock bulk price
+  bulkPrice:   { type: Number, default: null, min: 0 },   // price per unit when bulk
+}
+2. Backend — Restaurant Commission Model
+[MODIFY] 
+restaurantCommission.model.js
+Add a bulkOrderCommission field alongside defaultCommission:
+
+js
+
+bulkOrderCommission: {
+  type: { type: String, enum: ['percentage', 'amount'], default: 'percentage' },
+  value: { type: Number, default: 0 }
+}
+3. Backend — Order Model
+[MODIFY] 
+order.model.js
+Add to orderItemSchema:
+
+js
+
+isBulkOrder:     { type: Boolean, default: false },
+bulkPrice:       { type: Number, default: null },  // per-unit bulk price applied
+bulkMinQuantity: { type: Number, default: null },
+Add to orderSchema:
+
+js
+
+isBulkOrder: { type: Boolean, default: false, index: true },
+4. Backend — Order Service
+[MODIFY] 
+order.service.js
+When isBulkOrder: true arrives in the order payload:
+Verify isScheduled: true is also set (reject if not — bulk orders require scheduled delivery).
+Reject if payment.method === 'cash' (no COD for bulk orders).
+Substitute the bulk price for items that have bulkOrderPricing.enabled and quantity >= minQuantity.
+Apply the bulk order commission rate (from FoodRestaurantCommission.bulkOrderCommission) for computing pricing.restaurantCommission.
+5. Backend — Admin Service / Food Approval Service
+[MODIFY] 
+admin.service.js
+ / 
+foodApproval.service.js
+Pass bulkOrderPricing fields through when creating/updating food items.
+Expose bulkOrderPricing in the food approval list API response so admin can see it.
+6. Frontend — Restaurant Panel: Item Details Page (Product Creation)
+[MODIFY] 
+ItemDetailsPage.jsx
+Add a "Bulk Order Pricing" collapsible section below the price/variants section:
+
+Toggle: Enable Bulk Order Pricing
+When enabled, show two fields:
+Minimum Quantity (number input) — minimum order qty for bulk pricing to apply
+Bulk Price per unit (number input) — the special price per unit for bulk orders
+Pass these fields in createFood / updateFood API calls.
+7. Frontend — Admin: Food Approval Page
+[MODIFY] 
+FoodApproval.jsx
+Add a "Bulk Price" column to the approvals table (shows ₹<bulkPrice> / min qty: <N> if enabled, else —).
+In the detail modal, add a "Bulk Order Pricing" section showing enabled, minQuantity, and bulkPrice.
+8. Frontend — Admin: Food List (AllFoodPage / FoodsList)
+[MODIFY] 
+FoodsList.jsx
+Add a "Bulk Pricing" column/badge to the food list table showing whether bulk pricing is set.
+9. Frontend — Admin: Restaurant Commission Page
+[MODIFY] 
+RestaurantCommission.jsx
+Add a "Bulk Order Commission" field in the Add/Edit dialog (below defaultCommission):
+Same type/value structure as defaultCommission
+Label: "Bulk Order Commission"
+Display it as an additional column in the commission list table.
+10. Frontend — User Cart
+[MODIFY] 
+Cart.jsx
+This is the core user-facing change:
+
+Per cart item — "Switch to Bulk Order" option:
+
+For each cart item that has bulkOrderPricing.enabled = true:
+Show a "Bulk Order" badge/button next to the item row.
+When the user's current item quantity >= bulkOrderPricing.minQuantity:
+The badge becomes active/clickable.
+Clicking it toggles bulk order mode for the entire cart.
+When quantity < minQuantity:
+Show the badge greyed out with a tooltip: "Add at least N items to unlock bulk price".
+Cart-level bulk order mode (whole cart):
+
+When bulk order mode is activated:
+All items in the cart must support bulk pricing. Items that do NOT have bulkOrderPricing.enabled = true will be automatically removed from the cart (with a warning toast: "Items without bulk pricing have been removed").
+Only items with bulkOrderPricing.enabled = true AND quantity >= minQuantity can be added while in bulk mode.
+Attempting to add a non-bulk item while in bulk mode shows an error: "This item is not available for bulk orders".
+A prominent banner appears at the top of the cart:
+"📦 Bulk Order Mode Active — Bulk prices applied. Scheduled delivery only. COD not available."
+
+Bulk price replaces normal per-unit price in line items and order total.
+In the checkout/delivery section:
+Immediate delivery option is hidden/disabled entirely.
+Scheduled delivery is pre-selected and required (user must pick a scheduled time).
+Cash on Delivery (COD) payment option is hidden/disabled.
+The bulk order flag (isBulkOrder: true) is sent in the place-order API request.
+Data Flow Summary
+
+Restaurant Panel (ItemDetailsPage)
+  → sets bulkOrderPricing { enabled, minQuantity, bulkPrice }
+  → saved to FoodItem in DB
+Admin (FoodApproval)
+  → sees bulkPrice + minQty column when reviewing food items
+Admin (RestaurantCommission)
+  → sets bulkOrderCommission { type, value } per restaurant
+  → if not set, falls back to defaultCommission at order time
+User Cart (Cart.jsx)
+  → detects item has bulkOrderPricing.enabled = true
+  → shows "Bulk Order" badge per item
+  → if qty >= minQuantity AND user clicks badge:
+      • ENTIRE CART switches to bulk mode
+      • items without bulk pricing are removed from cart
+      • prices updated to bulkPrice for all remaining items
+      • delivery locked to "scheduled" only
+      • COD payment option hidden
+      • "Bulk Order Mode" banner shown
+  → if user deactivates bulk mode:
+      • cart reverts to normal pricing
+      • all delivery/payment options restored
+Order Service (order.service.js)
+  → validates: if isBulkOrder = true, then isScheduled must be true (reject if not)
+  → validates: if isBulkOrder = true, then payment.method must NOT be 'cash' (reject if not)
+  → for commission: uses bulkOrderCommission if set, else falls back to defaultCommission
+  → records isBulkOrder flag on order and each item snapshot
+Verification Plan
+Automated Tests
+Manual API test: Create food item with bulk pricing → verify fields saved in DB.
+Manual API test: Place order with isBulkOrder: true and isScheduled: false → expect rejection.
+Manual API test: Place order with isBulkOrder: true and payment.method: 'cash' → expect rejection.
+Manual Verification
+Restaurant Panel: Open Item Details → add bulk price/qty → save → check DB / food approval list.
+Admin Food Approval: Check new "Bulk Price" column is populated for items with bulk pricing.
+Admin Commission: Add bulk order commission for a restaurant → save → verify DB.
+User Cart: Add item with bulk pricing to cart:
+At qty < minQty: badge is greyed out.
+At qty >= minQty: badge is active → click → prices switch, immediate delivery disabled, COD hidden.
+Place order: Confirm order with bulk mode → backend applies correct commission.

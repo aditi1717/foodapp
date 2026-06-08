@@ -13,6 +13,11 @@ export const normalizeFoodVariants = (value) =>
         _id: id,
         name,
         price,
+        bulkOrderPricing: {
+          enabled: entry?.bulkOrderPricing?.enabled === true,
+          minQuantity: entry?.bulkOrderPricing?.minQuantity != null ? Number(entry.bulkOrderPricing.minQuantity) : null,
+          bulkPrice: entry?.bulkOrderPricing?.bulkPrice != null ? Number(entry.bulkOrderPricing.bulkPrice) : null,
+        },
       }
     })
     .filter(Boolean)

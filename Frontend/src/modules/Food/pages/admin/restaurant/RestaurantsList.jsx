@@ -719,7 +719,7 @@ export default function RestaurantsList() {
         get(["locality"]) ||
         get(["administrative_area_level_2"])
       const state = get(["administrative_area_level_1"])
-      const pincode = get(["postal_code"])
+      const pincode = get(["postal_code"]) || (formattedAddress.match(/\b\d{6}\b/)?.[0] || "")
       const lat = place?.geometry?.location?.lat?.()
       const lng = place?.geometry?.location?.lng?.()
       return {
@@ -740,16 +740,16 @@ export default function RestaurantsList() {
         ...prev,
         formattedAddress: parsed.formattedAddress || prev.formattedAddress,
         addressLine1: prev.addressLine1, // Do not overwrite manual shop/building no
-        area: parsed.area || prev.area,
-        city: parsed.city || prev.city,
-        state: parsed.state || prev.state,
-        pincode: parsed.pincode || prev.pincode,
+        area: parsed.area || "",
+        city: parsed.city || "",
+        state: parsed.state || "",
+        pincode: parsed.pincode || "",
         latitude: parsed.latitude !== "" ? parsed.latitude : prev.latitude,
         longitude: parsed.longitude !== "" ? parsed.longitude : prev.longitude,
       }))
 
       if (locationSearchInputRef.current) {
-        locationSearchInputRef.current.value = parsed.pincode || ""
+        locationSearchInputRef.current.value = parsed.formattedAddress || ""
       }
     })
 
@@ -2029,36 +2029,36 @@ export default function RestaurantsList() {
                             <label className="block text-xs text-slate-500 mb-1">Area</label>
                             <input
                               type="text"
-                              value={locationForm.area}
-                              readOnly
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm"
+                              value={locationForm.area || ""}
+                              onChange={(e) => setLocationForm((prev) => ({ ...prev, area: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
                             />
                           </div>
                           <div>
                             <label className="block text-xs text-slate-500 mb-1">City</label>
                             <input
                               type="text"
-                              value={locationForm.city}
-                              readOnly
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm"
+                              value={locationForm.city || ""}
+                              onChange={(e) => setLocationForm((prev) => ({ ...prev, city: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
                             />
                           </div>
                           <div>
                             <label className="block text-xs text-slate-500 mb-1">State</label>
                             <input
                               type="text"
-                              value={locationForm.state}
-                              readOnly
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm"
+                              value={locationForm.state || ""}
+                              onChange={(e) => setLocationForm((prev) => ({ ...prev, state: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
                             />
                           </div>
                           <div>
                             <label className="block text-xs text-slate-500 mb-1">Pincode</label>
                             <input
                               type="text"
-                              value={locationForm.pincode}
-                              readOnly
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm"
+                              value={locationForm.pincode || ""}
+                              onChange={(e) => setLocationForm((prev) => ({ ...prev, pincode: e.target.value }))}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
                             />
                           </div>
                         </div>

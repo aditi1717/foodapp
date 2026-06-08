@@ -807,7 +807,7 @@ export default function AddRestaurant() {
           get(["locality"]) ||
           get(["administrative_area_level_2"])
         const state = get(["administrative_area_level_1"])
-        const pincode = get(["postal_code"])
+        const pincode = get(["postal_code"]) || (formattedAddress.match(/\b\d{6}\b/)?.[0] || "")
         const lat = place?.geometry?.location?.lat?.()
         const lng = place?.geometry?.location?.lng?.()
 
@@ -1156,23 +1156,63 @@ export default function AddRestaurant() {
             />
           </div>
 
-          {/* Auto-filled Location Details as non-input blocks (Always visible) */}
+          {/* Auto-filled Location Details as inputs (Always visible & editable) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-            <div className="p-2.5 bg-gray-50 border border-gray-200 rounded-md text-[13px] text-gray-600 flex flex-col min-h-[52px]">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Locality / Area</span>
-              <span className="mt-0.5">{step1.location?.area || "—"}</span>
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-700">Locality / Area</Label>
+              <Input
+                value={step1.location?.area || ""}
+                onChange={(e) =>
+                  setStep1({
+                    ...step1,
+                    location: { ...step1.location, area: e.target.value },
+                  })
+                }
+                className="bg-white text-sm"
+                placeholder="Locality / Area"
+              />
             </div>
-            <div className="p-2.5 bg-gray-50 border border-gray-200 rounded-md text-[13px] text-gray-600 flex flex-col min-h-[52px]">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">City</span>
-              <span className="mt-0.5">{step1.location?.city || "—"}</span>
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-700">City</Label>
+              <Input
+                value={step1.location?.city || ""}
+                onChange={(e) =>
+                  setStep1({
+                    ...step1,
+                    location: { ...step1.location, city: e.target.value },
+                  })
+                }
+                className="bg-white text-sm"
+                placeholder="City"
+              />
             </div>
-            <div className="p-2.5 bg-gray-50 border border-gray-200 rounded-md text-[13px] text-gray-600 flex flex-col min-h-[52px]">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">State</span>
-              <span className="mt-0.5">{step1.location?.state || "—"}</span>
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-700">State</Label>
+              <Input
+                value={step1.location?.state || ""}
+                onChange={(e) =>
+                  setStep1({
+                    ...step1,
+                    location: { ...step1.location, state: e.target.value },
+                  })
+                }
+                className="bg-white text-sm"
+                placeholder="State"
+              />
             </div>
-            <div className="p-2.5 bg-gray-50 border border-gray-200 rounded-md text-[13px] text-gray-600 flex flex-col min-h-[52px]">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Pincode</span>
-              <span className="mt-0.5">{step1.location?.pincode || "—"}</span>
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-700">Pincode</Label>
+              <Input
+                value={step1.location?.pincode || ""}
+                onChange={(e) =>
+                  setStep1({
+                    ...step1,
+                    location: { ...step1.location, pincode: e.target.value },
+                  })
+                }
+                className="bg-white text-sm"
+                placeholder="Pincode"
+              />
             </div>
           </div>
         </div>

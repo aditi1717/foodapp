@@ -126,6 +126,10 @@ export default function ViewOrderDialog({
 
   const modalOrder = fullOrder ? { ...(order || {}), ...fullOrder } : (order || {})
   const orderTypeDetails = getOrderTypeDetails(modalOrder)
+  const isBulkOrder = Boolean(
+    modalOrder?.isBulkOrder ||
+    modalOrder?.items?.some?.((item) => item?.isBulkOrder),
+  )
   const pickupProofImageUrl = useMemo(
     () =>
       modalOrder?.billImageUrl ||
@@ -241,9 +245,14 @@ export default function ViewOrderDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] bg-white p-0 overflow-y-auto">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200 sticky top-0 bg-white z-10">
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
             <Eye className="w-5 h-5 text-orange-600" />
             Order Details
+            {isBulkOrder ? (
+              <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                Bulk Order
+              </span>
+            ) : null}
           </DialogTitle>
           <DialogDescription>
             View complete information about this order
@@ -276,6 +285,11 @@ export default function ViewOrderDialog({
                 <p className="text-xs text-slate-500">
                   {orderTypeDetails.scheduleLabel} order | {orderTypeDetails.modeLabel}
                 </p>
+                {isBulkOrder ? (
+                  <p className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                    Bulk order pricing applied
+                  </p>
+                ) : null}
               </div>
               {orderTypeDetails.isScheduled && orderTypeDetails.scheduledAt && (
                 <div className="space-y-1">
@@ -494,14 +508,14 @@ export default function ViewOrderDialog({
           )}
 
           {/* Order Items */}
-          {order.items && Array.isArray(order.items) && order.items.length > 0 && (
+          {modalOrder.items && Array.isArray(modalOrder.items) && modalOrder.items.length > 0 && (
             <div className="border-t border-slate-200 pt-4">
               <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
                 <Package className="w-4 h-4" />
-                Order Items ({order.items.length})
+                Order Items ({modalOrder.items.length})
               </h3>
               <div className="space-y-3">
-                {order.items.map((item, index) => (
+                {modalOrder.items.map((item, index) => (
                   <div key={index} className="flex items-start justify-between p-3 bg-slate-50 rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -519,6 +533,11 @@ export default function ViewOrderDialog({
                             {item.isVeg ? 'Veg' : 'Non-Veg'}
                           </span>
                         )}
+                        {item.isBulkOrder ? (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
+                            Bulk
+                          </span>
+                        ) : null}
                       </div>
                       {item.description && (
                         <p className="text-xs text-slate-500 mt-1 ml-8">{item.description}</p>

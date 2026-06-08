@@ -15,6 +15,7 @@ import { ValidationError, ForbiddenError, NotFoundError } from '../../../../core
 import { buildPaginationOptions, buildPaginatedResult } from '../../../../utils/helpers.js';
 import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodOfferUsage } from '../../admin/models/offerUsage.model.js';
+import { FoodItem } from '../../admin/models/food.model.js';
 import { RestaurantOffer } from '../../restaurant/models/restaurantOffer.model.js';
 import { RestaurantOfferUsage } from '../../restaurant/models/restaurantOfferUsage.model.js';
 import { FoodDeliveryCommissionRule } from '../../admin/models/deliveryCommissionRule.model.js';
@@ -38,7 +39,7 @@ import {
 } from '../helpers/razorpay.helper.js';
 import { getIO, rooms } from '../../../../config/socket.js';
 import { addOrderJob } from '../../../../queues/producers/order.producer.js';
-import { fetchPolyline } from '../utils/googleMaps.js';
+import { fetchPolyline, fetchRouteDistanceKm } from '../utils/googleMaps.js';
 import { getFirebaseDB } from '../../../../config/firebase.js';
 import * as foodTransactionService from './foodTransaction.service.js';
 import { deductWalletBalance, refundWalletBalance } from '../../user/services/userWallet.service.js';
@@ -51,6 +52,100 @@ import {
 
 const ORDER_ID_PREFIX = "FOD-";
 const ORDER_ID_LENGTH = 6;
+
+const normalizeBulkOrderPricingSnapshot = (raw = {}) => {
+  const minQuantity = Number(raw?.minQuantity);
+  const bulkPrice = Number(raw?.bulkPrice);
+
+  return {
+    enabled: raw?.enabled === true,
+    minQuantity: Number.isInteger(minQuantity) && minQuantity > 0 ? minQuantity : null,
+    bulkPrice: Number.isFinite(bulkPrice) && bulkPrice >= 0 ? bulkPrice : null,
+  };
+};
+
+async function resolveFoodOrderItemsForPricing(restaurantId, rawItems = [], { isBulkOrder = false } = {}) {
+  const requestedItems = Array.isArray(rawItems) ? rawItems : [];
+  const requestedIds = requestedItems
+    .map((item) => String(item?.itemId || "").trim())
+    .filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+  if (!requestedIds.length) {
+    throw new ValidationError("At least one valid item is required");
+  }
+
+  const foods = await FoodItem.find({
+    _id: { $in: requestedIds.map((id) => new mongoose.Types.ObjectId(id)) },
+    restaurantId: new mongoose.Types.ObjectId(restaurantId),
+    approvalStatus: "approved",
+  })
+    .select("name price image foodType variants bulkOrderPricing")
+    .lean();
+
+  const foodMap = new Map(foods.map((food) => [String(food._id), food]));
+
+  return requestedItems.map((rawItem) => {
+    const itemId = String(rawItem?.itemId || "").trim();
+    const food = foodMap.get(itemId);
+    if (!food) {
+      throw new ValidationError(`Item is not available for this restaurant`);
+    }
+
+    const quantity = Math.max(1, Number(rawItem?.quantity) || 1);
+    const requestedVariantId = String(rawItem?.variantId || "").trim();
+    const variant = requestedVariantId
+      ? (Array.isArray(food.variants)
+        ? food.variants.find((entry) => String(entry?._id || "") === requestedVariantId)
+        : null)
+      : null;
+
+    if (requestedVariantId && !variant) {
+      throw new ValidationError(`Selected variant is not available for ${food.name}`);
+    }
+
+    const standardUnitPrice = variant
+      ? Math.max(0, Number(variant?.price || 0))
+      : Math.max(0, Number(food?.price || 0));
+    const bulkOrderPricing = normalizeBulkOrderPricingSnapshot(
+      variant ? variant?.bulkOrderPricing : food?.bulkOrderPricing,
+    );
+
+    if (isBulkOrder) {
+      if (!bulkOrderPricing.enabled) {
+        throw new ValidationError(`${food.name} is not enabled for bulk ordering`);
+      }
+      if (!Number.isInteger(bulkOrderPricing.minQuantity) || quantity < bulkOrderPricing.minQuantity) {
+        throw new ValidationError(
+          `${food.name} requires minimum quantity ${bulkOrderPricing.minQuantity || 1} for bulk ordering`,
+        );
+      }
+      if (!Number.isFinite(bulkOrderPricing.bulkPrice)) {
+        throw new ValidationError(`${food.name} does not have a valid bulk price configured`);
+      }
+    }
+
+    const appliedUnitPrice =
+      isBulkOrder && Number.isFinite(bulkOrderPricing.bulkPrice)
+        ? Math.max(0, Number(bulkOrderPricing.bulkPrice))
+        : standardUnitPrice;
+
+    return {
+      itemId,
+      name: String(food?.name || rawItem?.name || "").trim(),
+      variantId: requestedVariantId,
+      variantName: variant?.name || String(rawItem?.variantName || "").trim(),
+      variantPrice: variant ? standardUnitPrice : 0,
+      price: appliedUnitPrice,
+      isBulkOrder,
+      bulkPrice: isBulkOrder ? appliedUnitPrice : null,
+      bulkMinQuantity: isBulkOrder ? bulkOrderPricing.minQuantity : null,
+      quantity,
+      isVeg: String(food?.foodType || "").toLowerCase() === "veg",
+      image: String(food?.image || rawItem?.image || "").trim(),
+      notes: String(rawItem?.notes || "").trim(),
+    };
+  });
+}
 
 const buildDeliveryBenefitPricingSnapshot = (benefit = {}, originalDeliveryFee = 0) => {
   const normalizedOriginalDeliveryFee = Math.max(0, Number(originalDeliveryFee) || 0);
@@ -1273,7 +1368,12 @@ export async function calculateOrder(userId, dto) {
   const orderType = dto.orderType === "quick" ? "quick" : "food";
   const fulfillmentType =
     dto.fulfillmentType === "takeaway" ? "takeaway" : "delivery";
-  const items = Array.isArray(dto.items) ? dto.items : [];
+  const isBulkOrder = dto.isBulkOrder === true;
+  const rawItems = Array.isArray(dto.items) ? dto.items : [];
+  const items =
+    orderType === "food"
+      ? await resolveFoodOrderItemsForPricing(dto.restaurantId, rawItems, { isBulkOrder })
+      : rawItems;
   const subtotal = items.reduce(
     (sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
     0,
@@ -1293,6 +1393,9 @@ export async function calculateOrder(userId, dto) {
   };
 
   if (orderType === "quick") {
+    if (isBulkOrder) {
+      throw new ValidationError("Bulk ordering is available only for food orders");
+    }
     const packagingFee = 0;
     const platformFee = Number(feeSettings.platformFee || 0);
     const baseDeliveryFee = Number(feeSettings.deliveryFee || 25);
@@ -1330,8 +1433,9 @@ export async function calculateOrder(userId, dto) {
       },
     };
   }
-  return {
-    pricing: {
+    return {
+      items,
+      pricing: {
         subtotal,
         tax,
         packagingFee,
@@ -1364,6 +1468,9 @@ export async function calculateOrder(userId, dto) {
   if (fulfillmentType === "takeaway" && restaurant.takeawayEnabled === false) {
     throw new ValidationError("Takeaway is not available for this restaurant");
   }
+  if (isBulkOrder && fulfillmentType === "takeaway") {
+    throw new ValidationError("Bulk ordering is not available for takeaway");
+  }
 
   const packagingFee = 0;
   const platformFee = Number(feeSettings.platformFee || 0);
@@ -1372,7 +1479,7 @@ export async function calculateOrder(userId, dto) {
   const customerLatLng = extractLatLngFromLocation(
     normalizedAddress?.location || normalizedAddress || {},
   );
-  const distanceKm =
+  const straightLineDistanceKm =
     fulfillmentType === "takeaway"
       ? null
       : restaurantLatLng && customerLatLng
@@ -1382,6 +1489,12 @@ export async function calculateOrder(userId, dto) {
             customerLatLng.lat,
             customerLatLng.lng,
           )
+        : null;
+  const distanceKm =
+    fulfillmentType === "takeaway"
+      ? null
+      : restaurantLatLng && customerLatLng
+        ? (await fetchRouteDistanceKm(restaurantLatLng, customerLatLng)) ?? straightLineDistanceKm
         : null;
   const baseDeliveryFee =
     fulfillmentType === "takeaway"
@@ -1487,7 +1600,7 @@ export async function calculateOrder(userId, dto) {
     }
   }
 
-  const autoOfferMatch = await findApplicableRestaurantAutoOffer(dto.restaurantId, dto.items || [], userId);
+  const autoOfferMatch = await findApplicableRestaurantAutoOffer(dto.restaurantId, items || [], userId);
   let autoOfferFeedback = null;
   const hasCouponApplied = Boolean(codeRaw && appliedCoupon);
   if (!hasCouponApplied && autoOfferMatch?.offer && !autoOfferMatch?.invalidReason) {
@@ -1562,6 +1675,7 @@ export async function calculateOrder(userId, dto) {
     };
   }
   return {
+    items,
     pricing: {
       subtotal,
       tax,
@@ -1728,6 +1842,7 @@ export async function createOrder(userId, dto) {
   const orderType = dto.orderType === "quick" ? "quick" : "food";
   const fulfillmentType =
     dto.fulfillmentType === "takeaway" ? "takeaway" : "delivery";
+  const isBulkOrder = dto.isBulkOrder === true;
   let restaurant = null;
   if (orderType === "food") {
     restaurant = await FoodRestaurant.findById(dto.restaurantId)
@@ -1822,6 +1937,21 @@ export async function createOrder(userId, dto) {
   const isCash = paymentMethod === "cash";
   const isWallet = paymentMethod === "wallet";
 
+  if (isBulkOrder) {
+    if (orderType !== "food") {
+      throw new ValidationError("Bulk ordering is available only for food orders");
+    }
+    if (!dto.isScheduled) {
+      throw new ValidationError("Bulk orders require scheduled delivery");
+    }
+    if (fulfillmentType === "takeaway") {
+      throw new ValidationError("Bulk orders require delivery fulfillment");
+    }
+    if (isCash) {
+      throw new ValidationError("Cash payment is not allowed for bulk orders");
+    }
+  }
+
   // Always calculate pricing on the backend so subscription delivery benefits,
   // delivery fee, dues, and discounts stay authoritative.
   const computedSubtotal = (dto.items || []).reduce((sum, item) => {
@@ -1832,6 +1962,7 @@ export async function createOrder(userId, dto) {
   }, 0);
   const calculatedOrder = await calculateOrder(userId, {
     ...dto,
+    isBulkOrder,
     fulfillmentType,
     address: normalizedAddress,
     couponCode:
@@ -1841,6 +1972,9 @@ export async function createOrder(userId, dto) {
       "",
   });
   const serverPricing = calculatedOrder?.pricing || {};
+  const normalizedItems = Array.isArray(calculatedOrder?.items) && calculatedOrder.items.length
+    ? calculatedOrder.items
+    : dto.items;
   const normalizedPricing = {
     subtotal: Number(serverPricing.subtotal ?? computedSubtotal),
     tax: Number(serverPricing.tax ?? 0),
@@ -1930,17 +2064,21 @@ export async function createOrder(userId, dto) {
   };
 
   let distanceKm = null;
-  if (
-    orderType === "food" &&
-    fulfillmentType !== "takeaway" &&
-    restaurant?.location?.coordinates?.length === 2 &&
-    normalizedAddress?.location?.coordinates?.length === 2
-  ) {
-    const [rLng, rLat] = restaurant.location.coordinates;
-    const [dLng, dLat] = normalizedAddress.location.coordinates;
-    const d = haversineKm(rLat, rLng, dLat, dLng);
-    distanceKm = Number.isFinite(d) ? d : null;
-  } else {
+  if (orderType === "food" && fulfillmentType !== "takeaway") {
+    const restaurantLatLng = extractLatLngFromLocation(restaurant?.location || {});
+    const customerLatLng = extractLatLngFromLocation(normalizedAddress?.location || normalizedAddress || {});
+    if (restaurantLatLng && customerLatLng) {
+      const straightLineDistanceKm = haversineKm(
+        restaurantLatLng.lat,
+        restaurantLatLng.lng,
+        customerLatLng.lat,
+        customerLatLng.lng,
+      );
+      distanceKm = (await fetchRouteDistanceKm(restaurantLatLng, customerLatLng)) ?? straightLineDistanceKm;
+    }
+  }
+
+  if (orderType === "food" && distanceKm === null) {
     console.warn(
       `Food order ${orderId}: distance not available, rider earning set to 0`,
     );
@@ -1953,6 +2091,7 @@ export async function createOrder(userId, dto) {
   const { commissionAmount: restaurantCommission } =
     orderType === "food"
       ? await foodTransactionService.getRestaurantCommissionSnapshot({
+          isBulkOrder,
           pricing: normalizedPricing,
           restaurantId: dto.restaurantId,
         })
@@ -1980,7 +2119,7 @@ export async function createOrder(userId, dto) {
           ? new mongoose.Types.ObjectId(dto.zoneId)
           : restaurant.zoneId
         : undefined,
-    items: dto.items,
+    items: normalizedItems,
     fulfillmentType,
     ...(deliveryAddress ? { deliveryAddress } : {}),
     pricing: normalizedPricing,
@@ -2007,6 +2146,7 @@ export async function createOrder(userId, dto) {
           ? "takeaway"
           : dto.deliveryFleet || "standard"
         : "quick",
+    isBulkOrder,
     isScheduled: dto.isScheduled || false,
     isActivated: false,
     scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,

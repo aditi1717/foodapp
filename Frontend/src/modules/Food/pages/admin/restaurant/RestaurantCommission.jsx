@@ -1,17 +1,36 @@
-import { useState, useMemo, useEffect } from "react"
-import { 
-  Search, Plus, Edit, Trash2, ArrowUpDown, 
-  DollarSign, Percent, Loader2, X, Building2, IndianRupee
-} from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@food/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
+import { useEffect, useMemo, useState } from "react"
+import { Search, Plus, Edit, Trash2, ArrowUpDown, Loader2, Building2 } from "lucide-react"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@food/components/ui/dialog"
 import { adminAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { toast } from "sonner"
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
-const debugError = (...args) => {}
 
+const EMPTY_BULK_COMMISSION = {
+  enabled: false,
+  type: "percentage",
+  value: "10",
+}
+
+const getDefaultFormData = () => ({
+  restaurantId: "",
+  defaultCommission: {
+    type: "percentage",
+    value: "10",
+  },
+  bulkOrderCommission: { ...EMPTY_BULK_COMMISSION },
+})
+
+const normalizeBulkCommissionForForm = (bulkOrderCommission) => {
+  if (!bulkOrderCommission) {
+    return { ...EMPTY_BULK_COMMISSION }
+  }
+
+  return {
+    enabled: true,
+    type: bulkOrderCommission?.type || "percentage",
+    value: bulkOrderCommission?.value?.toString() || "10",
+  }
+}
 
 export default function RestaurantCommission() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -25,19 +44,14 @@ export default function RestaurantCommission() {
   const [isRestaurantSelectOpen, setIsRestaurantSelectOpen] = useState(false)
   const [selectedCommission, setSelectedCommission] = useState(null)
   const [selectedRestaurant, setSelectedRestaurant] = useState(null)
-  const [formData, setFormData] = useState({
-    restaurantId: "",
-    defaultCommission: {
-      type: "percentage",
-      value: "10"
-    }
-  })
+  const [formData, setFormData] = useState(getDefaultFormData)
   const [formErrors, setFormErrors] = useState({})
-  const [visibleColumns, setVisibleColumns] = useState({
+  const [visibleColumns] = useState({
     si: true,
     restaurant: true,
     restaurantId: true,
     defaultCommission: true,
+    bulkOrderCommission: true,
     activeCommission: true,
     status: true,
     actions: true,
@@ -47,9 +61,9 @@ export default function RestaurantCommission() {
     if (!searchQuery.trim()) {
       return commissions
     }
-    
+
     const query = searchQuery.toLowerCase().trim()
-    return commissions.filter(commission =>
+    return commissions.filter((commission) =>
       commission.restaurantName?.toLowerCase().includes(query) ||
       commission.restaurantId?.toLowerCase().includes(query) ||
       commission.restaurant?.name?.toLowerCase().includes(query)
@@ -60,18 +74,16 @@ export default function RestaurantCommission() {
     if (!searchQuery.trim()) {
       return approvedRestaurants
     }
-    
+
     const query = searchQuery.toLowerCase().trim()
-    return approvedRestaurants.filter(restaurant =>
+    return approvedRestaurants.filter((restaurant) =>
       restaurant.name?.toLowerCase().includes(query) ||
       restaurant.restaurantId?.toLowerCase().includes(query) ||
       restaurant.ownerName?.toLowerCase().includes(query)
     )
   }, [approvedRestaurants, searchQuery])
 
-  // Fetch data on component mount
   useEffect(() => {
-    // Single fast call to avoid multiple API requests on load
     fetchBootstrap()
   }, [])
 
@@ -83,11 +95,10 @@ export default function RestaurantCommission() {
       setCommissions(Array.isArray(data?.commissions) ? data.commissions : [])
       setApprovedRestaurants(Array.isArray(data?.restaurants) ? data.restaurants : [])
     } catch (error) {
-      debugError('Error fetching bootstrap:', error)
-      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-        toast.error(`Cannot connect to backend server. Please ensure the backend is running on ${API_BASE_URL.replace('/api', '')}`)
+      if (error.code === "ERR_NETWORK" || error.message === "Network Error") {
+        toast.error(`Cannot connect to backend server. Please ensure the backend is running on ${API_BASE_URL.replace("/api", "")}`)
       } else {
-        toast.error(error.response?.data?.message || 'Failed to fetch commissions')
+        toast.error(error.response?.data?.message || "Failed to fetch commissions")
       }
       setCommissions([])
       setApprovedRestaurants([])
@@ -100,7 +111,7 @@ export default function RestaurantCommission() {
     try {
       setLoading(true)
       const response = await adminAPI.getRestaurantCommissions({})
-      
+
       let commissionsData = null
       if (response?.data?.success && response?.data?.data?.commissions) {
         commissionsData = response.data.data.commissions
@@ -109,24 +120,13 @@ export default function RestaurantCommission() {
       } else if (response?.data?.commissions) {
         commissionsData = response.data.commissions
       }
-      
-      if (commissionsData && Array.isArray(commissionsData)) {
-        setCommissions(commissionsData)
-      } else {
-        setCommissions([])
-      }
+
+      setCommissions(Array.isArray(commissionsData) ? commissionsData : [])
     } catch (error) {
-      debugError('Error fetching commissions:', error)
-      
-      // Handle network errors
-      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-        toast.error(`Cannot connect to backend server. Please ensure the backend is running on ${API_BASE_URL.replace('/api', '')}`)
-        debugError('?? Backend connection issue. Check:')
-        debugError('   1. Is backend server running? (npm start in backend folder)')
-        debugError(`   2. Is backend running on ${API_BASE_URL.replace('/api', '')}?`)
-        debugError('   3. Check browser console for CORS errors')
+      if (error.code === "ERR_NETWORK" || error.message === "Network Error") {
+        toast.error(`Cannot connect to backend server. Please ensure the backend is running on ${API_BASE_URL.replace("/api", "")}`)
       } else {
-        toast.error(error.response?.data?.message || 'Failed to fetch commissions')
+        toast.error(error.response?.data?.message || "Failed to fetch commissions")
       }
       setCommissions([])
     } finally {
@@ -134,64 +134,29 @@ export default function RestaurantCommission() {
     }
   }
 
-  const fetchApprovedRestaurants = async () => {
-    try {
-      const response = await adminAPI.getApprovedRestaurants({ limit: 1000 })
-      
-      let restaurantsData = null
-      if (response?.data?.success && response?.data?.data?.restaurants) {
-        restaurantsData = response.data.data.restaurants
-      } else if (response?.data?.data?.restaurants) {
-        restaurantsData = response.data.data.restaurants
-      } else if (response?.data?.restaurants) {
-        restaurantsData = response.data.restaurants
-      }
-      
-      if (restaurantsData && Array.isArray(restaurantsData)) {
-        setApprovedRestaurants(restaurantsData)
-      } else {
-        setApprovedRestaurants([])
-      }
-    } catch (error) {
-      debugError('Error fetching approved restaurants:', error)
-      
-      // Handle network errors silently (already handled in fetchCommissions)
-      if (error.code !== 'ERR_NETWORK' && error.message !== 'Network Error') {
-        toast.error(error.response?.data?.message || 'Failed to fetch approved restaurants')
-      }
-    }
-  }
-
   const handleToggleStatus = async (commission) => {
     try {
       await adminAPI.toggleRestaurantCommissionStatus(commission._id)
       await fetchCommissions()
-      toast.success('Commission status updated successfully')
+      toast.success("Commission status updated successfully")
     } catch (error) {
-      debugError('Error toggling status:', error)
-      toast.error(error.response?.data?.message || 'Failed to update status')
+      toast.error(error.response?.data?.message || "Failed to update status")
     }
   }
 
   const handleAdd = () => {
     setSelectedCommission(null)
     setSelectedRestaurant(null)
-    setFormData({
-      restaurantId: "",
-      defaultCommission: {
-        type: "percentage",
-        value: "10"
-      }
-    })
+    setFormData(getDefaultFormData())
     setFormErrors({})
     setIsRestaurantSelectOpen(true)
   }
 
   const handleSelectRestaurant = (restaurant) => {
     setSelectedRestaurant(restaurant)
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      restaurantId: restaurant._id
+      restaurantId: restaurant._id,
     }))
     setIsRestaurantSelectOpen(false)
     setIsAddEditOpen(true)
@@ -201,7 +166,7 @@ export default function RestaurantCommission() {
     try {
       setLoading(true)
       const response = await adminAPI.getRestaurantCommissionById(commission._id)
-      
+
       let commissionData = null
       if (response?.data?.success && response?.data?.data?.commission) {
         commissionData = response.data.data.commission
@@ -211,38 +176,36 @@ export default function RestaurantCommission() {
         commissionData = response.data.commission
       }
 
-      if (commissionData) {
-        setSelectedCommission(commissionData)
-        setSelectedRestaurant(commissionData.restaurant)
-        
-        // Handle restaurant ID - it can be an object with _id or just an ID string
-        let restaurantId = ""
-        if (commissionData.restaurant) {
-          if (typeof commissionData.restaurant === 'object' && commissionData.restaurant._id) {
-            restaurantId = commissionData.restaurant._id
-          } else if (typeof commissionData.restaurant === 'string') {
-            restaurantId = commissionData.restaurant
-          } else {
-            restaurantId = commissionData.restaurantId || commissionData.restaurant?._id || ""
-          }
+      if (!commissionData) return
+
+      setSelectedCommission(commissionData)
+      setSelectedRestaurant(commissionData.restaurant)
+
+      let restaurantId = ""
+      if (commissionData.restaurant) {
+        if (typeof commissionData.restaurant === "object" && commissionData.restaurant._id) {
+          restaurantId = commissionData.restaurant._id
+        } else if (typeof commissionData.restaurant === "string") {
+          restaurantId = commissionData.restaurant
         } else {
-          // Fallback to restaurantId field if restaurant object is not populated
-          restaurantId = commissionData.restaurantId || commissionData.restaurant || ""
+          restaurantId = commissionData.restaurantId || commissionData.restaurant?._id || ""
         }
-        
-        setFormData({
-          restaurantId: restaurantId,
-          defaultCommission: {
-            type: commissionData.defaultCommission?.type || "percentage",
-            value: commissionData.defaultCommission?.value?.toString() || "10"
-          }
-        })
-        setFormErrors({})
-        setIsAddEditOpen(true)
+      } else {
+        restaurantId = commissionData.restaurantId || commissionData.restaurant || ""
       }
+
+      setFormData({
+        restaurantId,
+        defaultCommission: {
+          type: commissionData.defaultCommission?.type || "percentage",
+          value: commissionData.defaultCommission?.value?.toString() || "10",
+        },
+        bulkOrderCommission: normalizeBulkCommissionForForm(commissionData.bulkOrderCommission),
+      })
+      setFormErrors({})
+      setIsAddEditOpen(true)
     } catch (error) {
-      debugError('Error fetching commission:', error)
-      toast.error(error.response?.data?.message || 'Failed to load commission')
+      toast.error(error.response?.data?.message || "Failed to load commission")
     } finally {
       setLoading(false)
     }
@@ -260,12 +223,11 @@ export default function RestaurantCommission() {
       setDeleting(true)
       await adminAPI.deleteRestaurantCommission(selectedCommission._id)
       await fetchCommissions()
-      toast.success('Commission deleted successfully')
+      toast.success("Commission deleted successfully")
       setIsDeleteOpen(false)
       setSelectedCommission(null)
     } catch (error) {
-      debugError('Error deleting commission:', error)
-      toast.error(error.response?.data?.message || 'Failed to delete commission')
+      toast.error(error.response?.data?.message || "Failed to delete commission")
     } finally {
       setDeleting(false)
     }
@@ -273,7 +235,7 @@ export default function RestaurantCommission() {
 
   const validateForm = () => {
     const errors = {}
-    
+
     if (!formData.restaurantId) {
       errors.restaurantId = "Restaurant is required"
     }
@@ -282,9 +244,24 @@ export default function RestaurantCommission() {
       errors.defaultCommission = "Default commission value is required"
     }
 
-    if (formData.defaultCommission.type === "percentage" && 
-        (parseFloat(formData.defaultCommission.value) < 0 || parseFloat(formData.defaultCommission.value) > 100)) {
+    if (
+      formData.defaultCommission.type === "percentage" &&
+      (parseFloat(formData.defaultCommission.value) < 0 || parseFloat(formData.defaultCommission.value) > 100)
+    ) {
       errors.defaultCommission = "Percentage must be between 0-100"
+    }
+
+    if (formData.bulkOrderCommission?.enabled) {
+      if (!formData.bulkOrderCommission.value || parseFloat(formData.bulkOrderCommission.value) < 0) {
+        errors.bulkOrderCommission = "Bulk order commission value is required"
+      }
+
+      if (
+        formData.bulkOrderCommission.type === "percentage" &&
+        (parseFloat(formData.bulkOrderCommission.value) < 0 || parseFloat(formData.bulkOrderCommission.value) > 100)
+      ) {
+        errors.bulkOrderCommission = "Percentage must be between 0-100"
+      }
     }
 
     setFormErrors(errors)
@@ -299,169 +276,173 @@ export default function RestaurantCommission() {
 
     try {
       setSaving(true)
-      
+
       const payload = {
         restaurantId: formData.restaurantId,
         defaultCommission: {
           type: formData.defaultCommission.type,
-          value: parseFloat(formData.defaultCommission.value)
-        }
+          value: parseFloat(formData.defaultCommission.value),
+        },
+        bulkOrderCommission: formData.bulkOrderCommission?.enabled
+          ? {
+              type: formData.bulkOrderCommission.type,
+              value: parseFloat(formData.bulkOrderCommission.value),
+            }
+          : null,
       }
 
       if (selectedCommission) {
         await adminAPI.updateRestaurantCommission(selectedCommission._id, payload)
-        toast.success('Commission updated successfully')
+        toast.success("Commission updated successfully")
       } else {
         await adminAPI.createRestaurantCommission(payload)
-        toast.success('Commission created successfully')
+        toast.success("Commission created successfully")
       }
 
       await fetchCommissions()
       setIsAddEditOpen(false)
       setSelectedCommission(null)
       setSelectedRestaurant(null)
+      setFormData(getDefaultFormData())
     } catch (error) {
-      debugError('Error saving commission:', error)
-      toast.error(error.response?.data?.message || 'Failed to save commission')
+      toast.error(error.response?.data?.message || "Failed to save commission")
     } finally {
       setSaving(false)
     }
   }
 
-  const columnsConfig = {
-    si: "Serial Number",
-    restaurant: "Restaurant Name",
-    restaurantId: "Restaurant ID",
-    defaultCommission: "Default Commission",
-    activeCommission: "Active Commission",
-    status: "Status",
-    actions: "Actions",
-  }
-
   const formatCommission = (commission) => {
     if (!commission) return "-"
     if (commission?.type === "percentage") return `${commission.value}%`
-    return `₹${commission.value}`
+    return `\u20B9${commission.value}`
   }
 
   return (
-    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+    <div className="min-h-screen bg-slate-50 p-4 lg:p-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-slate-900">Restaurant Commission</h1>
-              <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
                 {filteredCommissions.length}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={handleAdd}
-                className="px-4 py-2.5 text-sm font-medium rounded-lg bg-brand-600 text-white hover:bg-brand-700 flex items-center gap-2 transition-all shadow-md"
-              >
-                <Plus className="w-4 h-4" />
-                Add Commission
-              </button>
-            </div>
+            <button
+              onClick={handleAdd}
+              className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-brand-700"
+            >
+              <Plus className="h-4 w-4" />
+              Add Commission
+            </button>
           </div>
 
           <div className="mb-4 flex items-center gap-3">
-            <div className="relative flex-1 sm:flex-initial min-w-[300px]">
+            <div className="relative min-w-[300px] flex-1 sm:flex-initial">
               <input
                 type="text"
                 placeholder="Search by restaurant name or ID"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
+                className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             </div>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
                     {visibleColumns.si && (
-                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
                         <div className="flex items-center gap-2">
                           <span>S.No</span>
-                          <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
+                          <ArrowUpDown className="h-3 w-3 cursor-pointer text-slate-400 hover:text-slate-600" />
                         </div>
                       </th>
                     )}
                     {visibleColumns.restaurant && (
-                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
                         Restaurant Name
                       </th>
                     )}
                     {visibleColumns.restaurantId && (
-                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
                         Restaurant ID
                       </th>
                     )}
                     {visibleColumns.defaultCommission && (
-                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
                         Default Commission
                       </th>
                     )}
+                    {visibleColumns.bulkOrderCommission && (
+                      <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                        Bulk Order Commission
+                      </th>
+                    )}
                     {visibleColumns.activeCommission && (
-                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
                         Active Commission
                       </th>
                     )}
                     {visibleColumns.status && (
-                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
                         Status
                       </th>
                     )}
                     {visibleColumns.actions && (
-                      <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Action</th>
+                      <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                        Action
+                      </th>
                     )}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {filteredCommissions.length === 0 ? (
                     <tr>
-                      <td colSpan={Object.values(visibleColumns).filter(v => v).length} className="px-6 py-8 text-center text-slate-500">
+                      <td colSpan={Object.values(visibleColumns).filter(Boolean).length} className="px-6 py-8 text-center text-slate-500">
                         No commissions found
                       </td>
                     </tr>
                   ) : (
                     filteredCommissions.map((commission) => (
-                      <tr key={commission._id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={commission._id} className="transition-colors hover:bg-slate-50">
                         {visibleColumns.si && (
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-slate-700">{commission.sl || '-'}</span>
+                          <td className="whitespace-nowrap px-6 py-4">
+                            <span className="text-sm font-medium text-slate-700">{commission.sl || "-"}</span>
                           </td>
                         )}
                         {visibleColumns.restaurant && (
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="whitespace-nowrap px-6 py-4">
                             <span className="text-sm font-medium text-brand-600">
-                              {commission.restaurantName || commission.restaurant?.name || '-'}
+                              {commission.restaurantName || commission.restaurant?.name || "-"}
                             </span>
                           </td>
                         )}
                         {visibleColumns.restaurantId && (
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-slate-700">{commission.restaurantId || '-'}</span>
+                          <td className="whitespace-nowrap px-6 py-4">
+                            <span className="text-sm text-slate-700">{commission.restaurantId || "-"}</span>
                           </td>
                         )}
                         {visibleColumns.defaultCommission && (
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="whitespace-nowrap px-6 py-4">
                             <span className="text-sm font-medium text-slate-900">
-                              {commission.defaultCommission?.type === 'percentage' ? (
-                                <>{commission.defaultCommission.value}%</>
-                              ) : (
-                                <>₹{commission.defaultCommission.value}</>
-                              )}
+                              {formatCommission(commission.defaultCommission)}
+                            </span>
+                          </td>
+                        )}
+                        {visibleColumns.bulkOrderCommission && (
+                          <td className="whitespace-nowrap px-6 py-4">
+                            <span className="text-sm font-medium text-slate-900">
+                              {formatCommission(commission.bulkOrderCommission)}
                             </span>
                           </td>
                         )}
@@ -469,7 +450,7 @@ export default function RestaurantCommission() {
                           <td className="px-6 py-4">
                             {commission.activeCommission ? (
                               <div className="space-y-1">
-                                <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-100">
+                                <span className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
                                   {formatCommission(commission.activeCommission)}
                                 </span>
                                 <p className="text-[10px] text-slate-500">
@@ -490,7 +471,7 @@ export default function RestaurantCommission() {
                           </td>
                         )}
                         {visibleColumns.status && (
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="whitespace-nowrap px-6 py-4">
                             <button
                               onClick={() => handleToggleStatus(commission)}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
@@ -506,21 +487,21 @@ export default function RestaurantCommission() {
                           </td>
                         )}
                         {visibleColumns.actions && (
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <td className="whitespace-nowrap px-6 py-4 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => handleEdit(commission)}
-                                className="p-1.5 rounded text-brand-600 hover:bg-brand-50 transition-colors"
+                                className="rounded p-1.5 text-brand-600 transition-colors hover:bg-brand-50"
                                 title="Edit"
                               >
-                                <Edit className="w-4 h-4" />
+                                <Edit className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => handleDelete(commission)}
-                                className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
+                                className="rounded p-1.5 text-red-600 transition-colors hover:bg-red-50"
                                 title="Delete"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           </td>
@@ -535,10 +516,9 @@ export default function RestaurantCommission() {
         </div>
       </div>
 
-      {/* Restaurant Selection Dialog */}
       <Dialog open={isRestaurantSelectOpen} onOpenChange={setIsRestaurantSelectOpen}>
         <DialogContent className="max-w-xl bg-white p-0">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200">
+          <DialogHeader className="border-b border-slate-200 px-6 pb-4 pt-6">
             <DialogTitle className="text-lg font-semibold text-slate-900">Select Restaurant</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 py-4">
@@ -548,114 +528,184 @@ export default function RestaurantCommission() {
                 placeholder="Search restaurants..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-4 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             </div>
-            <div className="max-h-80 overflow-y-auto space-y-2">
+            <div className="max-h-80 space-y-2 overflow-y-auto">
               {filteredRestaurants
-                .filter(r => !r.hasCommissionSetup)
+                .filter((restaurant) => !restaurant.hasCommissionSetup)
                 .map((restaurant) => (
                   <button
                     key={restaurant._id}
                     onClick={() => handleSelectRestaurant(restaurant)}
-                    className="w-full p-3 text-left rounded-lg border border-slate-200 hover:bg-brand-50 hover:border-brand-300 transition-all"
+                    className="w-full rounded-lg border border-slate-200 p-3 text-left transition-all hover:border-brand-300 hover:bg-brand-50"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-sm text-slate-900">{restaurant.name}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{restaurant.restaurantId}</p>
+                        <p className="text-sm font-medium text-slate-900">{restaurant.name}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{restaurant.restaurantId}</p>
                       </div>
-                      <Building2 className="w-4 h-4 text-slate-400" />
+                      <Building2 className="h-4 w-4 text-slate-400" />
                     </div>
                   </button>
                 ))}
-              {filteredRestaurants.filter(r => !r.hasCommissionSetup).length === 0 && (
-                <p className="text-center text-sm text-slate-500 py-4">No restaurants available</p>
+              {filteredRestaurants.filter((restaurant) => !restaurant.hasCommissionSetup).length === 0 && (
+                <p className="py-4 text-center text-sm text-slate-500">No restaurants available</p>
               )}
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Add/Edit Dialog */}
       <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-white p-0">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200">
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto bg-white p-0">
+          <DialogHeader className="border-b border-slate-200 px-6 pb-4 pt-6">
             <DialogTitle className="text-lg font-semibold text-slate-900">
               {selectedCommission ? "Edit Restaurant Commission" : "Add Restaurant Commission"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 py-4">
-            {/* Restaurant Info */}
             {selectedRestaurant && (
-              <div className="p-3 bg-brand-50 rounded-lg border border-brand-100">
-                <p className="font-semibold text-sm text-slate-900">{selectedRestaurant.name}</p>
-                <p className="text-xs text-slate-600 mt-0.5">{selectedRestaurant.restaurantId}</p>
+              <div className="rounded-lg border border-brand-100 bg-brand-50 p-3">
+                <p className="text-sm font-semibold text-slate-900">{selectedRestaurant.name}</p>
+                <p className="mt-0.5 text-xs text-slate-600">{selectedRestaurant.restaurantId}</p>
               </div>
             )}
 
-            {/* Default Commission */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-700">
                 Default Commission <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <select
-                    value={formData.defaultCommission.type}
-                    onChange={(e) => setFormData(prev => ({
+                <select
+                  value={formData.defaultCommission.type}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
                       ...prev,
-                      defaultCommission: { ...prev.defaultCommission, type: e.target.value }
-                    }))}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                  >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="amount">Fixed Amount</option>
-                  </select>
-                </div>
+                      defaultCommission: { ...prev.defaultCommission, type: e.target.value },
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="amount">Fixed Amount</option>
+                </select>
                 <div>
                   <input
                     type="number"
                     step={formData.defaultCommission.type === "percentage" ? "0.1" : "0.01"}
                     value={formData.defaultCommission.value}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      defaultCommission: { ...prev.defaultCommission, value: e.target.value }
-                    }))}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        defaultCommission: { ...prev.defaultCommission, value: e.target.value },
+                      }))
+                    }
+                    className={`w-full rounded-lg border bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 ${
                       formErrors.defaultCommission ? "border-red-500" : "border-slate-300"
                     }`}
                     placeholder={formData.defaultCommission.type === "percentage" ? "e.g., 10" : "e.g., 5.00"}
                   />
                   {formErrors.defaultCommission && (
-                    <p className="text-xs text-red-500 mt-1">{formErrors.defaultCommission}</p>
+                    <p className="mt-1 text-xs text-red-500">{formErrors.defaultCommission}</p>
                   )}
                 </div>
               </div>
             </div>
 
+            <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Bulk Order Commission</label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Enable a separate commission for bulk orders. If disabled, default commission will be used.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      bulkOrderCommission: prev.bulkOrderCommission?.enabled
+                        ? { ...EMPTY_BULK_COMMISSION }
+                        : {
+                            enabled: true,
+                            type: prev.bulkOrderCommission?.type || "percentage",
+                            value: prev.bulkOrderCommission?.value || "10",
+                          },
+                    }))
+                  }
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
+                    formData.bulkOrderCommission?.enabled ? "bg-brand-600" : "bg-slate-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formData.bulkOrderCommission?.enabled ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {formData.bulkOrderCommission?.enabled && (
+                <div className="grid grid-cols-2 gap-3">
+                  <select
+                    value={formData.bulkOrderCommission.type}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        bulkOrderCommission: { ...prev.bulkOrderCommission, type: e.target.value },
+                      }))
+                    }
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="amount">Fixed Amount</option>
+                  </select>
+                  <div>
+                    <input
+                      type="number"
+                      step={formData.bulkOrderCommission.type === "percentage" ? "0.1" : "0.01"}
+                      value={formData.bulkOrderCommission.value}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          bulkOrderCommission: { ...prev.bulkOrderCommission, value: e.target.value },
+                        }))
+                      }
+                      className={`w-full rounded-lg border bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                        formErrors.bulkOrderCommission ? "border-red-500" : "border-slate-300"
+                      }`}
+                      placeholder={formData.bulkOrderCommission.type === "percentage" ? "e.g., 8" : "e.g., 15.00"}
+                    />
+                    {formErrors.bulkOrderCommission && (
+                      <p className="mt-1 text-xs text-red-500">{formErrors.bulkOrderCommission}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          <DialogFooter className="px-6 py-4 border-t border-slate-200 bg-slate-50">
+          <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4">
             <button
               onClick={() => setIsAddEditOpen(false)}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-brand-600 text-white hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               {selectedCommission ? "Update" : "Create"}
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="max-w-md bg-white">
           <DialogHeader>
@@ -669,24 +719,21 @@ export default function RestaurantCommission() {
           <DialogFooter>
             <button
               onClick={() => setIsDeleteOpen(false)}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               onClick={confirmDelete}
               disabled={deleting}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
               Delete
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   )
 }
-
-

@@ -60,6 +60,7 @@ export default function NewOrderNotification({ order, onClose, onViewOrder }) {
   const navigate = useNavigate();
   const dueAmount = getDueAmount(order);
   const payableAmount = getPayableAmount(order);
+  const isBulkOrder = order?.isBulkOrder === true;
 
   const handleViewOrder = () => {
     if (onViewOrder && order) {
@@ -101,6 +102,17 @@ export default function NewOrderNotification({ order, onClose, onViewOrder }) {
 
             <div className="p-6">
               <div className="space-y-4">
+                {isBulkOrder && (
+                  <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+                    <span className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">
+                      Bulk Order
+                    </span>
+                    <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
+                      Bulk pricing applied
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between rounded-xl bg-green-50 p-4">
                   <div className="flex items-center gap-2">
                     <IndianRupee className="h-5 w-5 text-green-600" />

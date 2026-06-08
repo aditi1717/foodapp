@@ -21,6 +21,7 @@ import {
   Clock,
   Users,
   MessageSquare,
+  Package,
 } from "lucide-react";
 import { toast } from "sonner";
 import BottomNavOrders from "@food/components/restaurant/BottomNavOrders";
@@ -1304,6 +1305,12 @@ export default function OrdersMain() {
         typeof source?.isScheduled === "boolean"
           ? source.isScheduled
           : Boolean(previous?.isScheduled || resolvedScheduledAt),
+      isBulkOrder:
+        typeof source?.isBulkOrder === "boolean"
+          ? source.isBulkOrder
+          : Array.isArray(source?.items)
+            ? source.items.some((item) => item?.isBulkOrder === true)
+            : Boolean(previous?.isBulkOrder),
       scheduledAt: resolvedScheduledAt || (source?.isScheduled ? source?.createdAt || previous?.createdAt || null : null),
       paymentMethod:
         source?.paymentMethod ||
@@ -1496,6 +1503,7 @@ export default function OrdersMain() {
     const commission = Number.isFinite(commissionRaw) ? commissionRaw : 0;
 
     const baseTotalRaw =
+      Number(pricing?.totalPayable) ||
       Number(pricing?.total) ||
       Number(orderLike?.total) ||
       itemTotal + packagingFee + deliveryFee + platformFee + taxes - discount;
@@ -1509,6 +1517,7 @@ export default function OrdersMain() {
     }
 
     const totalRaw =
+      Number(pricing?.totalPayable) ||
       Number(orderLike?.payment?.amountDue) ||
       Number(pricing?.amountDue) ||
       baseTotal + dueAmount;
@@ -1532,6 +1541,10 @@ export default function OrdersMain() {
         couponByRestaurant -
         offerByRestaurant);
     const restaurantEarning = Number.isFinite(earningRaw) ? Math.max(0, earningRaw) : 0;
+    const commissionRate =
+      subtotalForEarning > 0 && commission > 0
+        ? Math.round((commission / subtotalForEarning) * 10000) / 100
+        : 0;
 
     return {
       itemTotal,
@@ -1542,6 +1555,7 @@ export default function OrdersMain() {
       discount,
       dueAmount,
       commission,
+      commissionRate,
       total,
       restaurantEarning,
     };
@@ -1851,6 +1865,11 @@ export default function OrdersMain() {
     popupModalOrder?.isScheduled || popupScheduledAt,
   );
   const popupIsTakeaway = isTakeawayOrderLike(popupModalOrder || {});
+  const popupIsBulkOrder = Boolean(
+    popupModalOrder?.isBulkOrder === true ||
+      (Array.isArray(popupModalOrder?.items) &&
+        popupModalOrder.items.some((item) => item?.isBulkOrder === true)),
+  );
 
   const openOrderInAcceptanceModal = (orderLike) => {
     if (!orderLike) return;
@@ -2162,7 +2181,11 @@ export default function OrdersMain() {
               restaurantId: orderToPopup.restaurantId,
               restaurantName: orderToPopup.restaurantName,
               items: orderToPopup.items || [],
-              total: orderToPopup.pricing?.total || 0,
+              pricing: orderToPopup.pricing || {},
+              total:
+                orderToPopup.pricing?.totalPayable ||
+                orderToPopup.pricing?.total ||
+                0,
               customerAddress: orderToPopup.address,
               status: orderToPopup.status,
               createdAt: orderToPopup.createdAt,
@@ -2176,6 +2199,10 @@ export default function OrdersMain() {
               restaurantNote: orderToPopup.restaurantNote || "",
               customerNote: orderToPopup.customerNote || "",
               sendCutlery: orderToPopup.sendCutlery,
+              isBulkOrder:
+                orderToPopup.isBulkOrder === true ||
+                (Array.isArray(orderToPopup.items) &&
+                  orderToPopup.items.some((item) => item?.isBulkOrder === true)),
               paymentMethod:
                 orderToPopup.paymentMethod ||
                 orderToPopup.payment?.method ||
@@ -3227,15 +3254,38 @@ export default function OrdersMain() {
                     </div>
                   )}
 
+                  {popupIsBulkOrder && (
+                    <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                        <Package className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">
+                          Bulk Order
+                        </p>
+                        <p className="text-sm font-semibold text-blue-900 mt-0.5">
+                          This order uses bulk pricing rules
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Customer info */}
                   <div className="mb-4">
                     <h4 className="text-sm font-semibold text-gray-900">
                       {popupModalOrder?.items?.[0]?.name ||
                         "New Order"}
                     </h4>
-                    <p className="text-[11px] font-medium text-gray-500 mt-1">
-                      {getOrderFulfillmentLabel(popupModalOrder || {})}
-                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <p className="text-[11px] font-medium text-gray-500">
+                        {getOrderFulfillmentLabel(popupModalOrder || {})}
+                      </p>
+                      {popupIsBulkOrder && (
+                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                          Bulk Order
+                        </span>
+                      )}
+                    </div>
                     {popupIsScheduled && popupScheduledAt ? (
                       <>
                         <p className="text-xs font-semibold text-green-700 mt-1">
@@ -3525,7 +3575,10 @@ export default function OrdersMain() {
 
                         {bill.commission > 0 && (
                           <div className="mt-2 flex items-center justify-between text-sm text-orange-700">
-                            <span>Restaurant commission</span>
+                            <span>
+                              Restaurant commission
+                              {bill.commissionRate > 0 ? ` (${bill.commissionRate}%)` : ""}
+                            </span>
                             <span className="font-semibold">-{formatPopupAmount(bill.commission)}</span>
                           </div>
                         )}

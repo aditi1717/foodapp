@@ -8,6 +8,10 @@ const restaurantCommissionUpsertSchema = z.object({
         type: z.enum(['percentage', 'amount']).default('percentage'),
         value: z.number().min(0, 'Commission value must be 0 or greater')
     }),
+    bulkOrderCommission: z.object({
+        type: z.enum(['percentage', 'amount']).default('percentage'),
+        value: z.number().min(0, 'Commission value must be 0 or greater')
+    }).nullable().optional(),
     notes: z.string().optional().or(z.literal(''))
 });
 
@@ -17,6 +21,10 @@ export const validateRestaurantCommissionUpsertDto = (body) => {
         defaultCommission: {
             type: body?.defaultCommission?.type,
             value: Number(body?.defaultCommission?.value)
+        },
+        bulkOrderCommission: body?.bulkOrderCommission == null ? null : {
+            type: body?.bulkOrderCommission?.type,
+            value: Number(body?.bulkOrderCommission?.value)
         },
         notes: body?.notes != null ? String(body.notes) : ''
     };
@@ -31,9 +39,16 @@ export const validateRestaurantCommissionUpsertDto = (body) => {
     if (result.data.defaultCommission.type === 'percentage' && (result.data.defaultCommission.value < 0 || result.data.defaultCommission.value > 100)) {
         throw new ValidationError('Percentage must be between 0-100');
     }
+    if (
+        result.data.bulkOrderCommission?.type === 'percentage' &&
+        (result.data.bulkOrderCommission.value < 0 || result.data.bulkOrderCommission.value > 100)
+    ) {
+        throw new ValidationError('Bulk order commission percentage must be between 0-100');
+    }
     return {
         restaurantId: result.data.restaurantId,
         defaultCommission: result.data.defaultCommission,
+        bulkOrderCommission: result.data.bulkOrderCommission || null,
         notes: result.data.notes ? result.data.notes.trim() : ''
     };
 };

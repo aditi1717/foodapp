@@ -245,7 +245,7 @@ export default function EditRestaurant() {
           get(["locality"]) ||
           get(["administrative_area_level_2"])
         const state = get(["administrative_area_level_1"])
-        const pincode = get(["postal_code"])
+        const pincode = get(["postal_code"]) || (formattedAddress.match(/\b\d{6}\b/)?.[0] || "")
         const lat = place?.geometry?.location?.lat?.()
         const lng = place?.geometry?.location?.lng?.()
 
@@ -267,13 +267,17 @@ export default function EditRestaurant() {
           ...prev,
           formattedAddress: parsed.formattedAddress || prev.formattedAddress,
           addressLine1: parsed.formattedAddress || prev.addressLine1,
-          area: parsed.area || prev.area,
-          city: parsed.city || prev.city,
-          state: parsed.state || prev.state,
-          pincode: parsed.pincode || prev.pincode,
+          area: parsed.area || "",
+          city: parsed.city || "",
+          state: parsed.state || "",
+          pincode: parsed.pincode || "",
           latitude: parsed.latitude !== "" ? parsed.latitude : prev.latitude,
           longitude: parsed.longitude !== "" ? parsed.longitude : prev.longitude,
         }))
+
+        if (locationSearchInputRef.current) {
+          locationSearchInputRef.current.value = parsed.formattedAddress || ""
+        }
       })
     }
 
@@ -624,19 +628,35 @@ export default function EditRestaurant() {
                 </div>
                 <div>
                   <Label>Area</Label>
-                  <Input value={locationForm.area} readOnly className="mt-1 bg-slate-50" />
+                  <Input
+                    value={locationForm.area || ""}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, area: e.target.value }))}
+                    className="mt-1 bg-white"
+                  />
                 </div>
                 <div>
                   <Label>City</Label>
-                  <Input value={locationForm.city} readOnly className="mt-1 bg-slate-50" />
+                  <Input
+                    value={locationForm.city || ""}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, city: e.target.value }))}
+                    className="mt-1 bg-white"
+                  />
                 </div>
                 <div>
                   <Label>State</Label>
-                  <Input value={locationForm.state} readOnly className="mt-1 bg-slate-50" />
+                  <Input
+                    value={locationForm.state || ""}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, state: e.target.value }))}
+                    className="mt-1 bg-white"
+                  />
                 </div>
                 <div>
                   <Label>Pincode</Label>
-                  <Input value={locationForm.pincode} readOnly className="mt-1 bg-slate-50" />
+                  <Input
+                    value={locationForm.pincode || ""}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, pincode: e.target.value }))}
+                    className="mt-1 bg-white"
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <Label>Landmark</Label>

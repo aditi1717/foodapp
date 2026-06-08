@@ -2475,6 +2475,7 @@ export async function getRestaurantCommissions() {
                 restaurantName: c.restaurantId?.restaurantName || '',
                 restaurant: c.restaurantId?._id ? { _id: c.restaurantId._id, name: c.restaurantId.restaurantName } : null,
                 defaultCommission: c.defaultCommission || { type: 'percentage', value: 0 },
+                bulkOrderCommission: c.bulkOrderCommission || null,
                 activeCommission: activeSubscriptionBenefit?.appliesReducedCommission
                     ? { type: 'percentage', value: Number(activeSubscriptionBenefit.commissionRate || 0) }
                     : null,
@@ -2533,6 +2534,7 @@ export async function getRestaurantCommissionById(id) {
         restaurant: doc.restaurantId?._id ? { _id: doc.restaurantId._id, name: doc.restaurantId.restaurantName } : null,
         restaurantName: doc.restaurantId?.restaurantName || '',
         defaultCommission: doc.defaultCommission || { type: 'percentage', value: 0 },
+        bulkOrderCommission: doc.bulkOrderCommission || null,
         activeCommission: activeSubscriptionBenefit?.appliesReducedCommission
             ? { type: 'percentage', value: Number(activeSubscriptionBenefit.commissionRate || 0) }
             : null,
@@ -2558,6 +2560,7 @@ export async function createRestaurantCommission(body) {
     const created = await FoodRestaurantCommission.create({
         restaurantId: body.restaurantId,
         defaultCommission: body.defaultCommission,
+        bulkOrderCommission: body.bulkOrderCommission || null,
         notes: body.notes || '',
         status: true
     });
@@ -2568,7 +2571,13 @@ export async function updateRestaurantCommission(id, body) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
     const updated = await FoodRestaurantCommission.findByIdAndUpdate(
         id,
-        { $set: { defaultCommission: body.defaultCommission, notes: body.notes || '' } },
+        {
+            $set: {
+                defaultCommission: body.defaultCommission,
+                bulkOrderCommission: body.bulkOrderCommission || null,
+                notes: body.notes || ''
+            }
+        },
         { new: true }
     ).lean();
     return updated;
@@ -4047,6 +4056,15 @@ export async function getFoods(query) {
         price: getFoodDisplayPrice(f),
         variants: serializeFoodVariants(f.variants),
         variations: serializeFoodVariants(f.variants),
+        bulkOrderPricing: {
+            enabled: f?.bulkOrderPricing?.enabled === true,
+            minQuantity: Number.isFinite(Number(f?.bulkOrderPricing?.minQuantity))
+                ? Number(f.bulkOrderPricing.minQuantity)
+                : null,
+            bulkPrice: Number.isFinite(Number(f?.bulkOrderPricing?.bulkPrice))
+                ? Number(f.bulkOrderPricing.bulkPrice)
+                : null
+        },
         image: f.image || '',
         foodType: f.foodType || 'Non-Veg',
         isAvailable: f.isAvailable !== false,
@@ -4114,6 +4132,35 @@ const getAdminFoodCreatePricing = (body = {}) => {
     };
 };
 
+const normalizeAdminBulkOrderPricing = (raw = undefined) => {
+    if (raw === undefined) return undefined;
+
+    const enabled = raw?.enabled === true;
+    if (!enabled) {
+        return {
+            enabled: false,
+            minQuantity: null,
+            bulkPrice: null
+        };
+    }
+
+    const minQuantity = Number(raw?.minQuantity);
+    if (!Number.isInteger(minQuantity) || minQuantity < 1) {
+        throw new ValidationError('Bulk minimum quantity must be at least 1');
+    }
+
+    const bulkPrice = Number(raw?.bulkPrice);
+    if (!Number.isFinite(bulkPrice) || bulkPrice < 0) {
+        throw new ValidationError('Bulk order price is invalid');
+    }
+
+    return {
+        enabled: true,
+        minQuantity,
+        bulkPrice
+    };
+};
+
 const getAdminFoodUpdatedPricing = (existing = {}, body = {}) => {
     const variantsTouched = body.variants !== undefined || body.variations !== undefined;
     const existingHasVariants = hasFoodVariants(existing);
@@ -4166,6 +4213,7 @@ export async function createFood(body) {
         throw new ValidationError('Pure veg restaurants can only use veg foods');
     }
     const { price, variants } = getAdminFoodCreatePricing(body);
+    const bulkOrderPricing = normalizeAdminBulkOrderPricing(body.bulkOrderPricing);
 
     let categoryName = typeof body.categoryName === 'string' ? body.categoryName.trim() : '';
     if (!categoryName && typeof body.category === 'string') categoryName = body.category.trim();
@@ -4186,6 +4234,7 @@ export async function createFood(body) {
         description: typeof body.description === 'string' ? body.description.trim() : '',
         price,
         variants,
+        bulkOrderPricing,
         image: typeof body.image === 'string' ? body.image.trim() : '',
         foodType,
         isAvailable: body.isAvailable !== false,
@@ -4239,6 +4288,9 @@ export async function updateFood(id, body) {
     }
     if (body.subcategoryName !== undefined) {
         doc.subcategoryName = String(body.subcategoryName || '').trim();
+    }
+    if (body.bulkOrderPricing !== undefined) {
+        doc.bulkOrderPricing = normalizeAdminBulkOrderPricing(body.bulkOrderPricing);
     }
     await doc.save();
     return doc.toObject();

@@ -1,9 +1,19 @@
 import mongoose from 'mongoose';
 
+const bulkOrderPricingSchema = new mongoose.Schema(
+    {
+        enabled: { type: Boolean, default: false },
+        minQuantity: { type: Number, default: null, min: 1 },
+        bulkPrice: { type: Number, default: null, min: 0 }
+    },
+    { _id: false }
+);
+
 const foodVariantSchema = new mongoose.Schema(
     {
         name: { type: String, required: true, trim: true },
-        price: { type: Number, required: true, min: 0 }
+        price: { type: Number, required: true, min: 0 },
+        bulkOrderPricing: { type: bulkOrderPricingSchema, default: () => ({ enabled: false, minQuantity: null, bulkPrice: null }) }
     },
     { _id: true }
 );
@@ -19,6 +29,7 @@ const foodSchema = new mongoose.Schema(
         description: { type: String, trim: true, default: '' },
         price: { type: Number, required: true, min: 0 },
         variants: { type: [foodVariantSchema], default: [] },
+        bulkOrderPricing: { type: bulkOrderPricingSchema, default: () => ({ enabled: false, minQuantity: null, bulkPrice: null }) },
         image: { type: String, trim: true, default: '' },
         foodType: { type: String, enum: ['Veg', 'Non-Veg'], default: 'Non-Veg' },
         isAvailable: { type: Boolean, default: true, index: true },

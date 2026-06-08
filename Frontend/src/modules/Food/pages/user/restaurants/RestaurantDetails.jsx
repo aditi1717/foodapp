@@ -1423,7 +1423,8 @@ function RestaurantDetailsContent() {
       originalPrice: item.originalPrice,
       foodType: item.foodType, // Pass foodType property
       isVeg: isItemVeg(item), // Add isVeg property
-      preparationTime: item.preparationTime // Add preparationTime property
+      preparationTime: item.preparationTime, // Add preparationTime property
+      bulkOrderPricing: resolvedVariant?.bulkOrderPricing || item.bulkOrderPricing || { enabled: false, minQuantity: null, bulkPrice: null },
     }
 
     // Get source position for animation from event target

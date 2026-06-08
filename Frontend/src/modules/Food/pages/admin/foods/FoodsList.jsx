@@ -10,6 +10,22 @@ const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
+const formatBulkPricingSummary = (bulkOrderPricing = {}, variants = []) => {
+  if (Array.isArray(variants) && variants.some((variant) => variant?.bulkOrderPricing?.enabled)) {
+    const enabledVariants = variants.filter((variant) => variant?.bulkOrderPricing?.enabled)
+    return `${enabledVariants.length} variant${enabledVariants.length === 1 ? "" : "s"}`
+  }
+
+  if (bulkOrderPricing?.enabled === true) {
+    const parts = []
+    if (bulkOrderPricing?.bulkPrice != null) parts.push(`₹${bulkOrderPricing.bulkPrice}`)
+    if (bulkOrderPricing?.minQuantity != null) parts.push(`min ${bulkOrderPricing.minQuantity}`)
+    return parts.join(" / ") || "Enabled"
+  }
+
+  return "-"
+}
+
 
 const createFoodForm = () => ({
   restaurantId: "",
@@ -144,6 +160,7 @@ export default function FoodsList() {
               approvalStatus: f.approvalStatus || "approved",
               description: f.description || "",
               preparationTime: f.preparationTime || "",
+              bulkOrderPricing: f.bulkOrderPricing || { enabled: false, minQuantity: null, bulkPrice: null },
               isAvailable: f.isAvailable !== false,
               createdAt: f.createdAt,
               updatedAt: f.updatedAt,
@@ -629,6 +646,9 @@ export default function FoodsList() {
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   Subcategory
                 </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                  Bulk Pricing
+                </th>
                 <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   Action
                 </th>
@@ -637,7 +657,7 @@ export default function FoodsList() {
             <tbody className="bg-white divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
+                  <td colSpan={8} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <Loader2 className="w-8 h-8 animate-spin text-brand-600 mb-2" />
                       <p className="text-sm text-slate-500">Loading foods...</p>
@@ -646,7 +666,7 @@ export default function FoodsList() {
                 </tr>
               ) : filteredFoods.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
+                  <td colSpan={8} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
                       <p className="text-sm text-slate-500">No food items match your search or restaurant filter</p>
@@ -694,6 +714,11 @@ export default function FoodsList() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-slate-800">{food.subcategoryName || "-"}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-slate-800">{formatBulkPricingSummary(food.bulkOrderPricing, food.variants)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -811,6 +836,7 @@ export default function FoodsList() {
                 <p><span className="font-semibold text-slate-700">Price:</span> <span className="text-slate-900">{selectedFood.variants?.length ? `Starting from \u20B9${selectedFood.price}` : `\u20B9${selectedFood.price}`}</span></p>
                 <p><span className="font-semibold text-slate-700">Category:</span> <span className="text-slate-900">{selectedFood.categoryName || "-"}</span></p>
                 <p><span className="font-semibold text-slate-700">Approval:</span> <span className="text-slate-900 capitalize">{selectedFood.approvalStatus || "-"}</span></p>
+                <p className="col-span-2"><span className="font-semibold text-slate-700">Bulk Pricing:</span> <span className="text-slate-900">{formatBulkPricingSummary(selectedFood.bulkOrderPricing, selectedFood.variants)}</span></p>
               </div>
               {selectedFood.variants?.length ? (
                 <div className="rounded-lg border border-slate-200 bg-white p-4">
@@ -818,7 +844,10 @@ export default function FoodsList() {
                   <div className="space-y-2">
                     {selectedFood.variants.map((variant) => (
                       <div key={variant.id || variant._id} className="flex items-center justify-between text-sm text-slate-700">
-                        <span>{variant.name}</span>
+                        <div>
+                          <span>{variant.name}</span>
+                          <p className="text-xs text-slate-500">Bulk: {formatBulkPricingSummary(variant.bulkOrderPricing, [])}</p>
+                        </div>
                         <span className="font-semibold text-slate-900">{"\u20B9"}{variant.price}</span>
                       </div>
                     ))}

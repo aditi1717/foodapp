@@ -15,6 +15,22 @@ const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
+const formatBulkPricingSummary = (bulkOrderPricing = {}, variants = []) => {
+  if (Array.isArray(variants) && variants.some((variant) => variant?.bulkOrderPricing?.enabled)) {
+    const enabledVariants = variants.filter((variant) => variant?.bulkOrderPricing?.enabled)
+    return `${enabledVariants.length} variant${enabledVariants.length === 1 ? "" : "s"} configured`
+  }
+
+  if (bulkOrderPricing?.enabled === true) {
+    const parts = []
+    if (bulkOrderPricing?.bulkPrice != null) parts.push(`\u20B9${bulkOrderPricing.bulkPrice}`)
+    if (bulkOrderPricing?.minQuantity != null) parts.push(`min ${bulkOrderPricing.minQuantity}`)
+    return parts.join(" / ") || "Enabled"
+  }
+
+  return "-"
+}
+
 
 export default function FoodApproval() {
   const [foodRequests, setFoodRequests] = useState([])
@@ -246,6 +262,9 @@ export default function FoodApproval() {
                         Price
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Bulk Price
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Requested Date
                       </th>
                       <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -256,7 +275,7 @@ export default function FoodApproval() {
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {filteredRequests.length === 0 ? (
                       <tr>
-                        <td colSpan="8" className="px-3 py-8 text-center text-sm text-gray-500">
+                        <td colSpan="9" className="px-3 py-8 text-center text-sm text-gray-500">
                           {loading ? "Loading..." : "No food or add-on records found."}
                         </td>
                       </tr>
@@ -291,6 +310,9 @@ export default function FoodApproval() {
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700 font-semibold">
                             {request.price !== null && request.price !== undefined ? `₹${request.price}` : '-'}
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700">
+                            {formatBulkPricingSummary(request.bulkOrderPricing, request.variants)}
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                             {request.requestedAt ? new Date(request.requestedAt).toLocaleDateString() : '-'}
@@ -372,7 +394,7 @@ export default function FoodApproval() {
                     </div>
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Price</label>
-                        <p className="text-sm font-bold text-green-600">{selectedRequest.price !== null && selectedRequest.price !== undefined ? `₹${selectedRequest.price}` : '-'}</p>
+                        <p className="text-sm font-bold text-green-600">{selectedRequest.price !== null && selectedRequest.price !== undefined ? `\u20B9${selectedRequest.price}` : '-'}</p>
                     </div>
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status</label>
@@ -403,12 +425,39 @@ export default function FoodApproval() {
                        {selectedRequest.variants.map((variant, idx) => (
                          <div key={idx} className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-slate-50/50">
                            <span className="text-sm font-medium text-gray-700">{variant.name}</span>
-                           <span className="text-sm font-bold text-brand-600">₹{variant.price}</span>
+                           <span className="text-sm font-bold text-brand-600">{"\u20B9"}{variant.price}</span>
                          </div>
                        ))}
                      </div>
                    </div>
                  )}
+
+                <div className="col-span-full">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Bulk Order Pricing</label>
+                  {selectedRequest.variants && selectedRequest.variants.length > 0 ? (
+                    <div className="overflow-hidden rounded-lg border border-slate-100 bg-slate-50/50">
+                      <div className="grid grid-cols-3 gap-3 border-b border-slate-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                        <span>Variant</span>
+                        <span>Price</span>
+                        <span>Bulk Pricing</span>
+                      </div>
+                      {selectedRequest.variants.map((variant, idx) => (
+                        <div
+                          key={`${variant.id || variant._id || idx}-bulk-row`}
+                          className="grid grid-cols-3 gap-3 px-3 py-2 text-sm text-gray-700 border-b border-slate-100 last:border-b-0"
+                        >
+                          <span className="font-medium">{variant.name || "-"}</span>
+                          <span>{variant.price != null ? `\u20B9${variant.price}` : "-"}</span>
+                          <span>{formatBulkPricingSummary(variant.bulkOrderPricing, [])}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
+                      {formatBulkPricingSummary(selectedRequest.bulkOrderPricing, selectedRequest.variants)}
+                    </p>
+                  )}
+                </div>
 
                 {selectedRequest.description && (
                   <div className="col-span-full">

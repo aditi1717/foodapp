@@ -3,6 +3,36 @@ import { ValidationError } from '../../../../core/auth/errors.js';
 
 const toTrimmedString = (value) => (value == null ? '' : String(value).trim());
 
+const normalizeVariantBulkOrderPricing = (entry = {}) => {
+    const raw = entry?.bulkOrderPricing;
+    if (raw === undefined) return undefined;
+
+    const enabled = raw?.enabled === true;
+    if (!enabled) {
+        return {
+            enabled: false,
+            minQuantity: null,
+            bulkPrice: null
+        };
+    }
+
+    const minQuantity = Number(raw?.minQuantity);
+    if (!Number.isInteger(minQuantity) || minQuantity < 1) {
+        throw new ValidationError('Variant bulk minimum quantity must be at least 1');
+    }
+
+    const bulkPrice = Number(raw?.bulkPrice);
+    if (!Number.isFinite(bulkPrice) || bulkPrice < 0) {
+        throw new ValidationError('Variant bulk price must be 0 or greater');
+    }
+
+    return {
+        enabled: true,
+        minQuantity,
+        bulkPrice
+    };
+};
+
 export const extractRawFoodVariants = (value = {}) => {
     if (Array.isArray(value?.variants)) return value.variants;
     if (Array.isArray(value?.variations)) return value.variations;
@@ -41,6 +71,11 @@ export const normalizeFoodVariantsInput = (value = [], options = {}) => {
                 price
             };
 
+            const bulkOrderPricing = normalizeVariantBulkOrderPricing(entry);
+            if (bulkOrderPricing !== undefined) {
+                variant.bulkOrderPricing = bulkOrderPricing;
+            }
+
             const variantId = entry?._id || entry?.id;
             if (variantId && mongoose.Types.ObjectId.isValid(String(variantId))) {
                 variant._id = new mongoose.Types.ObjectId(String(variantId));
@@ -69,7 +104,16 @@ export const serializeFoodVariants = (value = []) =>
                 id: variantId ? String(variantId) : '',
                 _id: variantId ? String(variantId) : '',
                 name,
-                price
+                price,
+                bulkOrderPricing: {
+                    enabled: entry?.bulkOrderPricing?.enabled === true,
+                    minQuantity: Number.isFinite(Number(entry?.bulkOrderPricing?.minQuantity))
+                        ? Number(entry.bulkOrderPricing.minQuantity)
+                        : null,
+                    bulkPrice: Number.isFinite(Number(entry?.bulkOrderPricing?.bulkPrice))
+                        ? Number(entry.bulkOrderPricing.bulkPrice)
+                        : null
+                }
             };
         })
         .filter(Boolean);

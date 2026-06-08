@@ -13,6 +13,7 @@ const defaultCartContext = {
   items: [],
   itemCount: 0,
   total: 0,
+  bulkOrderMode: false,
   lastAddEvent: null,
   lastRemoveEvent: null,
   addToCart: () => {
@@ -36,9 +37,12 @@ const defaultCartContext = {
   replaceCart: () => {
     debugWarn('CartProvider not available - replaceCart called');
   },
+  activateBulkOrderMode: () => ({ ok: false }),
+  deactivateBulkOrderMode: () => ({ ok: false }),
 }
 
 const CartContext = createContext(defaultCartContext)
+const BULK_ORDER_MODE_STORAGE_KEY = "food-cart-bulk-order-mode-v1"
 
 const getItemOrderType = (item) => (item?.orderType === "quick" ? "quick" : "food")
 const getNormalizedFoodType = (item = {}) =>
@@ -60,6 +64,37 @@ const isItemVeg = (item = {}) => {
   if (item?.isVeg === true) return true
   if (item?.isVeg === false) return false
   return false
+}
+
+const normalizeBulkOrderPricing = (raw) => {
+  const minQuantity = Number(raw?.minQuantity)
+  const bulkPrice = Number(raw?.bulkPrice)
+
+  return {
+    enabled: raw?.enabled === true,
+    minQuantity: Number.isInteger(minQuantity) && minQuantity > 0 ? minQuantity : null,
+    bulkPrice: Number.isFinite(bulkPrice) && bulkPrice >= 0 ? bulkPrice : null,
+  }
+}
+
+const isBulkOrderCapable = (item = {}) => {
+  const bulkOrderPricing = normalizeBulkOrderPricing(item?.bulkOrderPricing)
+  return (
+    bulkOrderPricing.enabled &&
+    Number.isInteger(bulkOrderPricing.minQuantity) &&
+    bulkOrderPricing.minQuantity > 0 &&
+    Number.isFinite(bulkOrderPricing.bulkPrice)
+  )
+}
+
+const isBulkOrderEligible = (item = {}) => {
+  const bulkOrderPricing = normalizeBulkOrderPricing(item?.bulkOrderPricing)
+  const quantity = Math.max(0, Number(item?.quantity || 0))
+  return (
+    isBulkOrderCapable(item) &&
+    Number.isInteger(bulkOrderPricing.minQuantity) &&
+    quantity >= bulkOrderPricing.minQuantity
+  )
 }
 
 const normalizeCartData = (rawCart) => {
@@ -137,6 +172,7 @@ const normalizeCartData = (rawCart) => {
         image: normalizedImage,
         imageUrl: normalizedImage,
         isVeg: isItemVeg(item),
+        bulkOrderPricing: normalizeBulkOrderPricing(item?.bulkOrderPricing),
       }
     })
 }
@@ -182,6 +218,14 @@ export function CartProvider({ children }) {
   const [lastAddEvent, setLastAddEvent] = useState(null)
   // Track last remove event for animation
   const [lastRemoveEvent, setLastRemoveEvent] = useState(null)
+  const [bulkOrderMode, setBulkOrderMode] = useState(() => {
+    if (typeof window === "undefined") return false
+    try {
+      return localStorage.getItem(BULK_ORDER_MODE_STORAGE_KEY) === "true"
+    } catch {
+      return false
+    }
+  })
 
   // Persist to localStorage whenever cart changes
   useEffect(() => {
@@ -195,6 +239,20 @@ export function CartProvider({ children }) {
       // ignore storage errors (private mode, quota, etc.)
     }
   }, [cart])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(BULK_ORDER_MODE_STORAGE_KEY, bulkOrderMode ? "true" : "false")
+    } catch {
+      // ignore storage errors
+    }
+  }, [bulkOrderMode])
+
+  useEffect(() => {
+    if (normalizeCartData(cart).length === 0 && bulkOrderMode) {
+      setBulkOrderMode(false)
+    }
+  }, [cart, bulkOrderMode])
 
   const addToCart = (item, sourcePosition = null) => {
     const safeCart = normalizeCartData(cart)
@@ -235,6 +293,46 @@ export function CartProvider({ children }) {
         ok: false,
         error: 'Item is missing restaurant information. Please refresh the page.',
         code: 'MISSING_RESTAURANT'
+      }
+    }
+
+    const incomingBulkOrderPricing = normalizeBulkOrderPricing(item?.bulkOrderPricing)
+    const baseIncomingItemId =
+      item?.itemId ||
+      item?.productId ||
+      item?.foodId ||
+      item?.baseItemId ||
+      item?.menuItemId ||
+      item?.id ||
+      item?._id
+    const incomingVariantId =
+      item?.variantId || item?.variant?._id || item?.variant?.id || ""
+    const incomingVariantName =
+      (typeof item?.variantName === "string" && item.variantName) ||
+      (typeof item?.variant?.name === "string" ? item.variant.name : "")
+    const resolvedIncomingLineId =
+      item?.lineItemId ||
+      item?.cartLineId ||
+      buildCartLineId(baseIncomingItemId, incomingVariantId, incomingVariantName)
+    const existingBulkLine = safeCart.find((i) => i.id === resolvedIncomingLineId)
+
+    if (bulkOrderMode && !isBulkOrderCapable(item)) {
+      return {
+        ok: false,
+        error: "Only items with bulk order pricing can be added while bulk mode is active.",
+        code: "BULK_MODE_NON_BULK_ITEM",
+      }
+    }
+
+    if (
+      bulkOrderMode &&
+      !existingBulkLine &&
+      Number(1) < Number(incomingBulkOrderPricing?.minQuantity || Infinity)
+    ) {
+      return {
+        ok: false,
+        error: `This item needs minimum quantity ${incomingBulkOrderPricing.minQuantity} before it can be added in bulk mode.`,
+        code: "BULK_MODE_MIN_QUANTITY",
       }
     }
 
@@ -283,24 +381,6 @@ export function CartProvider({ children }) {
         }
       }
       
-      const baseIncomingItemId =
-        item?.itemId ||
-        item?.productId ||
-        item?.foodId ||
-        item?.baseItemId ||
-        item?.menuItemId ||
-        item?.id ||
-        item?._id
-      const incomingVariantId =
-        item?.variantId || item?.variant?._id || item?.variant?.id || ""
-      const incomingVariantName =
-        (typeof item?.variantName === "string" && item.variantName) ||
-        (typeof item?.variant?.name === "string" ? item.variant.name : "")
-      const resolvedIncomingLineId =
-        item?.lineItemId ||
-        item?.cartLineId ||
-        buildCartLineId(baseIncomingItemId, incomingVariantId, incomingVariantName)
-
       const existing = safePrev.find((i) => i.id === resolvedIncomingLineId)
       if (existing) {
         // Set last add event for animation when incrementing existing item
@@ -337,6 +417,7 @@ export function CartProvider({ children }) {
         variantId: incomingVariantId ? String(incomingVariantId) : "",
         variantName: incomingVariantName || "",
         quantity: 1,
+        bulkOrderPricing: normalizeBulkOrderPricing(item?.bulkOrderPricing),
       }
       
       // Set last add event for animation if sourcePosition is provided
@@ -446,13 +527,49 @@ export function CartProvider({ children }) {
   const clearCart = () => setCart([])
 
   const replaceCart = (items) => {
-    const normalizedItems = normalizeCartData(items).filter((item) => {
+    let normalizedItems = normalizeCartData(items).filter((item) => {
       const quantity = Number(item?.quantity)
       return item?.id && (item?.restaurantId || item?.restaurant) && Number.isFinite(quantity) && quantity > 0
     })
 
+    if (bulkOrderMode) {
+      normalizedItems = normalizedItems.filter((item) => isBulkOrderEligible(item))
+    }
+
     setCart(normalizedItems)
     return { ok: true, count: normalizedItems.length }
+  }
+
+  const activateBulkOrderMode = () => {
+    const safeCart = normalizeCartData(cart)
+    if (safeCart.length === 0) {
+      return { ok: false, error: "Your cart is empty.", code: "EMPTY_CART" }
+    }
+
+    const keptItems = safeCart.filter((item) => isBulkOrderEligible(item))
+    const removedItems = safeCart.filter((item) => !isBulkOrderEligible(item))
+
+    if (keptItems.length === 0) {
+      return {
+        ok: false,
+        error: "No items in your cart currently qualify for bulk ordering.",
+        code: "NO_BULK_ITEMS",
+      }
+    }
+
+    setCart(keptItems)
+    setBulkOrderMode(true)
+    return {
+      ok: true,
+      removedCount: removedItems.length,
+      keptCount: keptItems.length,
+      removedItems,
+    }
+  }
+
+  const deactivateBulkOrderMode = () => {
+    setBulkOrderMode(false)
+    return { ok: true }
   }
 
   // Clean cart to remove items from different restaurants
@@ -591,6 +708,7 @@ export function CartProvider({ children }) {
       items: cartForAnimation.items,
       itemCount: cartForAnimation.itemCount,
       total: cartForAnimation.total,
+      bulkOrderMode,
       lastAddEvent,
       lastRemoveEvent,
       addToCart,
@@ -602,8 +720,10 @@ export function CartProvider({ children }) {
       clearCart,
       cleanCartForRestaurant,
       replaceCart,
+      activateBulkOrderMode,
+      deactivateBulkOrderMode,
     }),
-    [cart, cartForAnimation, lastAddEvent, lastRemoveEvent]
+    [cart, cartForAnimation, bulkOrderMode, lastAddEvent, lastRemoveEvent]
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

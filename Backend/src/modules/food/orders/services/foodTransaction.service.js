@@ -28,10 +28,11 @@ export function computeRestaurantCommissionAmount(baseAmount, rule) {
   const safeBase = Math.max(0, Number(baseAmount) || 0);
   if (!Number.isFinite(safeBase) || safeBase < 0) return 0;
 
-  const commissionType = rule?.defaultCommission?.type || 'percentage';
+  const commissionConfig = rule?.commission || rule?.defaultCommission || null;
+  const commissionType = commissionConfig?.type || 'percentage';
   const commissionValue = Math.max(
     0,
-    Number(rule?.defaultCommission?.value ?? 0) || 0
+    Number(commissionConfig?.value ?? 0) || 0
   );
 
   let commissionAmount = 0;
@@ -50,6 +51,7 @@ export function computeRestaurantCommissionAmount(baseAmount, rule) {
 
 export async function getRestaurantCommissionSnapshot(orderDoc) {
   const subtotal = Number(orderDoc?.pricing?.subtotal ?? 0) || 0;
+  const isBulkOrder = orderDoc?.isBulkOrder === true;
   
   // For Scenario 3 (item-level offers), commission is on discounted amount
   // For Scenario 1 & 2 (coupons), commission is on original amount
@@ -74,10 +76,35 @@ export async function getRestaurantCommissionSnapshot(orderDoc) {
     };
   }
 
+  const rules = await getActiveRestaurantCommissionRules();
+  const rule =
+    rules.find((r) => String(r.restaurantId) === String(restaurantIdRaw)) ||
+    // Fallback: accept legacy docs where restaurantId may be stored under `restaurant` / `restaurant_id`
+    rules.find((r) => String(r.restaurant || r.restaurant_id || '') === String(restaurantIdRaw)) ||
+    null;
+
   const subscriptionBenefit = await getActiveRestaurantCommissionBenefit(restaurantIdRaw);
+
+  if (isBulkOrder) {
+    const bulkOrderCommission = rule?.bulkOrderCommission;
+    if (
+      bulkOrderCommission &&
+      ['percentage', 'amount'].includes(String(bulkOrderCommission.type || '')) &&
+      Number.isFinite(Number(bulkOrderCommission.value))
+    ) {
+      return computeRestaurantCommissionAmount(baseAmount, {
+        commission: {
+          type: bulkOrderCommission.type,
+          value: Number(bulkOrderCommission.value || 0),
+        },
+        source: 'bulk',
+      });
+    }
+  }
+
   if (subscriptionBenefit?.appliesReducedCommission) {
     return computeRestaurantCommissionAmount(baseAmount, {
-      defaultCommission: {
+      commission: {
         type: 'percentage',
         value: Number(subscriptionBenefit.commissionRate || 0),
       },
@@ -86,14 +113,7 @@ export async function getRestaurantCommissionSnapshot(orderDoc) {
     });
   }
 
-  const rules = await getActiveRestaurantCommissionRules();
-  const rule =
-    rules.find((r) => String(r.restaurantId) === String(restaurantIdRaw)) ||
-    // Fallback: accept legacy docs where restaurantId may be stored under `restaurant` / `restaurant_id`
-    rules.find((r) => String(r.restaurant || r.restaurant_id || '') === String(restaurantIdRaw)) ||
-    null;
-
-  if (!rule) {
+  if (!rule?.defaultCommission) {
     return {
       commissionAmount: 0,
       commissionType: 'percentage',
@@ -102,7 +122,10 @@ export async function getRestaurantCommissionSnapshot(orderDoc) {
     };
   }
 
-  return computeRestaurantCommissionAmount(baseAmount, rule);
+  return computeRestaurantCommissionAmount(baseAmount, {
+    commission: rule?.defaultCommission,
+    source: 'default',
+  });
 }
 
 /**

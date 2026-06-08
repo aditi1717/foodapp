@@ -44,6 +44,11 @@ const createVariantDraft = (variant = {}) => ({
   persistedId: String(variant?.id || variant?._id || ""),
   name: String(variant?.name || ""),
   price: variant?.price != null ? String(variant.price) : "",
+  bulkOrderEnabled: variant?.bulkOrderPricing?.enabled === true,
+  bulkMinimumQuantity:
+    variant?.bulkOrderPricing?.minQuantity != null ? String(variant.bulkOrderPricing.minQuantity) : "",
+  bulkOrderPrice:
+    variant?.bulkOrderPricing?.bulkPrice != null ? String(variant.bulkOrderPricing.bulkPrice) : "",
 })
 
 export default function ItemDetailsPage() {
@@ -69,6 +74,9 @@ export default function ItemDetailsPage() {
   const [itemSizeUnit, setItemSizeUnit] = useState("piece")
   const [itemDescription, setItemDescription] = useState("")
   const [basePrice, setBasePrice] = useState("")
+  const [bulkOrderEnabled, setBulkOrderEnabled] = useState(false)
+  const [bulkMinimumQuantity, setBulkMinimumQuantity] = useState("")
+  const [bulkOrderPrice, setBulkOrderPrice] = useState("")
   const [variants, setVariants] = useState([])
   const [preparationTime, setPreparationTime] = useState("")
   const [gst, setGst] = useState("5.0")
@@ -144,6 +152,13 @@ export default function ItemDetailsPage() {
     const itemVariants = getFoodVariants(item)
     setVariants(itemVariants.map(createVariantDraft))
     setBasePrice(itemVariants.length === 0 ? item.price?.toString() || "" : "")
+    setBulkOrderEnabled(item.bulkOrderPricing?.enabled === true)
+    setBulkMinimumQuantity(
+      item.bulkOrderPricing?.minQuantity != null ? String(item.bulkOrderPricing.minQuantity) : "",
+    )
+    setBulkOrderPrice(
+      item.bulkOrderPricing?.bulkPrice != null ? String(item.bulkOrderPricing.bulkPrice) : "",
+    )
     setPreparationTime(item.preparationTime || "")
     setGst(item.gst?.toString() || "5.0")
     setIsRecommended(item.isRecommended || false)
@@ -704,6 +719,17 @@ export default function ItemDetailsPage() {
           persistedId: String(variant.persistedId || "").trim(),
           name: String(variant.name || "").trim(),
           price: Number(variant.price),
+          bulkOrderPricing: variant.bulkOrderEnabled
+            ? {
+                enabled: true,
+                minQuantity: Number(variant.bulkMinimumQuantity),
+                bulkPrice: Number(variant.bulkOrderPrice),
+              }
+            : {
+                enabled: false,
+                minQuantity: null,
+                bulkPrice: null,
+              },
         }))
         .filter((variant) => variant.name || variant.persistedId || variant.price)
 
@@ -715,6 +741,28 @@ export default function ItemDetailsPage() {
 
       if (normalizedVariants.some((variant) => !Number.isFinite(variant.price) || variant.price <= 0)) {
         toast.error("Each variant price must be greater than 0")
+        setUploadingImages(false)
+        return
+      }
+      if (
+        normalizedVariants.some(
+          (variant) =>
+            variant.bulkOrderPricing?.enabled === true &&
+            (!Number.isInteger(variant.bulkOrderPricing.minQuantity) || variant.bulkOrderPricing.minQuantity < 1),
+        )
+      ) {
+        toast.error("Each variant bulk minimum quantity must be at least 1")
+        setUploadingImages(false)
+        return
+      }
+      if (
+        normalizedVariants.some(
+          (variant) =>
+            variant.bulkOrderPricing?.enabled === true &&
+            (!Number.isFinite(variant.bulkOrderPricing.bulkPrice) || variant.bulkOrderPricing.bulkPrice < 0),
+        )
+      ) {
+        toast.error("Each variant bulk price must be valid")
         setUploadingImages(false)
         return
       }
@@ -731,7 +779,42 @@ export default function ItemDetailsPage() {
         ...(variant.persistedId ? { _id: variant.persistedId } : {}),
         name: variant.name,
         price: variant.price,
+        bulkOrderPricing: variant.bulkOrderPricing,
       }))
+      const parsedBulkMinimumQuantity = Number(bulkMinimumQuantity)
+      const parsedBulkOrderPrice = Number(bulkOrderPrice)
+
+      if (bulkOrderEnabled) {
+        if (!Number.isInteger(parsedBulkMinimumQuantity) || parsedBulkMinimumQuantity < 1) {
+          toast.error("Bulk minimum quantity must be at least 1")
+          setUploadingImages(false)
+          return
+        }
+
+        if (!Number.isFinite(parsedBulkOrderPrice) || parsedBulkOrderPrice < 0) {
+          toast.error("Please enter a valid bulk order price")
+          setUploadingImages(false)
+          return
+        }
+      }
+
+      const bulkOrderPricingPayload = hasVariants
+        ? {
+            enabled: false,
+            minQuantity: null,
+            bulkPrice: null,
+          }
+        : bulkOrderEnabled
+        ? {
+            enabled: true,
+            minQuantity: parsedBulkMinimumQuantity,
+            bulkPrice: parsedBulkOrderPrice,
+          }
+        : {
+            enabled: false,
+            minQuantity: null,
+            bulkPrice: null,
+          }
 
       // Create/update FoodItem in DB (single call per explicit Save; no autosave spam)
       let itemId
@@ -749,6 +832,7 @@ export default function ItemDetailsPage() {
           categoryName,
           subcategoryId: subcategoryId || undefined,
           subcategoryName,
+          bulkOrderPricing: bulkOrderPricingPayload,
         })
         const created = createRes?.data?.data?.food || createRes?.data?.food
         itemId = String(created?._id || created?.id || "")
@@ -773,6 +857,7 @@ export default function ItemDetailsPage() {
           categoryName,
           subcategoryId: subcategoryId || undefined,
           subcategoryName,
+          bulkOrderPricing: bulkOrderPricingPayload,
         })
       }
 
@@ -1164,36 +1249,95 @@ export default function ItemDetailsPage() {
                   <div className="space-y-3">
                     {variants.map((variant, index) => (
                       <div key={variant.localId} className="grid grid-cols-[1fr_auto] gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">Variant name</label>
-                            <input
-                              type="text"
-                              value={variant.name}
-                              onChange={(e) => handleVariantChange(variant.localId, "name", e.target.value)}
-                              placeholder={index === 0 ? "Full" : "Half"}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">Variant price</label>
-                            <div className="relative">
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">Variant name</label>
                               <input
                                 type="text"
-                                value={variant.price}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(/[\u20B9\s,]/g, '').replace(/[^0-9.]/g, '')
-                                  const parts = value.split('.')
-                                  const cleanedValue = parts.length > 2
-                                    ? parts[0] + '.' + parts.slice(1).join('')
-                                    : value
-                                  handleVariantChange(variant.localId, "price", cleanedValue)
-                                }}
-                                placeholder="Enter price"
-                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                value={variant.name}
+                                onChange={(e) => handleVariantChange(variant.localId, "name", e.target.value)}
+                                placeholder={index === 0 ? "Full" : "Half"}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                               />
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">{"\u20B9"}</span>
                             </div>
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">Variant price</label>
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  value={variant.price}
+                                  onChange={(e) => {
+                                    const value = e.target.value.replace(/[\u20B9\s,]/g, '').replace(/[^0-9.]/g, '')
+                                    const parts = value.split('.')
+                                    const cleanedValue = parts.length > 2
+                                      ? parts[0] + '.' + parts.slice(1).join('')
+                                      : value
+                                    handleVariantChange(variant.localId, "price", cleanedValue)
+                                  }}
+                                  placeholder="Enter price"
+                                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">{"\u20B9"}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Bulk pricing</p>
+                                <p className="mt-1 text-xs text-gray-500">Set bulk quantity and price for this variant.</p>
+                              </div>
+                              <Switch
+                                checked={variant.bulkOrderEnabled}
+                                onCheckedChange={(checked) => {
+                                  handleVariantChange(variant.localId, "bulkOrderEnabled", checked)
+                                  if (!checked) {
+                                    handleVariantChange(variant.localId, "bulkMinimumQuantity", "")
+                                    handleVariantChange(variant.localId, "bulkOrderPrice", "")
+                                  }
+                                }}
+                                className="data-[state=unchecked]:bg-gray-300"
+                              />
+                            </div>
+                            {variant.bulkOrderEnabled ? (
+                              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs text-gray-600 mb-1">Bulk minimum quantity</label>
+                                  <input
+                                    type="text"
+                                    value={variant.bulkMinimumQuantity}
+                                    onChange={(e) => {
+                                      const value = e.target.value.replace(/[^0-9]/g, "")
+                                      handleVariantChange(variant.localId, "bulkMinimumQuantity", value)
+                                    }}
+                                    placeholder="Enter minimum quantity"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-600 mb-1">Bulk price</label>
+                                  <div className="relative">
+                                    <input
+                                      type="text"
+                                      value={variant.bulkOrderPrice}
+                                      onChange={(e) => {
+                                        const value = e.target.value.replace(/[\u20B9\s,]/g, '').replace(/[^0-9.]/g, '')
+                                        const parts = value.split('.')
+                                        const cleanedValue = parts.length > 2
+                                          ? parts[0] + '.' + parts.slice(1).join('')
+                                          : value
+                                        handleVariantChange(variant.localId, "bulkOrderPrice", cleanedValue)
+                                      }}
+                                      placeholder="Enter bulk price"
+                                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                    />
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">{"\u20B9"}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                         <button
@@ -1209,6 +1353,78 @@ export default function ItemDetailsPage() {
                   </div>
                 ) : (
                   <p className="text-xs text-gray-500">No variants added. This item will use the base price only.</p>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Bulk order pricing</p>
+                    <p className="text-xs text-gray-500">
+                      {variants.length > 0
+                        ? "Variants are active, so configure bulk pricing on each variant row above."
+                        : "Set a discounted unit price and minimum quantity for bulk orders."}
+                    </p>
+                  </div>
+                  {variants.length === 0 ? (
+                    <Switch
+                      checked={bulkOrderEnabled}
+                      onCheckedChange={(checked) => {
+                        setBulkOrderEnabled(checked)
+                        if (!checked) {
+                          setBulkMinimumQuantity("")
+                          setBulkOrderPrice("")
+                        }
+                      }}
+                      className="data-[state=unchecked]:bg-gray-300"
+                    />
+                  ) : null}
+                </div>
+
+                {variants.length > 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                    Add or edit bulk minimum quantity and bulk price inside each variant card.
+                  </div>
+                ) : bulkOrderEnabled ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Minimum quantity</label>
+                      <input
+                        type="text"
+                        value={bulkMinimumQuantity}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9]/g, "")
+                          setBulkMinimumQuantity(value)
+                        }}
+                        placeholder="Enter minimum quantity"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Bulk price per unit</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={bulkOrderPrice}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[\u20B9\s,]/g, "").replace(/[^0-9.]/g, "")
+                            const parts = value.split(".")
+                            const cleanedValue = parts.length > 2
+                              ? parts[0] + "." + parts.slice(1).join("")
+                              : value
+                            setBulkOrderPrice(cleanedValue)
+                          }}
+                          placeholder="Enter bulk price"
+                          className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                        />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">{"\u20B9"}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                    Bulk pricing is off for this item.
+                  </div>
                 )}
               </div>
 

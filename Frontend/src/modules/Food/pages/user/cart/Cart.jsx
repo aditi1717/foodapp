@@ -133,6 +133,17 @@ const isItemVeg = (item = {}) => {
   return false
 }
 
+const normalizeBulkOrderPricing = (raw = {}) => {
+  const minQuantity = Number(raw?.minQuantity)
+  const bulkPrice = Number(raw?.bulkPrice)
+
+  return {
+    enabled: raw?.enabled === true,
+    minQuantity: Number.isInteger(minQuantity) && minQuantity > 0 ? minQuantity : null,
+    bulkPrice: Number.isFinite(bulkPrice) && bulkPrice >= 0 ? bulkPrice : null,
+  }
+}
+
 export default function Cart() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
@@ -140,6 +151,8 @@ export default function Cart() {
   const orderSuccessAudioRef = useRef(null)
   const hasRestoredRecipientRef = useRef(false)
   const lastAutoOfferToastRef = useRef("")
+  const pricingRequestIdRef = useRef(0)
+  const bulkModeIssueToastShownRef = useRef(false)
 
   // Defensive check: Ensure CartProvider is available
   let cartContext;
@@ -166,7 +179,17 @@ export default function Cart() {
     );
   }
 
-  const { cart, updateQuantity, addToCart, getCartCount, clearCart, cleanCartForRestaurant } = cartContext;
+  const {
+    cart,
+    updateQuantity,
+    addToCart,
+    getCartCount,
+    clearCart,
+    cleanCartForRestaurant,
+    bulkOrderMode,
+    activateBulkOrderMode,
+    deactivateBulkOrderMode,
+  } = cartContext;
   const hasQuickItems = cart.some((item) => (item?.orderType || "food") === "quick")
   const hasFoodItems = cart.some((item) => (item?.orderType || "food") === "food")
 
@@ -286,10 +309,20 @@ export default function Cart() {
   }, [takeawayEnabled, fulfillmentType])
 
   useEffect(() => {
-    if (isTakeawayCashBlocked && selectedPaymentMethod === "cash") {
+    if (!bulkOrderMode) return
+    if (fulfillmentType !== "delivery") {
+      setFulfillmentType("delivery")
+    }
+    if (!isScheduled) {
+      setIsScheduled(true)
+    }
+  }, [bulkOrderMode, fulfillmentType, isScheduled])
+
+  useEffect(() => {
+    if ((isTakeawayCashBlocked || bulkOrderMode) && selectedPaymentMethod === "cash") {
       setSelectedPaymentMethod("razorpay")
     }
-  }, [isTakeawayCashBlocked, selectedPaymentMethod])
+  }, [isTakeawayCashBlocked, bulkOrderMode, selectedPaymentMethod])
 
   useEffect(() => {
     const fetchTimings = async () => {
@@ -1023,13 +1056,17 @@ export default function Cart() {
   // Calculate pricing from backend whenever cart, address, or coupon changes
   useEffect(() => {
     const calculatePricing = async () => {
+      const requestId = ++pricingRequestIdRef.current
       if (cart.length === 0 || (!isTakeaway && !hasSavedAddress)) {
-        setPricing(null)
+        if (requestId === pricingRequestIdRef.current) {
+          setPricing(null)
+        }
         return
       }
 
       try {
         setLoadingPricing(true)
+        setPricing(null)
         const items = cart.map(item => ({
           itemId: item.itemId || item.id,
           name: item.name,
@@ -1045,7 +1082,9 @@ export default function Cart() {
 
         const resolvedRestaurantId = resolveRestaurantMongoId(restaurantData, restaurantId) || undefined
         if (hasFoodItems && !isMongoObjectId(resolvedRestaurantId)) {
-          setPricing(null)
+          if (requestId === pricingRequestIdRef.current) {
+            setPricing(null)
+          }
           return
         }
         const resolvedCouponCode =
@@ -1057,12 +1096,14 @@ export default function Cart() {
           items,
           restaurantId: resolvedRestaurantId,
           fulfillmentType,
+          isBulkOrder: bulkOrderMode,
           deliveryAddress: isTakeaway ? null : defaultAddress,
           address: isTakeaway ? null : defaultAddress,
           couponCode: resolvedCouponCode
         })
 
         if (response?.data?.success && response?.data?.data?.pricing) {
+          if (requestId !== pricingRequestIdRef.current) return
           syncTakeawayCashAvailability(response?.data?.data)
           const backendPricing = response.data.data.pricing
           setPricing(backendPricing)
@@ -1117,6 +1158,7 @@ export default function Cart() {
           }
         }
       } catch (error) {
+        if (requestId !== pricingRequestIdRef.current) return
         // Network errors or 404 errors - silently handle, fallback to frontend calculation
         if (error.code !== 'ERR_NETWORK' && error.response?.status !== 404) {
           debugError("Error calculating pricing:", error)
@@ -1125,12 +1167,14 @@ export default function Cart() {
         syncTakeawayCashAvailability(null)
         setPricing(null)
       } finally {
-        setLoadingPricing(false)
+        if (requestId === pricingRequestIdRef.current) {
+          setLoadingPricing(false)
+        }
       }
     }
 
     calculatePricing()
-  }, [cart, defaultAddress, appliedCoupon, couponCode, restaurantId, restaurantData, hasFoodItems, hasSavedAddress, fulfillmentType, isTakeaway])
+  }, [cart, defaultAddress, appliedCoupon, couponCode, restaurantId, restaurantData, hasFoodItems, hasSavedAddress, fulfillmentType, isTakeaway, bulkOrderMode])
 
   // Fetch wallet balance
   useEffect(() => {
@@ -1203,8 +1247,31 @@ export default function Cart() {
     }
   }, [])
 
-  // Use backend pricing if available, otherwise fallback to database fee settings
-  const subtotal = pricing?.subtotal || cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0)
+  const fallbackCartSubtotal = cart.reduce((sum, item) => {
+    const bulkOrderPricing = normalizeBulkOrderPricing(item?.bulkOrderPricing)
+    const quantity = Number(item?.quantity || 0)
+    const isBulkEligible =
+      bulkOrderMode &&
+      bulkOrderPricing.enabled &&
+      Number.isInteger(bulkOrderPricing.minQuantity) &&
+      quantity >= bulkOrderPricing.minQuantity &&
+      Number.isFinite(bulkOrderPricing.bulkPrice)
+    const unitPrice = isBulkEligible
+      ? Number(bulkOrderPricing.bulkPrice || item.price || 0)
+      : Number(item.price || 0)
+    return sum + unitPrice * quantity
+  }, 0)
+
+  const backendSubtotal = Number(pricing?.subtotal)
+  const hasValidBackendSubtotal = Number.isFinite(backendSubtotal)
+
+  // In bulk mode, derive the item total directly from the cart lines so stale/non-bulk
+  // calculate responses cannot briefly overwrite the visible subtotal.
+  const subtotal = bulkOrderMode
+    ? fallbackCartSubtotal
+    : hasValidBackendSubtotal
+      ? backendSubtotal
+      : fallbackCartSubtotal
   const fallbackDeliveryFee = (() => {
     if (appliedCoupon?.freeDelivery) {
       return 0
@@ -1280,9 +1347,13 @@ export default function Cart() {
   // Calculate effective discount based on mutual exclusivity
   const effectiveDiscount = displayedAppliedCoupon ? couponDiscount : autoOfferDiscount
   
-  const total = displayedAppliedCoupon 
-    ? (pricing?.total ? (Number(pricing.total) + Number(pricing.autoOfferDiscount || 0)) : totalBeforeDiscount - effectiveDiscount)
-    : (pricing?.total || totalBeforeDiscount - effectiveDiscount)
+  const backendTotal = Number(pricing?.total)
+  const hasValidBackendTotal = Number.isFinite(backendTotal)
+  const total = bulkOrderMode
+    ? totalBeforeDiscount - effectiveDiscount
+    : displayedAppliedCoupon
+      ? (hasValidBackendTotal ? (backendTotal + Number(pricing?.autoOfferDiscount || 0)) : totalBeforeDiscount - effectiveDiscount)
+      : (hasValidBackendTotal ? backendTotal : totalBeforeDiscount - effectiveDiscount)
   const previousDue = 0
   const totalPayable = Number(total || 0)
     
@@ -1296,6 +1367,167 @@ export default function Cart() {
 
   // Restaurant name from data or cart
   const restaurantName = restaurantData?.name || cart[0]?.restaurant || "Restaurant"
+  const cartBulkOrderSummary = useMemo(() => {
+    return cart.map((item) => {
+      const bulkOrderPricing = normalizeBulkOrderPricing(item?.bulkOrderPricing)
+      const quantity = Number(item?.quantity || 0)
+      const meetsMinQuantity =
+        bulkOrderPricing.enabled &&
+        Number.isInteger(bulkOrderPricing.minQuantity) &&
+        quantity >= bulkOrderPricing.minQuantity
+      const isEligible =
+        bulkOrderPricing.enabled &&
+        Number.isFinite(bulkOrderPricing.bulkPrice) &&
+        meetsMinQuantity
+
+      return {
+        lineItemId: item.id,
+        bulkOrderPricing,
+        meetsMinQuantity,
+        isEligible,
+        quantity,
+      }
+    })
+  }, [cart])
+
+  const cartBulkOrderMap = useMemo(
+    () => new Map(cartBulkOrderSummary.map((entry) => [entry.lineItemId, entry])),
+    [cartBulkOrderSummary],
+  )
+  const bulkEligibleItemsCount = cartBulkOrderSummary.filter((entry) => entry.isEligible).length
+  const bulkEligibleUnitsCount = cartBulkOrderSummary
+    .filter((entry) => entry.isEligible)
+    .reduce((sum, entry) => sum + Number(entry.quantity || 0), 0)
+  const bulkCapableItemsCount = cartBulkOrderSummary.filter((entry) => entry.bulkOrderPricing.enabled).length
+  const bulkModeBlockedItems = cartBulkOrderSummary.filter((entry) => !entry.isEligible)
+  const bulkModeHasIssues = bulkOrderMode && bulkModeBlockedItems.length > 0
+
+  useEffect(() => {
+    if (!bulkOrderMode) {
+      bulkModeIssueToastShownRef.current = false
+      return
+    }
+
+    if (!bulkModeHasIssues || bulkModeIssueToastShownRef.current) return
+
+    bulkModeIssueToastShownRef.current = true
+    deactivateBulkOrderMode()
+    toast.error("Bulk order was disabled because one or more items no longer meet the minimum quantity.")
+  }, [bulkModeHasIssues, bulkOrderMode, deactivateBulkOrderMode])
+
+  const handleActivateBulkMode = () => {
+    const removableNonBulkItems = cart.filter((item) => {
+      const bulkState = cartBulkOrderMap.get(item.id)
+      return !bulkState?.bulkOrderPricing?.enabled
+    })
+    const removableBelowMinItems = cart.filter((item) => {
+      const bulkState = cartBulkOrderMap.get(item.id)
+      return bulkState?.bulkOrderPricing?.enabled && !bulkState?.isEligible
+    })
+
+    const result = activateBulkOrderMode()
+    if (!result?.ok) {
+      const warningParts = []
+      if (removableNonBulkItems.length > 0) {
+        warningParts.push(
+          `Remove regular item${removableNonBulkItems.length > 1 ? "s" : ""}: ${removableNonBulkItems
+            .map((item) => item.name)
+            .slice(0, 3)
+            .join(", ")}`
+        )
+      }
+      if (removableBelowMinItems.length > 0) {
+        warningParts.push(
+          `Increase quantity for: ${removableBelowMinItems
+            .map((item) => {
+              const bulkState = cartBulkOrderMap.get(item.id)
+              const minQuantity = Number(bulkState?.bulkOrderPricing?.minQuantity || 0)
+              const currentQuantity = Number(item.quantity || 0)
+              return `${item.name} (+${Math.max(0, minQuantity - currentQuantity)})`
+            })
+            .slice(0, 3)
+            .join(", ")}`
+        )
+      }
+
+      if (warningParts.length > 0) {
+        toast.error(warningParts.join(" | "))
+      } else {
+      toast.error(result?.error || "Bulk order mode could not be enabled")
+      }
+      return
+    }
+
+    setFulfillmentType("delivery")
+    setIsScheduled(true)
+    if (selectedPaymentMethod === "cash") {
+      setSelectedPaymentMethod("razorpay")
+    }
+
+    const removedNonBulkItems = (result.removedItems || []).filter((item) => {
+      const bulkOrderPricing = normalizeBulkOrderPricing(item?.bulkOrderPricing)
+      return !bulkOrderPricing.enabled
+    })
+    const removedBelowMinItems = (result.removedItems || []).filter((item) => {
+      const bulkOrderPricing = normalizeBulkOrderPricing(item?.bulkOrderPricing)
+      return bulkOrderPricing.enabled
+    })
+
+    toast.success(
+      `Bulk order approved for ${result.keptCount} item${result.keptCount > 1 ? "s" : ""}. Pricing has been updated for bulk checkout.`
+    )
+
+    if (result.removedCount > 0) {
+      const removalNotes = []
+      if (removedNonBulkItems.length > 0) {
+        removalNotes.push(
+          `Removed regular item${removedNonBulkItems.length > 1 ? "s" : ""}: ${removedNonBulkItems
+            .map((item) => item.name)
+            .slice(0, 3)
+            .join(", ")}`
+        )
+      }
+      if (removedBelowMinItems.length > 0) {
+        removalNotes.push(
+          `Removed below-min bulk item${removedBelowMinItems.length > 1 ? "s" : ""}: ${removedBelowMinItems
+            .map((item) => item.name)
+            .slice(0, 3)
+            .join(", ")}`
+        )
+      }
+
+      toast.warning(
+        removalNotes.length > 0
+          ? removalNotes.join(" | ")
+          : `${result.removedCount} item${result.removedCount > 1 ? "s were" : " was"} removed for bulk-order rules.`
+      )
+    }
+  }
+
+  const handleDeactivateBulkMode = () => {
+    deactivateBulkOrderMode()
+    toast.success("Bulk order mode disabled")
+  }
+
+  const handleCartItemQuantityChange = (item, nextQuantity) => {
+    const bulkState = cartBulkOrderMap.get(item.id)
+    const minQuantity = Number(bulkState?.bulkOrderPricing?.minQuantity || 0)
+
+    if (
+      bulkOrderMode &&
+      bulkState?.bulkOrderPricing?.enabled &&
+      nextQuantity > 0 &&
+      minQuantity > 0 &&
+      nextQuantity < minQuantity
+    ) {
+      toast.error(
+        `${item.name} requires minimum quantity ${minQuantity} for bulk ordering. Remove it fully or keep ${minQuantity}+ quantity.`,
+      )
+      return
+    }
+
+    updateQuantity(item.id, nextQuantity)
+  }
 
   const handleShare = async () => {
     const restaurantNameStr = restaurantName || companyName || "this restaurant"
@@ -1531,6 +1763,7 @@ export default function Cart() {
           items,
           restaurantId: resolveRestaurantMongoId(restaurantData, restaurantId),
           fulfillmentType,
+          isBulkOrder: bulkOrderMode,
           deliveryAddress: isTakeaway ? null : defaultAddress,
           address: isTakeaway ? null : defaultAddress,
           couponCode: coupon.code
@@ -1595,6 +1828,7 @@ export default function Cart() {
         items,
         restaurantId: resolveRestaurantMongoId(restaurantData, restaurantId),
         fulfillmentType,
+        isBulkOrder: bulkOrderMode,
         deliveryAddress: isTakeaway ? null : defaultAddress,
         address: isTakeaway ? null : defaultAddress,
         couponCode: inputCode
@@ -1657,6 +1891,7 @@ export default function Cart() {
           items,
           restaurantId: resolveRestaurantMongoId(restaurantData, restaurantId),
           fulfillmentType,
+          isBulkOrder: bulkOrderMode,
           deliveryAddress: isTakeaway ? null : defaultAddress,
           address: isTakeaway ? null : defaultAddress,
           couponCode: null
@@ -1688,6 +1923,21 @@ export default function Cart() {
     if (isTakeawayCashBlocked && selectedPaymentMethod === "cash") {
       toast.error(takeawayCashOption.reason || "Takeaway COD is not available for this order")
       return
+    }
+
+    if (bulkOrderMode) {
+      if (fulfillmentType !== "delivery") {
+        toast.error("Bulk orders are available for delivery only")
+        return
+      }
+      if (selectedPaymentMethod === "cash") {
+        toast.error("Cash on Delivery is not available for bulk orders")
+        return
+      }
+      if (bulkModeHasIssues) {
+        toast.error("Some items do not meet bulk order minimum quantity requirements")
+        return
+      }
     }
 
     if (isScheduled) {
@@ -1938,6 +2188,7 @@ export default function Cart() {
         paymentMethod: selectedPaymentMethod,
         // `useZone()` can return `null`. Zod expects string/undefined, not null.
         zoneId: zoneId || undefined,
+        isBulkOrder: bulkOrderMode,
         isScheduled: isScheduled || false,
         scheduledAt: isScheduled && selectedTimeSlot ? new Date(`${selectedDate}T${selectedTimeSlot}:00`).toISOString() : undefined,
       };
@@ -2264,11 +2515,51 @@ export default function Cart() {
           <div className="max-w-3xl mx-auto">
             {/* Main Cart Content */}
             <div className="space-y-2 md:space-y-4">
+              {bulkOrderMode && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold">Bulk order mode is active</p>
+                      <p className="mt-1 text-xs font-medium">
+                        Scheduled delivery is required and Cash on Delivery is disabled for this checkout.
+                      </p>
+                      <p className="mt-2 text-xs font-semibold text-emerald-700">
+                        Bulk order approved for {bulkEligibleItemsCount} item{bulkEligibleItemsCount > 1 ? "s" : ""} and {bulkEligibleUnitsCount} unit{bulkEligibleUnitsCount > 1 ? "s" : ""}.
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-amber-900">
+                        Bulk total payable: {RUPEE_SYMBOL}{totalPayable.toFixed(0)}
+                      </p>
+                      {bulkModeHasIssues && (
+                        <p className="mt-2 text-xs font-semibold text-red-600">
+                          Some items need higher quantity before this bulk order can be placed.
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDeactivateBulkMode}
+                      className="rounded-lg border border-amber-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide hover:bg-amber-100"
+                    >
+                      Turn off
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Cart Items */}
               <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-4 md:py-5 rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 dark:border-gray-800">
                 <div className="space-y-3 md:space-y-4">
                   {cart.map((item) => (
                     <div key={item.id} className="flex items-start gap-3 md:gap-4">
+                      {(() => {
+                        const bulkState = cartBulkOrderMap.get(item.id)
+                        const displayUnitPrice =
+                          bulkOrderMode && bulkState?.isEligible
+                            ? Number(bulkState.bulkOrderPricing.bulkPrice || item.price || 0)
+                            : Number(item.price || 0)
+                        const lineTotal = displayUnitPrice * Number(item.quantity || 1)
+                        return (
+                          <>
                       {/* Veg/Non-veg indicator */}
                       <div className={`w-4 h-4 md:w-5 md:h-5 border-2 ${isItemVeg(item) ? 'border-green-600' : 'border-red-600'} flex items-center justify-center mt-1 flex-shrink-0`}>
                         <div className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full ${isItemVeg(item) ? 'bg-green-600' : 'bg-red-600'}`} />
@@ -2279,6 +2570,24 @@ export default function Cart() {
                         {item.variantName ? (
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.variantName}</p>
                         ) : null}
+                        {(() => {
+                          if (!bulkState?.bulkOrderPricing?.enabled || !bulkOrderMode) return null
+
+                          return (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span
+                                className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700"
+                              >
+                                Bulk Mode Active
+                              </span>
+                              <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                {bulkState.isEligible
+                                  ? `${RUPEE_SYMBOL}${bulkState.bulkOrderPricing.bulkPrice} each, min ${bulkState.bulkOrderPricing.minQuantity}`
+                                  : `Add ${Math.max(0, (bulkState.bulkOrderPricing.minQuantity || 0) - bulkState.quantity)} more for bulk price ${RUPEE_SYMBOL}${bulkState.bulkOrderPricing.bulkPrice}`}
+                              </span>
+                            </div>
+                          )
+                        })()}
                       </div>
 
                       <div className="flex items-center gap-3 md:gap-4">
@@ -2290,7 +2599,7 @@ export default function Cart() {
                           <button
                             className="px-2 md:px-3 py-1 hover:bg-brand-50"
                             style={{ color: BRAND_THEME.colors.brand.primary, backgroundColor: 'transparent' }}
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => handleCartItemQuantityChange(item, item.quantity - 1)}
                           >
                             <Minus className="h-3 w-3 md:h-4 md:w-4" />
                           </button>
@@ -2303,16 +2612,19 @@ export default function Cart() {
                           <button
                             className="px-2 md:px-3 py-1 hover:bg-brand-50"
                             style={{ color: BRAND_THEME.colors.brand.primary, backgroundColor: 'transparent' }}
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => handleCartItemQuantityChange(item, item.quantity + 1)}
                           >
                             <Plus className="h-3 w-3 md:h-4 md:w-4" />
                           </button>
                         </div>
 
                         <p className="text-sm md:text-base font-medium text-gray-800 dark:text-gray-200 min-w-[50px] md:min-w-[70px] text-right">
-                          {RUPEE_SYMBOL}{((item.price || 0) * (item.quantity || 1)).toFixed(0)}
+                          {RUPEE_SYMBOL}{lineTotal.toFixed(0)}
                         </p>
                       </div>
+                          </>
+                        )
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -2326,6 +2638,18 @@ export default function Cart() {
                   <Plus className="h-4 w-4 md:h-5 md:w-5" />
                   <span className="text-sm md:text-base font-medium">Add more items</span>
                 </button>
+
+                {!bulkOrderMode && bulkCapableItemsCount > 0 && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleActivateBulkMode}
+                      className="rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white shadow-sm transition-all hover:bg-brand-700"
+                    >
+                      Bulk Order
+                    </button>
+                  </div>
+                )}
               </div>
 
 
@@ -2444,7 +2768,7 @@ export default function Cart() {
                                   return;
                                 }
 
-                                addToCart({
+                                const result = addToCart({
                                   id: addon.id,
                                   name: addon.name,
                                   price: addon.price,
@@ -2454,6 +2778,9 @@ export default function Cart() {
                                   restaurant: cartRestaurantName,
                                   restaurantId: cartRestaurantId
                                 });
+                                if (!result?.ok && result?.error) {
+                                  toast.error(result.error);
+                                }
                               }}
                               className="absolute bottom-1 md:bottom-2 right-1 md:right-2 w-6 h-6 md:w-7 md:h-7 bg-white rounded flex items-center justify-center shadow-sm transition-colors"
                               style={{ borderColor: BRAND_THEME.colors.brand.primary }}
@@ -2647,24 +2974,25 @@ export default function Cart() {
                   <div className="space-y-3">
                     <div className="flex flex-col gap-2">
                       <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">When do you want it?</span>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setIsScheduled(false)}
-                          className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
-                            !isScheduled
-                              ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-900/10 text-brand-700 font-bold'
-                              : 'border-slate-200 dark:border-gray-800 text-slate-600 hover:bg-slate-50'
-                          }`}
-                          style={!isScheduled ? { borderColor: BRAND_THEME.colors.brand.primary, color: BRAND_THEME.colors.brand.primary } : undefined}
-                        >
-                          <Zap className="h-4 w-4 mb-1" />
-                          <span className="text-xs">Immediate</span>
-                          <span className="text-[10px] opacity-80 mt-0.5">
-                            {isTakeaway ? "Pickup soon" : (restaurantData?.estimatedDeliveryTime || "15-20 mins")}
-                          </span>
-                        </button>
-
+                      <div className={`grid gap-3 ${bulkOrderMode ? "grid-cols-1" : "grid-cols-2"}`}>
+                        {!bulkOrderMode && (
+                          <button
+                            type="button"
+                            onClick={() => setIsScheduled(false)}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                              !isScheduled
+                                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-900/10 text-brand-700 font-bold'
+                                : 'border-slate-200 dark:border-gray-800 text-slate-600 hover:bg-slate-50'
+                            }`}
+                            style={!isScheduled ? { borderColor: BRAND_THEME.colors.brand.primary, color: BRAND_THEME.colors.brand.primary } : undefined}
+                          >
+                            <Zap className="h-4 w-4 mb-1" />
+                            <span className="text-xs">Immediate</span>
+                            <span className="text-[10px] opacity-80 mt-0.5">
+                              {isTakeaway ? "Pickup soon" : (restaurantData?.estimatedDeliveryTime || "15-20 mins")}
+                            </span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setIsScheduled(true)}
@@ -2684,7 +3012,7 @@ export default function Cart() {
 
                     <div className="flex flex-col gap-2">
                       <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">How should we fulfill it?</span>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className={`grid gap-3 ${bulkOrderMode ? "grid-cols-1" : "grid-cols-2"}`}>
                         <button
                           type="button"
                           onClick={() => setFulfillmentType("delivery")}
@@ -2700,27 +3028,34 @@ export default function Cart() {
                           <span className="text-[10px] opacity-80 mt-0.5">Bring it to me</span>
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => takeawayEnabled && setFulfillmentType("takeaway")}
-                          disabled={!takeawayEnabled}
-                          className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
-                            isTakeaway
-                              ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-900/10 text-brand-700 font-bold'
-                              : 'border-slate-200 dark:border-gray-800 text-slate-600 hover:bg-slate-50'
-                          }`}
-                          style={isTakeaway ? { borderColor: BRAND_THEME.colors.brand.primary, color: BRAND_THEME.colors.brand.primary } : undefined}
-                        >
-                          <Building2 className="h-4 w-4 mb-1" />
-                          <span className="text-xs">Takeaway</span>
-                          <span className="text-[10px] opacity-80 mt-0.5">
-                            {takeawayEnabled ? "Pickup at restaurant" : "Not available"}
-                          </span>
-                        </button>
+                        {!bulkOrderMode && (
+                          <button
+                            type="button"
+                            onClick={() => takeawayEnabled && setFulfillmentType("takeaway")}
+                            disabled={!takeawayEnabled}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                              isTakeaway
+                                ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-900/10 text-brand-700 font-bold'
+                                : 'border-slate-200 dark:border-gray-800 text-slate-600 hover:bg-slate-50'
+                            }`}
+                            style={isTakeaway ? { borderColor: BRAND_THEME.colors.brand.primary, color: BRAND_THEME.colors.brand.primary } : undefined}
+                          >
+                            <Building2 className="h-4 w-4 mb-1" />
+                            <span className="text-xs">Takeaway</span>
+                            <span className="text-[10px] opacity-80 mt-0.5">
+                              {takeawayEnabled ? "Pickup at restaurant" : "Not available"}
+                            </span>
+                          </button>
+                        )}
                       </div>
                       {!takeawayEnabled && (
                         <p className="text-[11px] text-amber-600 font-medium">
                           This restaurant is not accepting takeaway orders right now.
+                        </p>
+                      )}
+                      {bulkOrderMode && (
+                        <p className="text-[11px] text-amber-600 font-medium">
+                          Bulk orders are available only for scheduled delivery.
                         </p>
                       )}
                     </div>
@@ -3480,10 +3815,14 @@ export default function Cart() {
                           icon: <Banknote className="w-5 h-5" />,
                           color: 'bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400',
                           selectedColor: 'bg-brand-500 text-white',
-                          disabled: isTakeawayCashBlocked,
-                          disabledText: takeawayCashOption.reason || 'COD UNAVAILABLE'
+                          disabled: isTakeawayCashBlocked || bulkOrderMode,
+                          disabledText: bulkOrderMode
+                            ? 'NOT AVAILABLE FOR BULK ORDERS'
+                            : takeawayCashOption.reason || 'COD UNAVAILABLE'
                         }
-                      ].map((option) => (
+                      ]
+                        .filter((option) => !(bulkOrderMode && option.id === "cash"))
+                        .map((option) => (
                         <button
                           key={option.id}
                           onClick={() => {

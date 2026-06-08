@@ -115,6 +115,7 @@ export function validateCreateOrderDto(body) {
         note: z.string().optional(),
         restaurantNote: z.string().optional(),
         sendCutlery: z.boolean().optional(),
+        isBulkOrder: z.boolean().optional(),
         isScheduled: z.boolean().optional(),
         scheduledAt: z.string().datetime().optional(),
         // 'razorpay_qr' means COD-style flow, but payment is collected via Razorpay QR at delivery.
