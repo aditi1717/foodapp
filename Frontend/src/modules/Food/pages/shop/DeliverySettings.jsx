@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
 import Lenis from "lenis"
 import { ArrowLeft, Truck, X, CheckCircle, AlertCircle } from "lucide-react"
@@ -18,7 +18,7 @@ const RESTAURANT_ONLINE_STATUS_KEY = "restaurant_online_status"
 
 export default function DeliverySettings() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [deliveryStatus, setDeliveryStatus] = useState(false)
   const [showWarning, setShowWarning] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
@@ -68,11 +68,11 @@ export default function DeliverySettings() {
     const loadDeliveryStatus = async () => {
       try {
         const response = await restaurantAPI.getCurrentRestaurant()
-        const restaurant =
-          response?.data?.data?.restaurant ||
-          response?.data?.restaurant ||
+        const shop =
+          response?.data?.data?.shop ||
+          response?.data?.shop ||
           null
-        const nextStatus = restaurant?.isAcceptingOrders === true
+        const nextStatus = shop?.isAcceptingOrders === true
         if (!cancelled) {
           setDeliveryStatus(nextStatus)
           syncStatusLocally(nextStatus)
@@ -300,7 +300,7 @@ export default function DeliverySettings() {
           <Card className="bg-brand-50 border-brand-200 shadow-sm">
             <CardContent className="p-4">
               <p className="text-sm text-gray-700">
-                <strong>Note:</strong> When delivery is turned off, customers won't be able to place delivery orders from your restaurant. You can turn it back on anytime.
+                <strong>Note:</strong> When delivery is turned off, customers won't be able to place delivery orders from your shop. You can turn it back on anytime.
               </p>
             </CardContent>
           </Card>

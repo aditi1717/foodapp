@@ -255,7 +255,7 @@ const DeliveryTrackingMap = ({
   }, [riderLocation?.lat, riderLocation?.lng, isOrderPickedUp, restaurantCoords?.lat, restaurantCoords?.lng, customerCoords?.lat, customerCoords?.lng]);
 
   const center = useMemo(() => {
-    // Highly stable center: use restaurant or customer as anchor, not the moving rider
+    // Highly stable center: use shop or customer as anchor, not the moving rider
     if (isOrderPickedUp) return customerCoords || { lat: 0, lng: 0 };
     return restaurantCoords || { lat: 0, lng: 0 };
   }, [isOrderPickedUp, restaurantCoords, customerCoords]);
@@ -295,7 +295,7 @@ const DeliveryTrackingMap = ({
           ]
         }}
       >
-        {/* 1. PERSISTENT BASELINE (Full journey: Restaurant -> Customer) */}
+        {/* 1. PERSISTENT BASELINE (Full journey: Shop -> Customer) */}
         {!baselineDirections && baselineDirectionsServiceOptions && (
            <DirectionsService
              options={baselineDirectionsServiceOptions}
@@ -313,7 +313,7 @@ const DeliveryTrackingMap = ({
            />
         )}
 
-        {/* 1. PERSISTENT BASELINE (Full journey: Restaurant -> Customer) */}
+        {/* 1. PERSISTENT BASELINE (Full journey: Shop -> Customer) */}
         {baselineDirections && (
           <Polyline
             path={baselineDirections.routes[0].overview_path}
@@ -380,7 +380,7 @@ const DeliveryTrackingMap = ({
           />
         )}
 
-        {/* RESTAURANT PIN (OVERLAY VIEW FOR CUSTOM STLYE) */}
+        {/* SHOP PIN (OVERLAY VIEW FOR CUSTOM STLYE) */}
         <OverlayView
           position={restaurantCoords}
           mapPaneName={OverlayView.MARKER_LAYER}

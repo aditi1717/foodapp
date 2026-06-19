@@ -12,7 +12,7 @@ export default function Coupons() {
   const isOffersOnly = location.pathname.toLowerCase().includes("/offers")
   const [searchQuery, setSearchQuery] = useState("")
   const [offers, setOffers] = useState([])
-  const [restaurants, setRestaurants] = useState([])
+  const [shops, setRestaurants] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -102,7 +102,7 @@ export default function Coupons() {
       try {
         const response = await adminAPI.getRestaurants({ page: 1, limit: 200 })
         if (response?.data?.success) {
-          const list = response?.data?.data?.restaurants || []
+          const list = response?.data?.data?.shops || []
           // Backend returns `restaurantName`; normalize to `name` for this dropdown without affecting other pages.
           const normalized = Array.isArray(list)
             ? list.map((r) => ({
@@ -113,7 +113,7 @@ export default function Coupons() {
           setRestaurants(normalized)
         }
       } catch (err) {
-        debugError("Error fetching restaurants:", err)
+        debugError("Error fetching shops:", err)
       }
     }
 
@@ -492,7 +492,7 @@ export default function Coupons() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4">
             <h1 className="text-2xl font-bold text-slate-900">
-              {isOffersOnly ? "Restaurant Offers" : "Coupons"}
+              {isOffersOnly ? "Shop Offers" : "Coupons"}
             </h1>
             {!isOffersOnly && (
               <button
@@ -586,14 +586,14 @@ export default function Coupons() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Restaurant Scope</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Shop Scope</label>
                   <select
                     value={formData.restaurantScope}
                     onChange={(e) => handleFormChange("restaurantScope", e.target.value)}
                     className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                   >
-                    <option value="all">All Restaurants</option>
-                    <option value="selected">Selected Restaurant</option>
+                    <option value="all">All Shops</option>
+                    <option value="selected">Selected Shop</option>
                   </select>
                 </div>
 
@@ -682,16 +682,16 @@ export default function Coupons() {
 
                 {formData.restaurantScope === "selected" && (
                   <div className="md:col-span-2 lg:col-span-3">
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Select Restaurant</label>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Select Shop</label>
                     <select
                       value={formData.restaurantId}
                       onChange={(e) => handleFormChange("restaurantId", e.target.value)}
                       className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                     >
-                      <option value="">Choose a restaurant</option>
-                      {restaurants.map((restaurant) => (
+                      <option value="">Choose a shop</option>
+                      {shops.map((shop) => (
                         <option key={restaurant._id} value={restaurant._id}>
-                          {restaurant.name}
+                          {shop.name}
                         </option>
                       ))}
                     </select>
@@ -751,12 +751,12 @@ export default function Coupons() {
           <div className="flex items-center justify-between mb-4 gap-2">
             <div>
               <h2 className="text-xl font-bold text-slate-900">
-                {isOffersOnly ? "Pending Restaurant Offers" : "Pending Restaurant Coupons"}
+                {isOffersOnly ? "Pending Shop Offers" : "Pending Shop Coupons"}
               </h2>
               <p className="text-xs text-slate-500">
                 {isOffersOnly
-                  ? "Approve or reject offers submitted by restaurants."
-                  : "Approve or reject coupons submitted by restaurants."}
+                  ? "Approve or reject offers submitted by shops."
+                  : "Approve or reject coupons submitted by shops."}
               </p>
             </div>
             <button
@@ -793,7 +793,7 @@ export default function Coupons() {
                     <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">pending</span>
                   </div>
                   <div className="text-xs text-slate-600">
-                    {offer.restaurantName || "Selected restaurant"} • {offer.discountType === "flat-price"
+                    {offer.restaurantName || "Selected shop"} • {offer.discountType === "flat-price"
                       ? `₹${offer.discountValue} OFF`
                       : `${offer.discountValue}% OFF${offer.maxDiscount ? ` (up to ₹${offer.maxDiscount})` : ""}`}
                   </div>
@@ -861,8 +861,8 @@ export default function Coupons() {
                   <p className="font-semibold text-slate-900">{viewOfferModal.title || "—"}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-slate-500">Restaurant</p>
-                  <p className="font-semibold text-slate-900">{viewOfferModal.restaurantName || "Selected restaurant"}</p>
+                  <p className="text-xs text-slate-500">Shop</p>
+                  <p className="font-semibold text-slate-900">{viewOfferModal.restaurantName || "Selected shop"}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-slate-500">Product</p>
@@ -954,7 +954,7 @@ export default function Coupons() {
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">SI</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Restaurant</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Shop</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Dish</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Coupon Code</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Customer Scope</th>
@@ -976,7 +976,7 @@ export default function Coupons() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-slate-900">
-                          {offer.restaurantScope === "all" || offer.restaurantName === "All Restaurants" ? "All Restaurants" : offer.restaurantName}
+                          {offer.restaurantScope === "all" || offer.restaurantName === "All Shops" ? "All Shops" : offer.restaurantName}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { formatCurrency } from "@food/utils/currency"
 import { restaurantAPI } from "@food/api"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
@@ -207,7 +207,7 @@ export default function FoodDetailsPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center gap-4">
           <button 
-            onClick={() => navigate("/restaurant/details")}
+            onClick={() => navigate("/shop/details")}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -569,7 +569,7 @@ export default function FoodDetailsPage() {
           <Button
             type="button"
             disabled={!foodData}
-            onClick={() => navigate(`/restaurant/food/${id}/edit`)}
+            onClick={() => navigate(`/shop/food/${id}/edit`)}
             className="flex-1 bg-[#ff8100] hover:bg-[#e67300] text-white font-semibold py-3"
           >
             Edit

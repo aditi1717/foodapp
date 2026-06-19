@@ -160,7 +160,7 @@ export function clearModuleAuth(module) {
   if (module === "restaurant") {
     clearRestaurantSessionCache();
     try {
-      const openRequest = indexedDB.open("RestaurantOnboardingFiles");
+      const openRequest = indexedDB.open("ShopOnboardingFiles");
       openRequest.onsuccess = (event) => {
         const db = event.target.result;
         if (db.objectStoreNames.contains("files")) {

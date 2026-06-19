@@ -125,8 +125,8 @@ const helpCategories = [
         answer: "Navigate to Profile > Addresses to view, add, edit, or delete delivery addresses. Set a default address for faster checkout."
       },
       {
-        question: "How do I save my favorite restaurants?",
-        answer: "Click the heart icon on any restaurant page to add it to your favorites. View all favorites in Profile > Favorites."
+        question: "How do I save my favorite shops?",
+        answer: "Click the heart icon on any shop page to add it to your favorites. View all favorites in Profile > Favorites."
       }
     ]
   },
@@ -166,7 +166,7 @@ const helpCategories = [
     topics: [
       {
         question: "Do you offer discounts or promotions?",
-        answer: "Yes! Check the 'Offers' section for current promotions, discount codes, and special deals from restaurants."
+        answer: "Yes! Check the 'Offers' section for current promotions, discount codes, and special deals from shops."
       },
       {
         question: "How do I contact customer support?",
@@ -178,7 +178,7 @@ const helpCategories = [
       },
       {
         question: "Do you deliver to my area?",
-        answer: "Enter your delivery address to see available restaurants in your area. We're constantly expanding our delivery zones."
+        answer: "Enter your delivery address to see available shops in your area. We're constantly expanding our delivery zones."
       }
     ]
   }

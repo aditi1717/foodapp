@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { useNavigate, useParams, useLocation } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   ArrowLeft,
@@ -53,7 +53,7 @@ const createVariantDraft = (variant = {}) => ({
 
 export default function ItemDetailsPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const { id } = useParams()
   const location = useLocation()
   const isNewItem = id === "new"
@@ -114,19 +114,19 @@ export default function ItemDetailsPage() {
   const [isPureVeg, setIsPureVeg] = useState(false)
 
   useEffect(() => {
-    const fetchRestaurantProfile = async () => {
+    const fetchShopProfile = async () => {
       try {
         const res = await restaurantAPI.getCurrentRestaurant()
-        const data = res?.data?.data?.restaurant || res?.data?.restaurant
+        const data = res?.data?.data?.shop || res?.data?.shop
         if (data) {
           const pureVeg = data.pureVegRestaurant === true || data.pureVegRestaurant === "true"
           setIsPureVeg(pureVeg)
         }
       } catch (err) {
-        console.error("Error fetching restaurant profile:", err)
+        console.error("Error fetching shop profile:", err)
       }
     }
-    fetchRestaurantProfile()
+    fetchShopProfile()
   }, [isNewItem])
 
   const maxNameLength = 70
@@ -269,7 +269,7 @@ export default function ItemDetailsPage() {
     fetchItemData()
   }, [id, isNewItem, location.state, defaultCategory])
 
-  // Fetch categories from restaurant-specific API
+  // Fetch categories from shop-specific API
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -283,7 +283,7 @@ export default function ItemDetailsPage() {
             foodTypeScope: cat.foodTypeScope || "Both",
           }))
 
-          const displayCategories = isPureVeg ? formattedCategories.filter(cat => cat.foodTypeScope === "Veg") : formattedCategories; debugLog('Formatted restaurant categories:', displayCategories)
+          const displayCategories = isPureVeg ? formattedCategories.filter(cat => cat.foodTypeScope === "Veg") : formattedCategories; debugLog('Formatted shop categories:', displayCategories)
           setCategories(displayCategories)
           if (!selectedCategoryId && displayCategories.length > 0) {
             const preferredName = String(category || defaultCategory || "").trim()
@@ -299,7 +299,7 @@ export default function ItemDetailsPage() {
           setCategories([])
         }
       } catch (error) {
-        debugError('Error fetching restaurant categories:', error)
+        debugError('Error fetching shop categories:', error)
         // Show empty array on error - user can add categories
         setCategories([])
       } finally {
@@ -890,7 +890,7 @@ export default function ItemDetailsPage() {
           : `Item updated successfully with ${imageCount} image(s)`
       )
       await new Promise((resolve) => setTimeout(resolve, 200))
-      navigate("/food/restaurant/inventory", { replace: true })
+      navigate("/food/shop/inventory", { replace: true })
       window.dispatchEvent(new CustomEvent('foodsChanged'))
     } catch (error) {
       debugError('Error saving menu:', error)
@@ -1513,7 +1513,7 @@ export default function ItemDetailsPage() {
                   {/* <button
                     onClick={() => {
                       setIsCategoryPopupOpen(false)
-                      navigate('/restaurant/menu-categories')
+                      navigate('/shop/menu-categories')
                     }}
                     className="p-2 rounded-lg text-white transition-colors flex items-center gap-1.5"
                     style={{ background: BRAND_THEME.gradients.primary }}

@@ -210,7 +210,7 @@ export default function RestaurantForgotPassword() {
               PASSWORD
             </h1>
             <p className="text-base xl:text-lg opacity-95 max-w-xl">
-              Follow the steps to securely reset your restaurant panel password.
+              Follow the steps to securely reset your shop panel password.
             </p>
           </div>
         </div>
@@ -252,7 +252,7 @@ export default function RestaurantForgotPassword() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="restaurant@example.com"
+                      placeholder="shop@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isLoading}
@@ -409,7 +409,7 @@ export default function RestaurantForgotPassword() {
 
             <div className="pt-4 border-t">
               <button
-                onClick={() => navigate("/restaurant/login")}
+                onClick={() => navigate("/shop/login")}
                 className="flex items-center gap-2 text-sm text-primary-orange hover:text-primary-orange/80 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />

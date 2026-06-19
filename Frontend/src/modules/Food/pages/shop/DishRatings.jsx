@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { ArrowLeft } from "lucide-react"
 
 export default function DishRatings() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

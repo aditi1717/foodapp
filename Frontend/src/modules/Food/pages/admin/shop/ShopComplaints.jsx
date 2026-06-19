@@ -155,7 +155,7 @@ export default function RestaurantComplaints() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Restaurant Complaints</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Shop Complaints</h1>
         <p className="text-sm text-gray-500 mt-1">Manage and track customer complaints</p>
       </div>
 
@@ -165,7 +165,7 @@ export default function RestaurantComplaints() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Search by order, customer, restaurant..."
+              placeholder="Search by order, customer, shop..."
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value.replace(/\s/g, ''), page: 1 })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
@@ -229,8 +229,8 @@ export default function RestaurantComplaints() {
                         <p className="font-medium">{complaint.userId?.name || 'Customer'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Restaurant</p>
-                        <p className="font-medium">{complaint.restaurantId?.restaurantName || 'Restaurant'}</p>
+                        <p className="text-xs text-gray-500">Shop</p>
+                        <p className="font-medium">{complaint.restaurantId?.restaurantName || 'Shop'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Type</p>
@@ -245,7 +245,7 @@ export default function RestaurantComplaints() {
                 <p className="text-sm text-gray-700 mb-3">{complaint.description}</p>
                 {complaint.restaurantResponse && (
                   <div className="bg-brand-50 rounded p-3 mb-3">
-                    <p className="text-xs font-semibold text-brand-700 mb-1">Restaurant Response:</p>
+                    <p className="text-xs font-semibold text-brand-700 mb-1">Shop Response:</p>
                     <p className="text-sm text-brand-800">{complaint.restaurantResponse}</p>
                   </div>
                 )}

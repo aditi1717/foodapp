@@ -41,7 +41,7 @@ export default function Gourmet() {
     return `${backendOrigin.replace(/\/$/, "")}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`
   }
 
-  // Fetch Gourmet restaurants from public API
+  // Fetch Gourmet shops from public API
   useEffect(() => {
     const fetchGourmetRestaurants = async () => {
       try {
@@ -49,11 +49,11 @@ export default function Gourmet() {
         setError(null)
         const response = await api.get('/food/hero-banners/gourmet/public')
         const data = response?.data?.data
-        const list = data?.restaurants ?? (Array.isArray(data) ? data : [])
+        const list = data?.shops ?? (Array.isArray(data) ? data : [])
         setGourmetRestaurants(list)
       } catch (err) {
-        debugError('Error fetching Gourmet restaurants:', err)
-        const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load Gourmet restaurants'
+        debugError('Error fetching Gourmet shops:', err)
+        const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load Gourmet shops'
         setError(errorMessage)
         toast.error(errorMessage)
         setGourmetRestaurants([])
@@ -104,13 +104,13 @@ export default function Gourmet() {
         <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
           {/* Header */}
           <div className="mb-2">
-            <h1 className={`text-xl sm:text-2xl font-bold ${BRAND_THEME.tokens.homepage.shared.title}`}>Premium Gourmet Restaurants</h1>
+            <h1 className={`text-xl sm:text-2xl font-bold ${BRAND_THEME.tokens.homepage.shared.title}`}>Premium Gourmet Shops</h1>
             <p className={`text-sm ${BRAND_THEME.tokens.homepage.shared.mutedText} mt-1`}>Premium chef-crafted meals delivered to your doorstep</p>
           </div>
 
-          {/* Restaurant Count */}
+          {/* Shop Count */}
           <p className={`text-xs sm:text-sm font-semibold ${BRAND_THEME.tokens.homepage.shared.heading} tracking-widest uppercase`}>
-            {showGourmetSkeleton ? '...' : gourmetRestaurants.length} GOURMET RESTAURANTS
+            {showGourmetSkeleton ? '...' : gourmetRestaurants.length} GOURMET SHOPS
           </p>
 
           {/* Loading State */}
@@ -124,18 +124,18 @@ export default function Gourmet() {
             </div>
           )}
 
-          {/* Restaurant Cards */}
+          {/* Shop Cards */}
           {!showGourmetSkeleton && !error && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {gourmetRestaurants.length === 0 ? (
                 <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400">No Gourmet restaurants available at the moment</p>
+                  <p className="text-gray-500 dark:text-gray-400">No Gourmet shops available at the moment</p>
                 </div>
               ) : (
                 gourmetRestaurants.map((item) => {
-                  const restaurant = item.restaurant || item
-                  const restaurantSlug = restaurant.slug || restaurant.restaurantName?.toLowerCase().replace(/\s+/g, "-") || restaurant.name?.toLowerCase().replace(/\s+/g, "-") || ""
-                  const restaurantId = restaurant._id || restaurant.restaurantId || restaurant.id
+                  const shop = item.shop || item
+                  const restaurantSlug = shop.slug || shop.restaurantName?.toLowerCase().replace(/\s+/g, "-") || shop.name?.toLowerCase().replace(/\s+/g, "-") || ""
+                  const restaurantId = shop._id || shop.restaurantId || shop.id
                   const isFavorite = favorites.has(restaurantId)
 
                   // Calculate distance if coordinates are available
@@ -154,23 +154,23 @@ export default function Gourmet() {
                   };
 
                   let distanceStr = '1.2 km'
-                  const restaurantLat = restaurant.location?.latitude || restaurant.location?.coordinates?.[1]
-                  const restaurantLng = restaurant.location?.longitude || restaurant.location?.coordinates?.[0]
+                  const restaurantLat = shop.location?.latitude || shop.location?.coordinates?.[1]
+                  const restaurantLng = shop.location?.longitude || shop.location?.coordinates?.[0]
                   
                   if (location?.latitude && location?.longitude && restaurantLat && restaurantLng) {
                     const d = calculateDistance(location.latitude, location.longitude, restaurantLat, restaurantLng)
                     distanceStr = `${d.toFixed(1)} km`
-                  } else if (restaurant.distance) {
-                    distanceStr = restaurant.distance
+                  } else if (shop.distance) {
+                    distanceStr = shop.distance
                   }
 
-                  // Get restaurant cover image with priority: coverImages > menuImages > profileImage
-                  const coverImages = restaurant.coverImages && restaurant.coverImages.length > 0
-                    ? restaurant.coverImages.map(img => img.url || img).filter(Boolean)
+                  // Get shop cover image with priority: coverImages > menuImages > profileImage
+                  const coverImages = shop.coverImages && shop.coverImages.length > 0
+                    ? shop.coverImages.map(img => img.url || img).filter(Boolean)
                     : []
 
-                  const menuImages = restaurant.menuImages && restaurant.menuImages.length > 0
-                    ? restaurant.menuImages.map(img => img.url || img).filter(Boolean)
+                  const menuImages = shop.menuImages && shop.menuImages.length > 0
+                    ? shop.menuImages.map(img => img.url || img).filter(Boolean)
                     : []
 
                   const rawRestaurantImage =
@@ -178,12 +178,12 @@ export default function Gourmet() {
                       ? coverImages[0]
                       : (menuImages.length > 0
                         ? menuImages[0]
-                        : (restaurant.profileImage?.url || restaurant.profileImage || restaurant.image || ""))
+                        : (shop.profileImage?.url || shop.profileImage || shop.image || ""))
 
                   const restaurantImage = resolveImageUrl(rawRestaurantImage)
 
                   return (
-                    <Link key={restaurantId} to={`/user/restaurants/${restaurantSlug}`}>
+                    <Link key={restaurantId} to={`/user/shops/${restaurantSlug}`}>
                       <Card className={`overflow-hidden cursor-pointer border-0 group ${BRAND_THEME.tokens.homepage.shared.surface} shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-2xl mb-4`}>
                         {/* Image Section */}
                         <div className="relative h-44 sm:h-52 md:h-56 w-full overflow-hidden rounded-t-2xl">
@@ -218,15 +218,15 @@ export default function Gourmet() {
 
                         {/* Content Section */}
                         <CardContent className="p-3 sm:p-4">
-                          {/* Restaurant Name & Rating */}
+                          {/* Shop Name & Rating */}
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex-1 min-w-0">
                               <h3 className={`text-lg sm:text-xl font-bold ${BRAND_THEME.tokens.homepage.shared.title} line-clamp-1`}>
-                                {restaurant.restaurantName || restaurant.name}
+                                {shop.restaurantName || shop.name}
                               </h3>
                             </div>
                             <div className="flex-shrink-0 bg-green-600 text-white px-2 py-1 rounded-lg flex items-center gap-1">
-                              <span className="text-sm font-bold">{restaurant.rating?.toFixed(1) || '0.0'}</span>
+                              <span className="text-sm font-bold">{shop.rating?.toFixed(1) || '0.0'}</span>
                               <Star className="h-3 w-3 fill-white text-white" />
                             </div>
                           </div>
@@ -234,16 +234,16 @@ export default function Gourmet() {
                           {/* Delivery Time & Distance */}
                           <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 mb-2">
                             <Clock className="h-4 w-4" strokeWidth={1.5} />
-                            <span className="font-medium">{restaurant.estimatedDeliveryTime || '25-30 mins'}</span>
+                            <span className="font-medium">{shop.estimatedDeliveryTime || '25-30 mins'}</span>
                             <span className="mx-1">|</span>
                             <span className="font-medium">{distanceStr}</span>
                           </div>
 
                           {/* Offer Badge */}
-                          {restaurant.offer && (
+                          {shop.offer && (
                             <div className="flex items-center gap-2 text-sm">
                               <BadgePercent className="h-4 w-4" strokeWidth={2} style={{ color: BRAND_THEME.colors.brand.primary }} />
-                              <span className={BRAND_THEME.tokens.homepage.shared.bodyText}>{restaurant.offer}</span>
+                              <span className={BRAND_THEME.tokens.homepage.shared.bodyText}>{shop.offer}</span>
                             </div>
                           )}
                         </CardContent>

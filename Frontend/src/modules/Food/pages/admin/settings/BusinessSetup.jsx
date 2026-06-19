@@ -20,7 +20,7 @@ const DEFAULT_MAINTENANCE_MODES = {
   },
   restaurantApp: {
     enabled: false,
-    heading: "Restaurant Panel is Temporarily Closed",
+    heading: "Shop Panel is Temporarily Closed",
     paragraph: "Maintenance is in progress. Please come back soon.",
   },
 };
@@ -568,7 +568,7 @@ export default function BusinessSetup() {
                 {[
                   { key: "userApp", label: "User App" },
                   { key: "deliveryApp", label: "Delivery App" },
-                  { key: "restaurantApp", label: "Restaurant App" },
+                  { key: "restaurantApp", label: "Shop App" },
                 ].map((item) => (
                   <div key={item.key} className="rounded-lg border border-slate-200 bg-white p-3">
                     <div className="flex items-center justify-between gap-3 mb-3">

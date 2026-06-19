@@ -12,7 +12,7 @@ import { useProfile } from "@food/context/ProfileContext"
 import { useLocation as useGeoLocation } from "@food/hooks/useLocation"
 import { useZone } from "@food/hooks/useZone"
 import { searchAPI } from "@/services/api"
-import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
+import { getShopAvailabilityStatus } from "@food/utils/shopAvailability"
 import { enrichSearchRestaurantsWithOutletTimings, isPureVegRestaurant } from "@food/utils/searchAvailability"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -77,7 +77,7 @@ export default function ProfessionalSearch() {
   const [query, setQuery] = useState(initialQuery)
   const debouncedQuery = useDebounce(query, 500)
   
-  const [results, setResults] = useState({ restaurants: [], dishes: [] })
+  const [results, setResults] = useState({ shops: [], dishes: [] })
   const [loading, setLoading] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [categories, setCategories] = useState([])
@@ -115,11 +115,11 @@ export default function ProfessionalSearch() {
 
   const performSearch = useCallback(async (searchTerm, catId) => {
     if (!searchTerm && !catId) {
-      setResults({ restaurants: [], dishes: [] })
+      setResults({ shops: [], dishes: [] })
       return
     }
     if (!zoneId) {
-      setResults({ restaurants: [], dishes: [] })
+      setResults({ shops: [], dishes: [] })
       return
     }
     
@@ -134,15 +134,15 @@ export default function ProfessionalSearch() {
       })
       
       if (res.data?.success) {
-        // Grouping results into Restaurants and potential Dishes
-        const all = (await enrichSearchRestaurantsWithOutletTimings(res.data.data.restaurants || []))
-          .filter((restaurant) => {
+        // Grouping results into Shops and potential Dishes
+        const all = (await enrichSearchRestaurantsWithOutletTimings(res.data.data.shops || []))
+          .filter((shop) => {
             if (!vegMode) return true
-            if (!isVegSearchResult(restaurant)) return false
-            return vegModePreference !== "pure-veg" || isPureVegRestaurant(restaurant)
+            if (!isVegSearchResult(shop)) return false
+            return vegModePreference !== "pure-veg" || isPureVegRestaurant(shop)
           })
         setResults({
-          restaurants: all.filter(r => r.matchType === 'restaurant' || !r.matchType),
+          shops: all.filter(r => r.matchType === 'shop' || !r.matchType),
           dishes: all.filter(r => r.matchType === 'food')
         })
       }
@@ -155,7 +155,7 @@ export default function ProfessionalSearch() {
 
   useEffect(() => {
     if (!zoneId) {
-      setResults({ restaurants: [], dishes: [] })
+      setResults({ shops: [], dishes: [] })
       setCategories([])
     }
   }, [zoneId])
@@ -191,7 +191,7 @@ export default function ProfessionalSearch() {
     setQuery("")
     setSelectedCategoryId(null)
     setSearchParams({})
-    setResults({ restaurants: [], dishes: [] })
+    setResults({ shops: [], dishes: [] })
   }
 
   const handleCategoryClick = (id) => {
@@ -219,7 +219,7 @@ export default function ProfessionalSearch() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input 
               autoFocus
-              placeholder="Search for restaurants or dishes..." 
+              placeholder="Search for shops or dishes..." 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="pl-10 pr-10 h-11 bg-slate-100 dark:bg-zinc-800 border-none focus:ring-2 focus:ring-rose-500 rounded-xl"
@@ -306,14 +306,14 @@ export default function ProfessionalSearch() {
               <section>
                 <div className="flex items-center gap-2 mb-4">
                    <div className="w-1 h-5 bg-orange-500 rounded-full" />
-                   <h2 className="text-lg font-bold dark:text-white">Dishes from restaurants</h2>
+                   <h2 className="text-lg font-bold dark:text-white">Dishes from shops</h2>
                 </div>
                 <div className="grid gap-4">
                   {results.dishes.map((r) => {
-                    const availability = getRestaurantAvailabilityStatus(r, new Date())
+                    const availability = getShopAvailabilityStatus(r, new Date())
                     const isUnavailable = !availability.isOpen
                     return (
-                    <Link to={`/user/restaurants/${r.slug || r._id}${r.matchedDishId ? `?dish=${r.matchedDishId}` : ''}`} key={r._id} className={`flex gap-4 p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-100 dark:border-zinc-800 hover:shadow-md transition-shadow group ${isUnavailable ? 'grayscale opacity-75' : ''}`}>
+                    <Link to={`/user/shops/${r.slug || r._id}${r.matchedDishId ? `?dish=${r.matchedDishId}` : ''}`} key={r._id} className={`flex gap-4 p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-100 dark:border-zinc-800 hover:shadow-md transition-shadow group ${isUnavailable ? 'grayscale opacity-75' : ''}`}>
                        <div className="w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative">
                            <img 
                             src={getMediaUrl(r.matchedDishImage || r.profileImage || r.image || (Array.isArray(r.images) && r.images[0]))} 
@@ -353,24 +353,24 @@ export default function ProfessionalSearch() {
               </section>
             )}
 
-            {/* Restaurant Results Section */}
-            {results.restaurants.length > 0 && (
+            {/* Shop Results Section */}
+            {results.shops.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
                    <div className="w-1 h-5 bg-rose-500 rounded-full" />
-                   <h2 className="text-lg font-bold dark:text-white">Restaurants</h2>
+                   <h2 className="text-lg font-bold dark:text-white">Shops</h2>
                 </div>
                 <div className="grid gap-6">
-                  {results.restaurants.map((r) => {
-                    const availability = getRestaurantAvailabilityStatus(r, new Date())
+                  {results.shops.map((r) => {
+                    const availability = getShopAvailabilityStatus(r, new Date())
                     const isUnavailable = !availability.isOpen
                     return (
-                    <Link to={`/user/restaurants/${r._id}`} key={r._id} className={`block group ${isUnavailable ? 'grayscale opacity-75' : ''}`}>
+                    <Link to={`/user/shops/${r._id}`} key={r._id} className={`block group ${isUnavailable ? 'grayscale opacity-75' : ''}`}>
                       <div className="relative rounded-3xl overflow-hidden aspect-[16/9] mb-3 bg-slate-200">
                          <img 
                           src={getMediaUrl(r.profileImage || r.image || (Array.isArray(r.images) && r.images[0]))} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => (e.target.src = "/placeholder-restaurant.jpg")}
+                          onError={(e) => (e.target.src = "/placeholder-shop.jpg")}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
@@ -415,7 +415,7 @@ export default function ProfessionalSearch() {
             )}
 
             {/* Empty State */}
-            {!loading && results.restaurants.length === 0 && results.dishes.length === 0 && (
+            {!loading && results.shops.length === 0 && results.dishes.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                  <div className="w-20 h-20 bg-slate-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-4">
                     <Search className="w-8 h-8 text-slate-300" />

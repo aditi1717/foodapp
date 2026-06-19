@@ -56,7 +56,7 @@ const buildRestaurantOrderNotification = (orderData = {}) => {
     tag: `restaurant-order-${orderId}`,
     data: {
       orderId,
-      targetUrl: `/food/restaurant/orders/${orderData.orderMongoId || orderData._id || orderData.id || orderData.orderId || ''}`,
+      targetUrl: `/food/shop/orders/${orderData.orderMongoId || orderData._id || orderData.id || orderData.orderId || ''}`,
     },
   };
 }
@@ -83,7 +83,7 @@ const buildScheduledPreparationNotification = (orderData = {}) => {
     tag: `scheduled-preparation-${orderId}`,
     data: {
       orderId,
-      targetUrl: `/food/restaurant/orders/${orderData.orderMongoId || orderData._id || orderData.id || orderData.orderId || ''}`,
+      targetUrl: `/food/shop/orders/${orderData.orderMongoId || orderData._id || orderData.id || orderData.orderId || ''}`,
     },
   };
 }
@@ -96,7 +96,7 @@ const triggerWebViewNativeNotification = async (orderData = {}) => {
     body: `Order #${orderData?.orderId || orderData?.orderMongoId || orderData?.id || ''}`.trim(),
     orderId: orderData?.orderId || orderData?.order_id || '',
     orderMongoId: orderData?.orderMongoId || orderData?.order_mongo_id || '',
-    targetUrl: `/food/restaurant/orders/${orderData?.orderMongoId || orderData?._id || orderData?.id || orderData?.orderId || ''}`,
+    targetUrl: `/food/shop/orders/${orderData?.orderMongoId || orderData?._id || orderData?.id || orderData?.orderId || ''}`,
   };
 
   try {
@@ -141,7 +141,7 @@ const triggerWebViewNativeNotification = async (orderData = {}) => {
  * Hook for restaurant to receive real-time order notifications with sound
  * @returns {object} - { newOrder, playSound, isConnected }
  */
-export const useRestaurantNotifications = () => {
+export const useShopNotifications = () => {
   const socketRef = useRef(null);
   const [newOrder, setNewOrder] = useState(null);
   const [cancelledOrderId, setCancelledOrderId] = useState(null);

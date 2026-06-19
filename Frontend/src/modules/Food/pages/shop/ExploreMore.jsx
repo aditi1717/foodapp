@@ -40,7 +40,7 @@ import { DateRangeCalendar } from "@food/components/ui/date-range-calendar"
 import { clearModuleAuth, clearAuthData, getCurrentUser } from "@food/utils/auth"
 import { restaurantAPI } from "@food/api"
 import { firebaseAuth, ensureFirebaseInitialized } from "@food/firebase"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import BRAND_THEME from "@/config/brandTheme"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -363,21 +363,21 @@ export default function ExploreMore() {
   const [existingSchedule, setExistingSchedule] = useState(null)
 
   const STORAGE_KEY = "restaurant_schedule_off"
-  const restaurantBasePath = pathname.startsWith("/food/restaurant")
-    ? "/food/restaurant"
-    : "/restaurant"
+  const restaurantBasePath = pathname.startsWith("/food/shop")
+    ? "/food/shop"
+    : "/shop"
   const EXPLORE_ROUTE = `${restaurantBasePath}/explore`
 
   const toRestaurantRoute = (route) => {
     if (typeof route !== "string" || !route.trim()) return null
-    if (restaurantBasePath === "/food/restaurant") {
-      if (route.startsWith("/food/restaurant")) return route
-      if (route === "/restaurant") return "/food/restaurant"
-      if (route.startsWith("/restaurant/")) return `/food${route}`
+    if (restaurantBasePath === "/food/shop") {
+      if (route.startsWith("/food/shop")) return route
+      if (route === "/shop") return "/food/shop"
+      if (route.startsWith("/shop/")) return `/food${route}`
       return route
     }
-    if (route.startsWith("/food/restaurant/")) return route.replace("/food", "")
-    if (route === "/food/restaurant") return "/restaurant"
+    if (route.startsWith("/food/shop/")) return route.replace("/food", "")
+    if (route === "/food/shop") return "/shop"
     return route
   }
 
@@ -392,24 +392,24 @@ export default function ExploreMore() {
     })
   }
 
-  // Restaurant data state
+  // Shop data state
   const [restaurantData, setRestaurantData] = useState(null)
   const [loadingRestaurant, setLoadingRestaurant] = useState(true)
 
-  // Fetch restaurant data on mount
+  // Fetch shop data on mount
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
         setLoadingRestaurant(true)
         const response = await restaurantAPI.getCurrentRestaurant()
-        const data = response?.data?.data?.restaurant || response?.data?.restaurant
+        const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
           setRestaurantData(data)
         }
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          debugError("Error fetching restaurant data:", error)
+          debugError("Error fetching shop data:", error)
         }
         // Continue with default values if fetch fails
       } finally {
@@ -473,9 +473,9 @@ export default function ExploreMore() {
     return parts.join(", ") || ""
   }
 
-  // Get user data from logged in session and restaurant data
+  // Get user data from logged in session and shop data
   const userData = useMemo(() => {
-    const sessionUser = getCurrentUser("restaurant")
+    const sessionUser = getCurrentUser("shop")
     
     // Priority 1: Data from the currently logged in session user
     if (sessionUser && sessionUser.name && sessionUser.role) {
@@ -488,10 +488,10 @@ export default function ExploreMore() {
       }
     }
     
-    // Priority 2: Data from the restaurant document owner fields
+    // Priority 2: Data from the shop document owner fields
     if (restaurantData) {
       return {
-        name: restaurantData.ownerName || restaurantData.name || "Restaurant Owner",
+        name: restaurantData.ownerName || restaurantData.name || "Shop Owner",
         phone: restaurantData.ownerPhone || restaurantData.phone || "N/A",
         email: restaurantData.ownerEmail || restaurantData.email || "N/A",
         role: "OWNER",
@@ -501,14 +501,14 @@ export default function ExploreMore() {
     
     // Priority 3: Loading / Initial state
     return {
-      name: loadingRestaurant ? "Loading..." : "Restaurant Owner",
+      name: loadingRestaurant ? "Loading..." : "Shop Owner",
       phone: "",
       email: "",
       role: "OWNER"
     }
   }, [restaurantData, loadingRestaurant])
 
-  // Get restaurant display data
+  // Get shop display data
   const restaurantDisplayName = restaurantData?.name || "Loading..."
   const restaurantDisplayAddress = restaurantData?.location ? formatAddress(restaurantData.location) : ""
 
@@ -530,7 +530,7 @@ export default function ExploreMore() {
         debugWarn("Logout API call failed, continuing with local cleanup:", apiError)
       }
 
-      // Sign out from Firebase if restaurant logged in via Google
+      // Sign out from Firebase if shop logged in via Google
       try {
         const { signOut } = await import("firebase/auth")
         // Firebase Auth is lazy-initialized now; ensure it before accessing firebaseAuth.currentUser
@@ -544,8 +544,8 @@ export default function ExploreMore() {
         debugWarn("Firebase logout failed, continuing with local cleanup:", firebaseError)
       }
 
-      // Clear restaurant module authentication data
-      clearModuleAuth("restaurant")
+      // Clear shop module authentication data
+      clearModuleAuth("shop")
 
       // Clear any onboarding data from localStorage
       localStorage.removeItem("restaurant_onboarding")
@@ -561,19 +561,19 @@ export default function ExploreMore() {
 
       // Small delay for UX, then navigate to welcome page
       setTimeout(() => {
-        navigate("/food/restaurant/login", { replace: true })
+        navigate("/food/shop/login", { replace: true })
       }, 300)
     } catch (error) {
       // Even if there's an error, we should still clear local data and logout
       debugError("Error during logout:", error)
-      clearModuleAuth("restaurant")
+      clearModuleAuth("shop")
       localStorage.removeItem("restaurant_onboarding")
       localStorage.removeItem("restaurant_accessToken")
       localStorage.removeItem("restaurant_authenticated")
       localStorage.removeItem("restaurant_user")
       sessionStorage.removeItem("restaurantAuthData")
       window.dispatchEvent(new Event("restaurantAuthChanged"))
-      navigate("/restaurant/welcome", { replace: true })
+      navigate("/shop/welcome", { replace: true })
     } finally {
       setIsLoggingOut(false)
     }
@@ -594,7 +594,7 @@ export default function ExploreMore() {
         debugWarn("Logout API call failed, continuing with local cleanup:", apiError)
       }
 
-      // Sign out from Firebase if restaurant logged in via Google
+      // Sign out from Firebase if shop logged in via Google
       try {
         const { signOut } = await import("firebase/auth")
         // Firebase Auth is lazy-initialized now; ensure it before accessing firebaseAuth.currentUser
@@ -608,7 +608,7 @@ export default function ExploreMore() {
         debugWarn("Firebase logout failed, continuing with local cleanup:", firebaseError)
       }
 
-      // Clear auth for all modules (admin, restaurant, delivery, user)
+      // Clear auth for all modules (admin, shop, delivery, user)
       clearAuthData()
 
       // Clear any onboarding data from localStorage
@@ -628,7 +628,7 @@ export default function ExploreMore() {
 
       // Small delay for UX, then navigate to welcome page
       setTimeout(() => {
-        navigate("/food/restaurant/login", { replace: true })
+        navigate("/food/shop/login", { replace: true })
       }, 300)
     } catch (error) {
       // Even if there's an error, we should still clear local data and logout
@@ -640,14 +640,14 @@ export default function ExploreMore() {
       sessionStorage.removeItem("deliveryAuthData")
       sessionStorage.removeItem("userAuthData")
       window.dispatchEvent(new Event("restaurantAuthChanged"))
-      navigate("/restaurant/welcome", { replace: true })
+      navigate("/shop/welcome", { replace: true })
     } finally {
       setIsLoggingOut(false)
     }
   }
 
   const scheduleOffReasons = [
-    "renovation or relocation of restaurant",
+    "renovation or relocation of shop",
     "closed dur to festival",
     "permanently shut",
     "staff avaibility issues",
@@ -768,39 +768,39 @@ export default function ExploreMore() {
 
   // Section data
   const manageOutletItems = [
-    { id: 1, label: "Outlet info", icon: Info, route: "/restaurant/outlet-info" },
-    { id: 2, label: "Outlet timings", icon: Clock, route: "/restaurant/outlet-timings" },
-    { id: 3, label: "Coupons", icon: TicketPercent, route: "/restaurant/coupon" },
-    { id: 4, label: "Offers", icon: Gift, route: "/restaurant/offers" },
+    { id: 1, label: "Outlet info", icon: Info, route: "/shop/outlet-info" },
+    { id: 2, label: "Outlet timings", icon: Clock, route: "/shop/outlet-timings" },
+    { id: 3, label: "Coupons", icon: TicketPercent, route: "/shop/coupon" },
+    { id: 4, label: "Offers", icon: Gift, route: "/shop/offers" },
   ]
 
   const settingsItems = [
-    { id: 3, label: "Delivery settings", icon: Truck, route: "/restaurant/delivery-settings" },
-    { id: 5, label: "Delivery partners", icon: Bike, route: "/restaurant/delivery-partners" },
-    // { id: 4, label: "Zone Setup", icon: MapPin, route: "/restaurant/zone-setup" },
+    { id: 3, label: "Delivery settings", icon: Truck, route: "/shop/delivery-settings" },
+    { id: 5, label: "Delivery partners", icon: Bike, route: "/shop/delivery-partners" },
+    // { id: 4, label: "Zone Setup", icon: MapPin, route: "/shop/zone-setup" },
   ]
 
   const ordersItems = [
-    { id: 1, label: "Order history", icon: FileText, route: "/restaurant/orders/all" },
-    { id: 2, label: "Complaints", icon: Star, route: "/restaurant/feedback?tab=complaints&single=true" },
-    { id: 3, label: "Reviews", icon: MessageSquare, route: "/restaurant/feedback?tab=reviews&single=true" },
+    { id: 1, label: "Order history", icon: FileText, route: "/shop/orders/all" },
+    { id: 2, label: "Complaints", icon: Star, route: "/shop/feedback?tab=complaints&single=true" },
+    { id: 3, label: "Reviews", icon: MessageSquare, route: "/shop/feedback?tab=reviews&single=true" },
   ]
 
   const helpItems = [
-    { id: 1, label: "Support", icon: LifeBuoy, route: "/restaurant/help-centre/support" },
-    { id: 2, label: "Share your feedback", icon: Edit, route: "/restaurant/share-feedback" },
+    { id: 1, label: "Support", icon: LifeBuoy, route: "/shop/help-centre/support" },
+    { id: 2, label: "Share your feedback", icon: Edit, route: "/shop/share-feedback" },
   ]
 
   const accountingItems = [
-    { id: 1, label: "Payout", icon: IndianRupee, route: "/restaurant/hub-finance" },
-    { id: 2, label: "Invoices", icon: Receipt, route: "/restaurant/hub-finance?tab=invoices" },
-    { id: 3, label: "Bank details", icon: Building2, route: "/restaurant/update-bank-details" },
-    { id: 4, label: "Wallet", icon: Wallet, route: "/restaurant/wallet" },
+    { id: 1, label: "Payout", icon: IndianRupee, route: "/shop/hub-finance" },
+    { id: 2, label: "Invoices", icon: Receipt, route: "/shop/hub-finance?tab=invoices" },
+    { id: 3, label: "Bank details", icon: Building2, route: "/shop/update-bank-details" },
+    { id: 4, label: "Wallet", icon: Wallet, route: "/shop/wallet" },
   ]
 
   const subscriptionItems = [
-    { id: 1, label: "Subscription", icon: Crown, route: "/restaurant/subscriptions" },
-    { id: 2, label: "My Subscription", icon: CheckCircle, route: "/restaurant/my-subscription" },
+    { id: 1, label: "Subscription", icon: Crown, route: "/shop/subscriptions" },
+    { id: 2, label: "My Subscription", icon: CheckCircle, route: "/shop/my-subscription" },
   ]
 
   // All sections with their items
@@ -961,7 +961,7 @@ export default function ExploreMore() {
 
       {/* Main Content */}
       <div className="px-4 py-6">
-        {/* Restaurant Information Card */}
+        {/* Shop Information Card */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1627,7 +1627,7 @@ export default function ExploreMore() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Success!</h3>
                 <p className="text-sm text-gray-600 mb-6">
-                  Restaurant is marked offline
+                  Shop is marked offline
                 </p>
                 <button
                   onClick={() => {
@@ -1694,10 +1694,10 @@ export default function ExploreMore() {
                 {/* Status Message */}
                 <div className="mb-6 p-4 bg-brand-50 rounded-lg border border-brand-200">
                   <p className="text-base font-semibold text-gray-900 mb-1">
-                    Restaurant is scheduled off
+                    Shop is scheduled off
                   </p>
                   <p className="text-sm text-gray-600">
-                    Your restaurant is currently marked as offline
+                    Your shop is currently marked as offline
                   </p>
                 </div>
 

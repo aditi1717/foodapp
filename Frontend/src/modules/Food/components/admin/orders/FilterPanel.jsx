@@ -97,19 +97,19 @@ export default function FilterPanel({ isOpen, onClose, filters, setFilters, onAp
             </div>
           </div>
 
-          {/* Restaurant Filter */}
-          {restaurants.length > 0 && (
+          {/* Shop Filter */}
+          {shops.length > 0 && (
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Restaurant
+                Shop
               </label>
               <select
                 value={filters.restaurant || ""}
-                onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
+                onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="">All Restaurants</option>
-                {restaurants.map((rest) => (
+                <option value="">All Shops</option>
+                {shops.map((rest) => (
                   <option key={rest} value={rest}>{rest}</option>
                 ))}
               </select>

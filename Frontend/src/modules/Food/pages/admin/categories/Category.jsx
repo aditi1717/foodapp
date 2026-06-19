@@ -75,7 +75,7 @@ export default function Category() {
     const query = String(searchQuery || "").trim().toLowerCase()
     if (!query) return categories
     return categories.filter((category) => {
-      const creator = category?.createdByRestaurant?.name || category?.restaurant?.name || ""
+      const creator = category?.createdByRestaurant?.name || category?.shop?.name || ""
       return (
         String(category?.name || "").toLowerCase().includes(query) ||
         String(category?.foodTypeScope || "").toLowerCase().includes(query) ||
@@ -187,7 +187,7 @@ export default function Category() {
   }
 
   const handleMakeGlobal = async (category) => {
-    if (!window.confirm(`Make "${category?.name}" global for every restaurant?`)) return
+    if (!window.confirm(`Make "${category?.name}" global for every shop?`)) return
 
     try {
       const response = await adminAPI.makeCategoryGlobal(String(category?.id || category?._id))
@@ -265,7 +265,7 @@ export default function Category() {
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Categories</h1>
             <p className="mt-2 max-w-2xl text-sm font-medium text-slate-500">
-              Review restaurant-created categories, approve them for use, or make them global to share across the entire platform.
+              Review shop-created categories, approve them for use, or make them global to share across the entire platform.
             </p>
           </div>
 
@@ -348,7 +348,7 @@ export default function Category() {
                 </tr>
               ) : (
                 filteredCategories.map((category) => {
-                  const creatorName = category?.createdByRestaurant?.name || category?.restaurant?.name || "Admin"
+                  const creatorName = category?.createdByRestaurant?.name || category?.shop?.name || "Admin"
                   const approvalStatus = category?.approvalStatus || "pending"
                   const isRestaurantCategory = Boolean(category?.createdByRestaurantId || category?.restaurantId)
 

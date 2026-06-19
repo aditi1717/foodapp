@@ -134,7 +134,7 @@ export default function DeliveryEarnings() {
       { key: "deliveryPartnerName", label: "Delivery Boy" },
       { key: "deliveryPartnerPhone", label: "Phone" },
       { key: "orderId", label: "Order ID" },
-      { key: "restaurantName", label: "Restaurant" },
+      { key: "restaurantName", label: "Shop" },
       { key: "orderType", label: "Order Type" },
       { key: "amount", label: "Earning" },
       { key: "orderTotal", label: "Order Total" },
@@ -366,7 +366,7 @@ export default function DeliveryEarnings() {
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Delivery Boy</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Phone</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Order ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Restaurant</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Shop</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Order Type</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Earning</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Order Total</th>

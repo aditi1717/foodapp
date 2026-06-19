@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { 
   ArrowLeft,
@@ -22,7 +22,7 @@ import {
   ChevronRight
 } from "lucide-react"
 import { Card, CardContent } from "@food/components/ui/card"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import BRAND_THEME from "@/config/brandTheme"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -31,7 +31,7 @@ const debugError = (...args) => {}
 
 export default function SettingsPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [darkMode, setDarkMode] = useState(false)
 
@@ -62,14 +62,14 @@ export default function SettingsPage() {
       title: "Account",
       items: [
         { id: "notifications", label: "Notifications", icon: Bell, hasToggle: true, toggleValue: notificationsEnabled, onToggle: setNotificationsEnabled },
-        { id: "privacy", label: "Privacy & Security", icon: Shield, route: "/restaurant/privacy" },
+        { id: "privacy", label: "Privacy & Security", icon: Shield, route: "/shop/privacy" },
       ]
     },
     {
       id: "preferences",
       title: "Preferences",
       items: [
-        { id: "language", label: "Language", icon: Globe, route: "/restaurant/language", value: "English" },
+        { id: "language", label: "Language", icon: Globe, route: "/shop/language", value: "English" },
         { id: "theme", label: "Theme", icon: darkMode ? Moon : Sun, hasToggle: true, toggleValue: darkMode, onToggle: setDarkMode },
       ]
     },
@@ -77,10 +77,10 @@ export default function SettingsPage() {
       id: "support",
       title: "Support & Information",
       items: [
-        { id: "conversation", label: "Conversation", icon: MessageSquare, route: "/restaurant/conversation" },
-        { id: "terms", label: "Terms & Conditions", icon: FileText, route: "/restaurant/terms" },
-        { id: "privacy-policy", label: "Privacy Policy", icon: Shield, route: "/restaurant/privacy" },
-        { id: "about", label: "About", icon: Info, route: "/restaurant/about" },
+        { id: "conversation", label: "Conversation", icon: MessageSquare, route: "/shop/conversation" },
+        { id: "terms", label: "Terms & Conditions", icon: FileText, route: "/shop/terms" },
+        { id: "privacy-policy", label: "Privacy Policy", icon: Shield, route: "/shop/privacy" },
+        { id: "about", label: "About", icon: Info, route: "/shop/about" },
       ]
     },
     {

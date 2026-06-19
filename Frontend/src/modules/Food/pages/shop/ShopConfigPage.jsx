@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { ArrowLeft, X, Plus } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { Card, CardContent } from "@food/components/ui/card"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 
-export default function RestaurantConfigPage() {
+export default function ShopConfigPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
 
   // Lenis smooth scrolling
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function RestaurantConfigPage() {
   const [subscriptionOrder, setSubscriptionOrder] = useState(false)
   const [minOrderAmount, setMinOrderAmount] = useState("0.0")
 
-  // Restaurant Types & Tag
+  // Shop Types & Tag
   const [cuisines, setCuisines] = useState(["Italian", "Spanish"])
   const [cuisineInput, setCuisineInput] = useState("")
   const [characteristics, setCharacteristics] = useState(["Bengali", "Indian", "Pizza", "Pasta"])
@@ -170,7 +170,7 @@ export default function RestaurantConfigPage() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </motion.button>
-          <h1 className="text-lg md:text-xl font-semibold text-gray-900">Restaurant Settings</h1>
+          <h1 className="text-lg md:text-xl font-semibold text-gray-900">Shop Settings</h1>
         </div>
       </div>
 
@@ -237,7 +237,7 @@ export default function RestaurantConfigPage() {
         </Card>
         </motion.div>
 
-        {/* Restaurant Types & Tag */}
+        {/* Shop Types & Tag */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -245,7 +245,7 @@ export default function RestaurantConfigPage() {
         >
           <Card>
           <CardContent className="p-4 md:p-6">
-            <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Restaurant Types & Tag</h2>
+            <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Shop Types & Tag</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm md:text-base text-gray-700 mb-2">Cuisines</label>

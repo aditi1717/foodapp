@@ -91,7 +91,7 @@ const fallbackPackages = [
     restoBenefitType: "priority_listing",
     commissionRate: "",
     description:
-      "Boost your restaurant visibility. Appears at the top of the restaurant list in your zone for the duration of the subscription.",
+      "Boost your shop visibility. Appears at the top of the shop list in your zone for the duration of the subscription.",
     image: null,
   },
   {
@@ -119,7 +119,7 @@ const fallbackPackages = [
     freeDeliveryType: "unlimited",
     maxFreeDeliveries: "",
     description:
-      "Get unlimited free delivery from your favorite local restaurants, zero delivery fees guaranteed.",
+      "Get unlimited free delivery from your favorite local shops, zero delivery fees guaranteed.",
     image: null,
   },
   {
@@ -246,7 +246,7 @@ export default function SubscriptionPackages() {
 
   const handleDeletePackage = async (pkg) => {
     const confirmed = window.confirm(
-      `Delete "${pkg?.name || "this package"}"? This will also remove related subscriptions from user and restaurant sides.`
+      `Delete "${pkg?.name || "this package"}"? This will also remove related subscriptions from user and shop sides.`
     );
     if (!confirmed) return;
 
@@ -772,7 +772,7 @@ export default function SubscriptionPackages() {
                   onChange={(e) => setNewPkgType(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 >
-                  <option value="Resto">Resto (Restaurant)</option>
+                  <option value="Resto">Resto (Shop)</option>
                   <option value="Customer">Customer (User)</option>
                 </select>
               </div>
@@ -886,7 +886,7 @@ export default function SubscriptionPackages() {
                 <textarea
                   value={newPkgDescription}
                   onChange={(e) => setNewPkgDescription(e.target.value)}
-                  placeholder="e.g. Premium all-in-one restaurant operations plan..."
+                  placeholder="e.g. Premium all-in-one shop operations plan..."
                   className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 resize-none h-20"
                   required
                 />
@@ -959,13 +959,13 @@ export default function SubscriptionPackages() {
 
             <div className="border-t border-slate-100 pt-3">
               <h4 className="text-xs font-bold text-slate-800 mb-3">
-                {newPkgType === "Resto" ? "Restaurant Benefits" : "Customer Free Delivery Options"}
+                {newPkgType === "Resto" ? "Shop Benefits" : "Customer Free Delivery Options"}
               </h4>
 
               {newPkgType === "Resto" && (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Restaurant Subscription Benefit Type</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Shop Subscription Benefit Type</label>
                     <div className="grid grid-cols-2 gap-3">
                       <label className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer text-xs font-medium transition-all ${restoBenefitType === "commission_reduction" ? "border-brand-500 bg-brand-50/20 text-brand-900 shadow-sm" : "border-slate-200 hover:bg-slate-50 text-slate-700"}`}>
                         <input
@@ -1014,12 +1014,12 @@ export default function SubscriptionPackages() {
                         required={restoBenefitType === "commission_reduction"}
                       />
                       <p className="text-[10px] text-slate-500 mt-1">
-                        Define the custom reduced commission fee rate that applies to this restaurant tier.
+                        Define the custom reduced commission fee rate that applies to this shop tier.
                       </p>
                     </div>
                   ) : (
                     <div className="mt-2 p-3 bg-emerald-50 border border-emerald-100 rounded-lg text-[11px] text-emerald-800 leading-relaxed animate-[fadeIn_0.2s_ease-out]">
-                      ✨ <strong>SEO visibility boost enabled:</strong> Restaurants buying this plan will automatically rank at the top of restaurant listings for customers inside their respective zones for the duration of the subscription ({newPkgDuration || "X"} {newPkgDurationUnit || "Days"}).
+                      ✨ <strong>SEO visibility boost enabled:</strong> Shops buying this plan will automatically rank at the top of shop listings for customers inside their respective zones for the duration of the subscription ({newPkgDuration || "X"} {newPkgDurationUnit || "Days"}).
                     </div>
                   )}
                 </div>

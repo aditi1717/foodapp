@@ -48,7 +48,7 @@ export default function RestaurantCommission() {
   const [formErrors, setFormErrors] = useState({})
   const [visibleColumns] = useState({
     si: true,
-    restaurant: true,
+    shop: true,
     restaurantId: true,
     defaultCommission: true,
     bulkOrderCommission: true,
@@ -66,7 +66,7 @@ export default function RestaurantCommission() {
     return commissions.filter((commission) =>
       commission.restaurantName?.toLowerCase().includes(query) ||
       commission.restaurantId?.toLowerCase().includes(query) ||
-      commission.restaurant?.name?.toLowerCase().includes(query)
+      commission.shop?.name?.toLowerCase().includes(query)
     )
   }, [commissions, searchQuery])
 
@@ -76,10 +76,10 @@ export default function RestaurantCommission() {
     }
 
     const query = searchQuery.toLowerCase().trim()
-    return approvedRestaurants.filter((restaurant) =>
-      restaurant.name?.toLowerCase().includes(query) ||
-      restaurant.restaurantId?.toLowerCase().includes(query) ||
-      restaurant.ownerName?.toLowerCase().includes(query)
+    return approvedRestaurants.filter((shop) =>
+      shop.name?.toLowerCase().includes(query) ||
+      shop.restaurantId?.toLowerCase().includes(query) ||
+      shop.ownerName?.toLowerCase().includes(query)
     )
   }, [approvedRestaurants, searchQuery])
 
@@ -93,7 +93,7 @@ export default function RestaurantCommission() {
       const response = await adminAPI.getRestaurantCommissionBootstrap()
       const data = response?.data?.data
       setCommissions(Array.isArray(data?.commissions) ? data.commissions : [])
-      setApprovedRestaurants(Array.isArray(data?.restaurants) ? data.restaurants : [])
+      setApprovedRestaurants(Array.isArray(data?.shops) ? data.shops : [])
     } catch (error) {
       if (error.code === "ERR_NETWORK" || error.message === "Network Error") {
         toast.error(`Cannot connect to backend server. Please ensure the backend is running on ${API_BASE_URL.replace("/api", "")}`)
@@ -152,11 +152,11 @@ export default function RestaurantCommission() {
     setIsRestaurantSelectOpen(true)
   }
 
-  const handleSelectRestaurant = (restaurant) => {
-    setSelectedRestaurant(restaurant)
+  const handleSelectRestaurant = (shop) => {
+    setSelectedRestaurant(shop)
     setFormData((prev) => ({
       ...prev,
-      restaurantId: restaurant._id,
+      restaurantId: shop._id,
     }))
     setIsRestaurantSelectOpen(false)
     setIsAddEditOpen(true)
@@ -179,19 +179,19 @@ export default function RestaurantCommission() {
       if (!commissionData) return
 
       setSelectedCommission(commissionData)
-      setSelectedRestaurant(commissionData.restaurant)
+      setSelectedRestaurant(commissionData.shop)
 
       let restaurantId = ""
-      if (commissionData.restaurant) {
-        if (typeof commissionData.restaurant === "object" && commissionData.restaurant._id) {
-          restaurantId = commissionData.restaurant._id
-        } else if (typeof commissionData.restaurant === "string") {
-          restaurantId = commissionData.restaurant
+      if (commissionData.shop) {
+        if (typeof commissionData.shop === "object" && commissionData.shop._id) {
+          restaurantId = commissionData.shop._id
+        } else if (typeof commissionData.shop === "string") {
+          restaurantId = commissionData.shop
         } else {
-          restaurantId = commissionData.restaurantId || commissionData.restaurant?._id || ""
+          restaurantId = commissionData.restaurantId || commissionData.shop?._id || ""
         }
       } else {
-        restaurantId = commissionData.restaurantId || commissionData.restaurant || ""
+        restaurantId = commissionData.restaurantId || commissionData.shop || ""
       }
 
       setFormData({
@@ -237,7 +237,7 @@ export default function RestaurantCommission() {
     const errors = {}
 
     if (!formData.restaurantId) {
-      errors.restaurantId = "Restaurant is required"
+      errors.restaurantId = "Shop is required"
     }
 
     if (!formData.defaultCommission.value || parseFloat(formData.defaultCommission.value) < 0) {
@@ -323,7 +323,7 @@ export default function RestaurantCommission() {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-slate-900">Restaurant Commission</h1>
+              <h1 className="text-2xl font-bold text-slate-900">Shop Commission</h1>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
                 {filteredCommissions.length}
               </span>
@@ -342,7 +342,7 @@ export default function RestaurantCommission() {
             <div className="relative min-w-[300px] flex-1 sm:flex-initial">
               <input
                 type="text"
-                placeholder="Search by restaurant name or ID"
+                placeholder="Search by shop name or ID"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400"
@@ -368,14 +368,14 @@ export default function RestaurantCommission() {
                         </div>
                       </th>
                     )}
-                    {visibleColumns.restaurant && (
+                    {visibleColumns.shop && (
                       <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                        Restaurant Name
+                        Shop Name
                       </th>
                     )}
                     {visibleColumns.restaurantId && (
                       <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                        Restaurant ID
+                        Shop ID
                       </th>
                     )}
                     {visibleColumns.defaultCommission && (
@@ -420,10 +420,10 @@ export default function RestaurantCommission() {
                             <span className="text-sm font-medium text-slate-700">{commission.sl || "-"}</span>
                           </td>
                         )}
-                        {visibleColumns.restaurant && (
+                        {visibleColumns.shop && (
                           <td className="whitespace-nowrap px-6 py-4">
                             <span className="text-sm font-medium text-brand-600">
-                              {commission.restaurantName || commission.restaurant?.name || "-"}
+                              {commission.restaurantName || commission.shop?.name || "-"}
                             </span>
                           </td>
                         )}
@@ -519,13 +519,13 @@ export default function RestaurantCommission() {
       <Dialog open={isRestaurantSelectOpen} onOpenChange={setIsRestaurantSelectOpen}>
         <DialogContent className="max-w-xl bg-white p-0">
           <DialogHeader className="border-b border-slate-200 px-6 pb-4 pt-6">
-            <DialogTitle className="text-lg font-semibold text-slate-900">Select Restaurant</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-900">Select Shop</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 py-4">
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search restaurants..."
+                placeholder="Search shops..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-4 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -534,24 +534,24 @@ export default function RestaurantCommission() {
             </div>
             <div className="max-h-80 space-y-2 overflow-y-auto">
               {filteredRestaurants
-                .filter((restaurant) => !restaurant.hasCommissionSetup)
-                .map((restaurant) => (
+                .filter((shop) => !shop.hasCommissionSetup)
+                .map((shop) => (
                   <button
                     key={restaurant._id}
-                    onClick={() => handleSelectRestaurant(restaurant)}
+                    onClick={() => handleSelectRestaurant(shop)}
                     className="w-full rounded-lg border border-slate-200 p-3 text-left transition-all hover:border-brand-300 hover:bg-brand-50"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{restaurant.name}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">{restaurant.restaurantId}</p>
+                        <p className="text-sm font-medium text-slate-900">{shop.name}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{shop.restaurantId}</p>
                       </div>
                       <Building2 className="h-4 w-4 text-slate-400" />
                     </div>
                   </button>
                 ))}
-              {filteredRestaurants.filter((restaurant) => !restaurant.hasCommissionSetup).length === 0 && (
-                <p className="py-4 text-center text-sm text-slate-500">No restaurants available</p>
+              {filteredRestaurants.filter((shop) => !shop.hasCommissionSetup).length === 0 && (
+                <p className="py-4 text-center text-sm text-slate-500">No shops available</p>
               )}
             </div>
           </div>
@@ -562,7 +562,7 @@ export default function RestaurantCommission() {
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto bg-white p-0">
           <DialogHeader className="border-b border-slate-200 px-6 pb-4 pt-6">
             <DialogTitle className="text-lg font-semibold text-slate-900">
-              {selectedCommission ? "Edit Restaurant Commission" : "Add Restaurant Commission"}
+              {selectedCommission ? "Edit Shop Commission" : "Add Shop Commission"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 py-4">
@@ -709,11 +709,11 @@ export default function RestaurantCommission() {
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="max-w-md bg-white">
           <DialogHeader>
-            <DialogTitle>Delete Restaurant Commission</DialogTitle>
+            <DialogTitle>Delete Shop Commission</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-slate-700">
-              Are you sure you want to delete commission for "{selectedCommission?.restaurantName || selectedCommission?.restaurant?.name}"? This action cannot be undone.
+              Are you sure you want to delete commission for "{selectedCommission?.restaurantName || selectedCommission?.shop?.name}"? This action cannot be undone.
             </p>
           </div>
           <DialogFooter>

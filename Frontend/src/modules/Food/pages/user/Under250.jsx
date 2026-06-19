@@ -21,7 +21,7 @@ import { isModuleAuthenticated } from "@food/utils/auth"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
 import { calculateDistance, formatDistance } from "@food/utils/common"
 import { hasFoodVariants, getFoodVariants, buildCartLineId } from "@food/utils/foodVariants"
-import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
+import { getShopAvailabilityStatus } from "@food/utils/shopAvailability"
 import { isPureVegRestaurant, isVegCompatibleCategory } from "@food/utils/searchAvailability"
 import BRAND_THEME from "@/config/brandTheme"
 import { foodImages } from "@food/constants/images"
@@ -360,7 +360,7 @@ export default function Under250() {
     return 999
   }
 
-  // Sort and filter restaurants based on selected sort and filters
+  // Sort and filter shops based on selected sort and filters
   const sortedAndFilteredRestaurants = useMemo(() => {
     let filtered = under250Restaurants.map(r => ({ ...r, menuItems: [...(r.menuItems || [])] }))
 
@@ -374,9 +374,9 @@ export default function Under250() {
 
     if (effectiveVegMode) {
       filtered = filtered
-        .filter((restaurant) => effectiveVegModePreference !== "pure-veg" || isPureVegRestaurant(restaurant))
-        .map((restaurant) => {
-          const vegItems = (restaurant.menuItems || []).filter((item) => {
+        .filter((shop) => effectiveVegModePreference !== "pure-veg" || isPureVegRestaurant(shop))
+        .map((shop) => {
+          const vegItems = (shop.menuItems || []).filter((item) => {
             // Must be a veg item
             if (!item?.isVeg) return false
 
@@ -387,7 +387,7 @@ export default function Under250() {
             return true
           })
           if (vegItems.length === 0) return null
-          return { ...restaurant, menuItems: vegItems }
+          return { ...shop, menuItems: vegItems }
         })
         .filter(Boolean)
     }
@@ -396,10 +396,10 @@ export default function Under250() {
     if (activeCategory) {
       const selectedCat = categories.find(cat => cat.id === activeCategory)
       if (selectedCat) {
-        filtered = filtered.map(restaurant => {
-          const matches = restaurant.menuItems.filter(item => itemMatchesCategory(item, selectedCat))
+        filtered = filtered.map(shop => {
+          const matches = shop.menuItems.filter(item => itemMatchesCategory(item, selectedCat))
           if (matches.length > 0) {
-            return { ...restaurant, menuItems: matches }
+            return { ...shop, menuItems: matches }
           }
           return null
         }).filter(Boolean)
@@ -408,8 +408,8 @@ export default function Under250() {
 
     // Apply "Under 30 mins" filter
     if (under30MinsFilter) {
-      filtered = filtered.filter(restaurant => {
-        const deliveryTime = parseDeliveryTime(restaurant.deliveryTime)
+      filtered = filtered.filter(shop => {
+        const deliveryTime = parseDeliveryTime(shop.deliveryTime)
         return deliveryTime <= 30
       })
     }
@@ -590,7 +590,7 @@ export default function Under250() {
     isBannerSwipingRef.current = false
   }, [bannerImages.length, resetBannerAutoSlide])
 
-  // Fetch restaurants with dishes under selected price from backend
+  // Fetch shops with dishes under selected price from backend
   useEffect(() => {
     const fetchRestaurantsUnder250 = async () => {
       try {
@@ -603,15 +603,15 @@ export default function Under250() {
           { zoneId, _ts: Date.now() },
           { noCache: true },
         )
-        const restaurantsRaw = Array.isArray(response?.data?.data?.restaurants)
-          ? response.data.data.restaurants
+        const restaurantsRaw = Array.isArray(response?.data?.data?.shops)
+          ? response.data.data.shops
           : []
         const userLat = Number(location?.latitude)
         const userLng = Number(location?.longitude)
 
         const restaurantsWithUnder250Dishes = await Promise.all(
-          restaurantsRaw.map(async (restaurant, index) => {
-            const restaurantId = restaurant?.restaurantId || restaurant?._id
+          restaurantsRaw.map(async (shop, index) => {
+            const restaurantId = shop?.restaurantId || shop?._id
             if (!restaurantId) return null
 
             try {
@@ -639,11 +639,11 @@ export default function Under250() {
                     sectionFoodTypeScope: sectionScopeMap.get(String(item?.sectionName || item?.category || "").trim().toLowerCase()) || "Both",
                     image:
                       item?.image ||
-                      restaurant?.coverImages?.[0]?.url ||
-                      restaurant?.coverImages?.[0] ||
-                      restaurant?.menuImages?.[0]?.url ||
-                      restaurant?.menuImages?.[0] ||
-                      restaurant?.profileImage?.url ||
+                      shop?.coverImages?.[0]?.url ||
+                      shop?.coverImages?.[0] ||
+                      shop?.menuImages?.[0]?.url ||
+                      shop?.menuImages?.[0] ||
+                      shop?.profileImage?.url ||
                       "",
                   }
                 })
@@ -651,10 +651,10 @@ export default function Under250() {
               if (menuItems.length === 0) return null
 
               const deliveryMinutes =
-                Number(restaurant?.estimatedDeliveryTimeMinutes) ||
-                Number(restaurant?.estimatedDeliveryTime) ||
+                Number(shop?.estimatedDeliveryTimeMinutes) ||
+                Number(shop?.estimatedDeliveryTime) ||
                 null
-              const restaurantLocation = restaurant?.location
+              const restaurantLocation = shop?.location
               const restaurantLat = Number(
                 restaurantLocation?.latitude ??
                 (Array.isArray(restaurantLocation?.coordinates) ? restaurantLocation.coordinates[1] : null)
@@ -672,51 +672,51 @@ export default function Under250() {
                 ? calculateDistance(userLat, userLng, restaurantLat, restaurantLng)
                 : null
               const fallbackDistance =
-                typeof restaurant?.distance === "number"
-                  ? formatDistance(restaurant.distance)
-                  : (restaurant?.distance || "")
+                typeof shop?.distance === "number"
+                  ? formatDistance(shop.distance)
+                  : (shop?.distance || "")
 
               return {
                 id: String(restaurantId),
                 restaurantId: String(restaurantId),
-                mongoId: restaurant?._id || restaurantId,
+                mongoId: shop?._id || restaurantId,
                 slug:
-                  restaurant?.slug ||
-                  String(restaurant?.restaurantName || restaurant?.name || "")
+                  shop?.slug ||
+                  String(shop?.restaurantName || shop?.name || "")
                     .toLowerCase()
                     .replace(/\s+/g, "-"),
-                name: restaurant?.restaurantName || restaurant?.name || "Restaurant",
-                rating: Number(restaurant?.rating || 0),
-                totalRatings: Number(restaurant?.totalRatings || restaurant?.ratingCount || 0),
+                name: shop?.restaurantName || shop?.name || "Shop",
+                rating: Number(shop?.rating || 0),
+                totalRatings: Number(shop?.totalRatings || shop?.ratingCount || 0),
                 deliveryTime:
-                  restaurant?.estimatedDeliveryTime ||
+                  shop?.estimatedDeliveryTime ||
                   (deliveryMinutes ? `${deliveryMinutes} mins` : "30 mins"),
                 distance: distanceInKm !== null ? formatDistance(distanceInKm) : fallbackDistance,
                 distanceInKm,
                 originalIndex: index,
-                pureVegRestaurant: restaurant?.pureVegRestaurant === true,
-                isActive: restaurant?.isActive !== false,
-                isAcceptingOrders: restaurant?.isAcceptingOrders !== false,
-                availabilityStatus: restaurant?.availabilityStatus || null,
-                availability: restaurant?.availability || null,
-                isOnline: restaurant?.isOnline,
-                currentStatus: restaurant?.currentStatus || null,
-                isOpen: restaurant?.isOpen,
-                openNow: restaurant?.openNow,
-                isOpenNow: restaurant?.isOpenNow,
-                isRestaurantOpen: restaurant?.isRestaurantOpen,
-                todayOpen: restaurant?.todayOpen,
-                isOpenToday: restaurant?.isOpenToday,
-                closedToday: restaurant?.closedToday,
-                isClosedToday: restaurant?.isClosedToday,
-                dayOff: restaurant?.dayOff,
-                isDayOff: restaurant?.isDayOff,
-                offToday: restaurant?.offToday,
-                openDays: Array.isArray(restaurant?.openDays) ? restaurant.openDays : [],
-                deliveryTimings: restaurant?.deliveryTimings || null,
-                outletTimings: restaurant?.outletTimings || null,
-                openingTime: restaurant?.openingTime || null,
-                closingTime: restaurant?.closingTime || null,
+                pureVegRestaurant: shop?.pureVegRestaurant === true,
+                isActive: shop?.isActive !== false,
+                isAcceptingOrders: shop?.isAcceptingOrders !== false,
+                availabilityStatus: shop?.availabilityStatus || null,
+                availability: shop?.availability || null,
+                isOnline: shop?.isOnline,
+                currentStatus: shop?.currentStatus || null,
+                isOpen: shop?.isOpen,
+                openNow: shop?.openNow,
+                isOpenNow: shop?.isOpenNow,
+                isRestaurantOpen: shop?.isRestaurantOpen,
+                todayOpen: shop?.todayOpen,
+                isOpenToday: shop?.isOpenToday,
+                closedToday: shop?.closedToday,
+                isClosedToday: shop?.isClosedToday,
+                dayOff: shop?.dayOff,
+                isDayOff: shop?.isDayOff,
+                offToday: shop?.offToday,
+                openDays: Array.isArray(shop?.openDays) ? shop.openDays : [],
+                deliveryTimings: shop?.deliveryTimings || null,
+                outletTimings: shop?.outletTimings || null,
+                openingTime: shop?.openingTime || null,
+                closingTime: shop?.closingTime || null,
                 menuItems,
               }
             } catch {
@@ -729,16 +729,16 @@ export default function Under250() {
         setUnder250Restaurants(mappedRestaurants)
 
         const restaurantsNeedingOutletTimings = mappedRestaurants.filter(
-          (restaurant) => restaurant.mongoId && !restaurant.outletTimings,
+          (shop) => shop.mongoId && !shop.outletTimings,
         )
 
         if (restaurantsNeedingOutletTimings.length > 0) {
           const resolvedOutletTimings = new Map()
 
-          for (const restaurant of restaurantsNeedingOutletTimings) {
+          for (const shop of restaurantsNeedingOutletTimings) {
             try {
               const outletResponse = await restaurantAPI.getOutletTimingsByRestaurantId(
-                restaurant.mongoId,
+                shop.mongoId,
                 { noCache: true },
               )
               const outletTimings =
@@ -747,25 +747,25 @@ export default function Under250() {
                 null
 
               if (outletTimings) {
-                resolvedOutletTimings.set(restaurant.mongoId, outletTimings)
+                resolvedOutletTimings.set(shop.mongoId, outletTimings)
               }
             } catch (_) {
-              // Keep the restaurant visible with whatever timing data came from the list.
+              // Keep the shop visible with whatever timing data came from the list.
             }
           }
 
           if (resolvedOutletTimings.size > 0) {
             setUnder250Restaurants((currentRestaurants) =>
-              currentRestaurants.map((restaurant) => {
-                if (!restaurant.mongoId) return restaurant
-                const outletTimings = resolvedOutletTimings.get(restaurant.mongoId)
-                return outletTimings ? { ...restaurant, outletTimings } : restaurant
+              currentRestaurants.map((shop) => {
+                if (!shop.mongoId) return shop
+                const outletTimings = resolvedOutletTimings.get(shop.mongoId)
+                return outletTimings ? { ...shop, outletTimings } : shop
               }),
             )
           }
         }
       } catch (error) {
-        debugError(`Error fetching restaurants under ${maxPrice}:`, error)
+        debugError(`Error fetching shops under ${maxPrice}:`, error)
         setUnder250Restaurants([])
       } finally {
         setLoadingRestaurants(false)
@@ -950,7 +950,7 @@ export default function Under250() {
     }
 
     if (item?.restaurantIsOpen === false) {
-      toast.error(item?.restaurantStatusLabel || "Restaurant is currently closed.")
+      toast.error(item?.restaurantStatusLabel || "Shop is currently closed.")
       return
     }
 
@@ -960,8 +960,8 @@ export default function Under250() {
       [item.id]: newQuantity,
     }))
 
-    // Find restaurant name from the item or use provided parameter
-    const restaurant = restaurantName || item.restaurant || underPriceDisplay
+    // Find shop name from the item or use provided parameter
+    const shop = restaurantName || item.shop || underPriceDisplay
 
     // Prepare cart item with all required properties
     const cartItem = {
@@ -970,7 +970,7 @@ export default function Under250() {
       name: variant ? `${item.name} (${variant.name})` : item.name,
       price: variant ? variant.price : item.price,
       image: item.image,
-      restaurant: restaurant,
+      shop: shop,
       description: item.description || "",
       originalPrice: item.originalPrice || (variant ? variant.price : item.price),
       foodType: item.foodType,
@@ -1023,7 +1023,7 @@ export default function Under250() {
         if (newQuantity > existingCartItem.quantity && sourcePosition) {
           const result = addToCart(cartItem, sourcePosition)
           if (result?.ok === false) {
-            toast.error(result.error || 'Cannot add item from different restaurant. Please clear cart first.')
+            toast.error(result.error || 'Cannot add item from different shop. Please clear cart first.')
             return
           }
           if (newQuantity > existingCartItem.quantity + 1) {
@@ -1052,21 +1052,21 @@ export default function Under250() {
     setShowShareOptions(false)
   }, [])
 
-  const handleItemClick = (item, restaurant) => {
-    const availability = getRestaurantAvailabilityStatus(restaurant, new Date())
+  const handleItemClick = (item, shop) => {
+    const availability = getShopAvailabilityStatus(shop, new Date())
     if (!availability.isOpen) {
-      toast.error(availability.badgeLabel || "Restaurant is currently closed.")
+      toast.error(availability.badgeLabel || "Shop is currently closed.")
       return
     }
 
-    // Add restaurant info to item for display
+    // Add shop info to item for display
     const itemWithRestaurant = {
       ...item,
-      restaurant: restaurant.name,
-      restaurantSlug: restaurant.slug || restaurant.restaurantId || "",
+      shop: shop.name,
+      restaurantSlug: shop.slug || shop.restaurantId || "",
       restaurantIsOpen: availability.isOpen,
-      restaurantStatusLabel: availability.badgeLabel || "Restaurant is currently closed.",
-      description: item.description || `${item.name} from ${restaurant.name}`,
+      restaurantStatusLabel: availability.badgeLabel || "Shop is currently closed.",
+      description: item.description || `${item.name} from ${shop.name}`,
       customisable: item.customisable || hasFoodVariants(item),
       notEligibleForCoupons: item.notEligibleForCoupons || false,
     }
@@ -1101,14 +1101,14 @@ export default function Under250() {
     const itemId = item.id || item._id
     const restaurantSlug = item.restaurantSlug || item.slug || ""
     const shareUrl = restaurantSlug
-      ? `${window.location.origin}/food/user/restaurants/${restaurantSlug}${itemId ? `?dish=${encodeURIComponent(itemId)}` : ""}`
+      ? `${window.location.origin}/food/user/shops/${restaurantSlug}${itemId ? `?dish=${encodeURIComponent(itemId)}` : ""}`
       : window.location.href
 
     try {
       if (navigator.share) {
         await navigator.share({
           title: item.name || "Dish",
-          text: `Check out ${item.name || "this dish"} from ${item.restaurant || underPriceDisplay}`,
+          text: `Check out ${item.name || "this dish"} from ${item.shop || underPriceDisplay}`,
           url: shareUrl,
         })
         return
@@ -1126,9 +1126,9 @@ export default function Under250() {
     const itemId = selectedItem.id || selectedItem._id
     const restaurantSlug = selectedItem.restaurantSlug || selectedItem.slug || ""
     const shareUrl = restaurantSlug
-      ? `${window.location.origin}/food/user/restaurants/${restaurantSlug}${itemId ? `?dish=${encodeURIComponent(itemId)}` : ""}`
+      ? `${window.location.origin}/food/user/shops/${restaurantSlug}${itemId ? `?dish=${encodeURIComponent(itemId)}` : ""}`
       : window.location.href
-    const shareText = `Check out ${selectedItem.name || "this dish"} from ${selectedItem.restaurant || underPriceDisplay}`
+    const shareText = `Check out ${selectedItem.name || "this dish"} from ${selectedItem.shop || underPriceDisplay}`
     const encodedUrl = encodeURIComponent(shareUrl)
     const encodedText = encodeURIComponent(`${shareText} ${shareUrl}`)
 
@@ -1348,35 +1348,35 @@ export default function Under250() {
         </section>
 
 
-        {/* Restaurant Menu Sections */}
+        {/* Shop Menu Sections */}
         {loadingRestaurants ? (
           <div className="flex justify-center items-center py-12">
-            <div className="text-gray-500 dark:text-gray-400">Loading restaurants...</div>
+            <div className="text-gray-500 dark:text-gray-400">Loading shops...</div>
           </div>
         ) : sortedAndFilteredRestaurants.length === 0 ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-gray-500 dark:text-gray-400">
               {under250Restaurants.length === 0
-                ? `No restaurants with dishes under ${RUPEE_SYMBOL}${maxPrice} found.`
-                : "No restaurants match the selected filters."}
+                ? `No shops with dishes under ${RUPEE_SYMBOL}${maxPrice} found.`
+                : "No shops match the selected filters."}
             </div>
           </div>
         ) : (
-          sortedAndFilteredRestaurants.map((restaurant) => {
-            const restaurantSlug = restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, "-")
-            const availability = getRestaurantAvailabilityStatus(restaurant, new Date())
+          sortedAndFilteredRestaurants.map((shop) => {
+            const restaurantSlug = shop.slug || shop.name.toLowerCase().replace(/\s+/g, "-")
+            const availability = getShopAvailabilityStatus(shop, new Date())
             const isRestaurantUnavailable = isOutOfService || !availability.isOpen
             return (
               <section key={restaurant.id} className={`pt-4 sm:pt-6 md:pt-8 lg:pt-10 ${isRestaurantUnavailable ? 'grayscale opacity-75' : ''}`}>
-                {/* Restaurant Header */}
+                {/* Shop Header */}
                 <div className="flex items-start justify-between mb-3 md:mb-4 lg:mb-6">
                   <div className="flex-1">
                     <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white mb-1 md:mb-2">
-                      {restaurant.name}
+                      {shop.name}
                     </h3>
                     <div className="flex items-center gap-2 text-sm md:text-base lg:text-lg text-gray-500 dark:text-gray-400">
                       <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
-                      <span className="font-medium">{restaurant.deliveryTime}</span>
+                      <span className="font-medium">{shop.deliveryTime}</span>
                     </div>
                     {isRestaurantUnavailable && (
                       <div className="mt-2 inline-flex rounded-full bg-gray-700 px-3 py-1 text-xs font-semibold text-white">
@@ -1389,16 +1389,16 @@ export default function Under250() {
                       <div className="bg-white text-green-700 px-1 py-1 md:px-1.5 md:py-1.5 lg:px-2 lg:py-2 rounded-full">
                         <Star className="h-3.5 w-3.5 md:h-4 md:w-4 lg:h-5 lg:w-5 fill-green-800 text-green-800" />
                       </div>
-                      <span className="text-xs md:text-sm lg:text-base font-bold">{restaurant.rating}</span>
+                      <span className="text-xs md:text-sm lg:text-base font-bold">{shop.rating}</span>
                     </div>
                     <span className="text-xs md:text-sm lg:text-base text-gray-400 dark:text-gray-500 mt-0.5">
-                      {restaurant.totalRatings > 0 ? `By ${restaurant.totalRatings >= 1000 ? `${(restaurant.totalRatings / 1000).toFixed(1)}K+` : `${restaurant.totalRatings}+`}` : ''}
+                      {shop.totalRatings > 0 ? `By ${shop.totalRatings >= 1000 ? `${(shop.totalRatings / 1000).toFixed(1)}K+` : `${shop.totalRatings}+`}` : ''}
                     </span>
                   </div>
                 </div>
 
                 {/* Menu Items Horizontal Scroll */}
-                {restaurant.menuItems && restaurant.menuItems.length > 0 && (
+                {shop.menuItems && shop.menuItems.length > 0 && (
                   <div className="space-y-2 md:space-y-3 lg:space-y-4">
                     <div
                       className="flex md:grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 overflow-x-auto md:overflow-x-visible overflow-y-visible scrollbar-hide scroll-smooth pb-2 md:pb-0 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
@@ -1409,7 +1409,7 @@ export default function Under250() {
                         overflowY: "hidden",
                       }}
                     >
-                      {restaurant.menuItems.map((item, itemIndex) => {
+                      {shop.menuItems.map((item, itemIndex) => {
                         const variants = getFoodVariants(item)
                         const totalQuantity = variants.length > 0 
                           ? variants.reduce((sum, v) => sum + (quantities[buildCartLineId(item.id, v.id)] || 0), 0)
@@ -1420,7 +1420,7 @@ export default function Under250() {
                             className="flex-shrink-0 w-[200px] sm:w-[220px] md:w-full bg-white dark:bg-[#1a1a1a] rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden cursor-pointer"
                             onClick={() => {
                               if (!isRestaurantUnavailable) {
-                                handleItemClick(item, restaurant)
+                                handleItemClick(item, shop)
                               }
                             }}
                             initial={{ opacity: 0, y: 20 }}
@@ -1525,7 +1525,7 @@ export default function Under250() {
                                     onClick={(e) => {
                                       e.stopPropagation()
                                       if (!shouldShowGrayscale && !isRestaurantUnavailable) {
-                                        handleItemClick(item, restaurant)
+                                        handleItemClick(item, shop)
                                       }
                                     }}
                                   >
@@ -1540,7 +1540,7 @@ export default function Under250() {
                     </div>
 
                     {/* View Full Menu Button */}
-                    <Link className="flex justify-center mt-2 md:mt-3 lg:mt-4" to={`/food/user/restaurants/${restaurantSlug}?under=${encodeURIComponent(maxPrice)}`}>
+                    <Link className="flex justify-center mt-2 md:mt-3 lg:mt-4" to={`/food/user/shops/${restaurantSlug}?under=${encodeURIComponent(maxPrice)}`}>
                       <Button
                         variant="outline"
                         className="w-min align-center text-center rounded-lg md:rounded-xl mx-auto bg-gray-50 dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-white text-gray-700 border-gray-200 dark:border-gray-800 h-9 md:h-10 lg:h-11 px-4 md:px-6 lg:px-8 text-sm md:text-base lg:text-lg"
@@ -1763,7 +1763,7 @@ export default function Under250() {
 
                 {/* Description */}
                 <p className="text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-4 md:mb-6 lg:mb-8 leading-relaxed">
-                  {selectedItem.description || `${selectedItem.name} from ${selectedItem.restaurant || underPriceDisplay}`}
+                  {selectedItem.description || `${selectedItem.name} from ${selectedItem.shop || underPriceDisplay}`}
                 </p>
 
                 {/* Highly Reordered Progress Bar */}
@@ -2022,7 +2022,7 @@ export default function Under250() {
                       </div>
                     </div>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      Veg from all restaurant
+                      Veg from all shop
                     </span>
                   </label>
 
@@ -2052,7 +2052,7 @@ export default function Under250() {
                       </div>
                     </div>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      Veg from pure veg restaurant only
+                      Veg from pure veg shop only
                     </span>
                   </label>
                 </div>
@@ -2117,7 +2117,7 @@ export default function Under250() {
                 </h2>
 
                 <p className="text-gray-600 text-center mb-6 text-sm">
-                  You'll see all restaurants, including those serving non-veg dishes
+                  You'll see all shops, including those serving non-veg dishes
                 </p>
 
                 <div className="space-y-3">

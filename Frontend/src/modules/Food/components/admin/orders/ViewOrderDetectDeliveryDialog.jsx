@@ -3,7 +3,7 @@ import { X, Clock, CheckCircle, XCircle, User, Phone, Package, MapPin } from "lu
 const getStatusColor = (status) => {
   const colors = {
     "Ordered": "bg-brand-100 text-brand-700 border-brand-200",
-    "Restaurant Accepted": "bg-green-100 text-green-700 border-green-200",
+    "Shop Accepted": "bg-green-100 text-green-700 border-green-200",
     "Accepted": "bg-green-100 text-green-700 border-green-200", // Keep for backward compatibility
     "Rejected": "bg-red-100 text-red-700 border-red-200",
     "User Unavailable Review": "bg-amber-100 text-amber-700 border-amber-200",
@@ -79,14 +79,14 @@ export default function ViewOrderDetectDeliveryDialog({ isOpen, onOpenChange, or
               </div>
             </div>
 
-            {/* Restaurant Information */}
+            {/* Shop Information */}
             <div className="bg-slate-50 rounded-lg p-4">
               <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                Restaurant Information
+                Shop Information
               </h3>
               <div>
-                <p className="text-xs text-slate-500">Restaurant Name</p>
+                <p className="text-xs text-slate-500">Shop Name</p>
                 <p className="text-sm font-medium text-slate-900">{order.restaurantName}</p>
               </div>
             </div>

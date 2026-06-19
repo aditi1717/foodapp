@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Bell, Menu, ChevronDown, Calendar, Download, ArrowRight, FileText } from "lucide-react"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { restaurantAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
 const debugLog = (...args) => {}
@@ -134,16 +134,16 @@ export default function HubFinance() {
   }, [])
 
 
-  // Fetch restaurant data for header display
+  // Fetch shop data for header display
   useEffect(() => {
-    // Use restaurant data from financeData if available, otherwise fetch separately
-    if (financeData?.restaurant) {
-      setRestaurantData(financeData.restaurant)
+    // Use shop data from financeData if available, otherwise fetch separately
+    if (financeData?.shop) {
+      setRestaurantData(financeData.shop)
     } else {
       const fetchRestaurantData = async () => {
         try {
           const response = await restaurantAPI.getRestaurantByOwner()
-          const data = response?.data?.data?.restaurant || response?.data?.restaurant || response?.data?.data
+          const data = response?.data?.data?.shop || response?.data?.shop || response?.data?.data
           if (data) {
             setRestaurantData({
               name: data.name,
@@ -154,7 +154,7 @@ export default function HubFinance() {
         } catch (error) {
           // Suppress 401 errors as they're handled by axios interceptor
           if (error.response?.status !== 401) {
-            debugError('? Error fetching restaurant data:', error)
+            debugError('? Error fetching shop data:', error)
           }
         }
       }
@@ -162,7 +162,7 @@ export default function HubFinance() {
     }
   }, [financeData])
 
-  // Format restaurant ID to REST###### format (e.g., REST005678)
+  // Format shop ID to REST###### format (e.g., REST005678)
   const formatRestaurantId = (restaurantId) => {
     if (!restaurantId) return ''
     
@@ -289,7 +289,7 @@ export default function HubFinance() {
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Wallet balance</p>
           <p className="text-xl font-bold text-gray-900">{formatMoney(takeawayCashSummary.walletBalance)}</p>
           <p className="text-[11px] text-gray-600 mt-2">
-            Restaurant wallet available for COD protection
+            Shop wallet available for COD protection
           </p>
         </div>
         <div className="bg-white rounded-lg p-4">
@@ -304,7 +304,7 @@ export default function HubFinance() {
   )
 
   const handleViewDetails = () => {
-    navigate("/restaurant/finance-details", { state: { financeData, restaurantData } })
+    navigate("/shop/finance-details", { state: { financeData, restaurantData } })
   }
 
   const formatMoney = (amount = 0) =>
@@ -356,7 +356,7 @@ export default function HubFinance() {
   const handleOrderRowClick = (order = {}) => {
     const routeOrderId = getOrderRouteId(order)
     if (!routeOrderId) return
-    navigate(`/restaurant/orders/${encodeURIComponent(routeOrderId)}`)
+    navigate(`/shop/orders/${encodeURIComponent(routeOrderId)}`)
   }
 
   const filterOrdersBySettlement = (orders = []) => {
@@ -574,8 +574,8 @@ export default function HubFinance() {
 
   // Prepare report data from real finance data
   const getReportData = () => {
-    const restaurantName = financeData?.restaurant?.name || "Restaurant"
-    const restaurantId = financeData?.restaurant?.restaurantId || "N/A"
+    const restaurantName = financeData?.shop?.name || "Shop"
+    const restaurantId = financeData?.shop?.restaurantId || "N/A"
     const currentCycle = financeData?.currentCycle || {}
     
     // Get all orders (current cycle + past cycles) - DEDUPLICATED
@@ -990,7 +990,7 @@ export default function HubFinance() {
           </head>
           <body>
             <div class="meta">
-              <p><strong>Restaurant:</strong> ${htmlEscape(reportData?.restaurantName || "Restaurant")}</p>
+              <p><strong>Shop:</strong> ${htmlEscape(reportData?.restaurantName || "Shop")}</p>
               <p><strong>ID:</strong> ${htmlEscape(reportData?.restaurantId || "N/A")}</p>
               <p><strong>Date Range:</strong> ${htmlEscape(reportData?.dateRange || "N/A")}</p>
             </div>
@@ -1076,14 +1076,14 @@ export default function HubFinance() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1">
                 <p className="text-lg font-bold text-gray-900 truncate">
-                  {restaurantData?.name || financeData?.restaurant?.name || "Restaurant"}
+                  {restaurantData?.name || financeData?.shop?.name || "Shop"}
                 </p>
                 <ChevronDown className="w-4 h-4 text-gray-600 flex-shrink-0" />
               </div>
               <p className="text-xs text-gray-600 mt-0.5">
                 {(() => {
-                  const restaurantId = restaurantData?.restaurantId || financeData?.restaurant?.restaurantId
-                  const address = restaurantData?.address || financeData?.restaurant?.address || ''
+                  const restaurantId = restaurantData?.restaurantId || financeData?.shop?.restaurantId
+                  const address = restaurantData?.address || financeData?.shop?.address || ''
                   const parts = []
                   if (restaurantId) {
                     const formattedId = formatRestaurantId(restaurantId)
@@ -1101,13 +1101,13 @@ export default function HubFinance() {
           <div className="flex items-center gap-1 ml-2">
             <button
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              onClick={() => navigate("/restaurant/notifications")}
+              onClick={() => navigate("/shop/notifications")}
             >
               <Bell className="w-5 h-5 text-gray-700" />
             </button>
             <button
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              onClick={() => navigate("/restaurant/explore")}
+              onClick={() => navigate("/shop/explore")}
             >
               <Menu className="w-5 h-5 text-gray-700" />
             </button>

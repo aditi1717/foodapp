@@ -68,11 +68,11 @@ export default function ZoneFilterPanel({ isOpen, onClose, filters, setFilters, 
             </div>
           </div>
 
-          {/* Restaurants Range */}
+          {/* Shops Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Min Restaurants
+                Min Shops
               </label>
               <input
                 type="number"
@@ -84,7 +84,7 @@ export default function ZoneFilterPanel({ isOpen, onClose, filters, setFilters, 
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Max Restaurants
+                Max Shops
               </label>
               <input
                 type="number"

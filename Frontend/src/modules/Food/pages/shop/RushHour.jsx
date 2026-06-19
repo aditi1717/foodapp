@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { ArrowLeft, Zap } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@food/components/ui/radio-group"
@@ -12,7 +12,7 @@ const debugError = (...args) => {}
 
 export default function RushHour() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [selectedTime, setSelectedTime] = useState("30")
 
   // Lenis smooth scrolling
@@ -87,7 +87,7 @@ export default function RushHour() {
             {[
               "Get more time to prepare food",
               "Show correct delivery time to customers",
-              "Avoid crowding of riders at your restaurant"
+              "Avoid crowding of riders at your shop"
             ].map((benefit, index) => (
               <div key={index} className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center shrink-0">

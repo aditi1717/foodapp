@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   checkOnboardingStatus,
-  isRestaurantOnboardingComplete,
+  isShopOnboardingComplete,
 } from "@food/utils/onboardingUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import Lenis from "lenis";
@@ -24,11 +24,11 @@ import {
   Package,
 } from "lucide-react";
 import { toast } from "sonner";
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders";
-import RestaurantNavbar from "@food/components/restaurant/RestaurantNavbar";
+import BottomNavOrders from "@food/components/shop/BottomNavOrders";
+import ShopNavbar from "@food/components/shop/ShopNavbar";
 import notificationSound from "@food/assets/audio/alert.mp3";
 import { restaurantAPI } from "@food/api";
-import { useRestaurantNotifications } from "@food/hooks/useRestaurantNotifications";
+import { useShopNotifications } from "@food/hooks/useShopNotifications";
 import { formatOrderAddressWithLabels } from "@food/utils/orderAddressFormatter";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -653,7 +653,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
         if (!isMounted) return;
 
         if (response.data?.success && response.data.data?.orders) {
-          // Filter cancelled orders (both restaurant and user cancelled)
+          // Filter cancelled orders (both shop and user cancelled)
           const cancelledOrders = response.data.data.orders.filter(
             (order) => order.status === "cancelled",
           );
@@ -762,8 +762,8 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
             const cancelledByText =
               order.cancelledBy === "user"
                 ? "Cancelled by User"
-                : order.cancelledBy === "restaurant"
-                  ? "Cancelled by Restaurant"
+                : order.cancelledBy === "shop"
+                  ? "Cancelled by Shop"
                   : "Cancelled";
 
             return (
@@ -1230,7 +1230,7 @@ export default function OrdersMain() {
   const acceptSliderRef = useRef(null);
   const acceptSwipeStartXRef = useRef(0);
   const acceptSwipeActiveRef = useRef(false);
-  const [restaurantStatus, setRestaurantStatus] = useState({
+  const [restaurantStatus, setShopStatus] = useState({
     isActive: null,
     rejectionReason: null,
     onboarding: null,
@@ -1523,7 +1523,7 @@ export default function OrdersMain() {
       baseTotal + dueAmount;
     const total = Number.isFinite(totalRaw) ? Math.max(0, totalRaw) : 0;
 
-    // Keep this aligned with restaurant order report/invoice logic:
+    // Keep this aligned with shop order report/invoice logic:
     // prefer backend payout fields; fallback to net formula used in reports.
     // Keep this aligned with admin regular order report:
     // restaurantEarning = subtotal + packagingFee - adminCommission - couponByRestaurant - offerByRestaurant
@@ -1590,7 +1590,7 @@ export default function OrdersMain() {
     return variantParts.join(" | ");
   };
 
-  // Restaurant notifications hook for real-time orders
+  // Shop notifications hook for real-time orders
   const {
     newOrder,
     clearNewOrder,
@@ -1598,10 +1598,10 @@ export default function OrdersMain() {
     cancelledOrderInfo,
     clearCancelledOrderId,
     isConnected
-  } = useRestaurantNotifications();
+  } = useShopNotifications();
 
   const rejectReasons = [
-    "Restaurant is too busy",
+    "Shop is too busy",
     "Item not available",
     "Outside delivery area",
     "Kitchen closing soon",
@@ -1609,27 +1609,27 @@ export default function OrdersMain() {
     "Other reason",
   ];
 
-  // Fetch restaurant verification status
+  // Fetch shop verification status
   useEffect(() => {
-    const fetchRestaurantStatus = async () => {
+    const fetchShopStatus = async () => {
       try {
         const response = await restaurantAPI.getCurrentRestaurant();
-        const restaurant =
-          response?.data?.data?.restaurant || response?.data?.restaurant;
-        if (restaurant) {
-          setRestaurantStatus({
-            isActive: restaurant.isActive,
-            rejectionReason: restaurant.rejectionReason || null,
-            onboarding: restaurant.onboarding || null,
+        const shop =
+          response?.data?.data?.shop || response?.data?.shop;
+        if (shop) {
+          setShopStatus({
+            isActive: shop.isActive,
+            rejectionReason: shop.rejectionReason || null,
+            onboarding: shop.onboarding || null,
             isLoading: false,
           });
 
           // Check if onboarding is incomplete and redirect if needed
-          if (!isRestaurantOnboardingComplete(restaurant)) {
+          if (!isShopOnboardingComplete(shop)) {
             // Onboarding is incomplete, redirect to onboarding page
             const incompleteStep = await checkOnboardingStatus();
             if (incompleteStep) {
-              navigate(`/restaurant/onboarding?step=${incompleteStep}`, {
+              navigate(`/shop/onboarding?step=${incompleteStep}`, {
                 replace: true,
               });
               return;
@@ -1643,18 +1643,18 @@ export default function OrdersMain() {
           error.code !== "ECONNABORTED" &&
           !error.message?.includes("timeout")
         ) {
-          debugError("Error fetching restaurant status:", error);
+          debugError("Error fetching shop status:", error);
         }
         // Set loading to false so UI doesn't stay in loading state
-        setRestaurantStatus((prev) => ({ ...prev, isLoading: false }));
+        setShopStatus((prev) => ({ ...prev, isLoading: false }));
       }
     };
 
-    fetchRestaurantStatus();
+    fetchShopStatus();
 
-    // Listen for restaurant profile updates
+    // Listen for shop profile updates
     const handleProfileRefresh = () => {
-      fetchRestaurantStatus();
+      fetchShopStatus();
     };
 
     window.addEventListener("restaurantProfileRefresh", handleProfileRefresh);
@@ -1673,15 +1673,15 @@ export default function OrdersMain() {
       setIsReverifying(true);
       await restaurantAPI.reverify();
 
-      // Refresh restaurant status
+      // Refresh shop status
       const response = await restaurantAPI.getCurrentRestaurant();
-      const restaurant =
-        response?.data?.data?.restaurant || response?.data?.restaurant;
-      if (restaurant) {
-        setRestaurantStatus({
-          isActive: restaurant.isActive,
-          rejectionReason: restaurant.rejectionReason || null,
-          onboarding: restaurant.onboarding || null,
+      const shop =
+        response?.data?.data?.shop || response?.data?.shop;
+      if (shop) {
+        setShopStatus({
+          isActive: shop.isActive,
+          rejectionReason: shop.rejectionReason || null,
+          onboarding: shop.onboarding || null,
           isLoading: false,
         });
       }
@@ -1690,7 +1690,7 @@ export default function OrdersMain() {
       window.dispatchEvent(new Event("restaurantProfileRefresh"));
 
       alert(
-        "Restaurant reverified successfully! Verification will be done in 24 hours.",
+        "Shop reverified successfully! Verification will be done in 24 hours.",
       );
     } catch (error) {
       // Don't log network/timeout errors (backend might be down)
@@ -1699,7 +1699,7 @@ export default function OrdersMain() {
         error.code !== "ECONNABORTED" &&
         !error.message?.includes("timeout")
       ) {
-        debugError("Error reverifying restaurant:", error);
+        debugError("Error reverifying shop:", error);
       }
 
       // Handle 401 Unauthorized errors (token expired/invalid)
@@ -1713,14 +1713,14 @@ export default function OrdersMain() {
         if (!error.response?.data?.message?.includes("inactive")) {
           // Only redirect if it's not an "inactive" error (which we handle differently)
           setTimeout(() => {
-            window.location.href = "/restaurant/login";
+            window.location.href = "/shop/login";
           }, 1500);
         }
       } else {
         // Other errors (400, 500, etc.)
         const errorMessage =
           error.response?.data?.message ||
-          "Failed to reverify restaurant. Please try again.";
+          "Failed to reverify shop. Please try again.";
         alert(errorMessage);
       }
     } finally {
@@ -1920,8 +1920,8 @@ export default function OrdersMain() {
       const messageFromPayload =
         customMessage && /cancel/i.test(customMessage)
           ? customMessage
-          : cancelledBy === "restaurant"
-            ? "Order was cancelled by the restaurant."
+          : cancelledBy === "shop"
+            ? "Order was cancelled by the shop."
             : cancelledBy === "admin"
               ? "Order was cancelled by admin."
               : "Order was cancelled by the customer.";
@@ -2318,7 +2318,7 @@ export default function OrdersMain() {
   const getOrderNoteForRestaurant = (order) => {
     if (!order) return "";
     const noteCandidate =
-      order?.notes?.restaurant ||
+      order?.notes?.shop ||
       order?.notes?.customer ||
       order.restaurantNote ||
       order.customerNote ||
@@ -2442,8 +2442,8 @@ export default function OrdersMain() {
     const orderId =
       currentOrder?.mongoId || currentOrder?.orderMongoId || currentOrder?.orderId || currentOrder?._id || "";
     const qs = orderId ? `?orderId=${encodeURIComponent(String(orderId))}` : "";
-    navigate(`/food/restaurant/help-centre/support${qs}`, {
-      state: { backTo: "/food/restaurant" }
+    navigate(`/food/shop/help-centre/support${qs}`, {
+      state: { backTo: "/food/shop" }
     });
   };
 
@@ -2609,7 +2609,7 @@ export default function OrdersMain() {
       doc.text("Order Receipt", 14, 17);
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
-      doc.text(orderToPrint.restaurantName || "Restaurant", 14, 24);
+      doc.text(orderToPrint.restaurantName || "Shop", 14, 24);
 
       doc.setTextColor(17, 24, 39);
       doc.setFont("helvetica", "bold");
@@ -2707,7 +2707,7 @@ export default function OrdersMain() {
       if (orderNote) {
         yPos += 8;
         doc.setFont("helvetica", "bold");
-        doc.text("Restaurant note", 14, yPos);
+        doc.text("Shop note", 14, yPos);
         doc.setFont("helvetica", "normal");
         const noteLines = doc.splitTextToSize(orderNote, 180);
         doc.text(noteLines, 14, yPos + 6);
@@ -2922,9 +2922,9 @@ export default function OrdersMain() {
       className="min-h-screen flex flex-col"
       style={{ backgroundColor: BRAND_THEME.colors.brand.primarySoft }}
     >
-      {/* Restaurant Navbar - Sticky at top */}
+      {/* Shop Navbar - Sticky at top */}
       <div className="sticky top-0 z-50 bg-white">
-        <RestaurantNavbar showNotifications={true} showSearch={false} />
+        <ShopNavbar showNotifications={true} showSearch={false} />
       </div>
 
       {/* Top Filter Bar - Sticky below navbar */}
@@ -3064,7 +3064,7 @@ export default function OrdersMain() {
           }
         `}</style>
 
-        {/* Verification Pending Card - Show if onboarding is complete (all 4 steps) and restaurant is not active */}
+        {/* Verification Pending Card - Show if onboarding is complete (all 4 steps) and shop is not active */}
         {!restaurantStatus.isLoading &&
           !restaurantStatus.isActive &&
           restaurantStatus.onboarding?.completedSteps === 4 && (
@@ -3189,7 +3189,7 @@ export default function OrdersMain() {
                       {(popupOrder || newOrder)?.orderId || "#Order"}
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {(popupOrder || newOrder)?.restaurantName || "Restaurant"}
+                      {(popupOrder || newOrder)?.restaurantName || "Shop"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -3224,7 +3224,7 @@ export default function OrdersMain() {
                           Takeaway Order
                         </p>
                         <p className="text-sm font-semibold text-amber-900 mt-0.5">
-                          Customer will pick this order up from the restaurant
+                          Customer will pick this order up from the shop
                         </p>
                       </div>
                     </div>
@@ -3334,7 +3334,7 @@ export default function OrdersMain() {
                   {getOrderNoteForRestaurant(popupOrder || newOrder) && (
                     <div className="mb-3 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-700">
-                        Restaurant note
+                        Shop note
                       </p>
                       <p className="mt-1 text-sm leading-5 text-brand-900">
                         {getOrderNoteForRestaurant(popupOrder || newOrder)}
@@ -3576,7 +3576,7 @@ export default function OrdersMain() {
                         {bill.commission > 0 && (
                           <div className="mt-2 flex items-center justify-between text-sm text-orange-700">
                             <span>
-                              Restaurant commission
+                              Shop commission
                               {bill.commissionRate > 0 ? ` (${bill.commissionRate}%)` : ""}
                             </span>
                             <span className="font-semibold">-{formatPopupAmount(bill.commission)}</span>

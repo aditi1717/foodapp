@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { ArrowLeft, AlertCircle, Upload, Loader2 } from "lucide-react"
 import { restaurantAPI, uploadAPI } from "@food/api"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
@@ -21,7 +21,7 @@ const EMPTY_FORM = {
 
 export default function UpdateBankDetails() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingQr, setUploadingQr] = useState(false)
@@ -87,7 +87,7 @@ export default function UpdateBankDetails() {
     try {
       setLoading(true)
       const response = await restaurantAPI.getCurrentRestaurant()
-      const doc = response?.data?.data?.restaurant || response?.data?.restaurant || null
+      const doc = response?.data?.data?.shop || response?.data?.shop || null
       if (!doc) return
 
       const accountNumber = String(doc.accountNumber || "").replace(/\s|-/g, "")
@@ -124,7 +124,7 @@ export default function UpdateBankDetails() {
         return
       }
       setUploadingQr(true)
-      const response = await uploadAPI.uploadMedia(file, { folder: "food/restaurants/upi-qr" })
+      const response = await uploadAPI.uploadMedia(file, { folder: "food/shops/upi-qr" })
       const url =
         response?.data?.data?.url ||
         response?.data?.url ||

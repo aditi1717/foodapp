@@ -14,9 +14,9 @@ export default function NewAdvertisement() {
   const [formData, setFormData] = useState({
     title: "",
     shortDescription: "",
-    restaurant: "",
+    shop: "",
     priority: "Priority",
-    advertisementType: "Restaurant Promotion",
+    advertisementType: "Shop Promotion",
     validity: "",
     showReview: true,
     showRatings: true,
@@ -36,7 +36,7 @@ export default function NewAdvertisement() {
     { key: "en", label: "English(EN)" },
     { key: "bn", label: "Bengali - বাংলা(BN)" },
     { key: "ar", label: "Arabic - العربية (AR)" },
-    { key: "es", label: "Spanish - espa�ol(ES)" },
+    { key: "es", label: "Spanish - espa�ol(ES)" },
   ]
 
   const handleInputChange = (field, value) => {
@@ -114,8 +114,8 @@ export default function NewAdvertisement() {
       errors.title = "Advertisement title is required"
     }
 
-    if (!formData.restaurant) {
-      errors.restaurant = "Restaurant selection is required"
+    if (!formData.shop) {
+      errors.shop = "Shop selection is required"
     }
 
     if (!formData.validity) {
@@ -171,9 +171,9 @@ export default function NewAdvertisement() {
     setFormData({
       title: "",
       shortDescription: "",
-      restaurant: "",
+      shop: "",
       priority: "Priority",
-      advertisementType: "Restaurant Promotion",
+      advertisementType: "Shop Promotion",
       validity: "",
       showReview: true,
       showRatings: true,
@@ -253,21 +253,21 @@ export default function NewAdvertisement() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        Select Restaurant <span className="text-red-500">*</span>
+                        Select Shop <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={formData.restaurant}
-                        onChange={(e) => handleInputChange("restaurant", e.target.value)}
+                        onChange={(e) => handleInputChange("shop", e.target.value)}
                         className={`w-full px-4 py-2.5 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm ${
-                          formErrors.restaurant ? "border-red-500" : "border-slate-300"
+                          formErrors.shop ? "border-red-500" : "border-slate-300"
                         }`}
                       >
-                        <option value="">Select Restaurant</option>
-                        <option value="cafe-monarch">Caf� Monarch</option>
+                        <option value="">Select Shop</option>
+                        <option value="cafe-monarch">Caf� Monarch</option>
                         <option value="hungry-puppets">Hungry Puppets</option>
                       </select>
-                      {formErrors.restaurant && (
-                        <p className="text-xs text-red-500 mt-1">{formErrors.restaurant}</p>
+                      {formErrors.shop && (
+                        <p className="text-xs text-red-500 mt-1">{formErrors.shop}</p>
                       )}
                     </div>
 
@@ -297,7 +297,7 @@ export default function NewAdvertisement() {
                       onChange={(e) => handleInputChange("advertisementType", e.target.value)}
                       className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
                     >
-                      <option value="Restaurant Promotion">Restaurant Promotion</option>
+                      <option value="Restaurant Promotion">Shop Promotion</option>
                       <option value="Video promotion">Video promotion</option>
                     </select>
                   </div>

@@ -63,7 +63,7 @@ const mapPendingRestaurants = (rows = []) =>
     message: `${item?.restaurantName || "Restaurant"} submitted a restaurant approval request. Owner: ${item?.ownerName || "N/A"}. Contact: ${item?.ownerPhone || "N/A"}.`,
     type: "approval",
     category: "restaurant_approval",
-    path: "/admin/food/restaurants/joining-request",
+    path: "/admin/food/shops/joining-request",
     createdAt: item?.createdAt || item?.updatedAt,
     timeLabel: toDateLabel(item?.createdAt || item?.updatedAt),
     metaLabel: joinMeta(item?.restaurantName, item?.ownerName, item?.ownerPhone),
@@ -113,7 +113,7 @@ const mapFoodApprovals = (response) => {
   }));
 };
 
-const mapUserRestaurantSupport = (response) => {
+const mapUserShopSupport = (response) => {
   const payload = response?.data?.data;
   const rows =
     payload?.tickets ||
@@ -185,7 +185,7 @@ const mapExpiredFssai = (response) => {
       `${item?.restaurantName || "Restaurant"} FSSAI license has expired.`,
     type: "compliance",
     category: "fssai_expired",
-    path: "/admin/food/restaurants",
+    path: "/admin/food/shops",
     createdAt: item?.createdAt || item?.fssaiExpiry,
     timeLabel: toDateLabel(item?.createdAt || item?.fssaiExpiry),
     metaLabel: joinMeta(item?.restaurantName, item?.ownerName, item?.ownerPhone, item?.fssaiNumber),
@@ -228,7 +228,7 @@ export default function useAdminNotifications(options = {}) {
         ...mapPendingRestaurants(restaurantRows),
         ...mapDeliveryJoinRequests(deliveryJoinRes),
         ...mapFoodApprovals(foodApprovalRes),
-        ...mapUserRestaurantSupport(supportRes),
+        ...mapUserShopSupport(supportRes),
         ...mapDeliverySupport(deliverySupportRes),
         ...mapExpiredFssai(fssaiExpiredRes),
       ])

@@ -1,13 +1,13 @@
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { useEffect, useState } from "react"
 import { ArrowLeft } from "lucide-react"
 import api, { API_ENDPOINTS } from "@food/api"
 
 export default function PrivacyPolicyPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [loading, setLoading] = useState(true)
   const [privacyData, setPrivacyData] = useState({ title: "Privacy Policy", content: "", updatedAt: "" })
 

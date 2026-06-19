@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, ChevronDown, ChevronUp, Download, Mail, X, Info } from "lucide-react"
 import BRAND_THEME from "@/config/brandTheme"
 
 export default function FinanceDetailsPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const location = useLocation()
   const financeData = location.state?.financeData || null
   const restaurantData = location.state?.restaurantData || null
@@ -133,7 +133,7 @@ export default function FinanceDetailsPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold text-gray-900 truncate">
-              {restaurantData?.name || "Your Restaurant"}
+              {restaurantData?.name || "Your Shop"}
             </h1>
             <p className="text-xs text-gray-600 mt-0.5">
               ID: {restaurantData?.restaurantId || "N/A"} • {restaurantData?.address || "Location"}
@@ -311,7 +311,7 @@ export default function FinanceDetailsPage() {
                               </div>
                               <div className="flex items-center justify-between py-2 border-t border-dashed border-gray-200">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-sm text-gray-700">Restaurant discount (Promos)</span>
+                                  <span className="text-sm text-gray-700">Shop discount (Promos)</span>
                                   <Info className="w-3.5 h-3.5 text-gray-400" />
                                 </div>
                                 <span className="text-sm font-medium text-gray-900">
@@ -320,7 +320,7 @@ export default function FinanceDetailsPage() {
                               </div>
                               <div className="flex items-center justify-between py-2 border-t border-dashed border-gray-200">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-sm text-gray-700">Restaurant discount (Flat offs, Freebies, Gold, relisted orders and others)</span>
+                                  <span className="text-sm text-gray-700">Shop discount (Flat offs, Freebies, Gold, relisted orders and others)</span>
                                   <Info className="w-3.5 h-3.5 text-gray-400" />
                                 </div>
                                 <span className="text-sm font-medium text-gray-900">
@@ -459,7 +459,7 @@ export default function FinanceDetailsPage() {
                               </div>
                               <div className="flex items-center justify-between py-2 border-t border-dashed border-gray-200">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-sm text-gray-700">GST paid by Iggymet on behalf of the restaurant u/s 9(5) of GST</span>
+                                  <span className="text-sm text-gray-700">GST paid by Iggymet on behalf of the shop u/s 9(5) of GST</span>
                                   <Info className="w-3.5 h-3.5 text-gray-400" />
                                 </div>
                                 <span className="text-sm font-medium text-gray-900">

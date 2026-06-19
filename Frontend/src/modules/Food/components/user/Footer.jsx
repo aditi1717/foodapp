@@ -63,9 +63,9 @@ export default function Footer() {
       { name: "Favorites", href: "/user/profile/favorites" },
       { name: "Offers", href: "/user/offers" },
     ],
-    restaurants: [
+    shops: [
       { name: "Partner With Us", href: "/user/help" },
-      { name: "Restaurant Login", href: "/restaurant" },
+      { name: "Shop Login", href: "/shop" },
       { name: "Delivery", href: "/delivery" },
     ],
   }
@@ -98,7 +98,7 @@ export default function Footer() {
                 </span>
               </div>
               <p className="text-sm leading-relaxed max-w-md" style={{ color: BRAND_THEME.tokens.footer.surfaceText }}>
-                Delivering delicious food to your doorstep. Order from your favorite restaurants
+                Delivering delicious food to your doorstep. Order from your favorite shops
                 and enjoy fresh, hot meals in minutes.
               </p>
             </div>

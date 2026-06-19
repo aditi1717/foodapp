@@ -416,10 +416,10 @@ export default function AddRestaurant() {
   const validateStep1 = () => {
     const errors = []
     if (!step1.restaurantName?.trim()) {
-      errors.push("Restaurant name is required")
+      errors.push("Shop name is required")
     }
     if (typeof step1.pureVegRestaurant !== "boolean") {
-      errors.push("Please select whether restaurant is pure veg")
+      errors.push("Please select whether shop is pure veg")
     }
     if (!step1.ownerName?.trim()) {
       errors.push("Owner name is required")
@@ -475,7 +475,7 @@ export default function AddRestaurant() {
   const validateStep2 = () => {
     const errors = []
     if (!step2.menuImages || step2.menuImages.length === 0) errors.push("At least one menu image is required")
-    if (!step2.profileImage) errors.push("Restaurant profile image is required")
+    if (!step2.profileImage) errors.push("Shop profile image is required")
     if (!step2.cuisines || step2.cuisines.length === 0) errors.push("Please select at least one cuisine")
     if (!step2.estimatedDeliveryTime?.trim()) errors.push("Estimated delivery time is required")
     if (!step2.openingTime?.trim()) errors.push("Opening time is required")
@@ -570,14 +570,14 @@ export default function AddRestaurant() {
       // Upload all images first
       let profileImageData = null
       if (step2.profileImage instanceof File) {
-        profileImageData = await handleUpload(step2.profileImage, "appzeto/restaurant/profile")
+        profileImageData = await handleUpload(step2.profileImage, "appzeto/shop/profile")
       } else if (step2.profileImage?.url) {
         profileImageData = step2.profileImage
       }
 
       let menuImagesData = []
       for (const file of step2.menuImages.filter(f => f instanceof File)) {
-        const uploaded = await handleUpload(file, "appzeto/restaurant/menu")
+        const uploaded = await handleUpload(file, "appzeto/shop/menu")
         menuImagesData.push(uploaded)
       }
       const existingMenuUrls = step2.menuImages.filter(img => !(img instanceof File) && (img?.url || (typeof img === 'string' && img.startsWith('http'))))
@@ -585,7 +585,7 @@ export default function AddRestaurant() {
 
       let panImageData = null
       if (step3.panImage instanceof File) {
-        panImageData = await handleUpload(step3.panImage, "appzeto/restaurant/pan")
+        panImageData = await handleUpload(step3.panImage, "appzeto/shop/pan")
       } else if (step3.panImage?.url) {
         panImageData = step3.panImage
       }
@@ -593,7 +593,7 @@ export default function AddRestaurant() {
       let gstImageData = null
       if (step3.gstRegistered && step3.gstImage) {
         if (step3.gstImage instanceof File) {
-          gstImageData = await handleUpload(step3.gstImage, "appzeto/restaurant/gst")
+          gstImageData = await handleUpload(step3.gstImage, "appzeto/shop/gst")
         } else if (step3.gstImage?.url) {
           gstImageData = step3.gstImage
         }
@@ -601,7 +601,7 @@ export default function AddRestaurant() {
 
       let fssaiImageData = null
       if (step3.fssaiImage instanceof File) {
-        fssaiImageData = await handleUpload(step3.fssaiImage, "appzeto/restaurant/fssai")
+        fssaiImageData = await handleUpload(step3.fssaiImage, "appzeto/shop/fssai")
       } else if (step3.fssaiImage?.url) {
         fssaiImageData = step3.fssaiImage
       }
@@ -649,17 +649,17 @@ export default function AddRestaurant() {
       const data = response?.data?.data ?? response?.data
       if (response?.data?.success !== false && data) {
         await clearPersistedFormData()
-        toast.success("Restaurant created successfully!")
+        toast.success("Shop created successfully!")
         setShowSuccessDialog(true)
         setTimeout(() => {
-          navigate("/admin/food/restaurants")
+          navigate("/admin/food/shops")
         }, 2000)
       } else {
-        throw new Error(response?.data?.message || "Failed to create restaurant")
+        throw new Error(response?.data?.message || "Failed to create shop")
       }
     } catch (error) {
-      debugError("Error creating restaurant:", error)
-      const errorMsg = error?.response?.data?.message || error?.message || "Failed to create restaurant. Please try again."
+      debugError("Error creating shop:", error)
+      const errorMsg = error?.response?.data?.message || error?.message || "Failed to create shop. Please try again."
       toast.error(errorMsg)
       setFormErrors({ submit: errorMsg })
     } finally {
@@ -744,7 +744,7 @@ export default function AddRestaurant() {
         const apiKey = await getGoogleMapsApiKey()
         if (!apiKey) return false
 
-        const existing = document.getElementById("restaurant-onboarding-maps-script")
+        const existing = document.getElementById("shop-onboarding-maps-script")
         if (existing) {
           for (let i = 0; i < 30; i += 1) {
             if (window.google?.maps?.places?.Autocomplete) {
@@ -759,7 +759,7 @@ export default function AddRestaurant() {
         try {
           await new Promise((resolve, reject) => {
             const script = document.createElement("script")
-            script.id = "restaurant-onboarding-maps-script"
+            script.id = "shop-onboarding-maps-script"
             script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`
             script.async = true
             script.defer = true
@@ -940,10 +940,10 @@ export default function AddRestaurant() {
   const renderStep1 = () => (
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md">
-        <h2 className="text-lg font-semibold text-black mb-4">Restaurant information</h2>
+        <h2 className="text-lg font-semibold text-black mb-4">Shop information</h2>
         <div className="space-y-4">
           <div>
-            <Label className="text-xs text-gray-700">Restaurant name*</Label>
+            <Label className="text-xs text-gray-700">Shop name*</Label>
             <Input
               value={step1.restaurantName || ""}
               onChange={(e) => setStep1({ ...step1, restaurantName: e.target.value })}
@@ -952,7 +952,7 @@ export default function AddRestaurant() {
             />
           </div>
           <div>
-            <Label className="text-xs text-gray-700">Pure veg restaurant?*</Label>
+            <Label className="text-xs text-gray-700">Pure veg shop?*</Label>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
@@ -978,7 +978,7 @@ export default function AddRestaurant() {
               </button>
             </div>
             <p className="text-[11px] text-gray-500 mt-1">
-              This helps users filter restaurants by dietary preference.
+              This helps users filter shops by dietary preference.
             </p>
           </div>
         </div>
@@ -1023,7 +1023,7 @@ export default function AddRestaurant() {
               value={step1.primaryContactNumber || ""}
               onChange={(e) => setStep1({ ...step1, primaryContactNumber: sanitizeDigits(e.target.value).slice(0, 10) })}
               className="mt-1 bg-white text-sm text-black placeholder-black"
-              placeholder="Restaurant's primary contact number"
+              placeholder="Shop's primary contact number"
               inputMode="numeric"
               maxLength={10}
             />
@@ -1032,7 +1032,7 @@ export default function AddRestaurant() {
       </section>
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
-        <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
+        <h2 className="text-lg font-semibold text-black">Shop contact & location</h2>
         
         <div>
           <Label className="text-xs text-gray-700 font-bold mb-1 block">Service zone*</Label>
@@ -1075,17 +1075,17 @@ export default function AddRestaurant() {
             })}
           </select>
           <p className="text-[11px] text-gray-500 mt-1">
-            Choose the service zone where your restaurant will be available.
+            Choose the service zone where your shop will be available.
           </p>
         </div>
 
         <div className="p-3 bg-orange-50/50 rounded-lg border-2 border-orange-200 shadow-sm ring-2 ring-orange-100/50">
-          <Label className="text-xs font-bold text-orange-700 mb-1.5 block">Search & Set Restaurant Location*</Label>
+          <Label className="text-xs font-bold text-orange-700 mb-1.5 block">Search & Set Shop Location*</Label>
           <Input
             ref={locationSearchInputRef}
             className="mt-1 bg-white text-sm text-black border-orange-500 border-2 ring-2 ring-orange-100 focus:border-orange-600 focus:ring-orange-200 font-bold transition-all shadow-sm"
             style={{ color: "#000", WebkitTextFillColor: "#000" }}
-            placeholder="Search your restaurant address here..."
+            placeholder="Search your shop address here..."
             defaultValue={step1.location?.formattedAddress || ""}
             onChange={(e) => {
               if (!e.target.value.trim()) {
@@ -1268,7 +1268,7 @@ export default function AddRestaurant() {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-gray-700">Restaurant profile image*</Label>
+          <Label className="text-xs font-medium text-gray-700">Shop profile image*</Label>
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
               {step2.profileImage ? (
@@ -1561,7 +1561,7 @@ export default function AddRestaurant() {
       <header className="px-4 py-4 sm:px-6 sm:py-5 bg-white flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Building2 className="w-5 h-5 text-brand-600" />
-          <div className="text-sm font-semibold text-black">Add New Restaurant</div>
+          <div className="text-sm font-semibold text-black">Add New Shop</div>
         </div>
         <div className="text-xs text-gray-600">Step {step} of 3</div>
       </header>
@@ -1589,7 +1589,7 @@ export default function AddRestaurant() {
             disabled={isSubmitting}
             className="text-sm bg-black text-white px-6"
           >
-            {step === 3 ? (isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating... </> : "Create Restaurant") : isSubmitting ? "Saving..." : "Continue"}
+            {step === 3 ? (isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating... </> : "Create Shop") : isSubmitting ? "Saving..." : "Continue"}
           </Button>
         </div>
       </footer>
@@ -1607,9 +1607,9 @@ export default function AddRestaurant() {
               </div>
             </div>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-slate-900 mb-2">Restaurant Created Successfully!</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-slate-900 mb-2">Shop Created Successfully!</DialogTitle>
               <DialogDescription className="text-sm text-slate-600">
-                The restaurant has been created successfully.
+                The shop has been created successfully.
               </DialogDescription>
             </DialogHeader>
           </div>

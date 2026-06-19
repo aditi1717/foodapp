@@ -133,7 +133,7 @@ const clearProfileFromLocalStorage = () => {
   } catch { }
 }
 
-const RestaurantProfile = () => {
+const ShopProfile = () => {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [savingSection, setSavingSection] = useState(null)
@@ -282,7 +282,7 @@ const RestaurantProfile = () => {
         const apiKey = await getGoogleMapsApiKey()
         if (!apiKey) return false
 
-        const existing = document.getElementById("restaurant-profile-maps-script")
+        const existing = document.getElementById("shop-profile-maps-script")
         if (existing) {
           for (let i = 0; i < 30; i += 1) {
             if (window.google?.maps?.places?.Autocomplete) {
@@ -297,7 +297,7 @@ const RestaurantProfile = () => {
         try {
           await new Promise((resolve, reject) => {
             const script = document.createElement("script")
-            script.id = "restaurant-profile-maps-script"
+            script.id = "shop-profile-maps-script"
             script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`
             script.async = true
             script.defer = true
@@ -401,7 +401,7 @@ const RestaurantProfile = () => {
   const fetchInitialData = async (ignoreDraft = false) => {
     try {
       const response = await restaurantAPI.getCurrentRestaurant()
-      const data = response?.data?.data?.restaurant || response?.data?.restaurant
+      const data = response?.data?.data?.shop || response?.data?.shop
       
       if (data) {
         setBasicInfo({
@@ -475,7 +475,7 @@ const RestaurantProfile = () => {
         }
       }
     } catch (error) {
-      console.error("Failed to fetch restaurant data:", error)
+      console.error("Failed to fetch shop data:", error)
       toast.error("Failed to load profile details")
     } finally {
       setLoading(false)
@@ -535,7 +535,7 @@ const RestaurantProfile = () => {
       const selectedZoneId = normalizeProfileZoneId(location.zoneId)
       const selectedZone = zones.find((zone) => getZoneIdValue(zone) === selectedZoneId)
       if (!selectedZoneId || !selectedZone) return toast.error("Please select a valid service zone")
-      if (!getTrimmedValue(location.formattedAddress)) return toast.error("Please search and select restaurant location")
+      if (!getTrimmedValue(location.formattedAddress)) return toast.error("Please search and select shop location")
       if (!getTrimmedValue(location.addressLine1)) return toast.error("Shop / building details are required")
       if (!getTrimmedValue(location.addressLine2)) return toast.error("Floor / tower details are required")
       if (!getTrimmedValue(location.landmark)) return toast.error("Nearby landmark is required")
@@ -637,14 +637,14 @@ const RestaurantProfile = () => {
       }
 
       const response = await restaurantAPI.updateProfile(requestPayload)
-      const updatedData = response?.data?.data?.restaurant || response?.data?.restaurant
+      const updatedData = response?.data?.data?.shop || response?.data?.shop
 
       // Redirect if the update triggered a status change to 'pending' (requires approval)
       if (updatedData?.status === 'pending') {
-        clearModuleAuth("restaurant")
+        clearModuleAuth("shop")
         window.dispatchEvent(new Event("restaurantAuthChanged"))
         toast.success("Update submitted for approval. Please log in again.")
-        navigate("/food/restaurant/login", { replace: true })
+        navigate("/food/shop/login", { replace: true })
         return
       }
 
@@ -783,7 +783,7 @@ const RestaurantProfile = () => {
         <div className="max-w-5xl mx-auto relative z-10">
           <div className="flex items-center justify-between mb-8">
             <button 
-              onClick={() => navigate('/food/restaurant/explore')}
+              onClick={() => navigate('/food/shop/explore')}
               className="p-2.5 bg-white/10 backdrop-blur-xl hover:bg-white/20 rounded-2xl transition-all group border border-white/20 shadow-xl"
             >
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -812,7 +812,7 @@ const RestaurantProfile = () => {
             <div className="flex-1">
               <div className="flex flex-col items-center md:items-start">
                 <h1 className="text-3xl md:text-5xl font-black mb-3 tracking-tight leading-tight text-white drop-shadow-md">
-                  {basicInfo.name || "My Restaurant"}
+                  {basicInfo.name || "My Shop"}
                 </h1>
                 <div className="flex flex-wrap justify-center md:justify-start items-center gap-3">
                   <div className="flex items-center gap-2 text-xs font-black bg-emerald-900/40 px-4 py-1.5 rounded-xl backdrop-blur-md border border-emerald-500/20 text-emerald-50">
@@ -833,7 +833,7 @@ const RestaurantProfile = () => {
         {/* Quick Stats / Indicators - More Compact */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: 'Restaurant Type', val: basicInfo.pureVegRestaurant ? 'Pure Veg' : 'Mixed', icon: Tag, color: 'text-green-600', bg: 'bg-green-50' },
+            { label: 'Shop Type', val: basicInfo.pureVegRestaurant ? 'Pure Veg' : 'Mixed', icon: Tag, color: 'text-green-600', bg: 'bg-green-50' },
             { label: 'Avg Delivery', val: opsInfo.estimatedDeliveryTime || '30-45 mins', icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
             { label: 'Featured Dish', val: opsInfo.featuredDish || 'Not Set', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
             { label: 'GST Status', val: kycInfo.gstRegistered ? 'Active' : 'Unregistered', icon: ShieldCheck, color: 'text-orange-600', bg: 'bg-orange-50' },
@@ -873,7 +873,7 @@ const RestaurantProfile = () => {
           />
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-slate-500 ml-1">Restaurant Name</Label>
+              <Label className="text-xs font-bold text-slate-500 ml-1">Shop Name</Label>
               <Input 
                 value={basicInfo.name} 
                 onChange={e => setBasicInfo({...basicInfo, name: e.target.value})}
@@ -992,7 +992,7 @@ const RestaurantProfile = () => {
                   )
                 })}
               </select>
-              <p className="text-[10px] text-slate-400 ml-1">Choose the service zone where your restaurant will be available.</p>
+              <p className="text-[10px] text-slate-400 ml-1">Choose the service zone where your shop will be available.</p>
             </div>
 
             <div className="space-y-2">
@@ -1101,7 +1101,7 @@ const RestaurantProfile = () => {
         >
           <SectionHeader 
             icon={TrendingUp} 
-            title="Restaurant Operations" 
+            title="Shop Operations" 
             section="operations"
             isEditing={editStates.operations}
             onToggle={() => toggleEdit('operations')}
@@ -1494,7 +1494,7 @@ const RestaurantProfile = () => {
           <div className="p-6 space-y-8">
             {/* Profile Image - Large */}
             <div className="space-y-4">
-              <Label className="text-xs font-bold text-slate-500 ml-1">Restaurant Profile Image</Label>
+              <Label className="text-xs font-bold text-slate-500 ml-1">Shop Profile Image</Label>
               <div className="relative w-40 h-40 rounded-3xl overflow-hidden border-2 border-dashed border-slate-200 bg-slate-50 group">
                 {imageInfo.profileImage ? (
                   <img src={getPreviewUrl(imageInfo.profileImage)} alt="Profile" className="w-full h-full object-cover" />
@@ -1567,4 +1567,4 @@ const RestaurantProfile = () => {
   )
 }
 
-export default RestaurantProfile
+export default ShopProfile

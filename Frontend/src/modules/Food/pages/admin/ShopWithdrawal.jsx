@@ -18,7 +18,7 @@ const TABS = [
   { key: "Rejected", label: "Rejected" },
 ]
 
-export default function RestaurantWithdrawal() {
+export default function ShopWithdrawal() {
   const [activeTab, setActiveTab] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
   const [requests, setRequests] = useState([])
@@ -36,7 +36,7 @@ export default function RestaurantWithdrawal() {
   const fetchRequests = async () => {
     try {
       setLoading(true)
-      const response = await adminAPI.getRestaurantWithdrawals({
+      const response = await adminAPI.getShopWithdrawals({
         status: activeTab.toLowerCase(),
         page: 1,
         limit: 200,
@@ -45,12 +45,12 @@ export default function RestaurantWithdrawal() {
       if (response?.data?.success) {
         setRequests(response.data.data?.requests || [])
       } else {
-        toast.error(response?.data?.message || "Failed to fetch restaurant withdrawal requests")
+        toast.error(response?.data?.message || "Failed to fetch shop withdrawal requests")
         setRequests([])
       }
     } catch (error) {
-      console.error("Error fetching restaurant withdrawal requests:", error)
-      toast.error(error.response?.data?.message || "Failed to fetch restaurant withdrawal requests")
+      console.error("Error fetching shop withdrawal requests:", error)
+      toast.error(error.response?.data?.message || "Failed to fetch shop withdrawal requests")
       setRequests([])
     } finally {
       setLoading(false)
@@ -88,10 +88,10 @@ export default function RestaurantWithdrawal() {
   }
 
   const handleApprove = async (id) => {
-    if (!confirm("Are you sure you want to approve this withdrawal request? This will debit the locked amount from the restaurant's wallet.")) return
+    if (!confirm("Are you sure you want to approve this withdrawal request? This will debit the locked amount from the shop's wallet.")) return
     try {
       setProcessingAction(id)
-      const response = await adminAPI.updateRestaurantWithdrawalStatus(id, { status: "approved" })
+      const response = await adminAPI.updateShopWithdrawalStatus(id, { status: "approved" })
       if (response?.data?.success) {
         toast.success("Withdrawal request approved successfully")
         fetchRequests()
@@ -109,7 +109,7 @@ export default function RestaurantWithdrawal() {
   const handleReject = async (id) => {
     try {
       setProcessingAction(id)
-      const response = await adminAPI.updateRestaurantWithdrawalStatus(id, {
+      const response = await adminAPI.updateShopWithdrawalStatus(id, {
         status: "rejected",
         rejectionReason: rejectionReason,
       })
@@ -156,10 +156,10 @@ export default function RestaurantWithdrawal() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex items-center gap-3">
             <Wallet className="w-5 h-5 text-indigo-600" />
-            <h1 className="text-2xl font-bold text-slate-900">Restaurant Wallet Withdrawals</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Shop Wallet Withdrawals</h1>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            View and manage restaurant wallet withdrawal requests. Approve to release payouts or reject to return funds to their available balance.
+            View and manage shop wallet withdrawal requests. Approve to release payouts or reject to return funds to their available balance.
           </p>
         </div>
 
@@ -192,7 +192,7 @@ export default function RestaurantWithdrawal() {
             <div className="relative flex-1 sm:flex-initial min-w-[200px] max-w-xs">
               <input
                 type="text"
-                placeholder="Search by restaurant or amount"
+                placeholder="Search by shop or amount"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
@@ -213,7 +213,7 @@ export default function RestaurantWithdrawal() {
                   <tr>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">#</th>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Restaurant</th>
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop</th>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">ID</th>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Request Time</th>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Status</th>
@@ -306,11 +306,11 @@ export default function RestaurantWithdrawal() {
                   <p className="text-sm font-bold text-slate-900 mt-1">{formatCurrency(selectedRequest.amount)}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Restaurant</label>
+                  <label className="text-xs font-semibold text-slate-500 uppercase">Shop</label>
                   <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.restaurantName || "N/A"}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Restaurant ID</label>
+                  <label className="text-xs font-semibold text-slate-500 uppercase">Shop ID</label>
                   <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.restaurantIdString || "N/A"}</p>
                 </div>
 

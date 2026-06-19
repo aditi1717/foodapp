@@ -311,7 +311,7 @@ export default function NotificationChannels() {
     switch(tab) {
       case "admin":
         return adminNotifications
-      case "restaurant":
+      case "shop":
         return restaurantNotifications
       case "customers":
         return customerNotifications

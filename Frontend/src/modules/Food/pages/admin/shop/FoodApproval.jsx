@@ -224,7 +224,7 @@ export default function FoodApproval() {
               </span>
               <input
                 type="text"
-                placeholder="Search by name, category, restaurant or status"
+                placeholder="Search by name, category, shop or status"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:border-[#006fbd] focus:ring-1 focus:ring-[#006fbd]"
@@ -247,7 +247,7 @@ export default function FoodApproval() {
                         S.No
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Restaurant
+                        Shop
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Category
@@ -369,10 +369,10 @@ export default function FoodApproval() {
           </DialogHeader>
           {selectedRequest && (
             <div className="p-6 space-y-6">
-              {/* Restaurant Info */}
+              {/* Shop Info */}
               <div className="p-4 bg-brand-50/50 rounded-xl border border-brand-100/50 flex items-center justify-between">
                 <div>
-                   <h3 className="font-bold text-xs text-brand-700 uppercase tracking-wider mb-1">Restaurant</h3>
+                   <h3 className="font-bold text-xs text-brand-700 uppercase tracking-wider mb-1">Shop</h3>
                    <p className="text-sm font-semibold text-gray-900">{selectedRequest.restaurantName || '-'}</p>
                    <p className="text-xs text-gray-500">ID: {selectedRequest.restaurantId || '-'}</p>
                 </div>
@@ -549,7 +549,7 @@ export default function FoodApproval() {
                   id="rejectReason"
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Tell the restaurant why this item was rejected..."
+                  placeholder="Tell the shop why this item was rejected..."
                   required
                   rows={4}
                   className="w-full rounded-xl border border-gray-200 bg-slate-50 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"

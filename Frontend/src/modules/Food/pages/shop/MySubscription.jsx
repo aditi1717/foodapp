@@ -13,8 +13,8 @@ import {
   Truck,
 } from "lucide-react";
 import AnimatedPage from "@food/components/user/AnimatedPage";
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders";
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation";
+import BottomNavOrders from "@food/components/shop/BottomNavOrders";
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation";
 import { Button } from "@food/components/ui/button";
 import { restaurantAPI } from "@/services/api";
 
@@ -39,21 +39,21 @@ const getFeatureList = (subscription) => {
   if (subscription?.restoBenefitType === "commission_reduction") {
     return [
       { icon: "BadgePercent", text: `Reduced commission rate: ${subscription.commissionRate}%` },
-      { icon: "ShieldCheck", text: "Full restaurant dashboard access" },
+      { icon: "ShieldCheck", text: "Full shop dashboard access" },
       { icon: "Sparkles", text: "Lower per-order charges during plan validity" },
     ];
   }
 
   return [
     { icon: "Star", text: "Priority listing boost in customer discoverability" },
-    { icon: "ShieldCheck", text: "Full restaurant dashboard access" },
+    { icon: "ShieldCheck", text: "Full shop dashboard access" },
     { icon: "Truck", text: "Business visibility benefit during plan validity" },
   ];
 };
 
-export default function RestaurantMySubscription() {
+export default function ShopMySubscription() {
   const navigate = useNavigate();
-  const goBack = useRestaurantBackNavigation();
+  const goBack = useShopBackNavigation();
   const [subscriptions, setSubscriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -67,7 +67,7 @@ export default function RestaurantMySubscription() {
         const items = response?.data?.data?.subscriptions || [];
         if (mounted) setSubscriptions(items);
       } catch (error) {
-        console.error("Error loading restaurant subscriptions", error);
+        console.error("Error loading shop subscriptions", error);
         if (mounted) setSubscriptions([]);
       } finally {
         if (mounted) setIsLoading(false);
@@ -120,7 +120,7 @@ export default function RestaurantMySubscription() {
               <Crown className="h-5 w-5 text-amber-500" />
               <span>My Subscription</span>
             </h1>
-            <p className="text-xs text-slate-500">Track your active restaurant plan and past subscriptions</p>
+            <p className="text-xs text-slate-500">Track your active shop plan and past subscriptions</p>
           </div>
         </div>
 
@@ -140,10 +140,10 @@ export default function RestaurantMySubscription() {
               </div>
               <h3 className="text-sm font-bold text-slate-800">No Active Subscription</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Choose a restaurant subscription plan to unlock business benefits.
+                Choose a shop subscription plan to unlock business benefits.
               </p>
               <Button
-                onClick={() => navigate("/food/restaurant/subscriptions")}
+                onClick={() => navigate("/food/shop/subscriptions")}
                 className="mt-4 rounded-xl bg-brand-600 px-5 py-2 text-xs font-bold text-white hover:bg-brand-700"
               >
                 Browse Plans
@@ -172,7 +172,7 @@ export default function RestaurantMySubscription() {
                   <div className="relative z-10 flex h-full flex-col justify-between">
                     <div className="flex items-start justify-between">
                       <span className="rounded-full bg-white/20 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider backdrop-blur">
-                        Restaurant Member
+                        Shop Member
                       </span>
                       <span className="flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-[9px] font-extrabold uppercase">
                         <CheckCircle2 className="h-3 w-3" />

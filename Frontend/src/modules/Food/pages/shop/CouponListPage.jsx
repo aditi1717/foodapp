@@ -2,9 +2,9 @@ import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, MoreVertical, Plus, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { Card, CardContent } from "@food/components/ui/card"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { formatCurrency } from "@food/utils/currency"
 import { restaurantAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
@@ -18,7 +18,7 @@ const badge = (approvalStatus) => {
 
 export default function CouponListPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [openMenuId, setOpenMenuId] = useState(null)
   const [coupons, setCoupons] = useState([])
   const [loading, setLoading] = useState(true)
@@ -159,7 +159,7 @@ export default function CouponListPage() {
                                   className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                   onClick={() => {
                                     setOpenMenuId(null)
-                                    navigate(`/restaurant/coupon/${id}/edit`)
+                                    navigate(`/shop/coupon/${id}/edit`)
                                   }}
                                 >
                                   Edit Coupon
@@ -190,7 +190,7 @@ export default function CouponListPage() {
                       >
                         <div className="text-xs uppercase text-gray-500 tracking-wide">{coupon.couponCode}</div>
                         <div className="text-lg font-semibold text-gray-900 leading-tight">{renderAmount(coupon)}</div>
-                        <div className="text-sm text-gray-600">For your restaurant</div>
+                        <div className="text-sm text-gray-600">For your shop</div>
                       </div>
                       <div className="flex-1 p-4 space-y-2">
                         <div className="text-sm font-semibold text-gray-900">
@@ -229,7 +229,7 @@ export default function CouponListPage() {
         transition={{ type: "spring", stiffness: 200, damping: 15 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        onClick={() => navigate("/restaurant/coupon/new")}
+        onClick={() => navigate("/shop/coupon/new")}
         className="fixed bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-colors"
         style={{ backgroundColor: brandPrimary }}
       >

@@ -37,7 +37,7 @@ function CartSection({ title, subtitle, items, accentClass, onIncrement, onDecre
             />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-black text-slate-900">{item.name || "Item"}</p>
-              <p className="truncate text-xs text-slate-500">{item.restaurant || item.quickStoreName || "Store"}</p>
+              <p className="truncate text-xs text-slate-500">{item.shop || item.quickStoreName || "Store"}</p>
               <p className="mt-1 text-sm font-bold text-slate-900">
                 {RUPEE_SYMBOL}
                 {Number(item.price || 0).toFixed(0)}

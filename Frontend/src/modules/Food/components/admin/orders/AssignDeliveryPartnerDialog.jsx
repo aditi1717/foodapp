@@ -151,7 +151,7 @@ export default function AssignDeliveryPartnerDialog({
         <div className="px-6 py-4">
           {hasZoneMismatch ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-5 text-sm text-red-800">
-              Restaurant zone and user zone are different for this order. Please keep both in same zone before assigning delivery partner.
+              Shop zone and user zone are different for this order. Please keep both in same zone before assigning delivery partner.
             </div>
           ) : !resolvedZoneId ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-5 text-sm text-amber-800">

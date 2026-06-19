@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { ArrowLeft, ChevronDown } from "lucide-react"
 import BottomPopup from "@delivery/components/BottomPopup"
@@ -16,9 +16,9 @@ const ADDRESS_STORAGE_KEY = "restaurant_address"
 const DEFAULT_LAT = 22.7196
 const DEFAULT_LNG = 75.8577
 
-export default function EditRestaurantAddress() {
+export default function EditShopAddress() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [address, setAddress] = useState("")
   const [restaurantName, setRestaurantName] = useState("")
   const [location, setLocation] = useState(null)
@@ -45,13 +45,13 @@ export default function EditRestaurantAddress() {
     return parts.join(", ") || ""
   }
 
-  // Fetch restaurant data from backend
+  // Fetch shop data from backend
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
         setLoading(true)
         const response = await restaurantAPI.getCurrentRestaurant()
-        const data = response?.data?.data?.restaurant || response?.data?.restaurant
+        const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
           setRestaurantName(data.name || "")
           if (data.location) {
@@ -78,7 +78,7 @@ export default function EditRestaurantAddress() {
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          debugError("Error fetching restaurant data:", error)
+          debugError("Error fetching shop data:", error)
         }
         // Fallback to localStorage
         try {
@@ -86,7 +86,7 @@ export default function EditRestaurantAddress() {
           if (savedAddress) {
             setAddress(savedAddress)
           }
-          // Try to get restaurant name from localStorage, but prefer empty string over hardcoded value
+          // Try to get shop name from localStorage, but prefer empty string over hardcoded value
           const savedName = localStorage.getItem("restaurant_name") || 
                            localStorage.getItem("restaurantName") ||
                            ""
@@ -132,7 +132,7 @@ export default function EditRestaurantAddress() {
 
   // Handle opening Google Maps app
   const handleViewOnMap = () => {
-    // Create Google Maps URL for the restaurant location
+    // Create Google Maps URL for the shop location
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
     
     // Try to open in Google Maps app (mobile) or web
@@ -176,7 +176,7 @@ export default function EditRestaurantAddress() {
           
           const response = await restaurantAPI.updateProfile({ location: updatedLocation })
           
-          if (response?.data?.data?.restaurant) {
+          if (response?.data?.data?.shop) {
             // Update local state
             setLocation(updatedLocation)
             // Dispatch event to notify other components

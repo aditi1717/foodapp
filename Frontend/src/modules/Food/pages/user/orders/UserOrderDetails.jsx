@@ -87,7 +87,7 @@ export default function UserOrderDetails() {
   const { replaceCart } = useCart()
   const { orderId } = useParams()
   const [order, setOrder] = useState(null)
-  const [restaurant, setRestaurant] = useState(null)
+  const [shop, setRestaurant] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -110,18 +110,18 @@ export default function UserOrderDetails() {
 
         setOrder(orderData)
 
-        // If restaurantId is just a string (not populated), fetch restaurant details separately
+        // If restaurantId is just a string (not populated), fetch shop details separately
         const restaurantId = orderData.restaurantId
-        if (restaurantId && typeof restaurantId === 'string' && !orderData.restaurant) {
+        if (restaurantId && typeof restaurantId === 'string' && !orderData.shop) {
           try {
             const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantId)
-            if (restaurantResponse?.data?.success && restaurantResponse.data.data?.restaurant) {
-              setRestaurant(restaurantResponse.data.data.restaurant)
-            } else if (restaurantResponse?.data?.restaurant) {
-              setRestaurant(restaurantResponse.data.restaurant)
+            if (restaurantResponse?.data?.success && restaurantResponse.data.data?.shop) {
+              setRestaurant(restaurantResponse.data.data.shop)
+            } else if (restaurantResponse?.data?.shop) {
+              setRestaurant(restaurantResponse.data.shop)
             }
           } catch (restaurantError) {
-            debugWarn("Failed to fetch restaurant details:", restaurantError)
+            debugWarn("Failed to fetch shop details:", restaurantError)
             // Don't show error toast, just log it - order details can still be shown
           }
         }
@@ -176,16 +176,16 @@ export default function UserOrderDetails() {
 
   const orderIdDisplay = order.orderId || order._id || orderId
   const refundInfo = getRefundDisplayInfo(order)
-  // Use fetched restaurant data if available, otherwise use order.restaurantId or order.restaurant
-  const restaurantObj = restaurant || order.restaurantId || order.restaurant || {}
+  // Use fetched shop data if available, otherwise use order.restaurantId or order.shop
+  const restaurantObj = shop || order.restaurantId || order.shop || {}
   const restaurantName =
-    order.restaurantName || restaurantObj.name || "Restaurant"
+    order.restaurantName || restaurantObj.name || "Shop"
 
-  // Build restaurant address (try restaurant fields first, then fall back)
+  // Build shop address (try shop fields first, then fall back)
   const restaurantLocation = (() => {
     const loc = restaurantObj.location || {}
 
-    // Priority 1: direct address on restaurant object
+    // Priority 1: direct address on shop object
     if (restaurantObj.address) return restaurantObj.address
 
     // Priority 2: formattedAddress from location
@@ -251,7 +251,7 @@ export default function UserOrderDetails() {
     (pricing.originalItemTotal || 0) -
     (pricing.subtotal || 0)
 
-  // Restaurant phone (multiple fallbacks) - use fetched restaurant data first
+  // Shop phone (multiple fallbacks) - use fetched shop data first
   const restaurantPhone =
     restaurantObj.primaryContactNumber ||
     restaurantObj.phone ||
@@ -261,7 +261,7 @@ export default function UserOrderDetails() {
 
   const handleCallRestaurant = () => {
     if (!restaurantPhone) {
-      toast.error("Restaurant phone number not available")
+      toast.error("Shop phone number not available")
       return
     }
     window.location.href = `tel:${restaurantPhone}`
@@ -321,16 +321,16 @@ export default function UserOrderDetails() {
         yPos += addressLines.length * 7
       }
 
-      // Restaurant Name
+      // Shop Name
       doc.setFont('helvetica', 'bold')
-      doc.text('Restaurant Name:', 20, yPos)
+      doc.text('Shop Name:', 20, yPos)
       doc.setFont('helvetica', 'normal')
       doc.text(restaurantName, 60, yPos)
       yPos += 7
 
-      // Restaurant Address
+      // Shop Address
       doc.setFont('helvetica', 'bold')
-      doc.text('Restaurant Address:', 20, yPos)
+      doc.text('Shop Address:', 20, yPos)
       doc.setFont('helvetica', 'normal')
       const restaurantAddressLines = doc.splitTextToSize(restaurantLocation || 'N/A', 130)
       doc.text(restaurantAddressLines, 60, yPos)
@@ -387,7 +387,7 @@ export default function UserOrderDetails() {
       (typeof currentOrder?.restaurantId === "string" ? currentOrder.restaurantId : currentOrder?.restaurantId?._id)
 
     if (!restaurantTarget || !items.length) {
-      toast.error("Order items or restaurant information not available")
+      toast.error("Order items or shop information not available")
       return
     }
 
@@ -401,7 +401,7 @@ export default function UserOrderDetails() {
           name: item.name || item.foodName || "Item",
           price: Number(item.price) || 0,
           image: item.image || "",
-          restaurant: restaurantName,
+          shop: restaurantName,
           restaurantId: restaurantObj._id || restaurantObj.restaurantId || currentOrder?.restaurantId,
           description: item.description || "",
           isVeg: isItemVeg(item),
@@ -418,7 +418,7 @@ export default function UserOrderDetails() {
 
     replaceCart(reorderItems)
     toast.success("Items added to cart")
-    navigate(`/food/user/restaurants/${restaurantTarget}`)
+    navigate(`/food/user/shops/${restaurantTarget}`)
   }
 
   return (
@@ -474,7 +474,7 @@ export default function UserOrderDetails() {
           </div>
         </div>
 
-        {/* Restaurant Info Card */}
+        {/* Shop Info Card */}
         <div className="bg-white p-4 rounded-xl shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -731,7 +731,7 @@ export default function UserOrderDetails() {
         </button>
       </div>
 
-      {/* Restaurant Complaint Button - Below Order Details */}
+      {/* Shop Complaint Button - Below Order Details */}
       {order && (
         <div className="p-4 pb-24">
           <button
@@ -761,7 +761,7 @@ export default function UserOrderDetails() {
             className="w-full bg-brand-50 border border-brand-200 text-brand-700 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-brand-100 transition-colors"
           >
             <FileText className="w-4 h-4" />
-            Restaurant Complaint
+            Shop Complaint
           </button>
         </div>
       )}

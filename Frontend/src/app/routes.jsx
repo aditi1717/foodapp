@@ -38,10 +38,14 @@ const isUserAppRoute = (pathname = '') => {
   const isAdminRoute = normalized === '/admin' || normalized.startsWith('/admin/')
   const isAuthRoute = normalized === '/user/auth' || normalized.startsWith('/user/auth/')
   const isRestaurantRoute =
-    normalized === '/food/restaurant' ||
-    normalized.startsWith('/food/restaurant/') ||
+    normalized === '/food/shop' ||
+    normalized.startsWith('/food/shop/') ||
     normalized === '/restaurant' ||
-    normalized.startsWith('/restaurant/')
+    normalized.startsWith('/restaurant/') ||
+    normalized === '/food/shop' ||
+    normalized.startsWith('/food/shop/') ||
+    normalized === '/shop' ||
+    normalized.startsWith('/shop/')
   const isDeliveryRoute =
     normalized === '/food/delivery' ||
     normalized.startsWith('/food/delivery/') ||

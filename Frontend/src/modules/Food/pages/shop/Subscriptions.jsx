@@ -16,8 +16,8 @@ import {
 import { toast } from "sonner";
 import AnimatedPage from "@food/components/user/AnimatedPage";
 import { Button } from "@food/components/ui/button";
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders";
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation";
+import BottomNavOrders from "@food/components/shop/BottomNavOrders";
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation";
 import { restaurantAPI } from "@/services/api";
 import { initRazorpayPayment } from "@food/utils/razorpay";
 import { getCompanyNameAsync } from "@food/utils/businessSettings";
@@ -43,21 +43,21 @@ const getFallbackFeatures = (plan) => {
   if (plan?.restoBenefitType === "commission_reduction") {
     return [
       { icon: "BadgePercent", text: `Reduced commission rate: ${plan.commissionRate}%` },
-      { icon: "ShieldCheck", text: "Full restaurant dashboard access" },
+      { icon: "ShieldCheck", text: "Full shop dashboard access" },
       { icon: "Sparkles", text: "Lower per-order charges during plan validity" },
     ];
   }
 
   return [
     { icon: "Star", text: "Priority listing boost in customer discoverability" },
-    { icon: "ShieldCheck", text: "Full restaurant dashboard access" },
+    { icon: "ShieldCheck", text: "Full shop dashboard access" },
     { icon: "Truck", text: "Business visibility benefit for active duration" },
   ];
 };
 
-export default function RestaurantSubscriptions() {
+export default function ShopSubscriptions() {
   const navigate = useNavigate();
-  const goBack = useRestaurantBackNavigation();
+  const goBack = useShopBackNavigation();
   const [plans, setPlans] = useState([]);
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,7 +73,7 @@ export default function RestaurantSubscriptions() {
         return activeSubscription;
       }
     } catch (subscriptionError) {
-      console.warn("Error loading current restaurant subscription", subscriptionError);
+      console.warn("Error loading current shop subscription", subscriptionError);
     }
 
     try {
@@ -81,7 +81,7 @@ export default function RestaurantSubscriptions() {
       const subscriptions = subscriptionsResponse?.data?.data?.subscriptions || [];
       activeSubscription = subscriptions.find((item) => item?.active === true) || null;
     } catch (fallbackError) {
-      console.warn("Error loading restaurant subscriptions fallback", fallbackError);
+      console.warn("Error loading shop subscriptions fallback", fallbackError);
     }
 
     return activeSubscription;
@@ -102,7 +102,7 @@ export default function RestaurantSubscriptions() {
         setPlans(packageList);
         setCurrentSubscription(current);
       } catch (error) {
-        console.error("Error loading restaurant subscription packages", error);
+        console.error("Error loading shop subscription packages", error);
         if (!mounted) return;
         setPlans([]);
         setCurrentSubscription(null);
@@ -134,7 +134,7 @@ export default function RestaurantSubscriptions() {
       const latestActiveSubscription = await resolveActiveSubscription();
       if (latestActiveSubscription?.active) {
         setCurrentSubscription(latestActiveSubscription);
-        toast.error("You already have an active restaurant subscription.");
+        toast.error("You already have an active shop subscription.");
         setIsSubmittingId("");
         return;
       }
@@ -151,9 +151,9 @@ export default function RestaurantSubscriptions() {
       let restaurantInfo = {};
       try {
         const currentResponse = await restaurantAPI.getCurrentRestaurant();
-        restaurantInfo = currentResponse?.data?.data?.restaurant || currentResponse?.data?.restaurant || {};
+        restaurantInfo = currentResponse?.data?.data?.shop || currentResponse?.data?.shop || {};
       } catch (profileError) {
-        console.warn("Unable to load restaurant profile for Razorpay prefill", profileError);
+        console.warn("Unable to load shop profile for Razorpay prefill", profileError);
       }
 
       const companyName = await getCompanyNameAsync();
@@ -164,7 +164,7 @@ export default function RestaurantSubscriptions() {
         currency: razorpay.currency || "INR",
         order_id: razorpay.orderId,
         name: companyName,
-        description: `${plan.name} Restaurant Subscription`,
+        description: `${plan.name} Shop Subscription`,
         prefill: {
           name: restaurantInfo?.ownerName || restaurantInfo?.restaurantName || restaurantInfo?.name || "",
           email: restaurantInfo?.ownerEmail || restaurantInfo?.email || "",
@@ -187,7 +187,7 @@ export default function RestaurantSubscriptions() {
             setCurrentSubscription(subscription);
             toast.success(`${plan.name} activated successfully`);
           } catch (verifyError) {
-            console.error("Error verifying restaurant subscription payment", verifyError);
+            console.error("Error verifying shop subscription payment", verifyError);
             toast.error(verifyError?.response?.data?.message || "Payment verification failed");
           } finally {
             setIsSubmittingId("");
@@ -202,7 +202,7 @@ export default function RestaurantSubscriptions() {
         },
       });
     } catch (error) {
-      console.error("Error activating restaurant subscription", error);
+      console.error("Error activating shop subscription", error);
       if (String(error?.response?.data?.message || "").toLowerCase().includes("already have an active subscription")) {
         const latestActiveSubscription = await resolveActiveSubscription();
         setCurrentSubscription(latestActiveSubscription);
@@ -225,9 +225,9 @@ export default function RestaurantSubscriptions() {
           <div>
             <h1 className="flex items-center gap-2 text-xl font-extrabold">
               <Crown className="h-5 w-5 text-amber-500" />
-              <span>Restaurant Subscription Plans</span>
+              <span>Shop Subscription Plans</span>
             </h1>
-            <p className="text-xs text-slate-500">Choose from admin-created restaurant subscription packages</p>
+            <p className="text-xs text-slate-500">Choose from admin-created shop subscription packages</p>
           </div>
         </div>
 
@@ -246,7 +246,7 @@ export default function RestaurantSubscriptions() {
           </div>
         ) : sortedPlans.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
-            No restaurant subscription packages created by admin yet.
+            No shop subscription packages created by admin yet.
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -275,7 +275,7 @@ export default function RestaurantSubscriptions() {
                     <div className="relative z-10 flex h-full items-start justify-between gap-3">
                       <div className="flex items-start justify-between gap-3">
                         <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] backdrop-blur">
-                          Restaurant Member
+                          Shop Member
                         </span>
                       </div>
                       {isCurrentPlan ? (
@@ -364,7 +364,7 @@ export default function RestaurantSubscriptions() {
         )}
 
         <button
-          onClick={() => navigate("/food/restaurant/my-subscription")}
+          onClick={() => navigate("/food/shop/my-subscription")}
           className="mt-6 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left shadow-sm"
         >
           <div>

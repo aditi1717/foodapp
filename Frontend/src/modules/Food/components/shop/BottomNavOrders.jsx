@@ -23,28 +23,28 @@ const findActiveTab = (tabs, pathname) =>
     .find((tab) => pathname === tab.route || pathname.startsWith(tab.route + "/"))
 
 const isExploreContextPath = (pathname = "", state) => {
-  const normalizedPath = pathname.startsWith("/restaurant")
+  const normalizedPath = pathname.startsWith("/shop")
     ? `/food${pathname}`
     : pathname
 
   const fromPath = String(state?.from || "")
   const backToPath = String(state?.backTo || "")
-  if (fromPath.includes("/restaurant/explore") || backToPath.includes("/restaurant/explore")) {
+  if (fromPath.includes("/shop/explore") || backToPath.includes("/shop/explore")) {
     return true
   }
 
   const exploreLinkedPrefixes = [
-    "/food/restaurant/explore",
-    "/food/restaurant/outlet-info",
-    "/food/restaurant/outlet-timings",
-    "/food/restaurant/coupon",
-    "/food/restaurant/offers",
-    "/food/restaurant/delivery-settings",
-    "/food/restaurant/zone-setup",
-    "/food/restaurant/help-centre/support",
-    "/food/restaurant/share-feedback",
-    "/food/restaurant/hub-finance",
-    "/food/restaurant/update-bank-details",
+    "/food/shop/explore",
+    "/food/shop/outlet-info",
+    "/food/shop/outlet-timings",
+    "/food/shop/coupon",
+    "/food/shop/offers",
+    "/food/shop/delivery-settings",
+    "/food/shop/zone-setup",
+    "/food/shop/help-centre/support",
+    "/food/shop/share-feedback",
+    "/food/shop/hub-finance",
+    "/food/shop/update-bank-details",
   ]
 
   return exploreLinkedPrefixes.some(
@@ -57,9 +57,9 @@ export default function BottomNavOrders() {
   const location = useLocation()
   const { pathname, state } = location
 
-  const basePath = pathname.startsWith("/food/restaurant")
-    ? "/food/restaurant"
-    : "/restaurant"
+  const basePath = pathname.startsWith("/food/shop")
+    ? "/food/shop"
+    : "/shop"
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
 

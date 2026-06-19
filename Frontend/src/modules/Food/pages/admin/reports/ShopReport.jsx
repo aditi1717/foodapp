@@ -27,10 +27,10 @@ const htmlEscape = (value) =>
     .replace(/'/g, "&#39;")
 
 
-export default function RestaurantReport() {
+export default function ShopReport() {
   const todayDate = new Date().toISOString().split("T")[0]
   const [searchQuery, setSearchQuery] = useState("")
-  const [restaurants, setRestaurants] = useState([])
+  const [shops, setRestaurants] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     zone: "All Zones",
@@ -57,9 +57,9 @@ export default function RestaurantReport() {
     fetchZones()
   }, [])
 
-  // Fetch restaurant report data
+  // Fetch shop report data
   useEffect(() => {
-    const fetchRestaurantReport = async () => {
+    const fetchShopReport = async () => {
       try {
         setLoading(true)
         if (filters.fromDate && filters.toDate && filters.fromDate > filters.toDate) {
@@ -90,10 +90,10 @@ export default function RestaurantReport() {
           search: searchQuery || undefined
         }
 
-        const response = await adminAPI.getRestaurantReport(params)
+        const response = await adminAPI.getShopReport(params)
 
         if (response?.data?.success && response.data.data) {
-          setRestaurants(response.data.data.restaurants || [])
+          setRestaurants(response.data.data.shops || [])
         } else {
           setRestaurants([])
           if (response?.data?.message) {
@@ -101,20 +101,20 @@ export default function RestaurantReport() {
           }
         }
       } catch (error) {
-        debugError("Error fetching restaurant report:", error)
-        toast.error("Failed to fetch restaurant report")
+        debugError("Error fetching shop report:", error)
+        toast.error("Failed to fetch shop report")
         setRestaurants([])
       } finally {
         setLoading(false)
       }
     }
 
-    fetchRestaurantReport()
+    fetchShopReport()
   }, [filters, searchQuery])
 
   const filteredRestaurants = useMemo(() => {
-    return restaurants // Backend already filters, so just return restaurants
-  }, [restaurants])
+    return shops // Backend already filters, so just return shops
+  }, [shops])
 
   const totalRestaurants = filteredRestaurants.length
 
@@ -153,17 +153,17 @@ export default function RestaurantReport() {
     }
     const headers = [
       { key: "sl", label: "SL" },
-      { key: "restaurantName", label: "Restaurant Name" },
+      { key: "restaurantName", label: "Shop Name" },
       { key: "totalFood", label: "Total Food" },
       { key: "totalOrder", label: "Total Order" },
       { key: "totalAdminCommission", label: "Admin Commission" },
       { key: "totalCouponByAdmin", label: "Coupon by Admin" },
-      { key: "totalCouponByRestaurant", label: "Coupon by Restaurant" },
-      { key: "totalOfferByRestaurant", label: "Offer by Restaurant" },
+      { key: "totalCouponByRestaurant", label: "Coupon by Shop" },
+      { key: "totalOfferByRestaurant", label: "Offer by Shop" },
       { key: "totalGST", label: "GST" },
-      { key: "totalRestaurantEarning", label: "Total Restaurant Earning" },
-      { key: "paidRestaurantEarning", label: "Paid To Restaurant" },
-      { key: "unpaidRestaurantEarning", label: "Unpaid To Restaurant" },
+      { key: "totalRestaurantEarning", label: "Total Shop Earning" },
+      { key: "paidRestaurantEarning", label: "Paid To Shop" },
+      { key: "unpaidRestaurantEarning", label: "Unpaid To Shop" },
       { key: "totalCash", label: "Total Cash" },
       { key: "cashInHand", label: "Cash In Hand" },
       { key: "givenToAdmin", label: "Given To Admin" },
@@ -280,17 +280,17 @@ export default function RestaurantReport() {
               <thead>
                 <tr>
                   <th>SL</th>
-                  <th>Restaurant Name</th>
+                  <th>Shop Name</th>
                   <th>Total Food</th>
                   <th>Total Order</th>
                   <th>Admin Commission</th>
                   <th>Coupon by Admin</th>
-                  <th>Coupon by Restaurant</th>
-                  <th>Offer by Restaurant</th>
+                  <th>Coupon by Shop</th>
+                  <th>Offer by Shop</th>
                   <th>GST</th>
-                  <th>Total Restaurant Earning</th>
-                  <th>Paid To Restaurant</th>
-                  <th>Unpaid To Restaurant</th>
+                  <th>Total Shop Earning</th>
+                  <th>Paid To Shop</th>
+                  <th>Unpaid To Shop</th>
                   <th>Total Cash</th>
                   <th>Cash In Hand</th>
                   <th>Given To Admin</th>
@@ -304,7 +304,7 @@ export default function RestaurantReport() {
                 ${bodyRowsHtml}
                 <tr class="total-row">
                   <td>TOTAL</td>
-                  <td>${htmlEscape(`${filteredRestaurants.length} restaurants`)}</td>
+                  <td>${htmlEscape(`${filteredRestaurants.length} shops`)}</td>
                   <td class="num">${htmlEscape(metrics.totalFood.toFixed(0))}</td>
                   <td class="num">${htmlEscape(metrics.totalOrder.toFixed(0))}</td>
                   <td class="num">${htmlEscape(metrics.totalAdminCommission.toFixed(2))}</td>
@@ -334,7 +334,7 @@ export default function RestaurantReport() {
       const link = document.createElement("a")
       const stamp = new Date().toISOString().slice(0, 10)
       link.href = url
-      link.download = `restaurant-report-${stamp}.xls`
+      link.download = `shop-report-${stamp}.xls`
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -345,7 +345,7 @@ export default function RestaurantReport() {
 
     switch (format) {
       case "csv": exportReportsToCSV(filteredRestaurants, headers, "restaurant_report"); break
-      case "pdf": exportReportsToPDF(filteredRestaurants, headers, "restaurant_report", "Restaurant Report"); break
+      case "pdf": exportReportsToPDF(filteredRestaurants, headers, "restaurant_report", "Shop Report"); break
       case "json": exportReportsToJSON(filteredRestaurants, "restaurant_report"); break
     }
   }
@@ -387,7 +387,7 @@ export default function RestaurantReport() {
       <div className="p-4 lg:p-6 bg-slate-50 min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-brand-600 animate-spin" />
-          <p className="text-gray-600">Loading restaurant report...</p>
+          <p className="text-gray-600">Loading shop report...</p>
         </div>
       </div>
     )
@@ -402,7 +402,7 @@ export default function RestaurantReport() {
             <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
               <Briefcase className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Restaurant Report</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Shop Report</h1>
           </div>
         </div>
 
@@ -515,16 +515,16 @@ export default function RestaurantReport() {
           </div>
         </div>
 
-        {/* Restaurant Report Table Section */}
+        {/* Shop Report Table Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Restaurant Report Table {totalRestaurants}</h2>
+            <h2 className="text-xl font-bold text-slate-900">Shop Report Table {totalRestaurants}</h2>
 
             <div className="flex items-center gap-3">
               <div className="relative flex-1 sm:flex-initial min-w-[300px]">
                 <input
                   type="text"
-                  placeholder="Search by restaurant name"
+                  placeholder="Search by shop name"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-4 pr-10 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
@@ -575,7 +575,7 @@ export default function RestaurantReport() {
                   </th>
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center gap-1">
-                      <span>Restaurant Name</span>
+                      <span>Shop Name</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-400" />
                     </div>
                   </th>
@@ -605,13 +605,13 @@ export default function RestaurantReport() {
                   </th>
                   <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center justify-end gap-1">
-                      <span>Coupon by Restaurant</span>
+                      <span>Coupon by Shop</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-400" />
                     </div>
                   </th>
                   <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center justify-end gap-1">
-                      <span>Offer by Restaurant</span>
+                      <span>Offer by Shop</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-400" />
                     </div>
                   </th>
@@ -623,7 +623,7 @@ export default function RestaurantReport() {
                   </th>
                   <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center justify-end gap-1">
-                      <span>Total Restaurant Earning</span>
+                      <span>Total Shop Earning</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-400" />
                     </div>
                   </th>
@@ -689,20 +689,20 @@ export default function RestaurantReport() {
                     <td colSpan={19} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
-                        <p className="text-sm text-slate-500">No restaurants match your search</p>
+                        <p className="text-sm text-slate-500">No shops match your search</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  filteredRestaurants.map((restaurant) => (
+                  filteredRestaurants.map((shop) => (
                     <tr key={restaurant.sl} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-700">{restaurant.sl}</span>
+                        <span className="text-sm font-medium text-slate-700">{shop.sl}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0">
-                            {restaurant.icon ? (
+                            {shop.icon ? (
                               <img
                                 src={restaurant.icon}
                                 alt={restaurant.restaurantName}
@@ -713,64 +713,64 @@ export default function RestaurantReport() {
                               />
                             ) : (
                               <div className="w-full h-full bg-slate-300 flex items-center justify-center text-xs text-slate-600 font-semibold">
-                                {restaurant.restaurantName.charAt(0).toUpperCase()}
+                                {shop.restaurantName.charAt(0).toUpperCase()}
                               </div>
                             )}
                           </div>
-                          <span className="text-sm font-medium text-slate-900">{restaurant.restaurantName}</span>
+                          <span className="text-sm font-medium text-slate-900">{shop.restaurantName}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm text-slate-700">{restaurant.totalFood}</span>
+                        <span className="text-sm text-slate-700">{shop.totalFood}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm text-slate-700">{restaurant.totalOrder}</span>
+                        <span className="text-sm text-slate-700">{shop.totalOrder}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-brand-600">{restaurant.totalAdminCommission}</span>
+                        <span className="text-sm font-semibold text-brand-600">{shop.totalAdminCommission}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-medium text-green-600">{restaurant.totalCouponByAdmin}</span>
+                        <span className="text-sm font-medium text-green-600">{shop.totalCouponByAdmin}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-medium text-orange-600">{restaurant.totalCouponByRestaurant}</span>
+                        <span className="text-sm font-medium text-orange-600">{shop.totalCouponByRestaurant}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-medium text-purple-600">{restaurant.totalOfferByRestaurant}</span>
+                        <span className="text-sm font-medium text-purple-600">{shop.totalOfferByRestaurant}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm text-slate-700">{restaurant.totalGST}</span>
+                        <span className="text-sm text-slate-700">{shop.totalGST}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-slate-900">{restaurant.totalRestaurantEarning}</span>
+                        <span className="text-sm font-semibold text-slate-900">{shop.totalRestaurantEarning}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-emerald-600">{restaurant.paidRestaurantEarning}</span>
+                        <span className="text-sm font-semibold text-emerald-600">{shop.paidRestaurantEarning}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-orange-600">{restaurant.unpaidRestaurantEarning}</span>
+                        <span className="text-sm font-semibold text-orange-600">{shop.unpaidRestaurantEarning}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-slate-900">{restaurant.totalCash}</span>
+                        <span className="text-sm font-semibold text-slate-900">{shop.totalCash}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-amber-600">{restaurant.cashInHand}</span>
+                        <span className="text-sm font-semibold text-amber-600">{shop.cashInHand}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-emerald-600">{restaurant.givenToAdmin}</span>
+                        <span className="text-sm font-semibold text-emerald-600">{shop.givenToAdmin}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm text-slate-700">{restaurant.totalDeliveryCharge}</span>
+                        <span className="text-sm text-slate-700">{shop.totalDeliveryCharge}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm text-slate-700">{restaurant.totalPlatformFee}</span>
+                        <span className="text-sm text-slate-700">{shop.totalPlatformFee}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-medium text-slate-900">{restaurant.totalOrderAmount}</span>
+                        <span className="text-sm font-medium text-slate-900">{shop.totalOrderAmount}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex justify-end">
-                          {renderStars(restaurant.averageRatings, restaurant.reviews)}
+                          {renderStars(shop.averageRatings, shop.reviews)}
                         </div>
                       </td>
                     </tr>
@@ -793,7 +793,7 @@ export default function RestaurantReport() {
           </DialogHeader>
           <div className="px-6 pb-6">
             <p className="text-sm text-slate-700">
-              Restaurant report settings and preferences will be available here.
+              Shop report settings and preferences will be available here.
             </p>
           </div>
           <div className="px-6 pb-6 flex items-center justify-end">

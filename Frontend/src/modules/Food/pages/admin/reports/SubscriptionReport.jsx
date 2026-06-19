@@ -40,7 +40,7 @@ const formatDate = (dateStr) => {
 };
 
 const getBenefitLabel = (subscriber) => {
-  if (subscriber.ownerType === "RESTAURANT" || subscriber.ownerType === "resto") {
+  if (subscriber.ownerType === "SHOP" || subscriber.ownerType === "resto") {
     if (subscriber.restoBenefitType === "commission_reduction") {
       return subscriber.commissionRate != null
         ? `${subscriber.commissionRate}% Commission Reduction`
@@ -61,19 +61,19 @@ const getBenefitLabel = (subscriber) => {
 
 const tabConfig = {
   resto: {
-    title: "Restaurant Subscription Report",
-    listTitle: "Restaurant Subscription History",
-    emptyLabel: "No restaurant subscription records found",
-    searchPlaceholder: "Search by restaurant name or package",
-    entityLabel: "Restaurant",
-    columnEntity: "Restaurant Name",
+    title: "Shop Subscription Report",
+    listTitle: "Shop Subscription History",
+    emptyLabel: "No shop subscription records found",
+    searchPlaceholder: "Search by shop name or package",
+    entityLabel: "Shop",
+    columnEntity: "Shop Name",
     columnBenefit: "Benefit Type",
     exportName: "restaurant_subscription_report",
-    exportTitle: "Restaurant Subscription Report",
-    totalLabel: "Total Restaurant Revenue",
-    periodYearLabel: "Restaurant Revenue This Year",
-    periodMonthLabel: "Restaurant Revenue This Month",
-    periodWeekLabel: "Restaurant Revenue This Week",
+    exportTitle: "Shop Subscription Report",
+    totalLabel: "Total Shop Revenue",
+    periodYearLabel: "Shop Revenue This Year",
+    periodMonthLabel: "Shop Revenue This Month",
+    periodWeekLabel: "Shop Revenue This Week",
     totalSubtext: "B2B subscription collection",
     apiType: "resto",
   },
@@ -200,7 +200,7 @@ export default function SubscriptionReport() {
       result = result.filter((s) => s.packageName === packageFilter);
     }
 
-    // Zone filter (only for restaurant tab)
+    // Zone filter (only for shop tab)
     if (activeTab === "resto" && zoneFilter !== "All") {
       result = result.filter((s) => s.zoneId === zoneFilter);
     }
@@ -310,7 +310,7 @@ export default function SubscriptionReport() {
             <span>Subscription Report</span>
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            View customer and restaurant subscription transactions in separate tabs.
+            View customer and shop subscription transactions in separate tabs.
           </p>
         </div>
 
@@ -324,7 +324,7 @@ export default function SubscriptionReport() {
           >
             <span className="flex items-center gap-1.5">
               <Store className="h-3.5 w-3.5" />
-              Restaurant Subscriptions
+              Shop Subscriptions
             </span>
             {activeTab === "resto" && (
               <span className="absolute bottom-0 left-0 h-0.5 w-full rounded-full bg-brand-600" />
@@ -424,7 +424,7 @@ export default function SubscriptionReport() {
                     onChange={handlePackageChange}
                   />
 
-                  {/* Zone Filter - only for restaurants */}
+                  {/* Zone Filter - only for shops */}
                   {activeTab === "resto" && zones.length > 0 && (
                     <SelectFilter
                       label="Zone"

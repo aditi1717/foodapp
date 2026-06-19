@@ -81,7 +81,7 @@ export default function JoiningRequest() {
   // Track first render to avoid duplicate fetch in React StrictMode
   const hasFetchedOnceRef = useRef(false)
 
-  // Fetch restaurant join requests
+  // Fetch shop join requests
   useEffect(() => {
     // On first render, fetch once for initial tab (usually "pending")
     if (!hasFetchedOnceRef.current) {
@@ -111,8 +111,8 @@ export default function JoiningRequest() {
         setRejectedRequests(list.filter((r) => r.status === "rejected"))
       }
     } catch (err) {
-      debugError("Error fetching restaurant requests:", err)
-      setError(err.message || "Failed to fetch restaurant requests")
+      debugError("Error fetching shop requests:", err)
+      setError(err.message || "Failed to fetch shop requests")
       if (activeTab === "pending") {
         setPendingRequests([])
       } else {
@@ -182,7 +182,7 @@ export default function JoiningRequest() {
   const hasActiveFilters = filters.zone || filters.dateFrom || filters.dateTo
 
   const handleApprove = async (request) => {
-    if (window.confirm(`Are you sure you want to approve "${request.restaurantName}" restaurant request?`)) {
+    if (window.confirm(`Are you sure you want to approve "${request.restaurantName}" shop request?`)) {
       try {
         setProcessing(true)
         await adminAPI.approveRestaurant(request._id)
@@ -237,7 +237,7 @@ export default function JoiningRequest() {
     return phone
   }
 
-  // Handle view restaurant details
+  // Handle view shop details
   const handleViewDetails = async (request) => {
     setSelectedRequest(request)
     setShowDetailsModal(true)
@@ -253,7 +253,7 @@ export default function JoiningRequest() {
         return
       }
       
-      // Try to fetch full restaurant details from API
+      // Try to fetch full shop details from API
       const restaurantId = request._id || request.id
       let response = null
       
@@ -264,15 +264,15 @@ export default function JoiningRequest() {
             response = await adminAPI.getRestaurantById(restaurantId)
           }
         } catch (err) {
-          debugLog("Admin API failed, trying restaurant API:", err)
+          debugLog("Admin API failed, trying shop API:", err)
         }
         
-        // Fallback to regular restaurant API
+        // Fallback to regular shop API
         if (!response || !response?.data?.success) {
           try {
             response = await restaurantAPI.getRestaurantById(restaurantId)
           } catch (err) {
-            debugLog("Restaurant API also failed:", err)
+            debugLog("Shop API also failed:", err)
           }
         }
       }
@@ -280,8 +280,8 @@ export default function JoiningRequest() {
       // Check response structure
       if (response?.data?.success) {
         const data = response.data.data
-        if (data?.restaurant) {
-          setRestaurantDetails(data.restaurant)
+        if (data?.shop) {
+          setRestaurantDetails(data.shop)
         } else if (data) {
           setRestaurantDetails(data)
         } else {
@@ -292,7 +292,7 @@ export default function JoiningRequest() {
         setRestaurantDetails(request)
       }
     } catch (err) {
-      debugError("Error fetching restaurant details:", err)
+      debugError("Error fetching shop details:", err)
       // Use the request data we already have
       setRestaurantDetails(request)
     } finally {
@@ -320,7 +320,7 @@ export default function JoiningRequest() {
             <div className="w-10 h-10 rounded-lg bg-brand-600 flex items-center justify-center">
               <UtensilsCrossed className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">New Restaurant Join Request</h1>
+            <h1 className="text-2xl font-bold text-slate-900">New Shop Join Request</h1>
           </div>
 
           {/* Tabs */}
@@ -352,7 +352,7 @@ export default function JoiningRequest() {
               <div className="relative flex-1 sm:flex-initial min-w-[250px]">
                 <input
                   type="text"
-                  placeholder="Search by restaurant name, owner name or phone"
+                  placeholder="Search by shop name, owner name or phone"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
@@ -394,7 +394,7 @@ export default function JoiningRequest() {
                   </th>
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center gap-1">
-                      <span>Restaurant Info</span>
+                      <span>Shop Info</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-400" />
                     </div>
                   </th>
@@ -425,14 +425,14 @@ export default function JoiningRequest() {
                   <tr>
                     <td colSpan={6} className="px-6 py-20 text-center">
                       <Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto mb-3" />
-                      <p className="text-lg font-semibold text-slate-700">Loading restaurant requests...</p>
+                      <p className="text-lg font-semibold text-slate-700">Loading shop requests...</p>
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-20 text-center">
                       <p className="text-lg font-semibold text-red-600 mb-1">Error: {error}</p>
-                      <p className="text-sm text-slate-500">Failed to load restaurant requests. Please try again.</p>
+                      <p className="text-sm text-slate-500">Failed to load shop requests. Please try again.</p>
                     </td>
                   </tr>
                 ) : filteredRequests.length === 0 ? (
@@ -440,7 +440,7 @@ export default function JoiningRequest() {
                     <td colSpan={6} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
-                        <p className="text-sm text-slate-500">No restaurant requests match your search</p>
+                        <p className="text-sm text-slate-500">No shop requests match your search</p>
                       </div>
                     </td>
                   </tr>
@@ -649,13 +649,13 @@ export default function JoiningRequest() {
                   <X className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Reject Restaurant Request</h3>
+                  <h3 className="text-lg font-bold text-slate-900">Reject Shop Request</h3>
                   <p className="text-sm text-slate-600">{selectedRequest.restaurantName}</p>
                 </div>
               </div>
               
               <p className="text-sm text-slate-700 mb-4">
-                Are you sure you want to reject this restaurant request? Please provide a reason for rejection.
+                Are you sure you want to reject this shop request? Please provide a reason for rejection.
               </p>
 
               <div className="mb-4">
@@ -703,7 +703,7 @@ export default function JoiningRequest() {
         </div>
       )}
 
-      {/* Restaurant Details Side Panel */}
+      {/* Shop Details Side Panel */}
       {showDetailsModal && selectedRequest && (
         <div className="fixed inset-0 z-[60] flex justify-end">
           <div className="fixed inset-0 bg-slate-900/10 backdrop-blur-sm transition-opacity" onClick={closeDetailsModal} />
@@ -718,7 +718,7 @@ export default function JoiningRequest() {
                 <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center">
                   <UtensilsCrossed className="w-5 h-5 text-brand-600" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">Restaurant Details - {selectedRequest.restaurantName || "N/A"}</h2>
+                <h2 className="text-xl font-bold text-slate-900">Shop Details - {selectedRequest.restaurantName || "N/A"}</h2>
               </div>
               <button
                 onClick={closeDetailsModal}
@@ -764,7 +764,7 @@ export default function JoiningRequest() {
                 const menuImgList = Array.isArray(r?.menuImages) ? r.menuImages : (r?.onboarding?.step2?.menuImageUrls || [])
                 return (
                 <div className="space-y-6">
-                  {/* Restaurant Basic Info */}
+                  {/* Shop Basic Info */}
                   <div className="flex items-start gap-6 pb-6 border-b border-slate-200">
                     <div className="w-24 h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
                       <img
@@ -937,7 +937,7 @@ export default function JoiningRequest() {
                   {/* Registration Documents – flat schema (PAN, GST, FSSAI, Bank) */}
                   {restaurantPhotoList.length > 0 && (
                     <div className="pt-6 border-t border-slate-200">
-                      <h4 className="text-lg font-semibold text-slate-900 mb-4">Restaurant Photos</h4>
+                      <h4 className="text-lg font-semibold text-slate-900 mb-4">Shop Photos</h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {restaurantPhotoList.map((restaurantImg, idx) => {
                           const imgUrl = getNormalizedImageUrl(restaurantImg)
@@ -1196,7 +1196,7 @@ export default function JoiningRequest() {
                         )}
                         {r.restaurantId && (
                           <div>
-                            <p className="text-xs text-slate-500 mb-1">Restaurant ID</p>
+                            <p className="text-xs text-slate-500 mb-1">Shop ID</p>
                             <p className="font-medium text-slate-900">{r.restaurantId}</p>
                           </div>
                         )}
@@ -1254,7 +1254,7 @@ export default function JoiningRequest() {
               {!loadingDetails && !restaurantDetails && !selectedRequest && (
                 <div className="flex flex-col items-center justify-center py-20">
                   <p className="text-lg font-semibold text-slate-700 mb-2">No Details Available</p>
-                  <p className="text-sm text-slate-500">Unable to load restaurant details</p>
+                  <p className="text-sm text-slate-500">Unable to load shop details</p>
                 </div>
               )}
             </div>

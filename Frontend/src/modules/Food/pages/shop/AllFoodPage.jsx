@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
 import Lenis from "lenis"
 import { 
@@ -10,7 +10,7 @@ import {
   Plus,
   Star
 } from "lucide-react"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { formatCurrency } from "@food/utils/currency"
 import BRAND_THEME from "@/config/brandTheme"
 import { restaurantAPI } from "@food/api"
@@ -18,7 +18,7 @@ import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
 
 export default function AllFoodPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [searchParams] = useSearchParams()
   const [activeCategory, setActiveCategory] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
@@ -247,7 +247,7 @@ export default function AllFoodPage() {
             whileHover={{ y: -4, scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => navigate(`/restaurant/food/${food.id}`)}
+            onClick={() => navigate(`/shop/food/${food.id}`)}
           >
             <div className="flex gap-3 p-3">
               {/* Food Image */}
@@ -312,7 +312,7 @@ export default function AllFoodPage() {
         transition={{ type: "spring", stiffness: 200, damping: 15 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        onClick={() => navigate("/restaurant/food/new")}
+        onClick={() => navigate("/shop/food/new")}
         className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-[#ff8100] hover:bg-[#e67300] text-white rounded-full shadow-lg flex items-center justify-center z-50 transition-colors"
       >
         <Plus className="w-6 h-6" />

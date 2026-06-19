@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useNavigate, useParams } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { 
   ArrowLeft,
@@ -12,11 +12,11 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 
 export default function AdDetailsPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const { id } = useParams()
 
   // Lenis smooth scrolling
@@ -224,7 +224,7 @@ export default function AdDetailsPage() {
         <Button
           onClick={() => {
             if (adData?.id) {
-              navigate(`/restaurant/advertisements/${adData.id}/edit`)
+              navigate(`/shop/advertisements/${adData.id}/edit`)
             }
           }}
           disabled={!adData}

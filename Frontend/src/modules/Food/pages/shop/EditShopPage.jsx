@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Upload, Image as ImageIcon } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Card, CardContent } from "@food/components/ui/card"
-import { getRestaurantData, updateRestaurantData } from "@food/utils/restaurantManagement"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import { getRestaurantData, updateRestaurantData } from "@food/utils/shopManagement"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { restaurantAPI } from "@food/api"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import DocumentUploadActions from "@food/components/DocumentUploadActions"
@@ -13,7 +13,7 @@ import { toast } from "sonner"
 
 const debugError = (...args) => {}
 
-export default function EditRestaurantPage() {
+export default function EditShopPage() {
   const navigate = useNavigate()
   const [activeLanguage, setActiveLanguage] = useState("english")
   
@@ -35,8 +35,8 @@ export default function EditRestaurantPage() {
       address: savedData.address || "House: 00, Road: 00, Test City",
       logo: savedData.logo || null,
       cover: savedData.cover || null,
-      metaTitle: savedData.metaTitle || "Hungry Puppets Restaurant: Where Fla",
-      metaDescription: savedData.metaDescription || "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Restaurant. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
+      metaTitle: savedData.metaTitle || "Hungry Puppets Shop: Where Fla",
+      metaDescription: savedData.metaDescription || "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Shop. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
       metaImage: savedData.metaImage || null
     }
   })
@@ -56,8 +56,8 @@ export default function EditRestaurantPage() {
         address: savedData.address || "House: 00, Road: 00, Test City",
         logo: savedData.logo || null,
         cover: savedData.cover || null,
-        metaTitle: savedData.metaTitle || "Hungry Puppets Restaurant: Where Fla",
-        metaDescription: savedData.metaDescription || "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Restaurant. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
+        metaTitle: savedData.metaTitle || "Hungry Puppets Shop: Where Fla",
+        metaDescription: savedData.metaDescription || "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Shop. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
         metaImage: savedData.metaImage || null
       })
     }
@@ -128,18 +128,18 @@ export default function EditRestaurantPage() {
     
     // Validate required fields
     if (!formData.restaurantName.english || !formData.address || !formData.phoneNumber) {
-      alert("Please fill in all required fields (Restaurant Name, Address, Phone Number)")
+      alert("Please fill in all required fields (Shop Name, Address, Phone Number)")
       return
     }
 
-    // Save restaurant data to localStorage
+    // Save shop data to localStorage
     try {
       updateRestaurantData(formData)
-      // Navigate back to restaurant details page
-      navigate("/restaurant/details")
+      // Navigate back to shop details page
+      navigate("/shop/details")
     } catch (error) {
-      debugError("Error saving restaurant data:", error)
-      alert("Error saving restaurant data. Please try again.")
+      debugError("Error saving shop data:", error)
+      alert("Error saving shop data. Please try again.")
     }
   }
 
@@ -149,22 +149,22 @@ export default function EditRestaurantPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
           <button 
-            onClick={() => navigate("/restaurant/details")}
+            onClick={() => navigate("/shop/details")}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <h1 className="text-lg md:text-xl font-bold text-gray-900">Edit Restaurant</h1>
+          <h1 className="text-lg md:text-xl font-bold text-gray-900">Edit Shop</h1>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-6">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Restaurant Name */}
+          {/* Shop Name */}
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
-              <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Restaurant Name</h2>
+              <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Shop Name</h2>
               
               {/* Language Tabs */}
               <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
@@ -187,14 +187,14 @@ export default function EditRestaurantPage() {
               {/* Name Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Restaurant Name ({languages.find(l => l.id === activeLanguage)?.label})
+                  Shop Name ({languages.find(l => l.id === activeLanguage)?.label})
                 </label>
                 <input
                   type="text"
                   value={formData.restaurantName[activeLanguage]}
                   onChange={(e) => handleInputChange("restaurantName", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none"
-                  placeholder="Enter restaurant name"
+                  placeholder="Enter shop name"
                 />
               </div>
             </CardContent>
@@ -241,11 +241,11 @@ export default function EditRestaurantPage() {
             </CardContent>
           </Card>
 
-          {/* Restaurant Logo */}
+          {/* Shop Logo */}
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
-                Restaurant Logo<span className="text-red-500">*</span>
+                Shop Logo<span className="text-red-500">*</span>
               </h2>
               <p className="text-xs md:text-sm text-gray-500 mb-4">
                 JPG, JPEG, PNG Less Than 5MB (Ratio 1:1)
@@ -292,17 +292,17 @@ export default function EditRestaurantPage() {
               />
               <DocumentUploadActions
                 onFileSelect={(file) => handleImageUpload("logo", file)}
-                fileNamePrefix="restaurant-logo"
+                fileNamePrefix="shop-logo"
                 galleryInputRef={logoInputRef}
               />
             </CardContent>
           </Card>
 
-          {/* Restaurant Cover */}
+          {/* Shop Cover */}
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
-                Restaurant Cover<span className="text-red-500">*</span>
+                Shop Cover<span className="text-red-500">*</span>
               </h2>
               <p className="text-xs md:text-sm text-gray-500 mb-4">
                 JPG, JPEG, PNG Less Than 5MB (Ratio 2:1)
@@ -347,7 +347,7 @@ export default function EditRestaurantPage() {
               />
               <DocumentUploadActions
                 onFileSelect={(file) => handleImageUpload("cover", file)}
-                fileNamePrefix="restaurant-cover"
+                fileNamePrefix="shop-cover"
                 galleryInputRef={coverInputRef}
               />
             </CardContent>
@@ -432,7 +432,7 @@ export default function EditRestaurantPage() {
               />
               <DocumentUploadActions
                 onFileSelect={(file) => handleImageUpload("metaImage", file)}
-                fileNamePrefix="restaurant-meta"
+                fileNamePrefix="shop-meta"
                 galleryInputRef={metaInputRef}
               />
             </CardContent>
@@ -461,7 +461,7 @@ export default function EditRestaurantPage() {
         onFileSelect={(file) => handleImageUpload(activePicker?.type, file)}
         title={activePicker?.title}
         description={`Choose how to upload your ${activePicker?.type === 'logo' ? 'logo' : 'image'}`}
-        fileNamePrefix={`restaurant-${activePicker?.type}`}
+        fileNamePrefix={`shop-${activePicker?.type}`}
         galleryInputRef={activePicker?.ref}
       />
     </div>

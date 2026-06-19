@@ -19,7 +19,7 @@ import {
   RefreshCw,
   Loader2
 } from "lucide-react"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import DocumentUploadActions from "@food/components/DocumentUploadActions"
 // Removed foodManagement - now using backend API directly
 import { useNavigate } from "react-router-dom"
@@ -101,7 +101,7 @@ export default function HubMenu() {
   const [editingAddon, setEditingAddon] = useState(null) // Store addon being edited
   const addonFileInputRef = useRef(null)
 
-  // Restaurant info - fetch from backend
+  // Shop info - fetch from backend
   const restaurantName = restaurantData?.name || ""
   const restaurantExpertise = restaurantData?.cuisines?.length > 0 
     ? restaurantData.cuisines.join(", ") 
@@ -185,19 +185,19 @@ export default function HubMenu() {
 
   // Menu groups are now directly from menuData (fetched from backend)
 
-  // Fetch restaurant data on mount
+  // Fetch shop data on mount
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
         const response = await restaurantAPI.getCurrentRestaurant()
-        const data = response?.data?.data?.restaurant || response?.data?.restaurant
+        const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
           setRestaurantData(data)
         }
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-        debugError('Error fetching restaurant data:', error)
+        debugError('Error fetching shop data:', error)
         }
         // Continue with default values if fetch fails
       }
@@ -967,7 +967,7 @@ export default function HubMenu() {
     if (!subCategoryName.trim() || !selectedGroupForSubCategory) return
     
     // Navigate to new item page with sub-category info
-    navigate('/restaurant/hub-menu/item/new', {
+    navigate('/shop/hub-menu/item/new', {
       state: {
         groupId: selectedGroupForSubCategory.id,
         category: selectedGroupForSubCategory.name,
@@ -995,7 +995,7 @@ export default function HubMenu() {
     }
     
     toast.message('Finish category setup on Menu Categories so you can choose veg, non-veg, or both before admin approval.')
-    navigate('/restaurant/menu-categories', {
+    navigate('/shop/menu-categories', {
       state: {
         draftCategoryName: newCategoryName.trim(),
       }
@@ -1016,7 +1016,7 @@ export default function HubMenu() {
       // Menu editing is disabled on the backend. The menu is generated from food_items.
       // Category deletion must be done via the Menu Categories page and can only happen when it has no items.
       toast.error('Delete categories from Menu Categories (and only when empty).')
-      navigate('/restaurant/menu-categories')
+      navigate('/shop/menu-categories')
     } catch (error) {
       debugError('Error deleting category:', error)
       toast.error('Failed to delete category')
@@ -1096,14 +1096,14 @@ export default function HubMenu() {
               </button>
               <button
               className="p-2 ml-1 hover:bg-gray-100 rounded-full transition-colors"
-              onClick={() => navigate("/restaurant/explore")}
+              onClick={() => navigate("/shop/explore")}
             >
               <Menu className="w-5 h-5 text-gray-700" />
             </button>
             </div>
           </div>
 
-          {/* Restaurant name and expertise */}
+          {/* Shop name and expertise */}
           <AnimatePresence>
             {!isScrolled && (
               <motion.div
@@ -1456,7 +1456,7 @@ export default function HubMenu() {
                         {isPendingApproval(item.approvalStatus) && (
                           <div className="flex items-center justify-center gap-3 mt-4">
                             <button
-                              onClick={() => navigate(`/restaurant/hub-menu/item/${item.id}`, { state: { item, groupId: group.id } })}
+                              onClick={() => navigate(`/shop/hub-menu/item/${item.id}`, { state: { item, groupId: group.id } })}
                               className="flex items-center gap-1.5 bg-transparent text-gray-700 text-sm font-medium"
                             >
                               <Edit className="w-3.5 h-3.5" />
@@ -1584,7 +1584,7 @@ export default function HubMenu() {
               <div className="px-4 py-4 space-y-2">
                 <button
                   onClick={() => {
-                    navigate(`/restaurant/hub-menu/item/new`)
+                    navigate(`/shop/hub-menu/item/new`)
                   }}
                   className="w-full py-3 px-4 text-left rounded-lg hover:bg-gray-50 transition-colors"
                 >
@@ -2176,7 +2176,7 @@ export default function HubMenu() {
                                     return
                                   }
                                   setIsSearchOpen(false)
-                                  navigate(`/restaurant/hub-menu/item/${item.id}`, { 
+                                  navigate(`/shop/hub-menu/item/${item.id}`, { 
                                     state: { item, groupId: group.id } 
                                   })
                                 }}

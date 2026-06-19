@@ -104,33 +104,33 @@ export default function FoodsList() {
         adminAPI.getRestaurants({ limit: 1000, status: "inactive" }),
       ])
 
-      const activeRestaurants = activeRestaurantsResponse?.data?.data?.restaurants ||
-        activeRestaurantsResponse?.data?.restaurants ||
+      const activeRestaurants = activeRestaurantsResponse?.data?.data?.shops ||
+        activeRestaurantsResponse?.data?.shops ||
         []
-      const inactiveRestaurants = inactiveRestaurantsResponse?.data?.data?.restaurants ||
-        inactiveRestaurantsResponse?.data?.restaurants ||
+      const inactiveRestaurants = inactiveRestaurantsResponse?.data?.data?.shops ||
+        inactiveRestaurantsResponse?.data?.shops ||
         []
 
       const restaurantsMap = new Map()
-      ;[...activeRestaurants, ...inactiveRestaurants].forEach((restaurant) => {
-        const restaurantId = String(restaurant?._id || restaurant?.id || "")
+      ;[...activeRestaurants, ...inactiveRestaurants].forEach((shop) => {
+        const restaurantId = String(shop?._id || shop?.id || "")
         if (!restaurantId) return
         if (!restaurantsMap.has(restaurantId)) {
-          restaurantsMap.set(restaurantId, restaurant)
+          restaurantsMap.set(restaurantId, shop)
         }
       })
-      const restaurants = Array.from(restaurantsMap.values())
+      const shops = Array.from(restaurantsMap.values())
       setRestaurantsForFilter(
-        restaurants
-          .map((restaurant) => ({
-            id: String(restaurant?._id || restaurant?.id || ""),
-            name: restaurant?.name || restaurant?.restaurantName || "Unknown Restaurant",
+        shops
+          .map((shop) => ({
+            id: String(shop?._id || shop?.id || ""),
+            name: shop?.name || shop?.restaurantName || "Unknown Shop",
           }))
-          .filter((restaurant) => restaurant.id)
+          .filter((shop) => shop.id)
           .sort((a, b) => a.name.localeCompare(b.name))
       )
 
-      if (restaurants.length === 0) {
+      if (shops.length === 0) {
         setFoods([])
         return
       }
@@ -149,7 +149,7 @@ export default function FoodsList() {
               image: f.image || "https://via.placeholder.com/40",
               status: f.isAvailable !== false && String(f.approvalStatus || "").toLowerCase() !== "rejected",
               restaurantId: String(f.restaurantId || ""),
-              restaurantName: f.restaurantName || "Unknown Restaurant",
+              restaurantName: f.restaurantName || "Unknown Shop",
               categoryId: String(f.categoryId || ""),
               categoryName: f.categoryName || "",
               subcategoryId: String(f.subcategoryId || ""),
@@ -323,7 +323,7 @@ export default function FoodsList() {
 
     const loadCategoryOptions = async () => {
       try {
-        // Fetch categories - pass restaurantId if available to get union of Global + Restaurant categories
+        // Fetch categories - pass restaurantId if available to get union of Global + Shop categories
         const params = { limit: 1000 }
         if (foodForm.restaurantId) {
           params.restaurantId = foodForm.restaurantId
@@ -346,11 +346,11 @@ export default function FoodsList() {
               })
               .filter((c) => {
                 if (!c.name) return false
-                // If a restaurant is selected, strictly show only its private categories + global ones
+                // If a shop is selected, strictly show only its private categories + global ones
                 if (foodForm.restaurantId) {
                   return c.isGlobal || c.restaurantId === String(foodForm.restaurantId)
                 }
-                // If no restaurant selected, show only global categories to avoid clutter
+                // If no shop selected, show only global categories to avoid clutter
                 return c.isGlobal
               })
           : []
@@ -433,7 +433,7 @@ export default function FoodsList() {
 
   const handleFoodFormSubmit = async () => {
     if (!foodForm.restaurantId) {
-      toast.error("Please select a restaurant")
+      toast.error("Please select a shop")
       return
     }
     if (!String(foodForm.categoryName || "").trim()) {
@@ -611,10 +611,10 @@ export default function FoodsList() {
               onChange={(e) => setSelectedRestaurant(e.target.value)}
               className="px-4 py-2.5 min-w-[220px] text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
             >
-              <option value="all">All Restaurants</option>
-              {restaurantOptions.map((restaurant) => (
+              <option value="all">All Shops</option>
+              {restaurantOptions.map((shop) => (
                 <option key={restaurant.id} value={restaurant.id}>
-                  {restaurant.name}
+                  {shop.name}
                 </option>
               ))}
             </select>
@@ -638,7 +638,7 @@ export default function FoodsList() {
                   Title
                 </th>
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  Restaurant
+                  Shop
                 </th>
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   Category
@@ -669,7 +669,7 @@ export default function FoodsList() {
                   <td colSpan={8} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
-                      <p className="text-sm text-slate-500">No food items match your search or restaurant filter</p>
+                      <p className="text-sm text-slate-500">No food items match your search or shop filter</p>
                     </div>
                   </td>
                 </tr>
@@ -832,7 +832,7 @@ export default function FoodsList() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 border border-slate-200 rounded-lg p-4">
-                <p><span className="font-semibold text-slate-700">Restaurant:</span> <span className="text-slate-900">{selectedFood.restaurantName || "-"}</span></p>
+                <p><span className="font-semibold text-slate-700">Shop:</span> <span className="text-slate-900">{selectedFood.restaurantName || "-"}</span></p>
                 <p><span className="font-semibold text-slate-700">Price:</span> <span className="text-slate-900">{selectedFood.variants?.length ? `Starting from \u20B9${selectedFood.price}` : `\u20B9${selectedFood.price}`}</span></p>
                 <p><span className="font-semibold text-slate-700">Category:</span> <span className="text-slate-900">{selectedFood.categoryName || "-"}</span></p>
                 <p><span className="font-semibold text-slate-700">Approval:</span> <span className="text-slate-900 capitalize">{selectedFood.approvalStatus || "-"}</span></p>
@@ -888,17 +888,17 @@ export default function FoodsList() {
           <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Restaurant</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Shop</label>
                 <select
                   value={foodForm.restaurantId}
                   onChange={(e) => setFoodForm((prev) => ({ ...prev, restaurantId: e.target.value, categoryId: "", categoryName: "", subcategoryId: "", subcategoryName: "" }))}
                   disabled={foodFormMode === "edit"}
                   className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white disabled:bg-slate-100"
                 >
-                  <option value="">Select restaurant</option>
-                  {restaurantOptions.map((restaurant) => (
+                  <option value="">Select shop</option>
+                  {restaurantOptions.map((shop) => (
                     <option key={restaurant.id} value={restaurant.id}>
-                      {restaurant.name}
+                      {shop.name}
                     </option>
                   ))}
                 </select>

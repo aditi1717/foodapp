@@ -87,12 +87,12 @@ export default function RegularOrderReport() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [zones, setZones] = useState([])
-  const [restaurants, setRestaurants] = useState([])
+  const [shops, setRestaurants] = useState([])
   const [customers, setCustomers] = useState([])
   
   const [filters, setFilters] = useState({
     zone: "All Zones",
-    restaurant: "All restaurants",
+    shop: "All shops",
     customer: "All customers",
     time: "All Time",
     fromDate: "",
@@ -105,7 +105,7 @@ export default function RegularOrderReport() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  // Fetch zones, restaurants, and customers for filter dropdowns
+  // Fetch zones, shops, and customers for filter dropdowns
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
@@ -115,10 +115,10 @@ export default function RegularOrderReport() {
           setZones(zonesRes.data.data.zones || [])
         }
 
-        // Fetch restaurants
+        // Fetch shops
         const restaurantsRes = await adminAPI.getRestaurants({ limit: 100 })
         if (restaurantsRes.data?.success) {
-          setRestaurants(restaurantsRes.data.data.restaurants || [])
+          setRestaurants(restaurantsRes.data.data.shops || [])
         }
 
         // Fetch customers (users) via existing customers API
@@ -204,7 +204,7 @@ export default function RegularOrderReport() {
           limit: 10000, // Fetch all orders for report (can be optimized later)
           search: searchQuery || undefined,
           zone: filters.zone !== "All Zones" ? filters.zone : undefined,
-          restaurantId: filters.restaurant !== "All restaurants" ? filters.restaurant : undefined,
+          restaurantId: filters.shop !== "All shops" ? filters.shop : undefined,
           customer: filters.customer !== "All customers" ? filters.customer : undefined,
           startDate: hasManualDate
             ? (filters.fromDate || undefined)
@@ -283,7 +283,7 @@ export default function RegularOrderReport() {
               mongoId: order._id || order.id || "",
               orderId: order.orderId,
               orderType,
-              restaurant: restaurantName,
+              shop: restaurantName,
               customerName,
               totalItemAmount: subtotal,
               couponByAdmin,
@@ -422,13 +422,13 @@ export default function RegularOrderReport() {
     const headers = [
       { key: "orderId", label: "Order ID" },
       { key: "orderType", label: "Order Type" },
-      { key: "restaurant", label: "Restaurant" },
+      { key: "shop", label: "Shop" },
       { key: "customerName", label: "Customer Name" },
       { key: "totalItemAmount", label: "Total Item Amount" },
       { key: "couponByAdmin", label: "Coupon by Admin" },
-      { key: "couponByRestaurant", label: "Coupon by Restaurant" },
-      { key: "offerByRestaurant", label: "Offer by Restaurant" },
-      { key: "restaurantEarning", label: "Restaurant Earning" },
+      { key: "couponByRestaurant", label: "Coupon by Shop" },
+      { key: "offerByRestaurant", label: "Offer by Shop" },
+      { key: "restaurantEarning", label: "Shop Earning" },
       { key: "adminCommission", label: "Admin Commission" },
       { key: "deliveryBoyEarningDisplay", label: "Delivery Boy Earning" },
       { key: "vatTax", label: "VAT/Tax" },
@@ -474,7 +474,7 @@ export default function RegularOrderReport() {
             <tr>
               <td>${htmlEscape(order.orderId || "-")}</td>
               <td>${htmlEscape(order.orderType || "-")}</td>
-              <td>${htmlEscape(order.restaurant || "-")}</td>
+              <td>${htmlEscape(order.shop || "-")}</td>
               <td>${htmlEscape(order.customerName || "-")}</td>
               <td class="num">${htmlEscape(toAmountNumber(order.totalItemAmount).toFixed(2))}</td>
               <td class="num">${htmlEscape(toAmountNumber(order.couponByAdmin).toFixed(2))}</td>
@@ -530,13 +530,13 @@ export default function RegularOrderReport() {
                 <tr>
                   <th>Order ID</th>
                   <th>Order Type</th>
-                  <th>Restaurant</th>
+                  <th>Shop</th>
                   <th>Customer Name</th>
                   <th>Total Item Amount</th>
                   <th>Coupon by Admin</th>
-                  <th>Coupon by Restaurant</th>
-                  <th>Offer by Restaurant</th>
-                  <th>Restaurant Earning</th>
+                  <th>Coupon by Shop</th>
+                  <th>Offer by Shop</th>
+                  <th>Shop Earning</th>
                   <th>Admin Commission</th>
                   <th>Delivery Boy Earning</th>
                   <th>VAT/Tax</th>
@@ -599,7 +599,7 @@ export default function RegularOrderReport() {
   const handleResetFilters = () => {
     setFilters({
       zone: "All Zones",
-      restaurant: "All restaurants",
+      shop: "All shops",
       customer: "All customers",
       time: "All Time",
       fromDate: "",
@@ -609,7 +609,7 @@ export default function RegularOrderReport() {
 
   const activeFiltersCount =
     (filters.zone !== "All Zones" ? 1 : 0) +
-    (filters.restaurant !== "All restaurants" ? 1 : 0) +
+    (filters.shop !== "All shops" ? 1 : 0) +
     (filters.customer !== "All customers" ? 1 : 0) +
     (filters.time !== "All Time" ? 1 : 0) +
     (filters.fromDate ? 1 : 0) +
@@ -771,13 +771,13 @@ export default function RegularOrderReport() {
             <div className="relative flex-1 min-w-0">
               <select
                 value={filters.restaurant}
-                onChange={(e) => handleFilterChange("restaurant", e.target.value)}
+                onChange={(e) => handleFilterChange("shop", e.target.value)}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs appearance-none cursor-pointer"
               >
-                <option value="All restaurants">All restaurants</option>
-                {restaurants.map((restaurant) => (
+                <option value="All restaurants">All shops</option>
+                {shops.map((shop) => (
                   <option key={restaurant._id} value={restaurant._id}>
-                    {restaurant.restaurantName || restaurant.name}
+                    {shop.restaurantName || shop.name}
                   </option>
                 ))}
               </select>
@@ -939,7 +939,7 @@ export default function RegularOrderReport() {
                     Order Type
                   </th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider w-[8%]">
-                    Restaurant
+                    Shop
                   </th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider w-[8%]">
                     Customer Name
@@ -951,13 +951,13 @@ export default function RegularOrderReport() {
                     Coupon by Admin
                   </th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider w-[6%]">
-                    Coupon by Restaurant
+                    Coupon by Shop
                   </th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider w-[6%]">
-                    Offer by Restaurant
+                    Offer by Shop
                   </th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider w-[7%]">
-                    Restaurant Earning
+                    Shop Earning
                   </th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider w-[6%]">
                     Admin Commission
@@ -1007,7 +1007,7 @@ export default function RegularOrderReport() {
                         <span className="text-[10px] text-slate-700 truncate block">{order.orderType}</span>
                       </td>
                       <td className="px-1.5 py-1">
-                        <span className="text-[10px] text-slate-700 truncate block">{order.restaurant}</span>
+                        <span className="text-[10px] text-slate-700 truncate block">{order.shop}</span>
                       </td>
                       <td className="px-1.5 py-1">
                         <span className="text-[10px] text-slate-700 truncate block">{order.customerName}</span>

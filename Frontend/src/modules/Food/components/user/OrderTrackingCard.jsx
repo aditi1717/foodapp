@@ -97,7 +97,7 @@ const isDeliveredLikeOrder = (order) => {
 };
 
 const hasPendingRating = (order) => {
-  const restaurantRating = Number(order?.ratings?.restaurant?.rating ?? order?.restaurantRating);
+  const restaurantRating = Number(order?.ratings?.shop?.rating ?? order?.restaurantRating);
   const hasRestaurantRating = Number.isFinite(restaurantRating) && restaurantRating > 0;
   const hasDeliveryPartner = Boolean(order?.isDeliveryAccepted) && !!(order?.deliveryPartnerId || order?.deliveryPartnerName);
   const deliveryPartnerRating = Number(order?.ratings?.deliveryPartner?.rating ?? order?.deliveryPartnerRating);
@@ -441,13 +441,13 @@ function OrderTrackingCardInner({ hasBottomNav = true, otpOnly = false, showOtpB
 
   const restaurantName =
     displayOrder.restaurantName ||
-    displayOrder.restaurant ||
+    displayOrder.shop ||
     displayOrder?.restaurantId?.restaurantName ||
     displayOrder?.restaurantId?.name ||
-    (typeof displayOrder?.restaurant === "object"
-      ? displayOrder?.restaurant?.restaurantName || displayOrder?.restaurant?.name
+    (typeof displayOrder?.shop === "object"
+      ? displayOrder?.shop?.restaurantName || displayOrder?.shop?.name
       : null) ||
-    "Restaurant";
+    "Shop";
   const statusText = (() => {
     const s = String(orderStatus);
     const p = String(orderPhase);
@@ -455,10 +455,10 @@ function OrderTrackingCardInner({ hasBottomNav = true, otpOnly = false, showOtpB
     if (s === "confirmed") return "Order confirmed";
     if (s === "preparing" || s === "created" || s === "pending") return `Preparing your food at ${restaurantName}`;
     if (s === "ready_for_pickup" || s === "ready") {
-      return displayOrder?.fulfillmentType === 'takeaway' ? "Ready for pickup at restaurant" : "Ready for pickup";
+      return displayOrder?.fulfillmentType === 'takeaway' ? "Ready for pickup at shop" : "Ready for pickup";
     }
 
-    if (s === "reached_pickup" || p === "at_pickup") return "Delivery partner reached restaurant";
+    if (s === "reached_pickup" || p === "at_pickup") return "Delivery partner reached shop";
     if (s === "picked_up" || p === "en_route_to_delivery") return "On the way";
     if (s === "reached_drop" || p === "at_drop") return "Arrived near you";
 
@@ -490,7 +490,7 @@ function OrderTrackingCardInner({ hasBottomNav = true, otpOnly = false, showOtpB
             </p>
             <p className="text-xs text-slate-500 mt-0.5 pr-6">
               {displayOrder?.fulfillmentType === 'takeaway'
-                ? 'Share this OTP with the restaurant staff when picking up your order.'
+                ? 'Share this OTP with the shop staff when picking up your order.'
                 : 'Share this OTP only after receiving your order.'}
             </p>
             <div className="mt-2 rounded-xl border border-brand-100 bg-brand-50 px-3 py-2">
@@ -525,7 +525,7 @@ function OrderTrackingCardInner({ hasBottomNav = true, otpOnly = false, showOtpB
             </p>
             <p className="text-xs text-slate-500 mt-0.5 pr-6">
               {displayOrder?.fulfillmentType === 'takeaway'
-                ? 'Share this OTP with the restaurant staff when picking up your order.'
+                ? 'Share this OTP with the shop staff when picking up your order.'
                 : 'Share this OTP only after receiving your order.'}
             </p>
             <div className="mt-2 rounded-xl border border-brand-100 bg-brand-50 px-3 py-2">

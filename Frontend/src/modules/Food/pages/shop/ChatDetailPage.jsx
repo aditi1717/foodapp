@@ -60,7 +60,7 @@ export default function ChatDetailPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4 md:py-3 flex items-center gap-4 rounded-b-3xl md:rounded-b-none fixed top-0 left-0 right-0 z-50">
         <button
-          onClick={() => navigate("/restaurant/conversation")}
+          onClick={() => navigate("/shop/conversation")}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />

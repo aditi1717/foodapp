@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { restaurantAPI } from "@food/api"
 import { findItemInSections, flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
 import { useRef } from "react"
@@ -400,8 +400,8 @@ export default function EditFoodPage() {
 
     if (!matchedCategory?.id) {
       toast.error("Please select a valid category from the dropdown")
-      // COMMENTED OUT: Restaurant can't create categories anymore
-      // navigate("/restaurant/menu-categories")
+      // COMMENTED OUT: Shop can't create categories anymore
+      // navigate("/shop/menu-categories")
       return
     }
 
@@ -425,9 +425,9 @@ export default function EditFoodPage() {
         window.dispatchEvent(new CustomEvent("foodsChanged"))
         if (created) {
           window.dispatchEvent(new CustomEvent("foodAdded", { detail: { food: created } }))
-          navigate(`/restaurant/food/${String(created._id || created.id)}`)
+          navigate(`/shop/food/${String(created._id || created.id)}`)
         } else {
-          navigate(`/food/restaurant/inventory`)
+          navigate(`/food/shop/inventory`)
         }
       } catch {
         alert("Error saving food. Please try again.")
@@ -445,9 +445,9 @@ export default function EditFoodPage() {
       window.dispatchEvent(new CustomEvent("foodsChanged"))
       if (updated) {
         window.dispatchEvent(new CustomEvent("foodUpdated", { detail: { food: updated } }))
-        navigate(`/restaurant/food/${String(updated._id || updated.id || id)}`)
+        navigate(`/shop/food/${String(updated._id || updated.id || id)}`)
       } else {
-        navigate(`/restaurant/food/${String(id)}`)
+        navigate(`/shop/food/${String(id)}`)
       }
     } catch {
       alert("Error saving food. Please try again.")
@@ -460,7 +460,7 @@ export default function EditFoodPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center gap-4">
           <button 
-            onClick={() => navigate(`/restaurant/food/${id}`)}
+            onClick={() => navigate(`/shop/food/${id}`)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -575,7 +575,7 @@ export default function EditFoodPage() {
                   </select>
                   {availableCategories.length === 0 && (
                     <p className="mt-2 text-xs text-amber-700">
-                      Add restaurant categories in Menu Categories before saving new dishes.
+                      Add shop categories in Menu Categories before saving new dishes.
                     </p>
                   )}
                 </div>

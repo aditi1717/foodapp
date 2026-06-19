@@ -2,8 +2,8 @@
 export const exportRestaurantsToExcel = (restaurants, filename = "restaurants") => {
   const headers = [
     "SI",
-    "Restaurant ID",
-    "Restaurant Name",
+    "Shop ID",
+    "Shop Name",
     "Owner Name",
     "Owner Phone",
     "Zone",
@@ -12,16 +12,16 @@ export const exportRestaurantsToExcel = (restaurants, filename = "restaurants") 
     "Rating"
   ]
   
-  const rows = restaurants.map((restaurant, index) => [
+  const rows = shops.map((shop, index) => [
     index + 1,
-    restaurant.originalData?.restaurantId || restaurant.originalData?._id || restaurant._id || restaurant.id || "N/A",
-    restaurant.name || "N/A",
-    restaurant.ownerName || "N/A",
-    restaurant.ownerPhone || "N/A",
-    restaurant.zone || "N/A",
-    restaurant.cuisine || "N/A",
-    restaurant.status ? "Active" : "Inactive",
-    restaurant.rating || 0
+    shop.originalData?.restaurantId || shop.originalData?._id || shop._id || shop.id || "N/A",
+    shop.name || "N/A",
+    shop.ownerName || "N/A",
+    shop.ownerPhone || "N/A",
+    shop.zone || "N/A",
+    shop.cuisine || "N/A",
+    shop.status ? "Active" : "Inactive",
+    shop.rating || 0
   ])
   
   const csvContent = [
@@ -40,11 +40,11 @@ export const exportRestaurantsToExcel = (restaurants, filename = "restaurants") 
   document.body.removeChild(link)
 }
 
-export const exportRestaurantsToPDF = (restaurants, filename = "restaurants") => {
+export const exportRestaurantsToPDF = (shops, filename = "shops") => {
   const headers = [
     "SI",
-    "Restaurant ID",
-    "Restaurant Name",
+    "Shop ID",
+    "Shop Name",
     "Owner Name",
     "Owner Phone",
     "Zone",
@@ -53,16 +53,16 @@ export const exportRestaurantsToPDF = (restaurants, filename = "restaurants") =>
     "Rating"
   ]
   
-  const rows = restaurants.map((restaurant, index) => [
+  const rows = shops.map((shop, index) => [
     index + 1,
-    restaurant.originalData?.restaurantId || restaurant.originalData?._id || restaurant._id || restaurant.id || "N/A",
-    restaurant.name || "N/A",
-    restaurant.ownerName || "N/A",
-    restaurant.ownerPhone || "N/A",
-    restaurant.zone || "N/A",
-    restaurant.cuisine || "N/A",
-    restaurant.status ? "Active" : "Inactive",
-    restaurant.rating || 0
+    shop.originalData?.restaurantId || shop.originalData?._id || shop._id || shop.id || "N/A",
+    shop.name || "N/A",
+    shop.ownerName || "N/A",
+    shop.ownerPhone || "N/A",
+    shop.zone || "N/A",
+    shop.cuisine || "N/A",
+    shop.status ? "Active" : "Inactive",
+    shop.rating || 0
   ])
   
   const printWindow = window.open("", "_blank")
@@ -121,7 +121,7 @@ export const exportRestaurantsToPDF = (restaurants, filename = "restaurants") =>
         </style>
       </head>
       <body>
-        <h1>Restaurants List</h1>
+        <h1>Shops List</h1>
         <p>Generated on: ${new Date().toLocaleString()}</p>
         <table>
           <thead>

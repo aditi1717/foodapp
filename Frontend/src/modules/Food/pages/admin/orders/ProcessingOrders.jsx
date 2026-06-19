@@ -25,7 +25,7 @@ export default function ProcessingOrders() {
     filteredOrders,
     count,
     activeFiltersCount,
-    restaurants,
+    shops,
     handleApplyFilters,
     handleResetFilters,
     handleExport,
@@ -54,7 +54,7 @@ export default function ProcessingOrders() {
         setFilters={setFilters}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-        restaurants={restaurants}
+        shops={shops}
       />
       <SettingsDialog
         isOpen={isSettingsOpen}

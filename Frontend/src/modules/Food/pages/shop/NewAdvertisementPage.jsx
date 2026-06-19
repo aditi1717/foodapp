@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { 
   ArrowLeft,
@@ -13,7 +13,7 @@ import {
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
 import { toast } from "sonner"
@@ -24,7 +24,7 @@ const debugError = (...args) => {}
 
 export default function NewAdvertisementPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [showValidityPicker, setShowValidityPicker] = useState(false)
   const [formData, setFormData] = useState({
@@ -82,7 +82,7 @@ export default function NewAdvertisementPage() {
 
   const categories = [
     "Video Promotion",
-    "Restaurant Promotion",
+    "Shop Promotion",
     "Image Promotion",
     "Banner Promotion"
   ]
@@ -405,7 +405,7 @@ export default function NewAdvertisementPage() {
             onClick={() => {
               debugLog("Create ad:", formData)
               // Navigate to advertisements list after creation
-              navigate("/restaurant/advertisements")
+              navigate("/shop/advertisements")
             }}
             className="flex-1 bg-[#ff8100] hover:bg-[#e67300] text-white font-semibold py-3 rounded-lg"
           >

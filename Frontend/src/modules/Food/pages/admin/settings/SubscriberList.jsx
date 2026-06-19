@@ -117,7 +117,7 @@ export default function SubscriberList() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <h1 className="text-xl lg:text-2xl font-bold text-slate-900 flex items-center gap-2">
           <span>👥</span>
-          <span>{activeTab === "resto" ? "Subscribed Restaurant List" : "Subscribed Customer List"}</span>
+          <span>{activeTab === "resto" ? "Subscribed Shop List" : "Subscribed Customer List"}</span>
         </h1>
 
         {activeTab === "resto" && (
@@ -176,7 +176,7 @@ export default function SubscriberList() {
           onClick={() => resetTab("resto")}
           className={`pb-2.5 text-xs font-bold transition-all relative px-1 cursor-pointer ${activeTab === "resto" ? "text-brand-600" : "text-slate-500 hover:text-slate-800"}`}
         >
-          Restaurant Subscriptions
+          Shop Subscriptions
           {activeTab === "resto" && (
             <span className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-600 rounded-full"></span>
           )}
@@ -196,7 +196,7 @@ export default function SubscriberList() {
         <div className="px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-slate-900">
-              {activeTab === "resto" ? "Restaurant Subscribers" : "Customer Subscribers"}
+              {activeTab === "resto" ? "Shop Subscribers" : "Customer Subscribers"}
             </h2>
             <span className="inline-flex items-center justify-center min-w-[24px] h-6 text-xs font-semibold rounded-full bg-slate-100 text-slate-700 px-2">
               {filteredRows.length}
@@ -241,7 +241,7 @@ export default function SubscriberList() {
               {activeTab === "resto" ? (
                 <tr>
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">SI</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Restaurant Info</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Shop Info</th>
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Zone</th>
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Package Details</th>
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Benefit Type</th>

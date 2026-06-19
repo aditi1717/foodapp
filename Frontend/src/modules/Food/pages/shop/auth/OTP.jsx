@@ -8,7 +8,7 @@ import {
   setAuthData as setRestaurantAuthData,
   setRestaurantPendingPhone,
 } from "@food/utils/auth"
-import { checkOnboardingStatus, isRestaurantOnboardingComplete } from "@food/utils/onboardingUtils"
+import { checkOnboardingStatus, isShopOnboardingComplete } from "@food/utils/onboardingUtils"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import BRAND_THEME from "@/config/brandTheme"
@@ -52,7 +52,7 @@ export default function RestaurantOTP() {
         }
       }
     } else {
-      navigate("/food/restaurant/login")
+      navigate("/food/shop/login")
       return
     }
 
@@ -245,36 +245,36 @@ export default function RestaurantOTP() {
         setRestaurantPendingPhone(normalizedPhone)
         sessionStorage.removeItem("restaurantAuthData")
         sessionStorage.removeItem("restaurantLoginPhone")
-        navigate("/food/restaurant/onboarding", { replace: true })
+        navigate("/food/shop/onboarding", { replace: true })
         return
       }
 
       const accessToken = data?.accessToken
       const refreshToken = data?.refreshToken ?? null
-      const restaurant = data?.user ?? data?.restaurant
+      const shop = data?.user ?? data?.shop
 
-      if (accessToken && restaurant) {
-        setRestaurantAuthData("restaurant", accessToken, restaurant, refreshToken)
+      if (accessToken && shop) {
+        setRestaurantAuthData("shop", accessToken, shop, refreshToken)
         window.dispatchEvent(new Event("restaurantAuthChanged"))
         sessionStorage.removeItem("restaurantAuthData")
         sessionStorage.removeItem("restaurantLoginPhone")
 
         setTimeout(async () => {
           if (authData?.isSignUp) {
-            navigate("/food/restaurant/onboarding", { replace: true })
+            navigate("/food/shop/onboarding", { replace: true })
           } else {
             try {
-              const onboardingComplete = isRestaurantOnboardingComplete(restaurant)
+              const onboardingComplete = isShopOnboardingComplete(shop)
               if (!onboardingComplete) {
                 const incompleteStep = await checkOnboardingStatus()
                 if (incompleteStep) {
-                  navigate(`/food/restaurant/onboarding?step=${incompleteStep}`, { replace: true })
+                  navigate(`/food/shop/onboarding?step=${incompleteStep}`, { replace: true })
                   return
                 }
               }
-              navigate("/food/restaurant", { replace: true })
+              navigate("/food/shop", { replace: true })
             } catch (err) {
-              navigate("/food/restaurant", { replace: true })
+              navigate("/food/shop", { replace: true })
             }
           }
         }, 500)
@@ -293,7 +293,7 @@ export default function RestaurantOTP() {
         }
         sessionStorage.removeItem("restaurantAuthData")
         sessionStorage.removeItem("restaurantLoginPhone")
-        navigate("/food/restaurant/pending-verification", {
+        navigate("/food/shop/pending-verification", {
           replace: true,
           state: { phone: pendingPhone || "" },
         })
@@ -368,7 +368,7 @@ export default function RestaurantOTP() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => navigate("/food/restaurant/login")}
+            onClick={() => navigate("/food/shop/login")}
             className="p-2 rounded-full bg-white/80 shadow-sm border border-brand-100 text-brand-600 hover:bg-white"
           >
             <ArrowLeft className="w-4 h-4" />

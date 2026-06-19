@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate, useParams } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -87,7 +87,7 @@ const getItemVariantText = (item = {}) => {
 
 export default function OrderDetails() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const { orderId } = useParams()
   
   // State for order data
@@ -222,12 +222,12 @@ export default function OrderDetails() {
 
           const restaurantName = firstText(
             order.restaurantName,
-            order.restaurant?.restaurantName,
-            order.restaurant?.name,
+            order.shop?.restaurantName,
+            order.shop?.name,
             order.restaurantId?.restaurantName,
             order.restaurantId?.name,
             order.outletName
-          ) || "Restaurant"
+          ) || "Shop"
 
           const rawPaymentStatus = String(
             order.payment?.status || order.paymentStatus || ""
@@ -267,7 +267,7 @@ export default function OrderDetails() {
             status: statusForUi,
             date: new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
             time: new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-            restaurant: restaurantName,
+            shop: restaurantName,
             address: fullAddress,
             customer: {
               name: customerName,
@@ -414,10 +414,10 @@ export default function OrderDetails() {
       }
     }
 
-    // Header - Restaurant Name
+    // Header - Shop Name
     doc.setFontSize(18)
     doc.setFont("helvetica", "bold")
-    doc.text(orderData.restaurant, pageWidth / 2, yPosition, { align: "center" })
+    doc.text(orderData.shop, pageWidth / 2, yPosition, { align: "center" })
     yPosition += 7
 
     doc.setFontSize(10)
@@ -750,7 +750,7 @@ export default function OrderDetails() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => navigate('/restaurant/orders')}
+            onClick={() => navigate('/shop/orders')}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg transition-colors"
           >
             Back to Orders
@@ -772,7 +772,7 @@ export default function OrderDetails() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h2>
           <p className="text-gray-600 mb-6">The order you're looking for doesn't exist.</p>
           <button
-            onClick={() => navigate('/restaurant/orders')}
+            onClick={() => navigate('/shop/orders')}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg transition-colors"
           >
             Back to Orders
@@ -800,7 +800,7 @@ export default function OrderDetails() {
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold text-gray-900">Order details</h1>
             <p className="text-xs text-gray-600 truncate">
-              ID: {orderData.id}, {orderData.restaurant?.substring(0, 20) || 'Restaurant'}...
+              ID: {orderData.id}, {orderData.shop?.substring(0, 20) || 'Shop'}...
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -849,8 +849,8 @@ export default function OrderDetails() {
             </button>
           </div>
 
-          {/* Restaurant Info */}
-          <p className="text-sm text-gray-900 mb-3">{orderData.restaurant}</p>
+          {/* Shop Info */}
+          <p className="text-sm text-gray-900 mb-3">{orderData.shop}</p>
 
           {/* Divider */}
           <div className="border-t border-gray-200 my-3"></div>

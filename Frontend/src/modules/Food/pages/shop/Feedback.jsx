@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import { ArrowLeft, Bell, HelpCircle, Loader2, Menu, Search, SlidersHorizontal, Star, X } from "lucide-react"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { restaurantAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
 
@@ -34,7 +34,7 @@ const normalizeRating = (value) => {
 const extractReviewRating = (order) =>
   normalizeRating(
     order?.review?.rating ??
-      order?.ratings?.restaurant?.rating ??
+      order?.ratings?.shop?.rating ??
       order?.feedback?.rating ??
       order?.rating
   )
@@ -43,7 +43,7 @@ const extractReviewText = (order) => {
   const raw =
     order?.review?.comment ??
     order?.review?.text ??
-    order?.ratings?.restaurant?.comment ??
+    order?.ratings?.shop?.comment ??
     order?.feedback?.comment ??
     order?.feedback?.text ??
     ""
@@ -98,8 +98,8 @@ export default function Feedback() {
       try {
         setIsLoadingRestaurant(true)
         const response = await restaurantAPI.getCurrentRestaurant()
-        if (response.data?.success && response.data.data?.restaurant) {
-          setRestaurantData(response.data.data.restaurant)
+        if (response.data?.success && response.data.data?.shop) {
+          setRestaurantData(response.data.data.shop)
         }
       } finally {
         setIsLoadingRestaurant(false)
@@ -317,7 +317,7 @@ export default function Feedback() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate("/food/restaurant/explore")}
+              onClick={() => navigate("/food/shop/explore")}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-6 h-6 text-gray-900" />
@@ -326,13 +326,13 @@ export default function Feedback() {
               <p className="text-[10px] tracking-wider text-gray-500 uppercase">
                 {activeTab === "complaints" ? "Customer Complaints" : "Customer Reviews"}
               </p>
-              <p className="text-md font-bold text-gray-900">{restaurantData?.name || "Restaurant"}</p>
+              <p className="text-md font-bold text-gray-900">{restaurantData?.name || "Shop"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => navigate("/food/restaurant/notifications")}
+              onClick={() => navigate("/food/shop/notifications")}
               className="p-1 rounded-full hover:bg-gray-100 active:scale-95 transition-all"
               aria-label="Open notifications"
             >
@@ -340,7 +340,7 @@ export default function Feedback() {
             </button>
             <button
               type="button"
-              onClick={() => navigate("/food/restaurant/help-centre/support", { state: { backTo: "/food/restaurant/feedback" } })}
+              onClick={() => navigate("/food/shop/help-centre/support", { state: { backTo: "/food/shop/feedback" } })}
               className="p-1 rounded-full hover:bg-gray-100 active:scale-95 transition-all"
               aria-label="Open support"
             >
@@ -348,7 +348,7 @@ export default function Feedback() {
             </button>
             <button
               type="button"
-              onClick={() => navigate("/food/restaurant/explore")}
+              onClick={() => navigate("/food/shop/explore")}
               className="p-1 rounded-full hover:bg-gray-100 active:scale-95 transition-all"
               aria-label="Open explore"
             >

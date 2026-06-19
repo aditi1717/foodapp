@@ -119,7 +119,7 @@ const databaseTables = [
   { name: "Priority_lists", count: 26 },
   { name: "Refunds", count: 3 },
   { name: "Restaurant_subscript...", count: 5 },
-  { name: "Restaurants", count: 16 },
+  { name: "Shops", count: 16 },
   { name: "Social_media", count: 5 },
   { name: "Subscription_package...", count: 3 },
   { name: "Subscription_transac...", count: 6 },

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import {
   ArrowLeft,
@@ -35,7 +35,7 @@ const STORAGE_KEY = "restaurant_owner_contact"
 
 export default function EditOwner() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [ownerData, setOwnerData] = useState({
     name: "",
     phone: "",
@@ -78,13 +78,13 @@ export default function EditOwner() {
     }
   }, [])
 
-  // Fetch restaurant data from backend on mount
+  // Fetch shop data from backend on mount
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
         setLoading(true)
         const response = await restaurantAPI.getCurrentRestaurant()
-        const data = response?.data?.data?.restaurant || response?.data?.restaurant
+        const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
           const ownerDataFromBackend = {
             name: data.ownerName || data.name || "",
@@ -98,7 +98,7 @@ export default function EditOwner() {
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          debugError("Error fetching restaurant data:", error)
+          debugError("Error fetching shop data:", error)
         }
         // Fallback to localStorage
         try {
@@ -241,7 +241,7 @@ export default function EditOwner() {
       // Call backend API to delete the account
       await restaurantAPI.deleteAccount()
       
-      // Sign out from Firebase if restaurant logged in via Google
+      // Sign out from Firebase if shop logged in via Google
       try {
         const { signOut } = await import("firebase/auth")
         // Firebase Auth is lazy-initialized now; ensure it before accessing firebaseAuth.currentUser
@@ -255,10 +255,10 @@ export default function EditOwner() {
         debugWarn("Firebase logout failed, continuing with cleanup:", firebaseError)
       }
 
-      // Clear restaurant module authentication data
-      clearModuleAuth("restaurant")
+      // Clear shop module authentication data
+      clearModuleAuth("shop")
       
-      // Clear all restaurant-related localStorage data
+      // Clear all shop-related localStorage data
       localStorage.removeItem(STORAGE_KEY)
       localStorage.removeItem("restaurant_onboarding")
       localStorage.removeItem("restaurant_accessToken")
@@ -276,7 +276,7 @@ export default function EditOwner() {
       
       // Navigate to welcome page
       setTimeout(() => {
-        navigate("/restaurant/welcome", { replace: true })
+        navigate("/shop/welcome", { replace: true })
       }, 300)
     } catch (error) {
       debugError("Error deleting account:", error)
@@ -409,7 +409,7 @@ export default function EditOwner() {
                 You are about to delete your Iggymet account
               </DialogTitle>
               <DialogHeader className="mt-2 text-sm text-gray-600">
-                All information associated with your account will be deleted, and you will lose access to your restaurant permanently.
+                All information associated with your account will be deleted, and you will lose access to your shop permanently.
                 This information cannot be recovered once the account is deleted. Are you sure you want to proceed?
               </DialogHeader>
             </DialogHeader>

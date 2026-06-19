@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, X } from "lucide-react"
 import { adminAPI } from "@food/api"
@@ -17,7 +17,7 @@ const debugError = (...args) => {}
 export default function ShareFeedback() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [rating, setRating] = useState(null)
   const [showThanks, setShowThanks] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -35,9 +35,9 @@ export default function ShareFeedback() {
       setIsSubmitting(true)
       // Save feedback experience to backend
       const response = await api.post(API_ENDPOINTS.ADMIN.FEEDBACK_EXPERIENCE_CREATE, {
-        rating, // Persist exact 0-10 value selected by restaurant
-        module: 'restaurant',
-        comment: `Restaurant rated ${rating}/10 overall experience`
+        rating, // Persist exact 0-10 value selected by shop
+        module: 'shop',
+        comment: `Shop rated ${rating}/10 overall experience`
       })
       
       if (response.data?.success) {

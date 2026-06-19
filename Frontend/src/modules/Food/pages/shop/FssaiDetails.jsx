@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { ArrowLeft, Download } from "lucide-react"
 
 export default function FssaiDetails() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -20,7 +20,7 @@ export default function FssaiDetails() {
           <div className="flex items-center gap-1">
             <h1 className="text-base font-semibold text-gray-900">FSSAI Details</h1>
           </div>
-          <p className="text-xs text-gray-500">No live restaurant license data available.</p>
+          <p className="text-xs text-gray-500">No live shop license data available.</p>
         </div>
       </div>
 
@@ -77,7 +77,7 @@ export default function FssaiDetails() {
           type="button"
           className="w-full py-3 rounded-full text-white text-sm font-medium mb-2"
           style={{ background: BRAND_THEME.gradients.primary }}
-          onClick={() => navigate("/restaurant/fssai/update")}
+          onClick={() => navigate("/shop/fssai/update")}
         >
           Update FSSAI license
         </button>
@@ -86,7 +86,7 @@ export default function FssaiDetails() {
           <button
             type="button"
             className="text-brand-600 underline underline-offset-2"
-            onClick={() => navigate("/restaurant/fssai/update")}
+            onClick={() => navigate("/shop/fssai/update")}
           >
             Apply Now
           </button>

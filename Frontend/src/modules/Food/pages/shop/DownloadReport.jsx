@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { ArrowLeft, CheckCircle, Mail } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import BRAND_THEME from "@/config/brandTheme"
 
 const REPORT_VIEWS = [
@@ -13,7 +13,7 @@ const VIEW_TYPES = ["DAILY", "WEEKLY", "MONTHLY"]
 
 export default function DownloadReport() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [reportView, setReportView] = useState("detailed")
   const [viewType, setViewType] = useState("DAILY")
   const durations = useMemo(() => {

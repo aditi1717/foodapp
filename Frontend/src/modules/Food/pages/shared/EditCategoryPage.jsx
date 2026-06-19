@@ -13,7 +13,7 @@ import { restaurantAPI, adminAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 import DocumentUploadActions from "@food/components/DocumentUploadActions"
 import BRAND_THEME from "@/config/brandTheme"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 
 const defaultFormData = {
   name: "",
@@ -28,7 +28,7 @@ export default function EditCategoryPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const goBackRestaurant = useRestaurantBackNavigation()
+  const goBackRestaurant = useShopBackNavigation()
   
   const isAdmin = location.pathname.startsWith("/admin")
   const isEditing = !!id
@@ -44,7 +44,7 @@ export default function EditCategoryPage() {
 
   useEffect(() => {
     if (!isAdmin) {
-      const fetchRestaurantProfile = async () => {
+      const fetchShopProfile = async () => {
         try {
           const res = await restaurantAPI.getCurrentRestaurant()
           const data = res?.data?.data?.restaurant || res?.data?.restaurant
@@ -59,7 +59,7 @@ export default function EditCategoryPage() {
           console.error("Error fetching restaurant profile:", err)
         }
       }
-      fetchRestaurantProfile()
+      fetchShopProfile()
     }
   }, [isAdmin])
 

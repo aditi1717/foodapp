@@ -28,24 +28,24 @@ const normalizeImageUrl = (imageUrl) => {
     : `${BACKEND_ORIGIN}/${trimmed}`
 }
 
-const pickRestaurantImage = (restaurant) => {
+const pickRestaurantImage = (shop) => {
   const candidates = [
-    restaurant?.coverImage?.url,
-    restaurant?.coverImage,
-    ...(Array.isArray(restaurant?.coverImages) ? restaurant.coverImages.map((img) => img?.url || img) : []),
-    ...(Array.isArray(restaurant?.menuImages) ? restaurant.menuImages.map((img) => img?.url || img) : []),
-    restaurant?.profileImage?.url,
-    restaurant?.profileImage,
+    shop?.coverImage?.url,
+    shop?.coverImage,
+    ...(Array.isArray(shop?.coverImages) ? shop.coverImages.map((img) => img?.url || img) : []),
+    ...(Array.isArray(shop?.menuImages) ? shop.menuImages.map((img) => img?.url || img) : []),
+    shop?.profileImage?.url,
+    shop?.profileImage,
   ]
   const firstValid = candidates.find((value) => typeof value === "string" && value.trim())
   return normalizeImageUrl(firstValid || "")
 }
 
-export default function Restaurants() {
+export default function Shops() {
   const { addFavorite, removeFavorite, isFavorite } = useProfile()
   const { location: userLocation } = useLocation()
   const { zoneId } = useZone(userLocation)
-  const [restaurants, setRestaurants] = useState([])
+  const [shops, setRestaurants] = useState([])
   const [loading, setLoading] = useState(true)
   const showRestaurantsSkeleton = useDelayedLoading(loading)
 
@@ -63,31 +63,31 @@ export default function Restaurants() {
         params.zoneId = zoneId
         const response = await restaurantAPI.getRestaurants(params, { noCache: true })
         const list =
-          response?.data?.data?.restaurants ||
-          response?.data?.restaurants ||
+          response?.data?.data?.shops ||
+          response?.data?.shops ||
           []
         if (cancelled) return
 
-        const transformed = list.map((restaurant) => {
+        const transformed = list.map((shop) => {
           const slug =
-            restaurant?.slug ||
-            String(restaurant?.name || "")
+            shop?.slug ||
+            String(shop?.name || "")
               .toLowerCase()
               .trim()
               .replace(/\s+/g, "-")
-          const cuisine = Array.isArray(restaurant?.cuisines) && restaurant.cuisines.length > 0
-            ? restaurant.cuisines[0]
+          const cuisine = Array.isArray(shop?.cuisines) && shop.cuisines.length > 0
+            ? shop.cuisines[0]
             : "Multi-cuisine"
           return {
-            id: restaurant?._id || restaurant?.restaurantId || slug,
+            id: shop?._id || shop?.restaurantId || slug,
             slug,
-            name: restaurant?.name || "Unknown Restaurant",
+            name: shop?.name || "Unknown Shop",
             cuisine,
-            rating: Number(restaurant?.rating || 0) || 4.5,
-            deliveryTime: restaurant?.estimatedDeliveryTime || (restaurant?.estimatedDeliveryTimeMinutes ? `${restaurant.estimatedDeliveryTimeMinutes} mins` : "25-30 mins"),
-            distance: restaurant?.distance ? (typeof restaurant.distance === 'number' ? `${restaurant.distance.toFixed(1)} km` : restaurant.distance) : "1.2 km",
-            priceRange: restaurant?.priceRange || "$$",
-            image: pickRestaurantImage(restaurant),
+            rating: Number(shop?.rating || 0) || 4.5,
+            deliveryTime: shop?.estimatedDeliveryTime || (shop?.estimatedDeliveryTimeMinutes ? `${shop.estimatedDeliveryTimeMinutes} mins` : "25-30 mins"),
+            distance: shop?.distance ? (typeof shop.distance === 'number' ? `${shop.distance.toFixed(1)} km` : shop.distance) : "1.2 km",
+            priceRange: shop?.priceRange || "$$",
+            image: pickRestaurantImage(shop),
           }
         })
 
@@ -109,7 +109,7 @@ export default function Restaurants() {
     }
   }, [zoneId])
 
-  const hasRestaurants = useMemo(() => restaurants.length > 0, [restaurants.length])
+  const hasRestaurants = useMemo(() => shops.length > 0, [shops.length])
 
   return (
     <AnimatedPage className="min-h-screen bg-gradient-to-b from-yellow-50/30 dark:from-[#0a0a0a] via-white dark:via-[#0a0a0a] to-orange-50/20 dark:to-[#0a0a0a]">
@@ -123,7 +123,7 @@ export default function Restaurants() {
             </Link>
             <TextReveal className="flex items-center gap-2 sm:gap-3 lg:gap-4">
               <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white">
-                All Restaurants
+                All Shops
               </h1>
             </TextReveal>
           </div>
@@ -132,34 +132,34 @@ export default function Restaurants() {
         {showRestaurantsSkeleton ? (
           <RestaurantGridSkeleton count={4} />
         ) : !hasRestaurants ? (
-          <div className="py-16 text-center text-sm text-gray-500">No restaurants available right now.</div>
+          <div className="py-16 text-center text-sm text-gray-500">No shops available right now.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 xl:gap-6 pt-2 sm:pt-3 lg:pt-4">
-            {restaurants.map((restaurant, index) => {
-              const favorite = isFavorite(restaurant.slug)
+            {shops.map((shop, index) => {
+              const favorite = isFavorite(shop.slug)
 
               const handleToggleFavorite = (e) => {
                 e.preventDefault()
                 e.stopPropagation()
                 if (favorite) {
-                  removeFavorite(restaurant.slug)
+                  removeFavorite(shop.slug)
                 } else {
                   addFavorite({
-                    slug: restaurant.slug,
-                    name: restaurant.name,
-                    cuisine: restaurant.cuisine,
-                    rating: restaurant.rating,
-                    deliveryTime: restaurant.deliveryTime,
-                    distance: restaurant.distance,
-                    priceRange: restaurant.priceRange,
-                    image: restaurant.image,
+                    slug: shop.slug,
+                    name: shop.name,
+                    cuisine: shop.cuisine,
+                    rating: shop.rating,
+                    deliveryTime: shop.deliveryTime,
+                    distance: shop.distance,
+                    priceRange: shop.priceRange,
+                    image: shop.image,
                   })
                 }
               }
 
               return (
                 <ScrollReveal key={restaurant.id} delay={index * 0.05}>
-                  <Link to={`/restaurants/${restaurant.slug}`} className="h-full flex">
+                  <Link to={`/shops/${restaurant.slug}`} className="h-full flex">
                     <Card className="overflow-hidden cursor-pointer border border-gray-200 dark:border-gray-800 group bg-white dark:bg-[#1a1a1a] hover:shadow-lg dark:hover:shadow-xl dark:hover:shadow-gray-900/50 pb-1 sm:pb-2 lg:pb-3 flex flex-col h-full w-full transition-all duration-300">
                       <div className="flex flex-row min-h-[120px] sm:min-h-[140px] md:min-h-[160px] lg:min-h-[180px] flex-1">
                         <CardContent className="flex-1 flex flex-col justify-between p-3 sm:p-4 md:p-5 lg:p-6 min-w-0 overflow-hidden">
@@ -168,15 +168,15 @@ export default function Restaurants() {
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <div className="flex-1 min-w-0 pr-2">
                                   <CardTitle className="text-base sm:text-lg md:text-xl mb-1 line-clamp-2 text-gray-900 dark:text-white">
-                                    {restaurant.name}
+                                    {shop.name}
                                   </CardTitle>
                                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium mb-2 line-clamp-1">
-                                    {restaurant.cuisine}
+                                    {shop.cuisine}
                                   </p>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded-full">
                                       <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-yellow-400 text-yellow-400" />
-                                      <span className="font-bold text-xs sm:text-sm text-yellow-700 dark:text-yellow-400">{restaurant.rating.toFixed(1)}</span>
+                                      <span className="font-bold text-xs sm:text-sm text-yellow-700 dark:text-yellow-400">{shop.rating.toFixed(1)}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -194,11 +194,11 @@ export default function Restaurants() {
                               <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex-wrap">
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
-                                  <span className="font-medium whitespace-nowrap">{restaurant.deliveryTime}</span>
+                                  <span className="font-medium whitespace-nowrap">{shop.deliveryTime}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
-                                  <span className="font-medium whitespace-nowrap">{restaurant.distance}</span>
+                                  <span className="font-medium whitespace-nowrap">{shop.distance}</span>
                                 </div>
                               </div>
                               <Button className="bg-primary-orange hover:opacity-90 dark:hover:opacity-80 text-white text-xs sm:text-sm h-7 sm:h-8 px-3 sm:px-4 flex-shrink-0 transition-opacity">

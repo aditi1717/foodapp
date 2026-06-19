@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
 import Lenis from "lenis"
 import {
@@ -40,7 +40,7 @@ const CUISINES_STORAGE_KEY = "restaurant_cuisines"
 
 export default function OutletInfo() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   
   // State management
   const [restaurantData, setRestaurantData] = useState(null)
@@ -83,20 +83,20 @@ export default function OutletInfo() {
     return parts.join(", ") || ""
   }
 
-  // Fetch restaurant data on mount
+  // Fetch shop data on mount
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
         setLoading(true)
         const response = await restaurantAPI.getCurrentRestaurant()
-        const data = response?.data?.data?.restaurant || response?.data?.restaurant
+        const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
           setRestaurantData(data)
           
-          // Set restaurant name
+          // Set shop name
           setRestaurantName(data.name || "")
           
-          // Set restaurant ID
+          // Set shop ID
           setRestaurantId(data.restaurantId || data.id || "")
           // Set MongoDB _id for last 5 digits display
           const mongoId = String(data.id || data._id || "")
@@ -134,7 +134,7 @@ export default function OutletInfo() {
         }
       } catch (error) {
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          debugError("Error fetching restaurant data:", error)
+          debugError("Error fetching shop data:", error)
         }
       } finally {
         setLoading(false)
@@ -197,9 +197,9 @@ export default function OutletInfo() {
           setThumbnailImage(uploadedImage.url)
         }
         
-        // Refresh restaurant data
+        // Refresh shop data
         const response = await restaurantAPI.getCurrentRestaurant()
-        const data = response?.data?.data?.restaurant || response?.data?.restaurant
+        const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
           setRestaurantData(data)
           if (data.profileImage?.url) {
@@ -228,7 +228,7 @@ export default function OutletInfo() {
 
       // Get current images
       const currentResponse = await restaurantAPI.getCurrentRestaurant()
-      const currentData = currentResponse?.data?.data?.restaurant || currentResponse?.data?.restaurant
+      const currentData = currentResponse?.data?.data?.shop || currentResponse?.data?.shop
       const existingImages = currentData?.menuImages && Array.isArray(currentData.menuImages)
         ? currentData.menuImages.map(img => ({
             url: img.url,
@@ -352,7 +352,7 @@ export default function OutletInfo() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-900 font-normal">
-                Restaurant id: {loading ? "Loading..." : (restaurantMongoId && restaurantMongoId.length >= 5 ? restaurantMongoId.slice(-5) : (restaurantId || "N/A"))}
+                Shop id: {loading ? "Loading..." : (restaurantMongoId && restaurantMongoId.length >= 5 ? restaurantMongoId.slice(-5) : (restaurantId || "N/A"))}
               </span>
             </div>
           </div>
@@ -443,7 +443,7 @@ export default function OutletInfo() {
         <div className="px-4 pt-[50px] pb-4 bg-white">
           <div className="flex items-start gap-4">
             <div className="flex flex-col gap-2">
-              <button onClick={() => navigate("/restaurant/ratings-reviews")} className="flex items-center gap-2 text-left w-full">
+              <button onClick={() => navigate("/shop/ratings-reviews")} className="flex items-center gap-2 text-left w-full">
                 <div className="bg-green-700 px-2.5 py-1.5 rounded flex items-center gap-1 shrink-0">
                   <span className="text-white text-sm font-bold">{restaurantData?.rating?.toFixed(1) || "0.0"}</span>
                   <Star className="w-3.5 h-3.5 text-white fill-white" />
@@ -455,13 +455,13 @@ export default function OutletInfo() {
           </div>
         </div>
 
-        <div className="px-4 py-4"><h2 className="text-base font-bold text-gray-900 text-center">Restaurant Information</h2></div>
+        <div className="px-4 py-4"><h2 className="text-base font-bold text-gray-900 text-center">Shop Information</h2></div>
 
         <div className="px-4 pb-6 space-y-3">
           <div className="bg-brand-100/50 rounded-lg p-4 border border-brand-300">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-500 font-normal mb-1">Restaurant's name</p>
+                <p className="text-xs text-gray-500 font-normal mb-1">Shop's name</p>
                 <p className="text-base font-semibold text-gray-900">{loading ? "Loading..." : (restaurantName || "N/A")}</p>
               </div>
               <button onClick={handleOpenEditDialog} className="text-brand-600 text-sm font-normal">Edit</button>
@@ -473,8 +473,8 @@ export default function OutletInfo() {
 
       <Dialog open={showEditNameDialog} onOpenChange={setShowEditNameDialog}>
         <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl w-[90%]">
-          <DialogHeader className="p-4 border-b border-gray-100"><DialogTitle className="text-lg font-bold">Edit restaurant name</DialogTitle></DialogHeader>
-          <div className="p-4"><Input value={editNameValue} onChange={(e) => setEditNameValue(e.target.value)} placeholder="Enter restaurant name" className="w-full" /></div>
+          <DialogHeader className="p-4 border-b border-gray-100"><DialogTitle className="text-lg font-bold">Edit shop name</DialogTitle></DialogHeader>
+          <div className="p-4"><Input value={editNameValue} onChange={(e) => setEditNameValue(e.target.value)} placeholder="Enter shop name" className="w-full" /></div>
           <DialogFooter className="p-4 bg-gray-50 flex flex-row gap-3">
             <Button variant="outline" onClick={() => setShowEditNameDialog(false)}>Cancel</Button>
             <Button onClick={handleSaveName} disabled={!editNameValue.trim()} className="bg-brand-600 text-white">Save</Button>

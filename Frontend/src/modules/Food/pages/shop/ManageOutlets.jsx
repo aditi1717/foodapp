@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Info } from "lucide-react"
 const debugLog = (...args) => {}
@@ -10,7 +10,7 @@ const debugError = (...args) => {}
 
 export default function ManageOutlets() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [showToast, setShowToast] = useState(false)
 
   const options = [
@@ -28,22 +28,22 @@ export default function ManageOutlets() {
     // Navigate based on option selected
     switch (option) {
       case "Timings":
-        navigate("/restaurant/outlet-timings")
+        navigate("/shop/outlet-timings")
         break
       case "FSSAI Food License":
-        navigate("/restaurant/fssai")
+        navigate("/shop/fssai")
         break
       case "Bank account details":
-        navigate("/restaurant/update-bank-details")
+        navigate("/shop/update-bank-details")
         break
       case "Profile picture":
-        navigate("/restaurant/outlet-info")
+        navigate("/shop/outlet-info")
         break
       case "Name, address, location":
-        navigate("/restaurant/outlet-info")
+        navigate("/shop/outlet-info")
         break
       case "Ratings, reviews":
-        navigate("/restaurant/ratings-reviews")
+        navigate("/shop/ratings-reviews")
         break
       case "Delivery area changes":
         setShowToast(true)
@@ -65,7 +65,7 @@ export default function ManageOutlets() {
         >
           <ArrowLeft className="w-5 h-5 text-gray-900" />
         </button>
-        <h1 className="text-lg font-bold text-gray-900">Restaurant</h1>
+        <h1 className="text-lg font-bold text-gray-900">Shop</h1>
       </div>
 
       {/* Main Content */}
@@ -118,7 +118,7 @@ export default function ManageOutlets() {
                 <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
                 <div className="flex-1 space-y-2">
                   <p className="text-sm font-semibold text-gray-900">
-                    You can not modify the delivery areas of your restaurant
+                    You can not modify the delivery areas of your shop
                   </p>
                   <p className="text-xs text-gray-600 leading-relaxed">
                     Delivery area is defined by the appropriate distance our delivery partners can travel to deliver your orders in time. This can vary basis the time of the day or external conditions like rain etc.

@@ -36,9 +36,9 @@ export default function SupportTickets() {
   }
 
   const getRestaurantLabel = (ticket) => {
-    const restaurant = ticket?.restaurant || {}
-    const name = restaurant.name || restaurant.restaurantName || ticket?.restaurantName || ""
-    const city = restaurant.city || ""
+    const shop = ticket?.shop || {}
+    const name = shop.name || shop.restaurantName || ticket?.restaurantName || ""
+    const city = shop.city || ""
     if (name && city) return `${name} (${city})`
     if (name) return name
     if (ticket?.restaurantId) return `#${String(ticket.restaurantId).slice(-6)}`
@@ -60,7 +60,7 @@ export default function SupportTickets() {
   const getUserTicketType = (ticket) => {
     const type = String(ticket?.type || ticket?.issueType || "other").toLowerCase()
     if (type.includes("order")) return "Order"
-    if (type.includes("restaurant")) return "Restaurant"
+    if (type.includes("shop")) return "Shop"
     return "Other"
   }
 
@@ -71,7 +71,7 @@ export default function SupportTickets() {
 
   const shouldShowRestaurantInModal = (ticket) => {
     if (!ticket) return false
-    return ticket.source === "restaurant" || ticket.type === "restaurant" || Boolean(ticket.restaurantId)
+    return ticket.source === "shop" || ticket.type === "shop" || Boolean(ticket.restaurantId)
   }
 
   const formatDate = (date) => {
@@ -84,7 +84,7 @@ export default function SupportTickets() {
     setFilters((prev) => ({
       ...prev,
       source,
-      type: source === "restaurant" ? "" : prev.type,
+      type: source === "shop" ? "" : prev.type,
     }))
   }
 
@@ -152,7 +152,7 @@ export default function SupportTickets() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-lg font-semibold text-slate-900">Support Tickets</h1>
-              <p className="text-sm text-slate-500 mt-1">Review and respond to user and restaurant support tickets.</p>
+              <p className="text-sm text-slate-500 mt-1">Review and respond to user and shop support tickets.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <select
@@ -169,11 +169,11 @@ export default function SupportTickets() {
                 value={filters.type}
                 onChange={(e) => setFilters((prev) => ({ ...prev, type: e.target.value }))}
                 className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
-                disabled={filters.source === "restaurant"}
+                disabled={filters.source === "shop"}
               >
                 <option value="">All Types</option>
                 <option value="order">Order</option>
-                <option value="restaurant">Restaurant</option>
+                <option value="restaurant">Shop</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -182,7 +182,7 @@ export default function SupportTickets() {
           <div className="flex flex-wrap gap-2 rounded-xl bg-slate-50 p-1 border border-slate-200">
             {[
               { value: "user", label: "User Tickets", description: "Issues raised from user app" },
-              { value: "restaurant", label: "Restaurant Tickets", description: "Issues raised from restaurant panel" },
+              { value: "shop", label: "Shop Tickets", description: "Issues raised from shop panel" },
             ].map((tab) => {
               const active = filters.source === tab.value
               return (
@@ -224,11 +224,11 @@ export default function SupportTickets() {
 
         <div className="mb-3">
           <h2 className="text-base font-semibold text-slate-900">
-            {filters.source === "restaurant" ? "Restaurant Support Tickets" : "User Support Tickets"}
+            {filters.source === "shop" ? "Shop Support Tickets" : "User Support Tickets"}
           </h2>
           <p className="text-sm text-slate-500">
-            {filters.source === "restaurant"
-              ? "Only tickets raised by restaurants are shown here."
+            {filters.source === "shop"
+              ? "Only tickets raised by shops are shown here."
               : "Only tickets raised by users/customers are shown here."}
           </p>
         </div>
@@ -239,15 +239,15 @@ export default function SupportTickets() {
               <thead>
                 <tr className="text-left text-xs uppercase text-slate-600">
                   <th className="px-4 py-3">Id</th>
-                  {filters.source === "restaurant" ? (
-                    <th className="px-4 py-3">Restaurant</th>
+                  {filters.source === "shop" ? (
+                    <th className="px-4 py-3">Shop</th>
                   ) : (
                     <>
                       <th className="px-4 py-3">User Name</th>
                       <th className="px-4 py-3">Mobile Number</th>
                     </>
                   )}
-                  <th className="px-4 py-3">{filters.source === "restaurant" ? "Category" : "Type"}</th>
+                  <th className="px-4 py-3">{filters.source === "shop" ? "Category" : "Type"}</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3 text-right">Action</th>
@@ -261,7 +261,7 @@ export default function SupportTickets() {
                 ) : tickets.map((ticket) => (
                   <tr key={ticket._id} className="hover:bg-slate-50">
                     <td className="px-4 py-3 text-sm font-medium text-slate-900">#{String(ticket._id).slice(-6)}</td>
-                    {filters.source === "restaurant" ? (
+                    {filters.source === "shop" ? (
                       <td className="px-4 py-3 text-sm text-slate-700">{getRestaurantLabel(ticket)}</td>
                     ) : (
                       <>
@@ -271,7 +271,7 @@ export default function SupportTickets() {
                     )}
                     <td className="px-4 py-3">
                       <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                        {filters.source === "restaurant" ? getIssueLabel(ticket.category || "other") : getUserTicketType(ticket)}
+                        {filters.source === "shop" ? getIssueLabel(ticket.category || "other") : getUserTicketType(ticket)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -310,7 +310,7 @@ export default function SupportTickets() {
             <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
-                  #{String(selectedTicket._id).slice(-6)} - {selectedTicket.source === "restaurant" ? "Restaurant Ticket" : "User Ticket"}
+                  #{String(selectedTicket._id).slice(-6)} - {selectedTicket.source === "shop" ? "Shop Ticket" : "User Ticket"}
                 </p>
                 <h3 className="text-lg font-semibold text-slate-900 mt-1">{getTicketTitle(selectedTicket)}</h3>
                 <p className="text-sm text-slate-500 mt-1">Created {formatDate(selectedTicket.createdAt)}</p>
@@ -330,21 +330,21 @@ export default function SupportTickets() {
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs uppercase font-semibold text-slate-500">Raised By</p>
                   <p className="text-sm font-semibold text-slate-900 mt-1">
-                    {selectedTicket.source === "restaurant" ? getRestaurantLabel(selectedTicket) : getUserLabel(selectedTicket)}
+                    {selectedTicket.source === "shop" ? getRestaurantLabel(selectedTicket) : getUserLabel(selectedTicket)}
                   </p>
                 </div>
                 {shouldShowRestaurantInModal(selectedTicket) ? (
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs uppercase font-semibold text-slate-500">Restaurant</p>
+                    <p className="text-xs uppercase font-semibold text-slate-500">Shop</p>
                     <p className="text-sm font-semibold text-slate-900 mt-1">{getRestaurantLabel(selectedTicket)}</p>
                   </div>
                 ) : null}
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs uppercase font-semibold text-slate-500">
-                    {selectedTicket.source === "restaurant" ? "Category" : "Type"}
+                    {selectedTicket.source === "shop" ? "Category" : "Type"}
                   </p>
                   <p className="text-sm font-semibold text-slate-900 mt-1">
-                    {selectedTicket.source === "restaurant"
+                    {selectedTicket.source === "shop"
                       ? getIssueLabel(selectedTicket.category || "other")
                       : getUserTicketType(selectedTicket)}
                   </p>
@@ -401,7 +401,7 @@ export default function SupportTickets() {
                       placeholder="Write response for this ticket"
                     />
                     <span className="text-xs text-slate-500 mt-1 block">
-                      This response will be visible to the {selectedTicket.source === "restaurant" ? "restaurant" : "user"}.
+                      This response will be visible to the {selectedTicket.source === "shop" ? "shop" : "user"}.
                     </span>
                   </label>
                 </div>

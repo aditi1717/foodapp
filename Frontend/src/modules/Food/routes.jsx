@@ -10,8 +10,8 @@ import { registerWebPushForCurrentModule } from "@food/utils/firebaseMessaging"
 // Lazy Loading Components
 const UserRouter = lazy(() => import("@food/components/user/UserRouter"))
 
-// Restaurant Module
-const RestaurantRouter = lazy(() => import("@food/components/restaurant/RestaurantRouter"))
+// Shop Module
+const ShopRouter = lazy(() => import("@food/components/shop/ShopRouter"))
 
 // Admin Module
 const AdminRouter = lazy(() => import("@food/components/admin/AdminRouter"))
@@ -31,6 +31,12 @@ function ScrollToTop() {
   return null;
 }
 
+function NavigateToShop() {
+  const location = useLocation();
+  const nextPath = location.pathname.replace(/\/restaurant/g, '/shop');
+  return <Navigate to={`${nextPath}${location.search || ''}`} replace />;
+}
+
 export default function App() {
   const location = useLocation()
 
@@ -45,10 +51,15 @@ export default function App() {
       <AppMaintenanceOverlay />
       <Suspense fallback={<Loader />}>
         <Routes>
-          {/* Restaurant Module */}
+          {/* Shop Module */}
+          <Route
+            path="shop/*"
+            element={<ShopRouter />}
+          />
+          {/* Redirect legacy restaurant routes */}
           <Route
             path="restaurant/*"
-            element={<RestaurantRouter />}
+            element={<NavigateToShop />}
           />
 
           {/* Delivery Module */}

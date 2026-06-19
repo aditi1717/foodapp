@@ -104,7 +104,7 @@ export default function ContactMessages() {
 
   const getModuleLabel = (module) => {
     const key = String(module || "").trim().toLowerCase()
-    if (key === "restaurant") return "Restaurant App"
+    if (key === "shop") return "Shop App"
     if (!key) return "N/A"
     return key.charAt(0).toUpperCase() + key.slice(1)
   }
@@ -130,7 +130,7 @@ export default function ContactMessages() {
       <div className="p-4 lg:p-6 bg-slate-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-brand-600 mx-auto mb-4" />
-          <p className="text-slate-600">Loading restaurant feedback...</p>
+          <p className="text-slate-600">Loading shop feedback...</p>
         </div>
       </div>
     )
@@ -143,8 +143,8 @@ export default function ContactMessages() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Restaurant Share Feedback</h1>
-              <p className="text-xs text-slate-500 mt-1">Source: /food/restaurant/share-feedback</p>
+              <h1 className="text-2xl font-bold text-slate-900">Shop Share Feedback</h1>
+              <p className="text-xs text-slate-500 mt-1">Source: /food/shop/share-feedback</p>
             </div>
             <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">
               {feedbacks.length}
@@ -179,7 +179,7 @@ export default function ContactMessages() {
             <div className="relative flex-1 sm:flex-initial min-w-[250px]">
               <input
                 type="text"
-                placeholder="Search by restaurant name, owner phone, feedback text"
+                placeholder="Search by shop name, owner phone, feedback text"
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value)
@@ -253,7 +253,7 @@ export default function ContactMessages() {
                           </div>
                         </div>
                       </div>
-                      <p className="text-lg font-semibold text-slate-700">No Restaurant Feedback Found</p>
+                      <p className="text-lg font-semibold text-slate-700">No Shop Feedback Found</p>
                     </div>
                   </td>
                 </tr>
@@ -338,7 +338,7 @@ export default function ContactMessages() {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200 dark:border-slate-700">
-            <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white">Restaurant Feedback Details</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white">Shop Feedback Details</DialogTitle>
             <DialogDescription className="text-sm text-slate-600 dark:text-slate-400 mt-1">
               Complete information about the source account and feedback
             </DialogDescription>
@@ -349,7 +349,7 @@ export default function ContactMessages() {
               <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-5 flex items-center gap-3">
                   <div className="w-1 h-6 bg-gradient-to-b from-brand-500 to-brand-600 rounded-full"></div>
-                  Restaurant Account Information
+                  Shop Account Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-1">

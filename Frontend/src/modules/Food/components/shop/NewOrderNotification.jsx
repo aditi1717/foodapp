@@ -66,7 +66,7 @@ export default function NewOrderNotification({ order, onClose, onViewOrder }) {
     if (onViewOrder && order) {
       onViewOrder(order);
     } else if (order) {
-      navigate(`/food/restaurant/orders/${order.orderMongoId || order._id || order.id || order.orderId}`);
+      navigate(`/food/shop/orders/${order.orderMongoId || order._id || order.id || order.orderId}`);
     }
     if (onClose) onClose();
   };
@@ -173,7 +173,7 @@ export default function NewOrderNotification({ order, onClose, onViewOrder }) {
 
                 {(order.restaurantNote || order.note) && (
                   <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
-                    <p className="mb-1 text-xs font-medium text-yellow-800">Restaurant Note:</p>
+                    <p className="mb-1 text-xs font-medium text-yellow-800">Shop Note:</p>
                     <p className="text-sm text-yellow-900">{order.restaurantNote || order.note}</p>
                   </div>
                 )}

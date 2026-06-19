@@ -26,7 +26,7 @@ const beneficiaryNames = (row) => {
   return names.length ? names.join(", ") : ""
 }
 
-export default function RestaurantSettlementHistory() {
+export default function ShopSettlementHistory() {
   const [searchQuery, setSearchQuery] = useState("")
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
@@ -39,7 +39,7 @@ export default function RestaurantSettlementHistory() {
     try {
       setLoading(true)
       const response = await adminAPI.getPayoutSettlementHistory({
-        beneficiaryType: "restaurant",
+        beneficiaryType: "shop",
         search: searchQuery.trim() || undefined,
         page: 1,
         limit: 50,
@@ -62,7 +62,7 @@ export default function RestaurantSettlementHistory() {
     try {
       setDetailsLoading(true)
       const response = await adminAPI.getPayoutSettlementHistoryBatchDetails(batchId, {
-        beneficiaryType: "restaurant",
+        beneficiaryType: "shop",
       })
       if (response?.data?.success) {
         setDetails(response?.data?.data || null)
@@ -112,7 +112,7 @@ export default function RestaurantSettlementHistory() {
               <Receipt className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Restaurant Settlement History</h1>
+              <h1 className="text-2xl font-bold text-slate-900">Shop Settlement History</h1>
               <p className="text-sm text-slate-600 mt-1">All paid settlement batches with exact time and details.</p>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function RestaurantSettlementHistory() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by note, reference, restaurant, or id"
+              placeholder="Search by note, reference, shop, or id"
               className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -139,7 +139,7 @@ export default function RestaurantSettlementHistory() {
                 <tr>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Settled At</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Window</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Restaurants</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Shops</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Orders</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">COD Orders</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">COD To Admin</th>
@@ -219,7 +219,7 @@ export default function RestaurantSettlementHistory() {
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Restaurant</th>
+                    <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Shop</th>
                     <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Orders</th>
                     <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">COD Orders</th>
                     <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">COD To Admin</th>

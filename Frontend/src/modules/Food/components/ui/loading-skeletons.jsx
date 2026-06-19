@@ -104,7 +104,7 @@ function ExploreGridSkeleton({ count = 4, className }) {
   )
 }
 
-function RestaurantCardSkeleton({ className, compact = false }) {
+function ShopCardSkeleton({ className, compact = false }) {
   return (
     <div className={cn("h-full", className)}>
       <div className="h-full overflow-hidden rounded-[24px] border border-[#efe2d4] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[#141414]">
@@ -144,7 +144,7 @@ function RestaurantGridSkeleton({ count = DEFAULT_CARD_COUNT, className, compact
   return (
     <div className={cn("grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", className)}>
       {Array.from({ length: count }, (_, index) => (
-        <RestaurantCardSkeleton key={`restaurant-card-${index}`} compact={compact} />
+        <ShopCardSkeleton key={`restaurant-card-${index}`} compact={compact} />
       ))}
     </div>
   )
@@ -282,7 +282,7 @@ function ContentPageSkeleton({ className, hero = true }) {
 
 function RestaurantDetailSkeleton({ className }) {
   return (
-    <LoadingSkeletonRegion label="Loading restaurant details" className={cn("min-h-screen bg-white dark:bg-[#0a0a0a]", className)}>
+    <LoadingSkeletonRegion label="Loading shop details" className={cn("min-h-screen bg-white dark:bg-[#0a0a0a]", className)}>
       <div className="mx-auto max-w-6xl px-4 pb-10 pt-3">
         <div className="flex items-center justify-between">
           <Skeleton className="h-11 w-11 rounded-full" />
@@ -362,7 +362,7 @@ export {
   HeroBannerSkeleton,
   LoadingSkeletonRegion,
   OrdersDashboardSkeleton,
-  RestaurantCardSkeleton,
+  ShopCardSkeleton,
   RestaurantDetailSkeleton,
   RestaurantGridSkeleton,
   SkeletonLines,

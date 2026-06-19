@@ -252,7 +252,7 @@ const getDisplayStatus = ({
   }
 }
 
-export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), options = {}) => {
+export const getShopAvailabilityStatus = (restaurant, now = new Date(), options = {}) => {
   if (!restaurant) {
     const display = getDisplayStatus({ isOpen: false, reason: "missing-restaurant" })
     return {

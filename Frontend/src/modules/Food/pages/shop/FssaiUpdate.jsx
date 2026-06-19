@@ -1,6 +1,6 @@
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { ArrowLeft, Upload } from "lucide-react"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
@@ -9,7 +9,7 @@ import { toast } from "sonner"
 
 export default function FssaiUpdate() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [uploadedFile, setUploadedFile] = useState(null)
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false)
   const fileInputRef = useRef(null)

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Lenis from "lenis"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { 
   Home,
   ShoppingBag,
@@ -31,10 +31,10 @@ import { Card, CardContent } from "@food/components/ui/card"
 import { useNavigate } from "react-router-dom"
 import { restaurantAPI } from "@food/api"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
-import { getRestaurantData } from "@food/utils/restaurantManagement"
+import { getRestaurantData } from "@food/utils/shopManagement"
 import BRAND_THEME from "@/config/brandTheme"
 
-export default function RestaurantDetailsPage() {
+export default function ShopDetailsPage() {
   const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState("all")
   const [restaurantData, setRestaurantData] = useState(() => getRestaurantData())
@@ -61,7 +61,7 @@ export default function RestaurantDetailsPage() {
     }
   }, [])
 
-  // Load restaurant data and listen for updates
+  // Load shop data and listen for updates
   useEffect(() => {
     const refreshRestaurantData = () => {
       setRestaurantData(getRestaurantData())
@@ -71,7 +71,7 @@ export default function RestaurantDetailsPage() {
     // Initial load
     refreshRestaurantData()
 
-    // Listen for restaurant data changes
+    // Listen for shop data changes
     window.addEventListener('restaurantDataUpdated', refreshRestaurantData)
     window.addEventListener('storage', refreshRestaurantData)
 
@@ -152,7 +152,7 @@ export default function RestaurantDetailsPage() {
           className="w-full h-full object-cover"
         />
         
-        {/* Restaurant Info Card Overlay */}
+        {/* Shop Info Card Overlay */}
         <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-4 md:p-6">
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0">
@@ -177,7 +177,7 @@ export default function RestaurantDetailsPage() {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => navigate("/restaurant/edit")}
+                  onClick={() => navigate("/shop/edit")}
                   className="flex-shrink-0 ml-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <Edit className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
@@ -266,7 +266,7 @@ export default function RestaurantDetailsPage() {
             >
               <Card 
                 className="bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => navigate(`/restaurant/food/${item.id}`)}
+                onClick={() => navigate(`/shop/food/${item.id}`)}
               >
                 <CardContent className="p-0 py-0 gap-0">
                   <div className="flex gap-2 p-2 md:p-2.5">

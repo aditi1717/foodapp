@@ -12,13 +12,13 @@ export const exportToCSV = (orders, filename = "orders") => {
   let headers, rows
   
   if (isSubscription) {
-    headers = ["SI", "Subscription ID", "Order Type", "Duration", "Restaurant", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]
+    headers = ["SI", "Subscription ID", "Order Type", "Duration", "Shop", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]
     rows = orders.map((order, index) => [
       index + 1,
       order.subscriptionId,
       order.orderType,
       order.duration,
-      order.restaurant,
+      order.shop,
       order.customerName,
       order.customerPhone,
       order.status,
@@ -26,14 +26,14 @@ export const exportToCSV = (orders, filename = "orders") => {
       order.delivered
     ])
   } else {
-    headers = ["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Restaurant", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]
+    headers = ["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Shop", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]
     rows = orders.map((order, index) => [
       index + 1,
       order.orderId || order.id,
       `${order.date}${order.time ? `, ${order.time}` : ""}`,
       order.customerName,
       order.customerPhone,
-      order.restaurant,
+      order.shop,
       order.total || `?${(order.totalAmount || 0).toFixed(2)}`,
       order.paymentStatus || "",
       order.orderStatus || "",
@@ -71,13 +71,13 @@ export const exportToExcel = (orders, filename = "orders") => {
   let headers, rows
   
   if (isSubscription) {
-    headers = ["SI", "Subscription ID", "Order Type", "Duration", "Restaurant", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]
+    headers = ["SI", "Subscription ID", "Order Type", "Duration", "Shop", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]
     rows = orders.map((order, index) => [
       index + 1,
       order.subscriptionId,
       order.orderType,
       order.duration,
-      order.restaurant,
+      order.shop,
       order.customerName,
       order.customerPhone,
       order.status,
@@ -86,7 +86,7 @@ export const exportToExcel = (orders, filename = "orders") => {
     ])
   } else if (isOrderDetectDelivery) {
     // OrderDetectDelivery format - includes delivery boy info and payment details
-    headers = ["SI", "Order ID", "Order Date", "Order Time", "Customer Name", "Customer Phone", "Restaurant Name", "Delivery Boy Name", "Delivery Boy Phone", "Status", "Total Amount", "Payment Status"]
+    headers = ["SI", "Order ID", "Order Date", "Order Time", "Customer Name", "Customer Phone", "Shop Name", "Delivery Boy Name", "Delivery Boy Phone", "Status", "Total Amount", "Payment Status"]
     rows = orders.map((order, index) => {
       const originalOrder = order.originalOrder || {}
       const totalAmount = originalOrder.pricing?.total || originalOrder.totalAmount || originalOrder.total || 0
@@ -108,14 +108,14 @@ export const exportToExcel = (orders, filename = "orders") => {
       ]
     })
   } else {
-    headers = ["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Restaurant", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]
+    headers = ["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Shop", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]
     rows = orders.map((order, index) => [
       index + 1,
       order.orderId || order.id,
       `${order.date || ''}${order.time ? `, ${order.time}` : ""}`,
       order.customerName || 'N/A',
       order.customerPhone || 'N/A',
-      order.restaurant || 'N/A',
+      order.shop || 'N/A',
       order.total || `?${(order.totalAmount || 0).toFixed(2)}`,
       order.paymentStatus || 'N/A',
       order.orderStatus || 'N/A',

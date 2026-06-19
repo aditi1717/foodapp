@@ -2,7 +2,7 @@ import { motion } from "framer-motion"
 import { Bookmark, Clock, Minus, Plus, Share2 } from "lucide-react"
 import BRAND_THEME from "@/config/brandTheme"
 
-export default function RestaurantFoodCard({
+export default function ShopFoodCard({
   item,
   cardRef,
   onClick,

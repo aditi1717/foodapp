@@ -163,11 +163,11 @@ export default function RestaurantWelcome() {
 
 
   const handleLogin = () => {
-    navigate("/food/restaurant/login")
+    navigate("/food/shop/login")
   }
 
   const handlePartner = () => {
-    navigate("/food/restaurant/signup")
+    navigate("/food/shop/signup")
   }
 
   // Auto-advance carousel every 2.5 seconds
@@ -249,7 +249,7 @@ export default function RestaurantWelcome() {
 
                       <div className="w-12 h-[0.1px] bg-white mt-0 mb-3" />
                       {/* <p className="text-sm md:text-base text-white/90 font-medium">
-                        restaurant partner
+                        shop partner
                       </p> */}
                     </motion.div>
 

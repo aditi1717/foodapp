@@ -42,7 +42,7 @@ export default function Notifications() {
     dismiss: dismissBroadcastNotification,
     dismissAll: dismissAllBroadcastNotifications,
     refresh: refreshBroadcastNotifications,
-  } = useNotificationInbox("restaurant", { limit: 100, pollMs: 5 * 60 * 1000 })
+  } = useNotificationInbox("shop", { limit: 100, pollMs: 5 * 60 * 1000 })
 
   const fetchNotifications = async () => {
     try {
@@ -137,7 +137,7 @@ export default function Notifications() {
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center gap-3 border-b border-gray-200">
         <button
-          onClick={() => navigate("/restaurant")}
+          onClick={() => navigate("/shop")}
           className="p-2 rounded-full hover:bg-gray-100"
           aria-label="Back"
         >

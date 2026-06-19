@@ -10,7 +10,7 @@ const DEFAULT_MESSAGE = {
 
 const resolveTargetApp = (pathname = "") => {
   if (pathname.startsWith("/food/delivery")) return "deliveryApp";
-  if (pathname.startsWith("/food/restaurant")) return "restaurantApp";
+  if (pathname.startsWith("/food/shop")) return "restaurantApp";
   return "userApp";
 };
 

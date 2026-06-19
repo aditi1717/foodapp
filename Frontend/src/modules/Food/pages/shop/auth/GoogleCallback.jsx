@@ -35,7 +35,7 @@ export default function RestaurantGoogleCallback() {
             no_code: "No authorization code received from Google.",
             invalid_state: "Security verification failed. Please try again.",
             no_email: "Google account email not found. Please use a different account.",
-            wrong_role: "This account is not registered as a restaurant partner.",
+            wrong_role: "This account is not registered as a shop partner.",
             auth_failed: "Authentication failed. Please try again."
           }
           setError(errorMessages[errorParam] || "Authentication failed. Please try again.")
@@ -60,19 +60,19 @@ export default function RestaurantGoogleCallback() {
         }
 
         // Store authentication data using utility function
-        setAuthData("restaurant", token, user)
+        setAuthData("shop", token, user)
 
         // Notify any listeners that auth state has changed
         window.dispatchEvent(new Event("restaurantAuthChanged"))
 
         setStatus("success")
 
-        // Redirect to restaurant home after short delay
+        // Redirect to shop home after short delay
         setTimeout(() => {
-          navigate("/restaurant")
+          navigate("/shop")
         }, 1200)
       } catch (err) {
-        debugError("Restaurant Google auth error:", err)
+        debugError("Shop Google auth error:", err)
         setStatus("error")
         setError(
           err.message || "An error occurred during Google authentication. Please try again."
@@ -84,11 +84,11 @@ export default function RestaurantGoogleCallback() {
   }, [navigate, searchParams])
 
   const handleRetry = () => {
-    navigate("/restaurant/login")
+    navigate("/shop/login")
   }
 
   const handleGoHome = () => {
-    navigate("/restaurant")
+    navigate("/shop")
   }
 
   return (
@@ -102,8 +102,8 @@ export default function RestaurantGoogleCallback() {
           </h1>
           <p className="text-sm text-gray-600">
             {status === "loading" &&
-              `Connecting your ${provider || "Google"} account to ${companyName} Restaurant Panel...`}
-            {status === "success" && "You will be redirected to your restaurant panel shortly."}
+              `Connecting your ${provider || "Google"} account to ${companyName} Shop Panel...`}
+            {status === "success" && "You will be redirected to your shop panel shortly."}
             {status === "error" && "We could not complete the Google sign-in process."}
           </p>
         </div>
@@ -119,7 +119,7 @@ export default function RestaurantGoogleCallback() {
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <CheckCircle2 className="h-14 w-14 text-green-500" />
             <p className="text-sm text-gray-700">
-              Your Google account has been linked to your restaurant profile.
+              Your Google account has been linked to your shop profile.
             </p>
           </div>
         )}

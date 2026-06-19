@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation";
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation";
 import Lenis from "lenis";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import BRAND_THEME from "@/config/brandTheme";
 import { Card, CardContent } from "@food/components/ui/card";
 import { Button } from "@food/components/ui/button";
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders";
+import BottomNavOrders from "@food/components/shop/BottomNavOrders";
 import { toast } from "sonner";
 import { restaurantAPI } from "@/services/api";
 
@@ -25,7 +25,7 @@ const defaultActivePlan = {
 
 export default function BusinessPlanPage() {
   const navigate = useNavigate();
-  const goBack = useRestaurantBackNavigation();
+  const goBack = useShopBackNavigation();
   const [showPlans, setShowPlans] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [plans, setPlans] = useState([]);
@@ -118,7 +118,7 @@ export default function BusinessPlanPage() {
           setSelectedPlanId(defaultActivePlan.id);
         }
       } catch (error) {
-        console.error("Error loading restaurant plans", error);
+        console.error("Error loading shop plans", error);
         if (isMounted) {
           setPlans([]);
           setActivePlan(defaultActivePlan);
@@ -153,7 +153,7 @@ export default function BusinessPlanPage() {
       setShowPlans(false);
       toast.success(`Business plan shifted to ${newPlan.name} successfully!`);
     } catch (error) {
-      console.error("Error shifting restaurant plan", error);
+      console.error("Error shifting shop plan", error);
       toast.error(error?.response?.data?.message || "Failed to change business plan");
     } finally {
       setIsSubmitting(false);
@@ -241,7 +241,7 @@ export default function BusinessPlanPage() {
               <div className="px-4 py-5 overflow-x-auto scrollbar-hide -mx-2">
                 <div className="flex gap-3 px-2 min-w-max pb-2">
                   {plans.length === 0 ? (
-                    <div className="w-full text-sm text-gray-500 px-2">No restaurant plans available yet.</div>
+                    <div className="w-full text-sm text-gray-500 px-2">No shop plans available yet.</div>
                   ) : (
                     plans.map((p, index) => {
                       const isActive = String(p.id) === String(selectedPlanId);

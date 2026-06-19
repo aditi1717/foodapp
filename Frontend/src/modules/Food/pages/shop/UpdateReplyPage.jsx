@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useNavigate, useParams } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { 
   ArrowLeft,
@@ -10,7 +10,7 @@ import {
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { Textarea } from "@food/components/ui/textarea"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -18,7 +18,7 @@ const debugError = (...args) => {}
 
 export default function UpdateReplyPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const { id } = useParams()
   const [replyText, setReplyText] = useState("")
 
@@ -166,7 +166,7 @@ export default function UpdateReplyPage() {
           onClick={() => {
             debugLog("Update reply:", { reviewId: id, reply: replyText })
             // Navigate back to reviews list after update
-            navigate("/restaurant/reviews")
+            navigate("/shop/reviews")
           }}
           disabled={!reviewData}
           className="w-full bg-[#ff8100] hover:bg-[#e67300] text-white font-semibold py-3 rounded-lg"

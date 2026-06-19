@@ -11,8 +11,8 @@ const Home = lazy(() => import("../../pages/user/Home"))
 const Under250 = lazy(() => import("@food/pages/user/Under250"))
 const Categories = lazy(() => import("@food/pages/user/Categories"))
 const CategoryPage = lazy(() => import("@food/pages/user/CategoryPage"))
-const Restaurants = lazy(() => import("@food/pages/user/restaurants/Restaurants"))
-const RestaurantDetails = lazy(() => import("@food/pages/user/restaurants/RestaurantDetails"))
+const Shops = lazy(() => import("@food/pages/user/shops/Shops"))
+const ShopDetails = lazy(() => import("@food/pages/user/shops/ShopDetails"))
 const SearchResults = lazy(() => import("@food/pages/user/search/ProfessionalSearch"))
 const ProductDetail = lazy(() => import("@food/pages/user/ProductDetail"))
 
@@ -103,8 +103,8 @@ export default function UserRouter() {
           <Route path="under-*" element={<Navigate to="/food/under-price" replace />} />
           <Route path="categories" element={<Categories />} />
           <Route path="category/:category" element={<CategoryPage />} />
-          <Route path="restaurants" element={<Restaurants />} />
-          <Route path="restaurants/:slug" element={<RestaurantDetails />} />
+          <Route path="shops" element={<Shops />} />
+          <Route path="shops/:slug" element={<ShopDetails />} />
           <Route path="search" element={<SearchResults />} />
           <Route path="product/:id" element={<ProductDetail />} />
 

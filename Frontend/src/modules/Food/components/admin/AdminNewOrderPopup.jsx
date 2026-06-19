@@ -236,9 +236,9 @@ export default function AdminNewOrderPopup() {
   const orderId = getDisplayOrderId(orderAlert)
   const restaurantName =
     orderAlert.restaurantName ||
-    orderAlert.restaurant?.restaurantName ||
-    orderAlert.restaurant?.name ||
-    "Restaurant"
+    orderAlert.shop?.restaurantName ||
+    orderAlert.shop?.name ||
+    "Shop"
   const total = orderAlert.pricing?.total ?? orderAlert.total ?? orderAlert.amount
 
   return (

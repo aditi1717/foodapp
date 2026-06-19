@@ -28,7 +28,7 @@ export default function VerificationPending() {
     let cancelled = false
 
     const checkApprovalStatus = async () => {
-      const token = getModuleToken("restaurant")
+      const token = getModuleToken("shop")
       if (!token) {
         if (!cancelled) setCheckingStatus(false)
         return
@@ -36,17 +36,17 @@ export default function VerificationPending() {
 
       try {
         const response = await restaurantAPI.getCurrentRestaurant()
-        const restaurant =
-          response?.data?.data?.restaurant ||
-          response?.data?.restaurant ||
+        const shop =
+          response?.data?.data?.shop ||
+          response?.data?.shop ||
           response?.data?.data?.user ||
           response?.data?.user
 
         if (cancelled) return
 
-        if (String(restaurant?.status || "").toLowerCase() === "approved") {
+        if (String(shop?.status || "").toLowerCase() === "approved") {
           clearRestaurantPendingPhone()
-          navigate("/food/restaurant", { replace: true })
+          navigate("/food/shop", { replace: true })
           return
         }
       } catch (_) {
@@ -89,10 +89,10 @@ export default function VerificationPending() {
               Verification Pending
             </p>
             <h1 className="text-3xl font-extrabold text-slate-950">
-              Your restaurant is under review
+              Your shop is under review
             </h1>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              {companyName} received your onboarding details successfully. Our team will verify your restaurant and activate your dashboard once approval is complete.
+              {companyName} received your onboarding details successfully. Our team will verify your shop and activate your dashboard once approval is complete.
             </p>
             {checkingStatus ? (
               <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
@@ -121,7 +121,7 @@ export default function VerificationPending() {
               className="h-12 w-full rounded-xl bg-brand-600 text-base font-semibold hover:bg-brand-700"
               onClick={() => {
                 clearRestaurantPendingPhone()
-                navigate("/food/restaurant/login", { replace: true })
+                navigate("/food/shop/login", { replace: true })
               }}
             >
               Back to login

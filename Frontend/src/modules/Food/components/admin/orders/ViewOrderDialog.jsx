@@ -40,7 +40,7 @@ const getStatusColor = (orderStatus) => {
     "User Unavailable Review": "bg-orange-100 text-orange-700",
     "Canceled": "bg-rose-100 text-rose-700",
     "Cancelled by Admin": "bg-rose-100 text-rose-700",
-    "Cancelled by Restaurant": "bg-red-100 text-red-700",
+    "Cancelled by Shop": "bg-red-100 text-red-700",
     "Cancelled - User Unavailable": "bg-red-100 text-red-700",
     "Cancelled by User": "bg-orange-100 text-orange-700",
     "Payment Failed": "bg-red-100 text-red-700",
@@ -374,7 +374,7 @@ export default function ViewOrderDialog({
                     <p className="text-xs text-red-600 mt-1">
                       <span className="font-medium">
                         {order.cancelledBy === 'user' ? 'Cancelled by User - ' : 
-                         order.cancelledBy === 'restaurant' ? 'Cancelled by Restaurant - ' : 
+                         order.cancelledBy === 'shop' ? 'Cancelled by Shop - ' : 
                          order.cancelledBy === 'admin' ? 'Cancelled by Admin - ' :
                          'Cancellation '}Reason:
                       </span> {order.cancellationReason}
@@ -496,13 +496,13 @@ export default function ViewOrderDialog({
             </div>
           </div>
 
-          {/* Restaurant Information */}
-          {order.restaurant && (
+          {/* Shop Information */}
+          {order.shop && (
             <div className="border-t border-slate-200 pt-4">
-              <h3 className="text-sm font-semibold text-slate-700 mb-4">Restaurant Information</h3>
+              <h3 className="text-sm font-semibold text-slate-700 mb-4">Shop Information</h3>
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Restaurant Name</p>
-                <p className="text-sm font-medium text-slate-900">{order.restaurant}</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Shop Name</p>
+                <p className="text-sm font-medium text-slate-900">{order.shop}</p>
               </div>
             </div>
           )}

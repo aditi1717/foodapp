@@ -22,7 +22,7 @@ import { useLocation } from "@food/hooks/useLocation"
 import { useZone } from "@food/hooks/useZone"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 import { getMenuFromResponse } from "@food/utils/menuItems"
-import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
+import { getShopAvailabilityStatus } from "@food/utils/shopAvailability"
 import { enrichSearchRestaurantsWithOutletTimings, isPureVegRestaurant, isVegCompatibleCategory } from "@food/utils/searchAvailability"
 import BRAND_THEME from "@/config/brandTheme"
 
@@ -96,18 +96,18 @@ export default function CategoryPage() {
     if (typeof value === "string") return value.trim()
     return String(value?._id || value?.id || "").trim()
   }
-  const getRestaurantZoneId = (restaurant) =>
+  const getRestaurantZoneId = (shop) =>
     normalizeZoneValue(
-      restaurant?.zoneId ||
-      restaurant?.serviceZoneId ||
-      restaurant?.location?.zoneId ||
-      restaurant?.zone?._id ||
-      restaurant?.zone?.id
+      shop?.zoneId ||
+      shop?.serviceZoneId ||
+      shop?.location?.zoneId ||
+      shop?.zone?._id ||
+      shop?.zone?.id
     )
-  const isRestaurantInSelectedZone = (restaurant) => {
+  const isRestaurantInSelectedZone = (shop) => {
     const selectedZoneId = normalizeZoneValue(zoneId)
     if (!selectedZoneId) return false
-    return getRestaurantZoneId(restaurant) === selectedZoneId
+    return getRestaurantZoneId(shop) === selectedZoneId
   }
   const normalizeCategoryToken = (value) =>
     String(value || "")
@@ -132,7 +132,7 @@ export default function CategoryPage() {
   const uniqueByRestaurant = (list) => {
     const seen = new Set()
     return list.filter((row) => {
-      // Use distinct keys for dishes vs restaurants to prevent collisions
+      // Use distinct keys for dishes vs shops to prevent collisions
       const key = row.dishId ? `dish-${row.dishId}` : (row.restaurantId || row.id || `raw-${slugify(row.name)}`)
       if (!key || seen.has(key)) return false
       seen.add(key)
@@ -237,18 +237,18 @@ export default function CategoryPage() {
     }
   }, [])
 
-  const buildFallbackMenuFromFoods = (foods, restaurant) => {
+  const buildFallbackMenuFromFoods = (foods, shop) => {
     const restaurantIds = new Set(
       [
-        restaurant?.restaurantId,
-        restaurant?.id,
-        restaurant?.mongoId,
+        shop?.restaurantId,
+        shop?.id,
+        shop?.mongoId,
       ]
         .filter(Boolean)
         .map((value) => String(value).trim())
     )
 
-    const restaurantName = String(restaurant?.name || "").trim().toLowerCase()
+    const restaurantName = String(shop?.name || "").trim().toLowerCase()
     const matchingFoods = foods.filter((food) => {
       const foodRestaurantId = String(food?.restaurantId || "").trim()
       const foodRestaurantName = String(food?.restaurantName || "").trim().toLowerCase()
@@ -297,37 +297,37 @@ export default function CategoryPage() {
     }
   }
 
-  const getCategoryFallbackDishesFromApprovedFoods = (categoryId, restaurants) => {
+  const getCategoryFallbackDishesFromApprovedFoods = (categoryId, shops) => {
     const keywords = getCategoryKeywords(categoryId)
     if (keywords.length === 0 || !Array.isArray(approvedFoodsData) || approvedFoodsData.length === 0) {
       return []
     }
 
-    const inZoneRestaurants = Array.isArray(restaurants) ? restaurants : []
+    const inZoneRestaurants = Array.isArray(shops) ? shops : []
     if (inZoneRestaurants.length === 0) {
       return []
     }
 
     const restaurantsById = new Map()
     const restaurantsByName = new Map()
-    inZoneRestaurants.forEach((restaurant) => {
+    inZoneRestaurants.forEach((shop) => {
       const idCandidates = [
-        restaurant?.restaurantId,
-        restaurant?.id,
-        restaurant?.mongoId,
+        shop?.restaurantId,
+        shop?.id,
+        shop?.mongoId,
       ]
         .filter(Boolean)
         .map((value) => String(value).trim())
 
       idCandidates.forEach((value) => {
         if (!restaurantsById.has(value)) {
-          restaurantsById.set(value, restaurant)
+          restaurantsById.set(value, shop)
         }
       })
 
-      const normalizedName = String(restaurant?.name || "").trim().toLowerCase()
+      const normalizedName = String(shop?.name || "").trim().toLowerCase()
       if (normalizedName && !restaurantsByName.has(normalizedName)) {
-        restaurantsByName.set(normalizedName, restaurant)
+        restaurantsByName.set(normalizedName, shop)
       }
     })
 
@@ -359,11 +359,11 @@ export default function CategoryPage() {
 
         return {
           ...matchedRestaurant,
-          id: `${matchedRestaurant.restaurantId || matchedRestaurant.id || restaurantId || "restaurant"}-${String(food?.id || food?._id || index)}`,
+          id: `${matchedRestaurant.restaurantId || matchedRestaurant.id || restaurantId || "shop"}-${String(food?.id || food?._id || index)}`,
           restaurantId: matchedRestaurant.restaurantId || matchedRestaurant.id || restaurantId || null,
           mongoId: matchedRestaurant.mongoId || matchedRestaurant.id || null,
-          slug: matchedRestaurant.slug || slugify(matchedRestaurant.name || restaurantName || "restaurant"),
-          name: matchedRestaurant.name || restaurantName || "Restaurant",
+          slug: matchedRestaurant.slug || slugify(matchedRestaurant.name || restaurantName || "shop"),
+          name: matchedRestaurant.name || restaurantName || "Shop",
           image: matchedRestaurant.image || fallbackImage,
           images: Array.isArray(matchedRestaurant.images) && matchedRestaurant.images.length > 0
             ? matchedRestaurant.images
@@ -868,7 +868,7 @@ export default function CategoryPage() {
     return allDishes.length > 0 ? allDishes[0] : null
   }
 
-  // Fetch restaurants from API
+  // Fetch shops from API
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
@@ -880,8 +880,8 @@ export default function CategoryPage() {
         const params = { zoneId }
         const response = await restaurantAPI.getRestaurants(params)
 
-        if (response.data && response.data.success && response.data.data && response.data.data.restaurants) {
-          const restaurantsArray = response.data.data.restaurants
+        if (response.data && response.data.success && response.data.data && response.data.data.shops) {
+          const restaurantsArray = response.data.data.shops
 
           // Helper function to check if value is a default/mock value
           const isDefaultValue = (value, fieldName) => {
@@ -904,92 +904,92 @@ export default function CategoryPage() {
             return false
           }
 
-          // Transform restaurants - filter out default values
+          // Transform shops - filter out default values
           const restaurantsWithIds = await enrichSearchRestaurantsWithOutletTimings(restaurantsArray
-            .filter((restaurant) => {
-              const displayName = String(restaurant.restaurantName || restaurant.name || "").trim()
+            .filter((shop) => {
+              const displayName = String(shop.restaurantName || shop.name || "").trim()
               const hasName = displayName.length > 0
-              return hasName && isRestaurantInSelectedZone(restaurant)
+              return hasName && isRestaurantInSelectedZone(shop)
             })
-            .map((restaurant) => {
-              let deliveryTime = restaurant.estimatedDeliveryTime || null
-              let distance = restaurant.distance || null
-              let offer = restaurant.offer || null
+            .map((shop) => {
+              let deliveryTime = shop.estimatedDeliveryTime || null
+              let distance = shop.distance || null
+              let offer = shop.offer || null
 
               if (isDefaultValue(deliveryTime, 'deliveryTime')) deliveryTime = null
               if (isDefaultValue(distance, 'distance')) distance = null
               if (isDefaultValue(offer, 'offer')) offer = null
 
-              const cuisine = restaurant.cuisines && restaurant.cuisines.length > 0
-                ? restaurant.cuisines.join(", ")
+              const cuisine = shop.cuisines && shop.cuisines.length > 0
+                ? shop.cuisines.join(", ")
                 : null
 
-              const coverImages = restaurant.coverImages && restaurant.coverImages.length > 0
-                ? restaurant.coverImages.map(img => normalizeImageUrl(img.url || img)).filter(Boolean)
+              const coverImages = shop.coverImages && shop.coverImages.length > 0
+                ? shop.coverImages.map(img => normalizeImageUrl(img.url || img)).filter(Boolean)
                 : []
 
-              const fallbackImages = restaurant.menuImages && restaurant.menuImages.length > 0
-                ? restaurant.menuImages.map(img => normalizeImageUrl(img.url || img)).filter(Boolean)
+              const fallbackImages = shop.menuImages && shop.menuImages.length > 0
+                ? shop.menuImages.map(img => normalizeImageUrl(img.url || img)).filter(Boolean)
                 : []
 
               const allImages = coverImages.length > 0
                 ? coverImages
                 : (fallbackImages.length > 0
                   ? fallbackImages
-                  : (restaurant.profileImage?.url ? [normalizeImageUrl(restaurant.profileImage.url)] : []))
+                  : (shop.profileImage?.url ? [normalizeImageUrl(shop.profileImage.url)] : []))
 
               const image = allImages[0] || null
-              const restaurantId = restaurant.restaurantId || restaurant._id
+              const restaurantId = shop.restaurantId || shop._id
 
-              let featuredDish = restaurant.featuredDish || null
-              let featuredPrice = restaurant.featuredPrice || null
+              let featuredDish = shop.featuredDish || null
+              let featuredPrice = shop.featuredPrice || null
 
               if (featuredPrice && isDefaultValue(featuredPrice, 'featuredPrice')) {
                 featuredPrice = null
               }
 
-              const restaurantName = (restaurant.restaurantName || restaurant.name || "").toLowerCase()
+              const restaurantName = (shop.restaurantName || shop.name || "").toLowerCase()
 
               return {
                 id: restaurantId,
-                name: restaurant.restaurantName || restaurant.name,
+                name: shop.restaurantName || shop.name,
                 cuisine: cuisine,
-                rating: restaurant.rating || null,
+                rating: shop.rating || null,
                 deliveryTime: deliveryTime,
                 distance: distance,
                 image: image,
                 images: allImages,
-                priceRange: restaurant.priceRange || null,
+                priceRange: shop.priceRange || null,
                 featuredDish: featuredDish,
                 featuredPrice: featuredPrice,
                 offer: offer,
-                slug: restaurant.slug || (restaurant.restaurantName || restaurant.name)?.toLowerCase().replace(/\s+/g, '-'),
+                slug: shop.slug || (shop.restaurantName || shop.name)?.toLowerCase().replace(/\s+/g, '-'),
                 restaurantId: restaurantId,
-                mongoId: restaurant._id || restaurantId,
-                pureVegRestaurant: restaurant.pureVegRestaurant === true,
-                zoneId: getRestaurantZoneId(restaurant),
-                isActive: restaurant.isActive !== false,
-                isAcceptingOrders: restaurant.isAcceptingOrders !== false,
-                availabilityStatus: restaurant.availabilityStatus || null,
-                availability: restaurant.availability || null,
-                isOnline: restaurant.isOnline,
-                currentStatus: restaurant.currentStatus || null,
-                isOpen: restaurant.isOpen,
-                openNow: restaurant.openNow,
-                isOpenNow: restaurant.isOpenNow,
-                isRestaurantOpen: restaurant.isRestaurantOpen,
-                todayOpen: restaurant.todayOpen,
-                isOpenToday: restaurant.isOpenToday,
-                closedToday: restaurant.closedToday,
-                isClosedToday: restaurant.isClosedToday,
-                dayOff: restaurant.dayOff,
-                isDayOff: restaurant.isDayOff,
-                offToday: restaurant.offToday,
-                openDays: Array.isArray(restaurant.openDays) ? restaurant.openDays : [],
-                deliveryTimings: restaurant.deliveryTimings || null,
-                outletTimings: restaurant.outletTimings || null,
-                openingTime: restaurant.openingTime || null,
-                closingTime: restaurant.closingTime || null,
+                mongoId: shop._id || restaurantId,
+                pureVegRestaurant: shop.pureVegRestaurant === true,
+                zoneId: getRestaurantZoneId(shop),
+                isActive: shop.isActive !== false,
+                isAcceptingOrders: shop.isAcceptingOrders !== false,
+                availabilityStatus: shop.availabilityStatus || null,
+                availability: shop.availability || null,
+                isOnline: shop.isOnline,
+                currentStatus: shop.currentStatus || null,
+                isOpen: shop.isOpen,
+                openNow: shop.openNow,
+                isOpenNow: shop.isOpenNow,
+                isRestaurantOpen: shop.isRestaurantOpen,
+                todayOpen: shop.todayOpen,
+                isOpenToday: shop.isOpenToday,
+                closedToday: shop.closedToday,
+                isClosedToday: shop.isClosedToday,
+                dayOff: shop.dayOff,
+                isDayOff: shop.isDayOff,
+                offToday: shop.offToday,
+                openDays: Array.isArray(shop.openDays) ? shop.openDays : [],
+                deliveryTimings: shop.deliveryTimings || null,
+                outletTimings: shop.outletTimings || null,
+                openingTime: shop.openingTime || null,
+                closingTime: shop.closingTime || null,
                 hasPaneer: false,
                 category: 'all',
               }
@@ -1011,10 +1011,10 @@ export default function CategoryPage() {
                   batchRestaurants.map(async (restaurant) => {
                     try {
                       const lookupIds = [
-                        restaurant.restaurantId,
-                        restaurant.id,
-                        restaurant.mongoId,
-                        restaurant.slug,
+                        shop.restaurantId,
+                        shop.id,
+                        shop.mongoId,
+                        shop.slug,
                       ]
                         .filter(Boolean)
                         .map((value) => String(value).trim())
@@ -1039,14 +1039,14 @@ export default function CategoryPage() {
 
                       if (!menu || menu.sections.length === 0) {
                         const approvedFoods = await fetchApprovedFoods()
-                        menu = buildFallbackMenuFromFoods(approvedFoods, restaurant)
+                        menu = buildFallbackMenuFromFoods(approvedFoods, shop)
                       }
 
                       if (menu?.sections?.length > 0) {
                         const hasPaneer = checkCategoryInMenu(menu, 'paneer-tikka')
 
-                        let featuredDish = restaurant.featuredDish
-                        let featuredPrice = restaurant.featuredPrice
+                        let featuredDish = shop.featuredDish
+                        let featuredPrice = shop.featuredPrice
 
                         if (!featuredDish || !featuredPrice) {
                           for (const section of (menu.sections || [])) {
@@ -1066,7 +1066,7 @@ export default function CategoryPage() {
                         }
 
                         return {
-                          ...restaurant,
+                          ...shop,
                           menu: menu,
                           hasPaneer: hasPaneer,
                           featuredDish: featuredDish || null,
@@ -1075,11 +1075,11 @@ export default function CategoryPage() {
                         }
                       }
                     } catch (error) {
-                      debugWarn(`Failed to fetch menu for restaurant ${restaurant.restaurantId}:`, error)
+                      debugWarn(`Failed to fetch menu for shop ${shop.restaurantId}:`, error)
                     }
 
                     return {
-                      ...restaurant,
+                      ...shop,
                       menu: null,
                       hasPaneer: false,
                       categoryMatches: {},
@@ -1106,7 +1106,7 @@ export default function CategoryPage() {
           setRestaurantsData([])
         }
       } catch (error) {
-        debugError('Error fetching restaurants:', error)
+        debugError('Error fetching shops:', error)
         setRestaurantsData([])
       } finally {
         setLoadingRestaurants(false)
@@ -1247,8 +1247,8 @@ export default function CategoryPage() {
     })
   }
 
-  // Filter restaurants based on active filters and selected category
-  // If category is selected, expand restaurants into dish cards (one card per matching dish)
+  // Filter shops based on active filters and selected category
+  // If category is selected, expand shops into dish cards (one card per matching dish)
   const filteredRecommended = useMemo(() => {
     const sourceData = restaurantsData.length > 0 ? restaurantsData : []
     let filtered = effectiveVegMode && effectiveVegModePreference === "pure-veg"
@@ -1308,7 +1308,7 @@ export default function CategoryPage() {
       : [...sourceData]
 
     // Filter by category - Dynamic filtering based on menu items
-    // If category is selected, expand restaurants into dish cards (one card per matching dish)
+    // If category is selected, expand shops into dish cards (one card per matching dish)
     if (selectedCategory && selectedCategory !== 'all') {
       const expandedDishes = []
 
@@ -1449,7 +1449,7 @@ export default function CategoryPage() {
             <div className="flex-1 relative max-w-2xl">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Restaurant name or a dish..."
+                placeholder="Shop name or a dish..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 h-11 md:h-12 rounded-lg border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#1a1a1a] focus:bg-white dark:focus:bg-[#2a2a2a] focus:border-gray-500 dark:focus:border-gray-600 text-sm md:text-base dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-400"
@@ -1635,21 +1635,21 @@ export default function CategoryPage() {
                         RECOMMENDED FOR YOU
                       </h3>
                       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
-                        {group.recommended.map((restaurant) => (
+                        {group.recommended.map((shop) => (
                           <Link
                             key={restaurant.id}
-                            to={`/user/restaurants/${restaurant.name.toLowerCase().replace(/\s+/g, '-')}`}
+                            to={`/user/shops/${restaurant.name.toLowerCase().replace(/\s+/g, '-')}`}
                             className="block"
                           >
                             <div className="group">
                               <div className="relative aspect-square rounded-xl md:rounded-2xl overflow-hidden mb-2">
-                                {restaurant.categoryDishImage ? (
+                                {shop.categoryDishImage ? (
                                   <img
                                     src={restaurant.categoryDishImage}
                                     alt={restaurant.categoryDishName || restaurant.name}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                   />
-                                ) : restaurant.image ? (
+                                ) : shop.image ? (
                                   <img
                                     src={restaurant.image}
                                     alt={restaurant.name}
@@ -1660,10 +1660,10 @@ export default function CategoryPage() {
                                 )}
                               </div>
                               <h4 className="font-semibold text-gray-900 dark:text-white text-xs md:text-sm line-clamp-1">
-                                {restaurant.categoryDishName || restaurant.featuredDish || restaurant.name}
+                                {shop.categoryDishName || shop.featuredDish || shop.name}
                               </h4>
                               <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                                {restaurant.name}
+                                {shop.name}
                               </p>
                             </div>
                           </Link>
@@ -1675,22 +1675,22 @@ export default function CategoryPage() {
                   {expandedSubcategories.has(group.name) && group.all.length > 0 && (
                     <div>
                       <h3 className="text-[11px] sm:text-xs font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-3">
-                        ALL RESTAURANTS
+                        ALL SHOPS
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6 xl:gap-7 items-stretch">
-                        {group.all.map((restaurant) => {
-                          const restaurantSlug = restaurant.name.toLowerCase().replace(/\s+/g, "-")
+                        {group.all.map((shop) => {
+                          const restaurantSlug = shop.name.toLowerCase().replace(/\s+/g, "-")
                           return (
-                            <Link key={restaurant.id} to={`/user/restaurants/${restaurantSlug}`} className="h-full flex">
+                            <Link key={restaurant.id} to={`/user/shops/${restaurantSlug}`} className="h-full flex">
                               <Card className="overflow-hidden gap-0 border-0 shadow-md py-0 rounded-md h-full flex flex-col w-full">
                                 <div className="relative h-44 sm:h-52 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-md flex-shrink-0">
-                                  {restaurant.categoryDishImage ? (
+                                  {shop.categoryDishImage ? (
                                     <img
                                       src={restaurant.categoryDishImage}
                                       alt={restaurant.categoryDishName || restaurant.name}
                                       className="w-full h-full object-cover"
                                     />
-                                  ) : restaurant.image ? (
+                                  ) : shop.image ? (
                                     <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-6xl">???</div>
@@ -1698,9 +1698,9 @@ export default function CategoryPage() {
                                 </div>
                                 <CardContent className="p-3 sm:p-4 flex-1 flex flex-col">
                                   <h4 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-1 line-clamp-1">
-                                    {restaurant.categoryDishName || restaurant.name}
+                                    {shop.categoryDishName || shop.name}
                                   </h4>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{restaurant.name}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{shop.name}</p>
                                 </CardContent>
                               </Card>
                             </Link>
@@ -1723,33 +1723,33 @@ export default function CategoryPage() {
                 RECOMMENDED FOR YOU
               </h2>
 
-              {/* Small Restaurant Cards - Grid - Show all dishes when category is selected */}
+              {/* Small Shop Cards - Grid - Show all dishes when category is selected */}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
                 {(isCategoryView
                   ? filteredRecommended
                   : filteredRecommended.slice(0, 6)
-                ).map((restaurant) => {
-                  const availability = getRestaurantAvailabilityStatus(restaurant, new Date())
+                ).map((shop) => {
+                  const availability = getShopAvailabilityStatus(shop, new Date())
                   const isRestaurantUnavailable = isOutOfService || !availability.isOpen
                   return (
                     <Link
                       key={restaurant.id}
-                      to={`/user/restaurants/${restaurant.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      to={`/user/shops/${restaurant.name.toLowerCase().replace(/\s+/g, '-')}`}
                       className="block"
                     >
                       <div className={`group ${isRestaurantUnavailable ? 'grayscale opacity-75' : ''}`}>
                         {/* Image Container */}
                         <div className="relative aspect-square rounded-xl md:rounded-2xl overflow-hidden mb-2">
-                          {/* Use category dish image if available, otherwise restaurant image */}
-                          {restaurant.categoryDishImage ? (
+                          {/* Use category dish image if available, otherwise shop image */}
+                          {shop.categoryDishImage ? (
                             <img
                               src={restaurant.categoryDishImage}
                               alt={restaurant.categoryDishName || restaurant.name}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               onError={(e) => {
-                                // Fallback to restaurant image if dish image fails
-                                if (restaurant.image) {
-                                  e.target.src = restaurant.image
+                                // Fallback to shop image if dish image fails
+                                if (shop.image) {
+                                  e.target.src = shop.image
                                 } else {
                                   // Show emoji placeholder
                                   e.target.style.display = 'none'
@@ -1760,7 +1760,7 @@ export default function CategoryPage() {
                                 }
                               }}
                             />
-                          ) : restaurant.image ? (
+                          ) : shop.image ? (
                             <img
                               src={restaurant.image}
                               alt={restaurant.name}
@@ -1781,9 +1781,9 @@ export default function CategoryPage() {
                           )}
 
                           {/* Offer Badge */}
-                          {restaurant.offer && (
+                          {shop.offer && (
                             <div className="absolute top-1.5 left-1.5 bg-gradient-to-r from-[#EB590E] to-[#D94F0C] text-white text-[10px] md:text-xs font-semibold px-1.5 py-0.5 rounded shadow-sm">
-                              {restaurant.offer}
+                              {shop.offer}
                             </div>
                           )}
 
@@ -1795,23 +1795,23 @@ export default function CategoryPage() {
 
                           {/* Rating Badge (NOW ON IMAGE, bottom-left with white border) */}
                           <div className="absolute bottom-0 left-0 bg-green-600 border-[4px] rounded-md border-white text-white text-[11px] md:text-xs font-bold px-1.5 py-0.5 flex items-center gap-0.5">
-                            {restaurant.rating}
+                            {shop.rating}
                             <Star className="h-2.5 w-2.5 md:h-3 md:w-3 fill-white" />
                           </div>
                         </div>
 
                         <h3 className="font-semibold text-gray-900 dark:text-white text-xs md:text-sm line-clamp-1">
-                          {isCategoryView ? (restaurant.categoryDishName || restaurant.featuredDish || restaurant.name) : restaurant.name}
+                          {isCategoryView ? (shop.categoryDishName || shop.featuredDish || shop.name) : shop.name}
                         </h3>
                         {isCategoryView && (
                           <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                            {restaurant.name}
+                            {shop.name}
                           </p>
                         )}
-                        {restaurant.deliveryTime && (
+                        {shop.deliveryTime && (
                           <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-[10px] md:text-xs">
                             <Clock className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                            <span>{restaurant.deliveryTime}</span>
+                            <span>{shop.deliveryTime}</span>
                           </div>
                         )}
                         {isRestaurantUnavailable && (
@@ -1827,45 +1827,45 @@ export default function CategoryPage() {
             </section>
           )}
 
-          {/* ALL RESTAURANTS Section */}
+          {/* ALL SHOPS Section */}
           <section className="relative">
             <h2 className="text-xs sm:text-sm md:text-base font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-4 md:mb-6">
-              ALL RESTAURANTS
+              ALL SHOPS
             </h2>
 
             {/* Loading Overlay */}
             {showRestaurantSkeleton && (
               <div className="absolute inset-0 z-10 rounded-lg bg-white/92 backdrop-blur-sm dark:bg-[#1a1a1a]/92">
-                <LoadingSkeletonRegion label="Loading restaurants" className="h-full p-1 sm:p-2">
+                <LoadingSkeletonRegion label="Loading shops" className="h-full p-1 sm:p-2">
                   <RestaurantGridSkeleton count={4} compact />
                 </LoadingSkeletonRegion>
               </div>
             )}
 
-            {/* Large Restaurant Cards */}
+            {/* Large Shop Cards */}
             <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6 xl:gap-7 items-stretch ${showRestaurantSkeleton ? 'opacity-50' : 'opacity-100'} transition-opacity duration-300`}>
-              {filteredAllRestaurants.map((restaurant) => {
-                const restaurantSlug = restaurant.name.toLowerCase().replace(/\s+/g, "-")
-                const isFavorite = favorites.has(restaurant.id)
-                const availability = getRestaurantAvailabilityStatus(restaurant, new Date())
+              {filteredAllRestaurants.map((shop) => {
+                const restaurantSlug = shop.name.toLowerCase().replace(/\s+/g, "-")
+                const isFavorite = favorites.has(shop.id)
+                const availability = getShopAvailabilityStatus(shop, new Date())
                 const isRestaurantUnavailable = isOutOfService || !availability.isOpen
 
                 return (
-                  <Link key={restaurant.id} to={`/user/restaurants/${restaurantSlug}`} className="h-full flex">
+                  <Link key={restaurant.id} to={`/user/shops/${restaurantSlug}`} className="h-full flex">
                     <Card className={`overflow-hidden cursor-pointer gap-0 border-0 dark:border-gray-800 group bg-white dark:bg-[#1a1a1a] shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-md h-full flex flex-col w-full ${isRestaurantUnavailable ? 'grayscale opacity-75' : ''
                       }`}>
                       {/* Image Section */}
                       <div className="relative h-44 sm:h-52 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-md flex-shrink-0">
-                        {/* Use category dish image if available, otherwise restaurant image */}
-                        {restaurant.categoryDishImage ? (
+                        {/* Use category dish image if available, otherwise shop image */}
+                        {shop.categoryDishImage ? (
                           <img
                             src={restaurant.categoryDishImage}
                             alt={restaurant.categoryDishName || restaurant.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             onError={(e) => {
-                              // Fallback to restaurant image if dish image fails
-                              if (restaurant.image) {
-                                e.target.src = restaurant.image
+                              // Fallback to shop image if dish image fails
+                              if (shop.image) {
+                                e.target.src = shop.image
                               } else {
                                 // Show emoji placeholder
                                 e.target.style.display = 'none'
@@ -1876,7 +1876,7 @@ export default function CategoryPage() {
                               }
                             }}
                           />
-                        ) : restaurant.image ? (
+                        ) : shop.image ? (
                           <img
                             src={restaurant.image}
                             alt={restaurant.name}
@@ -1897,18 +1897,18 @@ export default function CategoryPage() {
                         )}
 
                         {/* Category Dish Badge - Top Left (shows category dish if available, otherwise featured dish) */}
-                        {(isCategoryView ? restaurant.categoryDishPrice : (restaurant.categoryDishName || restaurant.featuredDish)) && (
+                        {(isCategoryView ? shop.categoryDishPrice : (shop.categoryDishName || shop.featuredDish)) && (
                           <div className="absolute top-3 left-3">
                             <div className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm md:text-base font-medium ${BRAND_THEME.tokens.homepage.home.restaurantCard.featuredDishBadge}`}>
                               {isCategoryView
-                                ? `₹${restaurant.categoryDishPrice || restaurant.featuredPrice || 0}`
-                                : `${restaurant.categoryDishName || restaurant.featuredDish} • ₹${restaurant.categoryDishPrice || restaurant.featuredPrice}`}
+                                ? `₹${shop.categoryDishPrice || shop.featuredPrice || 0}`
+                                : `${shop.categoryDishName || shop.featuredDish} • ₹${shop.categoryDishPrice || shop.featuredPrice}`}
                             </div>
                           </div>
                         )}
 
                         {/* Ad Badge */}
-                        {restaurant.isAd && (
+                        {shop.isAd && (
                           <div className="absolute top-3 right-14 bg-black/50 text-white text-[10px] md:text-xs px-2 py-0.5 rounded">
                             Ad
                           </div>
@@ -1928,7 +1928,7 @@ export default function CategoryPage() {
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            toggleFavorite(restaurant.id)
+                            toggleFavorite(shop.id)
                           }}
                         >
                           <Bookmark className={`h-5 w-5 md:h-6 md:w-6 ${isFavorite ? "fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200" : "text-gray-600 dark:text-gray-400"}`} strokeWidth={2} />
@@ -1937,45 +1937,45 @@ export default function CategoryPage() {
 
                       {/* Content Section */}
                       <CardContent className="p-3 sm:p-4 md:p-5 lg:p-6 gap-0 flex-1 flex flex-col">
-                        {/* Restaurant Name & Rating */}
+                        {/* Shop Name & Rating */}
                         <div className="flex items-start justify-between gap-2 mb-2 lg:mb-3">
                           <div className="flex-1 min-w-0">
                             <h3 className="text-md md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white line-clamp-1 lg:line-clamp-2">
-                              {isCategoryView ? (restaurant.categoryDishName || restaurant.featuredDish || restaurant.name) : restaurant.name}
+                              {isCategoryView ? (shop.categoryDishName || shop.featuredDish || shop.name) : shop.name}
                             </h3>
                             {isCategoryView && (
                               <p className="mt-1 text-sm md:text-base text-gray-500 dark:text-gray-400 line-clamp-1">
-                                {restaurant.name}
+                                {shop.name}
                               </p>
                             )}
                           </div>
                           <div className="flex-shrink-0 bg-green-600 text-white px-2 md:px-3 lg:px-4 py-1 lg:py-1.5 rounded-lg flex items-center gap-1">
-                            <span className="text-sm md:text-base lg:text-lg font-bold">{restaurant.rating}</span>
+                            <span className="text-sm md:text-base lg:text-lg font-bold">{shop.rating}</span>
                             <Star className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 fill-white text-white" />
                           </div>
                         </div>
 
                         {/* Delivery Time & Distance */}
-                        {(restaurant.deliveryTime || restaurant.distance) && (
+                        {(shop.deliveryTime || shop.distance) && (
                           <div className="flex items-center gap-1 text-sm md:text-base lg:text-lg text-gray-500 dark:text-gray-400 mb-2 lg:mb-3">
-                            {restaurant.deliveryTime && (
+                            {shop.deliveryTime && (
                               <>
                                 <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
-                                <span className="font-medium">{restaurant.deliveryTime}</span>
+                                <span className="font-medium">{shop.deliveryTime}</span>
                               </>
                             )}
-                            {restaurant.deliveryTime && restaurant.distance && <span className="mx-1">|</span>}
-                            {restaurant.distance && (
-                              <span className="font-medium">{restaurant.distance}</span>
+                            {shop.deliveryTime && shop.distance && <span className="mx-1">|</span>}
+                            {shop.distance && (
+                              <span className="font-medium">{shop.distance}</span>
                             )}
                           </div>
                         )}
 
                         {/* Offer Badge */}
-                        {restaurant.offer && (
+                        {shop.offer && (
                           <div className="flex items-center gap-2 text-sm md:text-base lg:text-lg mt-auto">
                             <BadgePercent className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-[#EB590E]" strokeWidth={2} />
-                            <span className="text-gray-700 dark:text-gray-300 font-medium">{restaurant.offer}</span>
+                            <span className="text-gray-700 dark:text-gray-300 font-medium">{shop.offer}</span>
                           </div>
                         )}
                       </CardContent>
@@ -1990,8 +1990,8 @@ export default function CategoryPage() {
               <div className="text-center py-12 md:py-16">
                 <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
                   {searchQuery
-                    ? `No restaurants found for "${searchQuery}"`
-                    : "No restaurants found with selected filters"}
+                    ? `No shops found for "${searchQuery}"`
+                    : "No shops found with selected filters"}
                 </p>
                 <Button
                   variant="outline"
@@ -2162,7 +2162,7 @@ export default function CategoryPage() {
                         data-section-id="rating"
                         className="space-y-4 mb-8"
                       >
-                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4">Restaurant Rating</h3>
+                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4">Shop Rating</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                           <button
                             onClick={() => toggleFilter('rating-35-plus')}

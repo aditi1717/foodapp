@@ -39,9 +39,9 @@ const RestaurantImageCarousel = React.memo(({ restaurant, priority = false, back
   }, [backendOrigin]);
 
   const images = React.useMemo(() => {
-    const sourceImages = Array.isArray(restaurant.images) && restaurant.images.length > 0
-      ? restaurant.images
-      : [restaurant.image];
+    const sourceImages = Array.isArray(shop.images) && shop.images.length > 0
+      ? shop.images
+      : [shop.image];
 
     const validImages = sourceImages
       .filter((img) => typeof img === "string")
@@ -51,7 +51,7 @@ const RestaurantImageCarousel = React.memo(({ restaurant, priority = false, back
     // Only show one static image
     const firstImageOnly = validImages.slice(0, 1);
     return firstImageOnly.map((img) => withCacheBuster(img));
-  }, [restaurant.images, restaurant.image, withCacheBuster]);
+  }, [shop.images, shop.image, withCacheBuster]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loadedBySrc, setLoadedBySrc] = useState({});
@@ -69,11 +69,11 @@ const RestaurantImageCarousel = React.memo(({ restaurant, priority = false, back
     setLoadedBySrc({});
     setAttemptedSrcs({});
     setShowShimmer(images.length > 0);
-  }, [restaurant?.id, restaurant?.slug, restaurant?.updatedAt, images]);
+  }, [shop?.id, shop?.slug, shop?.updatedAt, images]);
 
   useEffect(() => {
     setLastGoodSrc("");
-  }, [restaurant?.id, restaurant?.slug]);
+  }, [shop?.id, shop?.slug]);
 
   useEffect(() => {
     if (!renderSrc) return;
@@ -165,18 +165,18 @@ const RestaurantImageCarousel = React.memo(({ restaurant, priority = false, back
       )}
       
       {/* Discount Badge if any */}
-      {restaurant.discount && (
+      {shop.discount && (
         <div className="absolute top-2 left-0 px-2.5 py-1 text-white text-[10px] sm:text-xs font-black rounded-r-lg shadow-lg uppercase tracking-wider flex items-center gap-1" style={{ background: BRAND_THEME.gradients.primary }}>
           <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12.864 2.227l8.909 8.91a2.182 2.182 0 010 3.085l-7.364 7.364a2.182 2.182 0 01-3.085 0l-8.91-8.91A2.182 2.182 0 012 11.137V4.41A2.182 2.182 0 014.182 2.23h6.727a2.182 2.182 0 011.955-.003z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          {restaurant.discount}
+          {shop.discount}
         </div>
       )}
     </div>
   );
 });
 
-const RestaurantCard = ({ 
-  restaurant, 
+const ShopCard = ({ 
+  shop, 
   isFavorite, 
   onFavoriteClick, 
   onClick, 
@@ -193,7 +193,7 @@ const RestaurantCard = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onFavoriteClick(restaurant.id);
+            onFavoriteClick(shop.id);
           }}
           className={`absolute top-3 right-3 p-2 rounded-full shadow-sm hover:shadow-md hover:scale-110 transition-all duration-300 z-10 ${isFavorite ? homepage.home.restaurantCard.bookmarkActive : homepage.home.restaurantCard.bookmarkIdle}`}
         >
@@ -208,26 +208,26 @@ const RestaurantCard = ({
       <div className="p-3 sm:p-4">
         <div className="flex justify-between items-start gap-2 mb-1.5">
           <h3 className={`text-[15px] sm:text-[17px] font-bold text-slate-900 dark:text-white line-clamp-1 transition-colors duration-200 flex-1 tracking-tight ${homepage.home.restaurantCard.nameHover}`}>
-            {restaurant.name}
+            {shop.name}
           </h3>
           <div className="flex items-center gap-1 bg-green-600 text-white px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold shadow-sm flex-shrink-0">
-            <span>{restaurant.rating || "4.2"}</span>
+            <span>{shop.rating || "4.2"}</span>
             <Star className="w-2.5 h-2.5 fill-current" />
           </div>
         </div>
 
         <p className="text-[11px] sm:text-[13px] text-slate-500 dark:text-slate-400 mb-2.5 line-clamp-1 font-medium">
-          {restaurant.cuisine || "North Indian, Chinese"}
+          {shop.cuisine || "North Indian, Chinese"}
         </p>
 
         <div className={`flex items-center justify-between pt-2.5 border-t ${homepage.shared.border}`}>
           <div className={`flex items-center gap-1.5 ${homepage.shared.mutedText} ${homepage.shared.surfaceAlt} px-2 py-1 rounded-md`}>
             <Clock className="w-3.5 h-3.5" style={{ color: BRAND_THEME.colors.brand.primary }} />
-            <span className="text-[10px] sm:text-xs font-semibold">{restaurant.deliveryTime || "25-30 min"}</span>
+            <span className="text-[10px] sm:text-xs font-semibold">{shop.deliveryTime || "25-30 min"}</span>
           </div>
           <div className={`flex items-center gap-1 ${homepage.shared.mutedText} ${homepage.shared.surfaceAlt} px-2 py-1 rounded-md`}>
             <IndianRupee className="w-3 h-3" style={{ color: BRAND_THEME.colors.brand.primary }} />
-            <span className="text-[10px] sm:text-xs font-semibold">{restaurant.avgPrice || "₹200 for one"}</span>
+            <span className="text-[10px] sm:text-xs font-semibold">{shop.avgPrice || "₹200 for one"}</span>
           </div>
         </div>
       </div>
@@ -235,4 +235,4 @@ const RestaurantCard = ({
   );
 };
 
-export default React.memo(RestaurantCard);
+export default React.memo(ShopCard);

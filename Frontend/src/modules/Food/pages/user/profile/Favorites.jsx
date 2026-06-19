@@ -19,9 +19,9 @@ export default function Favorites() {
   const handleRemoveFavorite = (e, slug) => {
     e.preventDefault()
     e.stopPropagation()
-    if (window.confirm("Remove this restaurant from favorites?")) {
+    if (window.confirm("Remove this shop from favorites?")) {
       removeFavorite(slug)
-      toast.success("Restaurant removed from favorites")
+      toast.success("Shop removed from favorites")
     }
   }
 
@@ -56,7 +56,7 @@ export default function Favorites() {
               <p className="text-muted-foreground text-lg mb-4">You haven't added any favorites yet</p>
               <Link to="/food/user">
                 <Button className={BRAND_THEME.tokens.profile.primaryButton}>
-                  Explore Restaurants
+                  Explore Shops
                 </Button>
               </Link>
             </CardContent>
@@ -80,7 +80,7 @@ export default function Favorites() {
               <div>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold">My Favorites</h1>
                 <p className="text-gray-700 dark:text-gray-300 mt-1 text-sm font-semibold">
-                  {dishFavorites.length || 0} {dishFavorites.length === 1 ? "dish" : "dishes"} • {restaurantFavorites.length || 0} {restaurantFavorites.length === 1 ? "restaurant" : "restaurants"}
+                  {dishFavorites.length || 0} {dishFavorites.length === 1 ? "dish" : "dishes"} • {restaurantFavorites.length || 0} {restaurantFavorites.length === 1 ? "shop" : "shops"}
                 </p>
               </div>
             </div>
@@ -90,15 +90,15 @@ export default function Favorites() {
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-800">
           <button
-            onClick={() => setActiveTab("restaurants")}
+            onClick={() => setActiveTab("shops")}
             className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "restaurants"
+              activeTab === "shops"
                 ? "border-b-2"
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
             }`}
-            style={activeTab === "restaurants" ? { borderColor: BRAND_THEME.colors.brand.primary, color: BRAND_THEME.colors.brand.primary } : undefined}
+            style={activeTab === "shops" ? { borderColor: BRAND_THEME.colors.brand.primary, color: BRAND_THEME.colors.brand.primary } : undefined}
           >
-            Restaurants ({restaurantFavorites.length})
+            Shops ({restaurantFavorites.length})
           </button>
           <button
             onClick={() => setActiveTab("dishes")}
@@ -113,23 +113,23 @@ export default function Favorites() {
           </button>
         </div>
 
-        {/* Restaurants Tab */}
-        {activeTab === "restaurants" && (
+        {/* Shops Tab */}
+        {activeTab === "shops" && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {restaurantFavorites.length === 0 ? (
               <div className="col-span-full text-center py-12">
                 <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-lg mb-4">No restaurants saved yet</p>
+                <p className="text-muted-foreground text-lg mb-4">No shops saved yet</p>
                 <Link to="/food/user">
                   <Button className={BRAND_THEME.tokens.profile.primaryButton}>
-                    Explore Restaurants
+                    Explore Shops
                   </Button>
                 </Link>
               </div>
             ) : (
-              restaurantFavorites.map((restaurant, index) => (
+              restaurantFavorites.map((shop, index) => (
                 <ScrollReveal key={restaurant.slug} delay={index * 0.1}>
-                  <Link to={`/food/user/restaurants/${restaurant.slug}`}>
+                  <Link to={`/food/user/shops/${restaurant.slug}`}>
                     <Card className="overflow-hidden h-full">
                       <div className="h-32 w-full relative overflow-hidden">
                         <img
@@ -147,7 +147,7 @@ export default function Favorites() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white text-red-500"
-                            onClick={(e) => handleRemoveFavorite(e, restaurant.slug)}
+                            onClick={(e) => handleRemoveFavorite(e, shop.slug)}
                           >
                             <Heart className="h-4 w-4 fill-red-500" />
                           </Button>
@@ -155,31 +155,31 @@ export default function Favorites() {
                         <div className="absolute bottom-2 left-2">
                           <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
                             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            <span className="font-bold text-xs">{restaurant.rating}</span>
+                            <span className="font-bold text-xs">{shop.rating}</span>
                           </div>
                         </div>
                       </div>
                       <CardContent className="p-3 space-y-2">
                         <div>
                           <CardTitle className="text-sm font-bold mb-0.5 line-clamp-1">
-                            {restaurant.name}
+                            {shop.name}
                           </CardTitle>
                           <p className="text-xs text-muted-foreground font-medium line-clamp-1">
-                            {restaurant.cuisine}
+                            {shop.cuisine}
                           </p>
                         </div>
                         <div className="flex items-center justify-between text-xs pt-2 border-t">
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            <span className="font-medium">{restaurant.deliveryTime}</span>
+                            <span className="font-medium">{shop.deliveryTime}</span>
                           </div>
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <MapPin className="h-3 w-3" />
-                            <span className="font-medium">{restaurant.distance}</span>
+                            <span className="font-medium">{shop.distance}</span>
                           </div>
                         </div>
                         <Button className={`w-full ${BRAND_THEME.tokens.profile.primaryButton} text-xs py-1.5 h-8`}>
-                          View Restaurant
+                          View Shop
                           <ArrowRight className="h-3 w-3 ml-1" />
                         </Button>
                       </CardContent>
@@ -209,7 +209,7 @@ export default function Favorites() {
                 const restaurantSlug = dish.restaurantSlug || ""
                 return (
                   <ScrollReveal key={`${dish.id}-${dish.restaurantId}`} delay={index * 0.1}>
-                    <Link to={`/food/user/restaurants/${restaurantSlug}?dish=${dish.id}`}>
+                    <Link to={`/food/user/shops/${restaurantSlug}?dish=${dish.id}`}>
                       <Card className="overflow-hidden h-full cursor-pointer hover:shadow-lg transition-shadow">
                         <div className="h-32 w-full relative overflow-hidden">
                           <img
@@ -239,7 +239,7 @@ export default function Favorites() {
                               {dish.name}
                             </CardTitle>
                             <p className="text-xs text-muted-foreground line-clamp-1">
-                              {dish.restaurantName || "Restaurant"}
+                              {dish.restaurantName || "Shop"}
                             </p>
                           </div>
                           <div className="flex items-center justify-between text-xs pt-2 border-t">

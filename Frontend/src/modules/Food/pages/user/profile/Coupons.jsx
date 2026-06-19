@@ -68,7 +68,7 @@ export default function Coupons() {
             {sortedOffers.map((offer) => {
               const code = offer?.couponCode || "";
               const title = offer?.title || "";
-              const restaurantName = offer?.restaurantName || "All Restaurants";
+              const restaurantName = offer?.restaurantName || "All Shops";
               const endDate = offer?.endDate ? new Date(offer.endDate) : null;
               const expiryText =
                 endDate && !Number.isNaN(endDate.getTime()) ? `Valid till ${endDate.toLocaleDateString()}` : "No expiry";

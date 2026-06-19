@@ -157,7 +157,7 @@ const buildOnboardingLikeDataFromRestaurant = (restaurant) => {
   }
 }
 
-export const isRestaurantOnboardingComplete = (restaurant) => {
+export const isShopOnboardingComplete = (restaurant) => {
   if (!restaurant) return false
 
   // Approved restaurants should never be forced into onboarding again.
@@ -238,7 +238,7 @@ export const checkOnboardingStatus = async () => {
       restaurantResponse?.data?.user ||
       null
 
-    if (restaurant && isRestaurantOnboardingComplete(restaurant)) {
+    if (restaurant && isShopOnboardingComplete(restaurant)) {
       return null
     }
 

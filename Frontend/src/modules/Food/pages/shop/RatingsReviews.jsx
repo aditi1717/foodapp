@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
 import Lenis from "lenis"
 import {
@@ -16,14 +16,14 @@ const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
-// Using placeholder for restaurant review banner
+// Using placeholder for shop review banner
 const restaurantReviewBanner = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=400&fit=crop"
 
 const accordionItems = [
   {
     id: 1,
-    question: "How is my restaurant's rating calculated",
-    answer: "Your restaurant's rating is calculated based on customer reviews and ratings from orders. The system takes an average of all ratings received, with more recent reviews having slightly more weight."
+    question: "How is my shop's rating calculated",
+    answer: "Your shop's rating is calculated based on customer reviews and ratings from orders. The system takes an average of all ratings received, with more recent reviews having slightly more weight."
   },
   {
     id: 2,
@@ -48,13 +48,13 @@ const accordionItems = [
   {
     id: 6,
     question: "How can I reply on a customer review",
-    answer: "To reply to a customer review, go to the Reviews section in your restaurant dashboard. Find the review you want to respond to and click the 'Reply' button. Write a professional, courteous response."
+    answer: "To reply to a customer review, go to the Reviews section in your shop dashboard. Find the review you want to respond to and click the 'Reply' button. Write a professional, courteous response."
   }
 ]
 
 export default function RatingsReviews() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [expandedItems, setExpandedItems] = useState(new Set())
   const [showThankYouPopup, setShowThankYouPopup] = useState(false)
   const [showNotHelpfulPopup, setShowNotHelpfulPopup] = useState(false)
@@ -135,17 +135,17 @@ export default function RatingsReviews() {
         />
       </div>
 
-      {/* Your Restaurant's Rating Section */}
+      {/* Your Shop's Rating Section */}
       <div className="px-4 py-4 bg-white">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-base font-semibold text-gray-900">Your restaurant's rating</h2>
+          <h2 className="text-base font-semibold text-gray-900">Your shop's rating</h2>
           <div className="bg-green-600 px-3 py-1.5 rounded-lg flex items-center gap-1">
             <span className="text-white text-sm font-bold">4.0</span>
             <Star className="w-4 h-4 text-white fill-white" />
           </div>
         </div>
         <button
-          onClick={() => navigate("/restaurant/feedback?tab=reviews")}
+          onClick={() => navigate("/shop/feedback?tab=reviews")}
           className="flex items-center gap-1 text-brand-600 text-sm font-normal hover:text-brand-700 transition-colors"
         >
           <span>View order ratings</span>

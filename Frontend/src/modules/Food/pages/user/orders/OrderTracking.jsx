@@ -87,11 +87,11 @@ const getRestaurantCoordsFromOrder = (apiOrder, fallback = null) => {
     return [apiOrder.restaurantId.location.longitude, apiOrder.restaurantId.location.latitude]
   }
   if (
-    apiOrder?.restaurant?.location?.coordinates &&
-    Array.isArray(apiOrder.restaurant.location.coordinates) &&
-    apiOrder.restaurant.location.coordinates.length >= 2
+    apiOrder?.shop?.location?.coordinates &&
+    Array.isArray(apiOrder.shop.location.coordinates) &&
+    apiOrder.shop.location.coordinates.length >= 2
   ) {
-    return apiOrder.restaurant.location.coordinates
+    return apiOrder.shop.location.coordinates
   }
   return fallback || null
 }
@@ -101,7 +101,7 @@ const getRestaurantAddressFromOrder = (apiOrder, previousOrder = null, explicitR
     return String(explicitRestaurantAddress).trim()
   }
 
-  const location = apiOrder?.restaurantId?.location || apiOrder?.restaurant?.location || {}
+  const location = apiOrder?.restaurantId?.location || apiOrder?.shop?.location || {}
 
   if (location?.formattedAddress && String(location.formattedAddress).trim()) {
     return String(location.formattedAddress).trim()
@@ -119,7 +119,7 @@ const getRestaurantAddressFromOrder = (apiOrder, previousOrder = null, explicitR
 
   if (parts.length > 0) return parts.join(', ')
 
-  return previousOrder?.restaurantAddress || apiOrder?.restaurantAddress || apiOrder?.restaurant?.address || 'Restaurant location'
+  return previousOrder?.restaurantAddress || apiOrder?.restaurantAddress || apiOrder?.shop?.address || 'Shop location'
 }
 
 const getCustomerCoordsFromApiOrder = (apiOrder, previousOrder = null) => {
@@ -309,15 +309,15 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     id: apiOrder?.orderId || apiOrder?._id,
     mongoId: apiOrder?._id || null,
     orderId: apiOrder?.orderId || apiOrder?._id,
-    restaurant:
+    shop:
       apiOrder?.restaurantName ||
       apiOrder?.restaurantId?.restaurantName ||
       apiOrder?.restaurantId?.name ||
-      (typeof apiOrder?.restaurant === 'string' ? apiOrder.restaurant : null) ||
-      apiOrder?.restaurant?.restaurantName ||
-      apiOrder?.restaurant?.name ||
-      previousOrder?.restaurant ||
-      'Restaurant',
+      (typeof apiOrder?.shop === 'string' ? apiOrder.shop : null) ||
+      apiOrder?.shop?.restaurantName ||
+      apiOrder?.shop?.name ||
+      previousOrder?.shop ||
+      'Shop',
     restaurantPhone:
       apiOrder?.restaurantPhone ||
       apiOrder?.restaurantId?.phone ||
@@ -325,9 +325,9 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
       apiOrder?.restaurantId?.ownerPhone ||
       apiOrder?.restaurantId?.contactNumber ||
       apiOrder?.restaurantId?.mobile ||
-      apiOrder?.restaurant?.phone ||
-      apiOrder?.restaurant?.ownerPhone ||
-      apiOrder?.restaurant?.primaryContactNumber ||
+      apiOrder?.shop?.phone ||
+      apiOrder?.shop?.ownerPhone ||
+      apiOrder?.shop?.primaryContactNumber ||
       previousOrder?.restaurantPhone ||
       '',
     restaurantAddress,
@@ -868,13 +868,13 @@ export default function OrderTracking() {
     const restaurantRef = order?.restaurantId
     const restaurantTarget =
       order?.restaurantSlug ||
-      order?.restaurant?.slug ||
+      order?.shop?.slug ||
       (restaurantRef && typeof restaurantRef === "object"
         ? restaurantRef.slug || restaurantRef._id || restaurantRef.id
         : restaurantRef)
 
     if (!restaurantTarget || !items.length) {
-      toast.error("Order items or restaurant information not available")
+      toast.error("Order items or shop information not available")
       return
     }
 
@@ -888,7 +888,7 @@ export default function OrderTracking() {
           name: item?.name || item?.foodName || "Item",
           price: Number(item?.price) || 0,
           image: item?.image || "",
-          restaurant: order?.restaurant || order?.restaurantName || "Restaurant",
+          shop: order?.shop || order?.restaurantName || "Shop",
           restaurantId: restaurantRef,
           description: item?.description || "",
           isVeg: isItemVeg(item),
@@ -905,7 +905,7 @@ export default function OrderTracking() {
 
     replaceCart(reorderItems)
     toast.success("Items added to cart")
-    navigate(`/food/restaurants/${encodeURIComponent(String(restaurantTarget))}`)
+    navigate(`/food/shops/${encodeURIComponent(String(restaurantTarget))}`)
   }, [navigate, order, replaceCart])
 
   const defaultAddress = getDefaultAddress()
@@ -1005,16 +1005,16 @@ export default function OrderTracking() {
       order?.restaurantId?.contactNumber ||
       order?.restaurantId?.mobile ||
       order?.restaurantId?.contact?.phone ||
-      order?.restaurant?.phone ||
-      order?.restaurant?.ownerPhone ||
-      order?.restaurant?.primaryContactNumber ||
+      order?.shop?.phone ||
+      order?.shop?.ownerPhone ||
+      order?.shop?.primaryContactNumber ||
       order?.restaurantId?.location?.phone ||
       '';
 
     const cleanPhone = String(rawPhone).replace(/[^\d+]/g, '');
     
     if (!cleanPhone || cleanPhone.length < 5) {
-      toast.error('Restaurant phone number not available');
+      toast.error('Shop phone number not available');
       return;
     }
 
@@ -1179,7 +1179,7 @@ export default function OrderTracking() {
     if (!order) return;
 
     if (isAdminAccepted) {
-      toast.error('Order can be cancelled only before restaurant accepts it.');
+      toast.error('Order can be cancelled only before shop accepts it.');
       return;
     }
 
@@ -1286,8 +1286,8 @@ export default function OrderTracking() {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `Track my order from ${order?.restaurant || companyName}`,
-          text: `Hey! Track my order from ${order?.restaurant || companyName} with ID #${order?.orderId || order?.id}.`,
+          title: `Track my order from ${order?.shop || companyName}`,
+          text: `Hey! Track my order from ${order?.shop || companyName} with ID #${order?.orderId || order?.id}.`,
           url: window.location.href,
         });
       } else {
@@ -1338,10 +1338,10 @@ export default function OrderTracking() {
   const deliveryDistanceEtaMinutes = useMemo(
     () =>
       getDeliveryEtaMinutesByDistance(
-        trackingMapCoords.restaurant,
+        trackingMapCoords.shop,
         trackingMapCoords.customer,
       ),
-    [trackingMapCoords.restaurant, trackingMapCoords.customer],
+    [trackingMapCoords.shop, trackingMapCoords.customer],
   )
   const liveDeliveryEtaText =
     isRestaurantReadyForPickup && typeof deliveryDistanceEtaMinutes === "number"
@@ -1411,7 +1411,7 @@ export default function OrderTracking() {
     ? getScheduledOrderLabel(order?.scheduledAt)
     : shouldShowPlacedEta
       ? (order?.fulfillmentType === 'takeaway' ? `Ready in ${estimatedTime} mins` : `Arriving in ${estimatedTime} mins`)
-      : "Waiting for restaurant to accept"
+      : "Waiting for shop to accept"
 
   const statusConfig = {
     scheduled: {
@@ -1428,7 +1428,7 @@ export default function OrderTracking() {
     },
     confirmed: {
       title: "Order Confirmed",
-      subtitle: "Restaurant has accepted your order",
+      subtitle: "Shop has accepted your order",
       color: BRAND_THEME.colors.brand.primary,
       iconType: 'food'
     },
@@ -1443,19 +1443,19 @@ export default function OrderTracking() {
     ready_waiting: {
       title: "Food is ready!",
       subtitle: order?.fulfillmentType === 'takeaway'
-        ? "Your order is ready for pickup at the restaurant"
+        ? "Your order is ready for pickup at the shop"
         : (liveDeliveryEtaText || "Searching for a delivery partner"),
       color: BRAND_THEME.colors.brand.primary,
       iconType: 'food'
     },
     assigned: {
       title: "Rider is arriving",
-      subtitle: liveDeliveryEtaText || liveRestaurantEtaText || "A delivery partner is arriving at the restaurant",
+      subtitle: liveDeliveryEtaText || liveRestaurantEtaText || "A delivery partner is arriving at the shop",
       color: BRAND_THEME.colors.brand.primary,
       iconType: 'rider'
     },
     at_pickup: {
-      title: "Rider at restaurant",
+      title: "Rider at shop",
       subtitle: liveDeliveryEtaText || liveRestaurantEtaText || "Rider is waiting for your order",
       color: BRAND_THEME.colors.brand.primary,
       iconType: 'rider'
@@ -1507,7 +1507,7 @@ export default function OrderTracking() {
     !isDeliveredOrder &&
     orderStatus !== "cancelled" &&
     Boolean(order?.deliveryPartnerId) &&
-    Boolean(trackingMapCoords.restaurant && trackingMapCoords.customer)
+    Boolean(trackingMapCoords.shop && trackingMapCoords.customer)
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
@@ -1521,7 +1521,7 @@ export default function OrderTracking() {
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {order?.fulfillmentType === 'takeaway'
-                    ? 'Share this OTP with the restaurant staff when picking up your order.'
+                    ? 'Share this OTP with the shop staff when picking up your order.'
                     : 'Share this OTP only after receiving your order.'}
                 </p>
               </div>
@@ -1559,7 +1559,7 @@ export default function OrderTracking() {
           >
             <ArrowLeft className="w-6 h-6" />
           </motion.button>
-          <h2 className="font-semibold text-lg text-black">{order.restaurant}</h2>
+          <h2 className="font-semibold text-lg text-black">{order.shop}</h2>
           <div className="w-10 h-10" />
         </div>
 
@@ -1702,7 +1702,7 @@ export default function OrderTracking() {
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {order?.fulfillmentType === 'takeaway'
-                    ? 'Share this OTP with the restaurant staff when picking up your order.'
+                    ? 'Share this OTP with the shop staff when picking up your order.'
                     : 'Tell this OTP to the delivery partner at your doorstep.'}
                 </p>
               </div>
@@ -1825,8 +1825,8 @@ export default function OrderTracking() {
                   className="w-6 h-6 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
                 />
               }
-              title="Pickup from Restaurant"
-              subtitle={order?.restaurantAddress || 'Restaurant location'}
+              title="Pickup from Shop"
+              subtitle={order?.restaurantAddress || 'Shop location'}
               showArrow={false}
             />
           ) : (
@@ -1920,7 +1920,7 @@ export default function OrderTracking() {
           )}
         </motion.div>
 
-        {/* Restaurant Section */}
+        {/* Shop Section */}
         <motion.div
           className="bg-white rounded-xl shadow-sm overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
@@ -1943,8 +1943,8 @@ export default function OrderTracking() {
               )}
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-gray-900">{order.restaurant}</p>
-              <p className="text-sm text-gray-500">{order.restaurantAddress || 'Restaurant location'}</p>
+              <p className="font-semibold text-gray-900">{order.shop}</p>
+              <p className="text-sm text-gray-500">{order.restaurantAddress || 'Shop location'}</p>
             </div>
             <motion.button
               className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center"
@@ -1987,7 +1987,7 @@ export default function OrderTracking() {
           {isDeliveredLikeOrder && (
             <SectionItem
               icon={MessageSquare}
-              title="Restaurant Complaint"
+              title="Shop Complaint"
               subtitle="Raise or view complaint for this order"
               onClick={handleOpenRestaurantComplaint}
             />

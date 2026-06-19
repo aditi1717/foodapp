@@ -4,8 +4,8 @@ import { ArrowLeft, Calendar, Loader2, Wand2, Info, CheckCircle2, XCircle } from
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { restaurantAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
 
@@ -32,7 +32,7 @@ export default function AddCouponPage(props) {
   const isEditMode = mode === "edit" && couponId
 
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [form, setForm] = useState(defaultForm)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -158,7 +158,7 @@ export default function AddCouponPage(props) {
         await restaurantAPI.createCoupon(payload)
         setSuccess("Coupon submitted for approval")
       }
-      navigate("/restaurant/coupon")
+      navigate("/shop/coupon")
     } catch (err) {
       setError(err?.response?.data?.message || "Unable to save coupon")
     } finally {

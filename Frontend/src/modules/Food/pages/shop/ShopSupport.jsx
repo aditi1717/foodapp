@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { ChevronLeft, Loader2, Send } from "lucide-react"
 import { restaurantAPI } from "@food/api"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import BRAND_THEME from "@/config/brandTheme"
 import { toast } from "sonner"
 
@@ -43,9 +43,9 @@ const getIssueLabel = (value) =>
   ISSUE_TYPE_OPTIONS.find((option) => option.value === value)?.label ||
   String(value || "Issue").replace(/_/g, " ")
 
-export default function RestaurantSupport() {
+export default function ShopSupport() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [searchParams] = useSearchParams()
   const preSelectedOrderId = searchParams.get("orderId")
   const [tickets, setTickets] = useState([])

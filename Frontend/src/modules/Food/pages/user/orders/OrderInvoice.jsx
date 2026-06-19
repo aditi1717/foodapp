@@ -381,8 +381,8 @@ export default function OrderInvoice() {
       if (invoicePlatformFee > 0) addAmount("Platform Fee:", invoicePlatformFee)
       addAmount("Tax:", invoiceTax)
       if (invoiceCouponByAdmin > 0) addAmount("Admin Coupon:", -invoiceCouponByAdmin, { color: [22, 101, 52] })
-      if (invoiceCouponByRestaurant > 0) addAmount("Restaurant Coupon:", -invoiceCouponByRestaurant, { color: [22, 101, 52] })
-      if (invoiceOfferByRestaurant > 0) addAmount("Restaurant Offer:", -invoiceOfferByRestaurant, { color: [22, 101, 52] })
+      if (invoiceCouponByRestaurant > 0) addAmount("Shop Coupon:", -invoiceCouponByRestaurant, { color: [22, 101, 52] })
+      if (invoiceOfferByRestaurant > 0) addAmount("Shop Offer:", -invoiceOfferByRestaurant, { color: [22, 101, 52] })
       if (invoiceOtherDiscount > 0) addAmount("Discount:", -invoiceOtherDiscount, { color: [22, 101, 52] })
       if (invoicePreviousDue > 0) addAmount("Previous Due:", invoicePreviousDue)
 
@@ -611,13 +611,13 @@ export default function OrderInvoice() {
                 ) : null}
                 {invoiceCouponByRestaurant > 0 ? (
                   <div className="total-row flex justify-between text-xs sm:text-sm sm:text-base py-1 sm:py-2 text-green-700">
-                    <span>Restaurant Coupon:</span>
+                    <span>Shop Coupon:</span>
                     <span>-{formatCurrency(invoiceCouponByRestaurant)}</span>
                   </div>
                 ) : null}
                 {invoiceOfferByRestaurant > 0 ? (
                   <div className="total-row flex justify-between text-xs sm:text-sm sm:text-base py-1 sm:py-2 text-green-700">
-                    <span>Restaurant Offer:</span>
+                    <span>Shop Offer:</span>
                     <span>-{formatCurrency(invoiceOfferByRestaurant)}</span>
                   </div>
                 ) : null}

@@ -1,13 +1,13 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Edit, Phone, Users, ChevronDown, X } from "lucide-react"
 import BRAND_THEME from "@/config/brandTheme"
 
 export default function PhoneNumbersPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [editingNumber, setEditingNumber] = useState(null) // { type: 'orderReminder1' | 'orderReminder2' | 'restaurantPage' }
   const [countryCode, setCountryCode] = useState("+91")
   const [phoneNumber, setPhoneNumber] = useState("")
@@ -190,16 +190,16 @@ export default function PhoneNumbersPage() {
           </div>
         </div>
 
-        {/* Restaurant page number */}
+        {/* Shop page number */}
         <div className="bg-white rounded-lg p-4 mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
               <Phone className="w-5 h-5 text-gray-700" />
             </div>
             <div className="flex-1">
-              <h2 className="text-base font-bold text-gray-900">Restaurant page number</h2>
+              <h2 className="text-base font-bold text-gray-900">Shop page number</h2>
               <p className="text-xs text-gray-600 mt-1">
-                Number for Iggymet customers to call your restaurant.
+                Number for Iggymet customers to call your shop.
               </p>
             </div>
           </div>

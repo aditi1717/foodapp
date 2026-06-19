@@ -61,10 +61,10 @@ export default function Support() {
   const fetchRestaurants = async () => {
     try {
       const res = await restaurantAPI.getRestaurants({ limit: 20, page: 1 })
-      const list = res?.data?.data?.restaurants || res?.data?.restaurants || []
+      const list = res?.data?.data?.shops || res?.data?.shops || []
       setRestaurants(list)
     } catch {
-      toast.error("Failed to load restaurants")
+      toast.error("Failed to load shops")
     }
   }
 
@@ -75,7 +75,7 @@ export default function Support() {
     if (t === "order") {
       fetchOrders()
       setStep("choose_order")
-    } else if (t === "restaurant") {
+    } else if (t === "shop") {
       fetchRestaurants()
       setStep("choose_restaurant")
     } else {
@@ -123,10 +123,10 @@ export default function Support() {
   const getOrderLabel = (order) => {
     const restaurantName =
       order?.restaurantName ||
-      order?.restaurant?.restaurantName ||
+      order?.shop?.restaurantName ||
       order?.restaurantId?.restaurantName ||
       order?.restaurantId?.name ||
-      "Restaurant"
+      "Shop"
     const dateValue = order?.createdAt || order?.date
     const dateLabel = dateValue ? new Date(dateValue).toLocaleDateString("en-IN") : "No date"
     const amount = Number(order?.pricing?.total ?? order?.totalAmount ?? order?.total ?? 0)
@@ -142,9 +142,9 @@ export default function Support() {
     order?.displayOrderId ||
     ""
 
-  const getRestaurantLabel = (restaurant) => {
-    const name = restaurant?.restaurantName || restaurant?.name || "Restaurant"
-    const location = restaurant?.city || restaurant?.area || ""
+  const getRestaurantLabel = (shop) => {
+    const name = shop?.restaurantName || shop?.name || "Shop"
+    const location = shop?.city || shop?.area || ""
     return `${name}${location ? ` | ${location}` : ""}`
   }
 
@@ -154,14 +154,14 @@ export default function Support() {
     const issueLabel = ticket?.issueType || "Issue"
     const restaurantName =
       ticket?.restaurantId?.restaurantName ||
-      ticket?.restaurant?.restaurantName ||
+      ticket?.shop?.restaurantName ||
       ticket?.orderId?.restaurantId?.restaurantName ||
       ""
     const orderCode = ticket?.orderId?.displayOrderId || ticket?.orderId?.orderId || ""
     const context =
       ticket?.type === "order" && orderCode
         ? `Order #${orderCode}`
-        : ticket?.type === "restaurant" && restaurantName
+        : ticket?.type === "shop" && restaurantName
         ? restaurantName
         : restaurantName
 
@@ -173,7 +173,7 @@ export default function Support() {
     if (!q) return true
     const restaurantName = String(
       order?.restaurantName ||
-        order?.restaurant?.restaurantName ||
+        order?.shop?.restaurantName ||
         order?.restaurantId?.restaurantName ||
         order?.restaurantId?.name ||
         "",
@@ -182,12 +182,12 @@ export default function Support() {
     return restaurantName.includes(q) || orderId.includes(q)
   })
 
-  const filteredRestaurants = restaurants.filter((restaurant) => {
+  const filteredRestaurants = shops.filter((shop) => {
     const q = restaurantSearch.trim().toLowerCase()
     if (!q) return true
-    const name = String(restaurant?.restaurantName || restaurant?.name || "").toLowerCase()
-    const city = String(restaurant?.city || restaurant?.area || "").toLowerCase()
-    const id = String(restaurant?._id || restaurant?.id || "").toLowerCase()
+    const name = String(shop?.restaurantName || shop?.name || "").toLowerCase()
+    const city = String(shop?.city || shop?.area || "").toLowerCase()
+    const id = String(shop?._id || shop?.id || "").toLowerCase()
     return name.includes(q) || city.includes(q) || id.includes(q)
   })
 
@@ -289,12 +289,12 @@ export default function Support() {
                   <p className="text-xs text-slate-500 mt-1">Missing item, wrong item, delivery issue</p>
                 </button>
 
-                <button onClick={() => handlePick("restaurant")} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <button onClick={() => handlePick("shop")} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                   <div className="flex items-center justify-between">
                     <Building2 className="h-5 w-5 text-slate-700 dark:text-slate-200" />
                     <ChevronRight className="h-4 w-4 text-slate-400" />
                   </div>
-                  <p className="mt-3 font-semibold text-slate-900 dark:text-white">Restaurant Issue</p>
+                  <p className="mt-3 font-semibold text-slate-900 dark:text-white">Shop Issue</p>
                   <p className="text-xs text-slate-500 mt-1">Service, listing info, behavior report</p>
                 </button>
 
@@ -356,14 +356,14 @@ export default function Support() {
 
             {step === "choose_restaurant" && (
               <div className="space-y-3">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Select a restaurant</h3>
-                {restaurants.length > 0 ? (
+                <h3 className="font-semibold text-slate-900 dark:text-white">Select a shop</h3>
+                {shops.length > 0 ? (
                   <div className="space-y-2">
                     <Input
                       list="support-restaurant-options"
                       value={restaurantSearch}
                       onChange={(e) => handleRestaurantSearchChange(e.target.value)}
-                      placeholder="Select/search restaurant"
+                      placeholder="Select/search shop"
                     />
                     <datalist id="support-restaurant-options">
                       {filteredRestaurants.map((r) => (
@@ -372,10 +372,10 @@ export default function Support() {
                         </option>
                       ))}
                     </datalist>
-                    {filteredRestaurants.length === 0 ? <p className="text-sm text-slate-500">No matching restaurants found</p> : null}
+                    {filteredRestaurants.length === 0 ? <p className="text-sm text-slate-500">No matching shops found</p> : null}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">No restaurants found</p>
+                  <p className="text-sm text-slate-500">No shops found</p>
                 )}
                 <Button variant="outline" onClick={() => setStep("pick")}>Back</Button>
               </div>
@@ -391,7 +391,7 @@ export default function Support() {
                 </div>
                 <Textarea placeholder="Describe the issue" value={description} onChange={(e) => setDescription(e.target.value)} required />
                 <div className="flex gap-2">
-                  <Button className={BRAND_THEME.tokens.profile.primaryButton} onClick={() => submitTicket({ type: "restaurant", restaurantId: selectedRestaurant._id || selectedRestaurant.id, issueType: issueType || "Restaurant issue", description })} disabled={!description.trim() || submitting}>
+                  <Button className={BRAND_THEME.tokens.profile.primaryButton} onClick={() => submitTicket({ type: "shop", restaurantId: selectedRestaurant._id || selectedRestaurant.id, issueType: issueType || "Shop issue", description })} disabled={!description.trim() || submitting}>
                     {submitting ? "Submitting..." : "Submit Ticket"}
                   </Button>
                   <Button variant="outline" onClick={() => setStep("pick")}>Cancel</Button>

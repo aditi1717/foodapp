@@ -7,7 +7,7 @@ const debugError = (...args) => {}
 
 
 export default function PointOfSale() {
-  const [restaurants, setRestaurants] = useState([])
+  const [shops, setRestaurants] = useState([])
   const [selectedRestaurant, setSelectedRestaurant] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,21 +15,21 @@ export default function PointOfSale() {
   const [paymentSummary, setPaymentSummary] = useState(null)
   const [showSearchResults, setShowSearchResults] = useState(false)
 
-  const getRestaurantName = (restaurant) => {
+  const getRestaurantName = (shop) => {
     return String(
-      restaurant?.name ||
-      restaurant?.restaurantName ||
-      restaurant?.restaurant?.name ||
+      shop?.name ||
+      shop?.restaurantName ||
+      shop?.shop?.name ||
       '',
     ).trim()
   }
 
-  const getRestaurantCode = (restaurant) => {
+  const getRestaurantCode = (shop) => {
     return String(
-      restaurant?.restaurantId ||
-      restaurant?.restaurantCode ||
-      restaurant?.restaurant?.restaurantId ||
-      restaurant?._id ||
+      shop?.restaurantId ||
+      shop?.restaurantCode ||
+      shop?.shop?.restaurantId ||
+      shop?._id ||
       '',
     ).trim()
   }
@@ -38,21 +38,21 @@ export default function PointOfSale() {
     if (!Array.isArray(rawList)) return []
 
     return rawList
-      .map((restaurant) => {
+      .map((shop) => {
         const id = String(
-          restaurant?._id ||
-          restaurant?.id ||
-          restaurant?.restaurant?._id ||
-          restaurant?.restaurantId ||
+          shop?._id ||
+          shop?.id ||
+          shop?.shop?._id ||
+          shop?.restaurantId ||
           '',
         ).trim()
         if (!id) return null
 
-        const resolvedName = getRestaurantName(restaurant) || `Restaurant ${id.slice(-6)}`
-        const resolvedCode = getRestaurantCode(restaurant)
+        const resolvedName = getRestaurantName(shop) || `Shop ${id.slice(-6)}`
+        const resolvedCode = getRestaurantCode(shop)
 
         return {
-          ...restaurant,
+          ...shop,
           _id: id,
           name: resolvedName,
           restaurantId: resolvedCode,
@@ -88,12 +88,12 @@ export default function PointOfSale() {
     completionRate: 0
   })
 
-  // Fetch restaurants list
+  // Fetch shops list
   useEffect(() => {
     fetchRestaurants()
   }, [])
 
-  // Fetch restaurant analytics when restaurant is selected
+  // Fetch shop analytics when shop is selected
   useEffect(() => {
     if (selectedRestaurant) {
       fetchRestaurantAnalytics(selectedRestaurant)
@@ -133,11 +133,11 @@ export default function PointOfSale() {
       setLoading(true)
       const response = await adminAPI.getRestaurants({ limit: 1000, isActive: true })
       if (response?.data?.success) {
-        const rawRestaurants = response.data.data?.restaurants || response.data.data || []
+        const rawRestaurants = response.data.data?.shops || response.data.data || []
         setRestaurants(normalizeRestaurants(rawRestaurants))
       }
     } catch (error) {
-      debugError('Error fetching restaurants:', error)
+      debugError('Error fetching shops:', error)
     } finally {
       setLoading(false)
     }
@@ -149,26 +149,26 @@ export default function PointOfSale() {
       
       // Validate restaurantId
       if (!restaurantId) {
-        debugError('Restaurant ID is required')
+        debugError('Shop ID is required')
         return
       }
       
-      debugLog('Fetching analytics for restaurant:', restaurantId)
+      debugLog('Fetching analytics for shop:', restaurantId)
       
-      // Fetch comprehensive restaurant analytics from backend
+      // Fetch comprehensive shop analytics from backend
       const analyticsResponse = await adminAPI.getRestaurantAnalytics(restaurantId)
       
       debugLog('Analytics response:', analyticsResponse)
       
       if (analyticsResponse?.data?.success && analyticsResponse.data.data) {
-        const { restaurant, analytics, paymentSummary: apiPaymentSummary } = analyticsResponse.data.data
+        const { shop, analytics, paymentSummary: apiPaymentSummary } = analyticsResponse.data.data
         
         debugLog('Analytics data received:', analytics)
         debugLog('Commission percentage from API:', analytics.commissionPercentage)
         debugLog('Commission percentage type:', typeof analytics.commissionPercentage)
         
-        // Set restaurant data
-        setRestaurantData(restaurant)
+        // Set shop data
+        setRestaurantData(shop)
         setPaymentSummary(apiPaymentSummary || null)
         
         // Parse commission percentage - handle both number and string
@@ -198,7 +198,7 @@ export default function PointOfSale() {
           averageMonthlyProfit: analytics.averageMonthlyProfit || 0,
           averageYearlyProfit: analytics.averageYearlyProfit || 0,
           status: analytics.status || 'inactive',
-          joinDate: analytics.joinDate || restaurant.createdAt || new Date(),
+          joinDate: analytics.joinDate || shop.createdAt || new Date(),
           totalCustomers: analytics.totalCustomers || 0,
           repeatCustomers: analytics.repeatCustomers || 0,
           cancellationRate: analytics.cancellationRate || 0,
@@ -234,7 +234,7 @@ export default function PointOfSale() {
         })
       }
     } catch (error) {
-      debugError('Error fetching restaurant analytics:', error)
+      debugError('Error fetching shop analytics:', error)
       debugError('Error details:', {
         message: error?.message,
         response: error?.response?.data,
@@ -244,9 +244,9 @@ export default function PointOfSale() {
       
       // Show user-friendly error message
       if (error?.response?.status === 404) {
-        debugWarn('Restaurant not found')
+        debugWarn('Shop not found')
       } else if (error?.response?.status === 400) {
-        debugWarn('Invalid restaurant ID')
+        debugWarn('Invalid shop ID')
       } else {
         debugWarn('Failed to fetch analytics. Please try again.')
       }
@@ -283,20 +283,20 @@ export default function PointOfSale() {
     }
   }
 
-  const filteredRestaurants = restaurants.filter(restaurant => {
+  const filteredRestaurants = shops.filter(shop => {
     if (!searchQuery.trim()) return true
     const query = searchQuery.toLowerCase()
     return (
-      restaurant.name?.toLowerCase().includes(query) ||
-      restaurant.restaurantId?.toLowerCase().includes(query) ||
-      restaurant._id?.toLowerCase().includes(query)
+      shop.name?.toLowerCase().includes(query) ||
+      shop.restaurantId?.toLowerCase().includes(query) ||
+      shop._id?.toLowerCase().includes(query)
     )
   })
 
-  // Handle restaurant selection from search
+  // Handle shop selection from search
   const handleRestaurantSelect = (restaurantId) => {
     setSelectedRestaurant(restaurantId)
-    const selected = restaurants.find(r => r._id === restaurantId)
+    const selected = shops.find(r => r._id === restaurantId)
     if (selected) {
       setSearchQuery(selected.name)
     }
@@ -325,8 +325,8 @@ export default function PointOfSale() {
   }
 
   const getSelectedRestaurantName = () => {
-    const restaurant = restaurants.find(r => r._id === selectedRestaurant)
-    return restaurant?.name || 'Select Restaurant'
+    const shop = shops.find(r => r._id === selectedRestaurant)
+    return shop?.name || 'Select Shop'
   }
 
   return (
@@ -335,16 +335,16 @@ export default function PointOfSale() {
         
         {/* Header Section */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#334257] mb-2">Restaurant POS Analytics & Benefits</h1>
-          <p className="text-sm text-[#8a94aa]">Track restaurant performance, profits, and commission details</p>
+          <h1 className="text-2xl font-bold text-[#334257] mb-2">Shop POS Analytics & Benefits</h1>
+          <p className="text-sm text-[#8a94aa]">Track shop performance, profits, and commission details</p>
                 </div>
 
-        {/* Restaurant Selection Card */}
+        {/* Shop Selection Card */}
         <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-6 mb-6">
           <div className="flex flex-col gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#334257] mb-2">
-                Search Restaurant by Name or ID <span className="text-red-500">*</span>
+                Search Shop by Name or ID <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
@@ -361,29 +361,29 @@ export default function PointOfSale() {
                     // Delay to allow click on results
                     setTimeout(() => setShowSearchResults(false), 200)
                   }}
-                  placeholder="Type restaurant name or ID to search..."
+                  placeholder="Type shop name or ID to search..."
                   className="w-full h-11 pl-10 pr-3 rounded-md border border-[#e3e6ef] bg-white text-sm text-[#4a5671] focus:outline-none focus:ring-1 focus:ring-[#006fbd]"
                 />
                 
                 {/* Search Results Dropdown */}
                 {showSearchResults && filteredRestaurants.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-[#e3e6ef] rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    {filteredRestaurants.map(restaurant => (
+                    {filteredRestaurants.map(shop => (
                       <button
                         key={restaurant._id}
                         type="button"
                         onMouseDown={(e) => {
                           e.preventDefault()
-                          handleRestaurantSelect(restaurant._id)
+                          handleRestaurantSelect(shop._id)
                         }}
                         className="w-full px-4 py-3 text-left hover:bg-[#f9fafc] cursor-pointer border-b border-[#e3e6ef] last:border-b-0 transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-[#334257]">{restaurant.name}</p>
-                            <p className="text-xs text-[#8a94aa]">ID: {restaurant.restaurantId || restaurant._id}</p>
+                            <p className="text-sm font-medium text-[#334257]">{shop.name}</p>
+                            <p className="text-xs text-[#8a94aa]">ID: {shop.restaurantId || shop._id}</p>
                           </div>
-                          {selectedRestaurant === restaurant._id && (
+                          {selectedRestaurant === shop._id && (
                             <div className="w-2 h-2 bg-[#006fbd] rounded-full"></div>
                           )}
                         </div>
@@ -395,7 +395,7 @@ export default function PointOfSale() {
                 {/* No Results Message */}
                 {showSearchResults && searchQuery.trim() && filteredRestaurants.length === 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-[#e3e6ef] rounded-md shadow-lg p-4">
-                    <p className="text-sm text-[#8a94aa] text-center">No restaurants found matching "{searchQuery}"</p>
+                    <p className="text-sm text-[#8a94aa] text-center">No shops found matching "{searchQuery}"</p>
                   </div>
                 )}
                   </div>
@@ -416,17 +416,17 @@ export default function PointOfSale() {
                   value={selectedRestaurant}
                   onChange={(e) => {
                     setSelectedRestaurant(e.target.value)
-                    const selected = restaurants.find(r => r._id === e.target.value)
+                    const selected = shops.find(r => r._id === e.target.value)
                     if (selected) {
                       setSearchQuery(selected.name)
                     }
                   }}
                         className="w-full h-11 rounded-md border border-[#e3e6ef] bg-white px-3 pr-10 text-sm text-[#4a5671] focus:outline-none focus:ring-1 focus:ring-[#006fbd]"
                       >
-                  <option value="">Select Restaurant</option>
-                  {restaurants.map(restaurant => (
+                  <option value="">Select Shop</option>
+                  {shops.map(shop => (
                     <option key={restaurant._id} value={restaurant._id}>
-                      {restaurant.name}
+                      {shop.name}
                           </option>
                         ))}
                       </select>
@@ -438,13 +438,13 @@ export default function PointOfSale() {
         {/* Analytics Dashboard */}
         {selectedRestaurant && !loading ? (
           <div className="space-y-6">
-            {/* Restaurant Header Info */}
+            {/* Shop Header Info */}
             <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-[#334257] mb-1">{getSelectedRestaurantName()}</h2>
                   <p className="text-sm text-[#8a94aa]">
-                    Restaurant ID: {restaurants.find(r => r._id === selectedRestaurant)?.restaurantId || selectedRestaurant}
+                    Shop ID: {shops.find(r => r._id === selectedRestaurant)?.restaurantId || selectedRestaurant}
                   </p>
                 </div>
                 <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
@@ -591,11 +591,11 @@ export default function PointOfSale() {
                     <span className="text-base font-semibold text-[#006fbd]">{formatCurrency(analyticsData.totalCommission)}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-[#e3e6ef]">
-                    <span className="text-sm text-[#8a94aa]">Restaurant Share</span>
+                    <span className="text-sm text-[#8a94aa]">Shop Share</span>
                     <span className="text-base font-semibold text-green-600">{formatCurrency(analyticsData.restaurantEarning)}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-[#e3e6ef]">
-                    <span className="text-sm text-[#8a94aa]">Restaurant Profit</span>
+                    <span className="text-sm text-[#8a94aa]">Shop Profit</span>
                     <span className="text-base font-semibold text-emerald-700">{formatCurrency(analyticsData.restaurantProfit)}</span>
                   </div>
                 </div>
@@ -620,9 +620,9 @@ export default function PointOfSale() {
               </div>
             </div>
 
-            {/* Restaurant Payments (from FoodTransaction ledger) */}
+            {/* Shop Payments (from FoodTransaction ledger) */}
             <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-6">
-              <h3 className="text-lg font-semibold text-[#334257] mb-4">Restaurant Payments (Completed Orders)</h3>
+              <h3 className="text-lg font-semibold text-[#334257] mb-4">Shop Payments (Completed Orders)</h3>
               <p className="text-xs text-[#8a94aa] mb-4">
                 Breakdown based on transaction ledger. “Subtotal” reflects total dish value (food price).
               </p>
@@ -656,11 +656,11 @@ export default function PointOfSale() {
 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-2 border-b border-[#e3e6ef]">
-                    <span className="text-sm text-[#8a94aa]">Restaurant Share</span>
+                    <span className="text-sm text-[#8a94aa]">Shop Share</span>
                     <span className="text-sm font-semibold text-green-700">{formatCurrency(paymentSummary?.restaurantShare || 0)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-[#e3e6ef]">
-                    <span className="text-sm text-[#8a94aa]">Restaurant Commission (Admin)</span>
+                    <span className="text-sm text-[#8a94aa]">Shop Commission (Admin)</span>
                     <span className="text-sm font-semibold text-[#334257]">{formatCurrency(paymentSummary?.restaurantCommission || 0)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-[#e3e6ef]">
@@ -705,13 +705,13 @@ export default function PointOfSale() {
                 </div>
               </div>
 
-              {/* Restaurant Details */}
+              {/* Shop Details */}
               <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-orange-100 rounded-lg">
                     <Package className="w-5 h-5 text-orange-600" />
                   </div>
-                  <h3 className="text-base font-semibold text-[#334257]">Restaurant Details</h3>
+                  <h3 className="text-base font-semibold text-[#334257]">Shop Details</h3>
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
@@ -768,16 +768,16 @@ export default function PointOfSale() {
         ) : selectedRestaurant && loading ? (
           <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006fbd] mx-auto mb-4"></div>
-            <p className="text-sm text-[#8a94aa]">Loading restaurant analytics...</p>
+            <p className="text-sm text-[#8a94aa]">Loading shop analytics...</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-12 text-center">
             <div className="w-16 h-16 rounded-full border-2 border-dashed border-[#d1d7e6] flex items-center justify-center mx-auto mb-4">
               <Search className="w-8 h-8 text-[#8a94aa]" />
             </div>
-            <p className="text-base font-medium text-[#334257] mb-2">Select a Restaurant</p>
+            <p className="text-base font-medium text-[#334257] mb-2">Select a Shop</p>
             <p className="text-sm text-[#8a94aa] max-w-md mx-auto">
-              Please select a restaurant from the dropdown above to view detailed analytics, profit information, and commission details.
+              Please select a shop from the dropdown above to view detailed analytics, profit information, and commission details.
             </p>
           </div>
         )}

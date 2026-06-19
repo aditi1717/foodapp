@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { 
   ArrowLeft,
@@ -15,7 +15,7 @@ import {
   Trash2
 } from "lucide-react"
 import { Card, CardContent } from "@food/components/ui/card"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -23,7 +23,7 @@ const debugError = (...args) => {}
 
 export default function AdvertisementsPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [activeFilter, setActiveFilter] = useState("all")
   const [openMenuId, setOpenMenuId] = useState(null)
 
@@ -152,7 +152,7 @@ export default function AdvertisementsPage() {
               whileTap={{ scale: 0.98 }}
             >
               <Card className="bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => navigate(`/restaurant/advertisements/${ad.id}`)}
+                onClick={() => navigate(`/shop/advertisements/${ad.id}`)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -206,8 +206,8 @@ export default function AdvertisementsPage() {
                             data-menu-id={ad.id}
                           >
                             {[
-                              { icon: Eye, label: "View Ads", action: () => navigate(`/restaurant/advertisements/${ad.id}`) },
-                              { icon: Edit, label: "Edit Ads", action: () => navigate(`/restaurant/advertisements/${ad.id}/edit`) },
+                              { icon: Eye, label: "View Ads", action: () => navigate(`/shop/advertisements/${ad.id}`) },
+                              { icon: Edit, label: "Edit Ads", action: () => navigate(`/shop/advertisements/${ad.id}/edit`) },
                               { icon: Pause, label: "Pause Ads", action: () => debugLog("Pause:", ad.id) },
                               { icon: Copy, label: "Copy Ads", action: () => debugLog("Copy:", ad.id) },
                               { icon: Trash2, label: "Delete Ads", action: () => debugLog("Delete:", ad.id), isDanger: true }
@@ -245,7 +245,7 @@ export default function AdvertisementsPage() {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => {
-                          navigate(`/restaurant/advertisements/${ad.id}`)
+                          navigate(`/shop/advertisements/${ad.id}`)
                         }}
                         className="p-2 bg-[#ff8100] hover:bg-[#e67300] rounded-lg transition-colors"
                       >
@@ -275,7 +275,7 @@ export default function AdvertisementsPage() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => {
-          navigate("/restaurant/advertisements/new")
+          navigate("/shop/advertisements/new")
         }}
         className="fixed bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 bg-[#ff8100] hover:bg-[#e67300] text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-colors"
       >

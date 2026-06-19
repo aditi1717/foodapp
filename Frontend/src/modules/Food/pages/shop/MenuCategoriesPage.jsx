@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { AnimatePresence, motion } from "framer-motion"
 import {
   ArrowLeft,
@@ -27,7 +27,7 @@ const approvalBadgeClass = (status) => {
 export default function MenuCategoriesPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -50,7 +50,7 @@ export default function MenuCategoriesPage() {
     if (location.state?.draftCategoryName) {
       const draftName = location.state.draftCategoryName
       // Redirect to the edit category page for creation with prefilled name
-      navigate("/food/restaurant/menu-categories/new", {
+      navigate("/food/shop/menu-categories/new", {
         state: { draftCategoryName: draftName },
         replace: true
       })
@@ -59,9 +59,9 @@ export default function MenuCategoriesPage() {
 
   const handleOpenModal = (category = null) => {
     if (category) {
-      navigate(`/food/restaurant/menu-categories/${category.id || category._id}/edit`)
+      navigate(`/food/shop/menu-categories/${category.id || category._id}/edit`)
     } else {
-      navigate("/food/restaurant/menu-categories/new")
+      navigate("/food/shop/menu-categories/new")
     }
   }
 

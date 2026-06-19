@@ -19,7 +19,7 @@ export default function RestaurantReviews() {
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     orderId: true,
-    restaurant: true,
+    shop: true,
     customer: true,
     review: true,
     rating: true,
@@ -33,7 +33,7 @@ export default function RestaurantReviews() {
     
     const query = searchQuery.toLowerCase().trim()
     return reviews.filter(review =>
-      review.restaurant.toLowerCase().includes(query) ||
+      review.shop.toLowerCase().includes(query) ||
       review.customer.toLowerCase().includes(query) ||
       review.review.toLowerCase().includes(query) ||
       (review.orderId && review.orderId.toLowerCase().includes(query))
@@ -62,7 +62,7 @@ export default function RestaurantReviews() {
     setVisibleColumns({
       si: true,
       orderId: true,
-      restaurant: true,
+      shop: true,
       customer: true,
       review: true,
       rating: true,
@@ -73,7 +73,7 @@ export default function RestaurantReviews() {
   const columnsConfig = {
     si: "Serial Number",
     orderId: "Order ID",
-    restaurant: "Restaurant",
+    shop: "Shop",
     customer: "Customer",
     review: "Review",
     rating: "Rating",
@@ -131,9 +131,9 @@ export default function RestaurantReviews() {
           setReviews([])
         }
       } catch (error) {
-        debugError('Error fetching restaurant reviews:', error)
+        debugError('Error fetching shop reviews:', error)
         setReviews([])
-        toast.error('Failed to load restaurant reviews')
+        toast.error('Failed to load shop reviews')
       } finally {
         setIsLoading(false)
       }
@@ -150,7 +150,7 @@ export default function RestaurantReviews() {
             <div className="flex items-center gap-3">
               <Utensils className="w-5 h-5 text-emerald-500" />
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-slate-900">Restaurant Reviews</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Shop Reviews</h1>
                 <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">
                   {filteredReviews.length}
                 </span>
@@ -161,7 +161,7 @@ export default function RestaurantReviews() {
               <div className="relative flex-1 sm:flex-initial min-w-[250px]">
                 <input
                   type="text"
-                  placeholder="Search by restaurant or customer"
+                  placeholder="Search by shop or customer"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
@@ -221,8 +221,8 @@ export default function RestaurantReviews() {
                     {visibleColumns.orderId && (
                       <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Order ID</th>
                     )}
-                    {visibleColumns.restaurant && (
-                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Restaurant</th>
+                    {visibleColumns.shop && (
+                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop</th>
                     )}
                     {visibleColumns.customer && (
                       <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Customer</th>
@@ -243,7 +243,7 @@ export default function RestaurantReviews() {
                     <tr key={review.sl || review.orderId} className="hover:bg-slate-50 transition-colors">
                       {visibleColumns.si && <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{review.sl}</td>}
                       {visibleColumns.orderId && <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-700">{review.orderId}</td>}
-                      {visibleColumns.restaurant && <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-600">{review.restaurant}</td>}
+                      {visibleColumns.shop && <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-600">{review.shop}</td>}
                       {visibleColumns.customer && <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-brand-600">{review.customer}</td>}
                       {visibleColumns.review && (
                         <td className="px-6 py-4">
@@ -277,7 +277,7 @@ export default function RestaurantReviews() {
             <div className="px-6 py-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 rounded-lg p-4"><p className="text-xs text-slate-500 mb-1">Order ID</p><p className="text-sm font-semibold text-slate-900 font-mono">{selectedReview.orderId}</p></div>
-                <div className="bg-emerald-50 rounded-lg p-4"><p className="text-xs text-emerald-600 mb-1">Restaurant</p><p className="text-sm font-semibold text-emerald-700">{selectedReview.restaurant}</p></div>
+                <div className="bg-emerald-50 rounded-lg p-4"><p className="text-xs text-emerald-600 mb-1">Shop</p><p className="text-sm font-semibold text-emerald-700">{selectedReview.shop}</p></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-purple-50 rounded-lg p-4"><p className="text-xs text-purple-600 mb-1">Customer</p><p className="text-sm font-semibold text-purple-700">{selectedReview.customer}</p></div>

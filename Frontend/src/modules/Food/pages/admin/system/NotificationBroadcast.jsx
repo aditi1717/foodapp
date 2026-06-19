@@ -14,7 +14,7 @@ const getRows = (response) => {
   const payload = response?.data?.data;
   return (
     payload?.items ||
-    payload?.restaurants ||
+    payload?.shops ||
     payload?.partners ||
     payload?.customers ||
     payload?.users ||
@@ -85,10 +85,10 @@ export default function NotificationBroadcast() {
         subLabel: [item?.phone, item?.email].filter(Boolean).join(" • "),
       }));
 
-      const restaurants = normalizeRecipients(restaurantsRes, "RESTAURANT", (item, ownerType) => ({
+      const shops = normalizeRecipients(restaurantsRes, "SHOP", (item, ownerType) => ({
         ownerType,
         ownerId: String(item?._id || item?.id || ""),
-        label: String(item?.restaurantName || item?.ownerName || "Restaurant").trim(),
+        label: String(item?.restaurantName || item?.ownerName || "Shop").trim(),
         subLabel: [item?.ownerPhone, item?.ownerEmail].filter(Boolean).join(" • "),
       }));
 
@@ -99,7 +99,7 @@ export default function NotificationBroadcast() {
         subLabel: [item?.phone, item?.email].filter(Boolean).join(" • "),
       }));
 
-      setAllRecipients([...customers, ...restaurants, ...deliveryPartners]);
+      setAllRecipients([...customers, ...shops, ...deliveryPartners]);
     } catch {
       setAllRecipients([]);
     } finally {
@@ -254,7 +254,7 @@ export default function NotificationBroadcast() {
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search users, restaurants, or delivery partners"
+                  placeholder="Search users, shops, or delivery partners"
                   className="w-full text-sm bg-transparent outline-none"
                 />
               </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import Lenis from "lenis"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { 
   Search, 
   UserPlus, 
@@ -302,7 +302,7 @@ export default function DeliveryPartnersPage() {
                         </div>
                       ) : searchResult.associatedWithOther ? (
                         <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-950/20 px-3 py-1.5 rounded-lg border border-red-200/30 text-center">
-                          Exclusive to another Restaurant
+                          Exclusive to another Shop
                         </span>
                       ) : (
                         <Button

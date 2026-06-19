@@ -99,14 +99,14 @@ export default function Offers() {
                   {offerText}
                 </h2>
                 
-                {/* Restaurant Cards - Grid Layout */}
+                {/* Shop Cards - Grid Layout */}
                 <div 
                   className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6"
                 >
                   {dishes.slice(0, 8).map((dish) => (
                     <Link 
                       key={dish.id} 
-                      to={`/user/restaurants/${dish.restaurantSlug}`}
+                      to={`/user/shops/${dish.restaurantSlug}`}
                       className="w-full"
                     >
                       <div className="group">
@@ -131,7 +131,7 @@ export default function Offers() {
                           </div>
                         </div>
                         
-                        {/* Restaurant Info */}
+                        {/* Shop Info */}
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm line-clamp-1">
                           {dish.restaurantName}
                         </h3>
@@ -171,8 +171,8 @@ export default function Offers() {
                           </span>
                         </div>
                         <p className="text-sm text-slate-700 dark:text-slate-300">
-                          <span className="font-semibold">Restaurant:</span>{" "}
-                          {o.restaurantName || "All Restaurants"}
+                          <span className="font-semibold">Shop:</span>{" "}
+                          {o.restaurantName || "All Shops"}
                         </p>
                         {o.endDate && (
                           <p className="text-xs text-slate-500 dark:text-slate-400">

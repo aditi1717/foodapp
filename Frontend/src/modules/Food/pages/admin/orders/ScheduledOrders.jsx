@@ -27,7 +27,7 @@ export default function ScheduledOrders() {
     filteredOrders,
     count,
     activeFiltersCount,
-    restaurants,
+    shops,
     handleApplyFilters,
     handleResetFilters,
     handleExport,
@@ -56,7 +56,7 @@ export default function ScheduledOrders() {
         setFilters={setFilters}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-        restaurants={restaurants}
+        shops={shops}
       />
       <SettingsDialog
         isOpen={isSettingsOpen}

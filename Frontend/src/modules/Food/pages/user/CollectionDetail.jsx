@@ -36,7 +36,7 @@ export default function CollectionDetail() {
       ...prev,
       name: `Collection ${id}`,
       items: favorites,
-      restaurants: favorites.length,
+      shops: favorites.length,
       dishes: 0
     }))
   }, [id, favorites])
@@ -44,13 +44,13 @@ export default function CollectionDetail() {
   const handleRemoveItem = (e, slug) => {
     e.preventDefault()
     e.stopPropagation()
-    if (window.confirm("Remove this restaurant from collection?")) {
+    if (window.confirm("Remove this shop from collection?")) {
       removeFavorite(slug)
       // Update collection state
       setCollection(prev => ({
         ...prev,
         items: prev.items.filter(item => item.slug !== slug),
-        restaurants: prev.restaurants - 1
+        shops: prev.shops - 1
       }))
     }
   }
@@ -78,7 +78,7 @@ export default function CollectionDetail() {
               <p className="text-muted-foreground text-lg mb-4">This collection is empty</p>
               <Link to="/user">
                 <Button className="text-white" style={{ background: BRAND_THEME.gradients.primary }}>
-                  Explore Restaurants
+                  Explore Shops
                 </Button>
               </Link>
             </CardContent>
@@ -105,7 +105,7 @@ export default function CollectionDetail() {
               <div>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold">{collection.name}</h1>
                 <p className="text-muted-foreground mt-1">
-                  {collection.restaurants} {collection.restaurants === 1 ? "restaurant" : "restaurants"}
+                  {collection.shops} {collection.shops === 1 ? "shop" : "shops"}
                 </p>
               </div>
             </div>
@@ -113,9 +113,9 @@ export default function CollectionDetail() {
         </ScrollReveal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-          {collection.items.map((restaurant, index) => (
+          {collection.items.map((shop, index) => (
             <ScrollReveal key={restaurant.slug} delay={index * 0.1}>
-              <Link to={`/user/restaurants/${restaurant.slug}`}>
+              <Link to={`/user/shops/${restaurant.slug}`}>
                 <Card className="overflow-hidden h-full p-0 gap-0">
                   <div className="h-48 w-full relative overflow-hidden">
                     <img
@@ -133,7 +133,7 @@ export default function CollectionDetail() {
                         variant="ghost"
                         size="icon"
                         className="rounded-full bg-white/90 backdrop-blur-sm hover:bg-white text-red-500"
-                        onClick={(e) => handleRemoveItem(e, restaurant.slug)}
+                        onClick={(e) => handleRemoveItem(e, shop.slug)}
                       >
                         <Trash2 className="h-5 w-5" />
                       </Button>
@@ -141,21 +141,21 @@ export default function CollectionDetail() {
                   </div>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-bold line-clamp-1 flex-1">{restaurant.name}</h3>
+                      <h3 className="text-lg font-bold line-clamp-1 flex-1">{shop.name}</h3>
                       <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded-lg ml-2">
                         <Star className="h-3 w-3 fill-white" />
-                        <span className="text-sm font-bold">{restaurant.rating || "4.5"}</span>
+                        <span className="text-sm font-bold">{shop.rating || "4.5"}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <Clock className="h-4 w-4" />
-                      <span>{restaurant.deliveryTime || "25-30 mins"}</span>
+                      <span>{shop.deliveryTime || "25-30 mins"}</span>
                       <span>�</span>
                       <MapPin className="h-4 w-4" />
-                      <span>{restaurant.distance || "2.5 km"}</span>
+                      <span>{shop.distance || "2.5 km"}</span>
                     </div>
-                    {restaurant.cuisine && (
-                      <p className="text-sm text-muted-foreground line-clamp-1">{restaurant.cuisine}</p>
+                    {shop.cuisine && (
+                      <p className="text-sm text-muted-foreground line-clamp-1">{shop.cuisine}</p>
                     )}
                   </CardContent>
                 </Card>

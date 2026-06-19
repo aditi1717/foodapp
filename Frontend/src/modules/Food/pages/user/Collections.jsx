@@ -41,7 +41,7 @@ export default function Collections() {
         id: `collection-${Date.now()}`,
         name: newCollectionName.trim(),
         dishes: 0,
-        restaurants: 0,
+        shops: 0,
         isDefault: false
       }
       setCurrentCollections(prev => [...prev, newCollection])
@@ -128,7 +128,7 @@ export default function Collections() {
                         <div className="absolute -top-1 right-2 w-2.5 h-3.5" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%)', backgroundColor: BRAND_THEME.colors.brand.primary }} />
                       </div>
 
-                      {/* Right card - Restaurant */}
+                      {/* Right card - Shop */}
                       <div className="absolute right-0 top-0 w-14 h-11 bg-white rounded-lg shadow-lg transform rotate-12 overflow-hidden">
                         <div className="w-full h-full bg-gray-50 flex items-center justify-center p-1">
                           <Store className="h-6 w-6" style={{ color: BRAND_THEME.colors.brand.primary }} />
@@ -145,7 +145,7 @@ export default function Collections() {
                   <div className="absolute bottom-4 left-4 right-4">
                     <h3 className="text-white font-bold text-lg mb-1">{collection.name}</h3>
                     <p className="text-white/80 text-sm">
-                      {collection.dishes} dish | {collection.restaurants} restaurant
+                      {collection.dishes} dish | {collection.shops} shop
                     </p>
                   </div>
                 </div>

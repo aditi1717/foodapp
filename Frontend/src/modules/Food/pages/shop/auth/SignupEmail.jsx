@@ -33,7 +33,7 @@ export default function RestaurantSignupEmail() {
     setError("")
 
     if (!formData.name.trim()) {
-      setError("Restaurant name is required")
+      setError("Shop name is required")
       return
     }
 
@@ -141,13 +141,13 @@ export default function RestaurantSignupEmail() {
 
       const data = response?.data?.data || response?.data
       
-      if (data.accessToken && data.restaurant) {
+      if (data.accessToken && data.shop) {
         // Replace old token with new one (handles cross-module login)
-        setAuthData("restaurant", data.accessToken, data.restaurant)
+        setAuthData("shop", data.accessToken, data.shop)
         
         window.dispatchEvent(new Event("restaurantAuthChanged"))
         
-        navigate("/restaurant/onboarding", { replace: true })
+        navigate("/shop/onboarding", { replace: true })
       } else {
         throw new Error("Registration failed. Please try again.")
       }
@@ -211,7 +211,7 @@ export default function RestaurantSignupEmail() {
               FOOD PLATFORM
             </h1>
             <p className="text-base xl:text-lg opacity-95 max-w-xl">
-              Create your restaurant account and start managing your business today.
+              Create your shop account and start managing your business today.
             </p>
           </div>
         </div>
@@ -230,7 +230,7 @@ export default function RestaurantSignupEmail() {
                 {companyName}
               </span>
               <span className="text-xs font-medium text-gray-500">
-                Restaurant Panel
+                Shop Panel
               </span>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function RestaurantSignupEmail() {
               </CardTitle>
               <CardDescription className="text-sm text-gray-500">
                 {step === 1
-                  ? "Sign up to start managing your restaurant"
+                  ? "Sign up to start managing your shop"
                   : "Enter the verification code sent to your email"}
               </CardDescription>
             </CardHeader>
@@ -261,7 +261,7 @@ export default function RestaurantSignupEmail() {
                 <form onSubmit={handleFormSubmit} className="space-y-5">
                   <div className="space-y-1.5">
                     <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                      Restaurant Name
+                      Shop Name
                     </Label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
@@ -270,7 +270,7 @@ export default function RestaurantSignupEmail() {
                       <Input
                         id="name"
                         type="text"
-                        placeholder="Your Restaurant Name"
+                        placeholder="Your Shop Name"
                         value={formData.name}
                         onChange={(e) =>
                           setFormData({ ...formData, name: e.target.value })
@@ -294,7 +294,7 @@ export default function RestaurantSignupEmail() {
                       <Input
                         id="email"
                         type="email"
-                        placeholder="restaurant@example.com"
+                        placeholder="shop@example.com"
                         value={formData.email}
                         onChange={(e) =>
                           setFormData({ ...formData, email: e.target.value })
@@ -449,7 +449,7 @@ export default function RestaurantSignupEmail() {
 
               <div className="pt-4 border-t">
                 <button
-                  onClick={() => navigate("/restaurant/login")}
+                  onClick={() => navigate("/shop/login")}
                   className="flex items-center gap-2 text-sm text-primary-orange hover:text-primary-orange/80 transition-colors"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -458,7 +458,7 @@ export default function RestaurantSignupEmail() {
                 <p className="text-sm text-gray-500 mt-2 text-center">
                   Already have an account?{" "}
                   <button
-                    onClick={() => navigate("/restaurant/login")}
+                    onClick={() => navigate("/shop/login")}
                     className="text-primary-orange hover:underline font-medium"
                   >
                     Sign in

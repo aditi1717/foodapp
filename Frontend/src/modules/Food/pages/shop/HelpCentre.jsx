@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { motion } from "framer-motion"
 import { 
   ChevronLeft, 
@@ -13,7 +13,7 @@ import {
   LifeBuoy,
   ChevronRight,
 } from "lucide-react"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 
 const helpTopics = [
   {
@@ -56,7 +56,7 @@ const helpTopics = [
 export default function HelpCentre() {
   const navigate = useNavigate()
   const location = useLocation()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredTopics = helpTopics.filter(topic =>

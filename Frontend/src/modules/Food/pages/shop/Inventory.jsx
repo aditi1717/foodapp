@@ -16,8 +16,8 @@ import {
   ThumbsUp,
   Pencil
 } from "lucide-react"
-import RestaurantNavbar from "@food/components/restaurant/RestaurantNavbar"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import ShopNavbar from "@food/components/shop/ShopNavbar"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { Switch } from "@food/components/ui/switch"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { restaurantAPI, uploadAPI } from "@food/api"
@@ -807,7 +807,7 @@ export default function Inventory() {
   const [selectedTime, setSelectedTime] = useState({ hour: "2", minute: "30", period: "pm" })
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
-  const [restaurantProfile, setRestaurantProfile] = useState(null)
+  const [restaurantProfile, setShopProfile] = useState(null)
   const [stockRules, setStockRules] = useState(() => {
     try {
       if (typeof window === "undefined") return {}
@@ -868,21 +868,21 @@ export default function Inventory() {
   const contentContainerRef = useRef(null)
 
   useEffect(() => {
-    const fetchRestaurantProfile = async () => {
+    const fetchShopProfile = async () => {
       try {
         const response = await restaurantAPI.getCurrentRestaurant()
         const profile =
-          response?.data?.data?.restaurant ||
-          response?.data?.restaurant ||
+          response?.data?.data?.shop ||
+          response?.data?.shop ||
           response?.data?.data ||
           null
-        setRestaurantProfile(profile)
+        setShopProfile(profile)
       } catch (error) {
-        debugWarn("Failed to load restaurant profile for stock rules:", error)
+        debugWarn("Failed to load shop profile for stock rules:", error)
       }
     }
 
-    fetchRestaurantProfile()
+    fetchShopProfile()
   }, [])
 
   const fetchMenuData = useCallback(async ({ silent = false } = {}) => {
@@ -1601,7 +1601,7 @@ export default function Inventory() {
     try {
       if (!categoryId) return
 
-      // Backend source of truth is food_items. Update availability via /food/restaurant/foods/:id.
+      // Backend source of truth is food_items. Update availability via /food/shop/foods/:id.
       if (itemId) {
         await restaurantAPI.updateFood(itemId, { isAvailable: Boolean(isAvailable) })
         return
@@ -1866,9 +1866,9 @@ export default function Inventory() {
   const handleEditItem = (category, item) => {
     if (!item?.id) return
 
-    navigate(`/food/restaurant/hub-menu/item/${item.id}`, {
+    navigate(`/food/shop/hub-menu/item/${item.id}`, {
       state: {
-        backTo: "/food/restaurant/inventory",
+        backTo: "/food/shop/inventory",
         item: {
           ...item,
           category: category?.name || "",
@@ -1889,7 +1889,7 @@ export default function Inventory() {
     >
       {/* Navbar */}
       <div className="sticky top-0 z-50 bg-white">
-        <RestaurantNavbar
+        <ShopNavbar
           showSearch={false}
           showOfflineOnlineTag={false}
           showNotifications={false}
@@ -2730,9 +2730,9 @@ export default function Inventory() {
                 <button
                   onClick={() => {
                     setIsAddPopupOpen(false)
-                    navigate(`/food/restaurant/hub-menu/item/new`, {
+                    navigate(`/food/shop/hub-menu/item/new`, {
                       state: {
-                        backTo: "/food/restaurant/inventory",
+                        backTo: "/food/shop/inventory",
                       },
                     })
                   }}
@@ -2945,9 +2945,9 @@ export default function Inventory() {
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={() => {
-              navigate(`/food/restaurant/hub-menu/item/new`, {
+              navigate(`/food/shop/hub-menu/item/new`, {
                 state: {
-                  backTo: "/food/restaurant/inventory",
+                  backTo: "/food/shop/inventory",
                 },
               })
             }}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import {
   ArrowLeft,
   Search,
@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import { DateRangeCalendar } from "@food/components/ui/date-range-calendar"
 import { restaurantAPI } from "@food/api"
-import { useRestaurantNotifications } from "@food/hooks/useRestaurantNotifications"
+import { useShopNotifications } from "@food/hooks/useShopNotifications"
 import { formatOrderAddressWithLabels } from "@food/utils/orderAddressFormatter"
 import { getCanonicalFoodOrderStatus, getFoodOrderStatusLabel } from "@food/utils/foodOrderStatusUnified"
 import BRAND_THEME from "@/config/brandTheme"
@@ -131,7 +131,7 @@ const filterOptions = {
 
 export default function AllOrdersPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [searchQuery, setSearchQuery] = useState("")
   const [showCalendar, setShowCalendar] = useState(false)
   const [showDateRangePopup, setShowDateRangePopup] = useState(false)
@@ -161,21 +161,21 @@ export default function AllOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [restaurantData, setRestaurantData] = useState(null)
-  const { newOrder } = useRestaurantNotifications()
+  const { newOrder } = useShopNotifications()
 
-  // Fetch restaurant data
+  // Fetch shop data
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
         const response = await restaurantAPI.getCurrentRestaurant()
-        const data = response?.data?.data?.restaurant || response?.data?.restaurant
+        const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
           setRestaurantData(data)
         }
       } catch (err) {
         // Suppress 401 errors as they're handled by axios interceptor
         if (err.response?.status !== 401) {
-          debugError('Error fetching restaurant data:', err)
+          debugError('Error fetching shop data:', err)
         }
       }
     }
@@ -192,8 +192,8 @@ export default function AllOrdersPage() {
     const addr = order.deliveryAddress || order.address || order.customerAddress || null
     const address = formatOrderAddressWithLabels(addr)
     
-    // Get restaurant name
-    const restaurantName = restaurantData?.name || order.restaurantId?.name || 'Restaurant'
+    // Get shop name
+    const restaurantName = restaurantData?.name || order.restaurantId?.name || 'Shop'
     
     // Get customer name
     const customerName = resolveCustomerName(order)
@@ -209,44 +209,44 @@ export default function AllOrdersPage() {
     const backendStatus = String(order.orderStatus || order.status || "created").toLowerCase()
     const canonical = getCanonicalFoodOrderStatus(backendStatus, order?.deliveryState?.currentPhase)
     let status = String(canonical || "pending").replace(/_/g, " ").toUpperCase()
-    let statusLabel = getFoodOrderStatusLabel(backendStatus, order?.deliveryState?.currentPhase, "restaurant").toUpperCase()
+    let statusLabel = getFoodOrderStatusLabel(backendStatus, order?.deliveryState?.currentPhase, "shop").toUpperCase()
     
     const cancelledByRaw = String(order.cancelledBy || "").toLowerCase()
     const cancelledBy =
       backendStatus === "cancelled_by_admin"
         ? "admin"
         : backendStatus === "cancelled_by_restaurant"
-          ? "restaurant"
+          ? "shop"
           : backendStatus === "cancelled_by_user"
             ? "user"
             : cancelledByRaw === "customer"
               ? "user"
               : cancelledByRaw === "admin"
                 ? "admin"
-                : cancelledByRaw === "restaurant"
-                  ? "restaurant"
+                : cancelledByRaw === "shop"
+                  ? "shop"
                   : "user"
 
     // Get rejection/cancellation reason
     let reason = null
     if (status === 'REJECTED' && order.rejectionReason) {
-      reason = `Rejected by Restaurant: ${order.rejectionReason}`
+      reason = `Rejected by Shop: ${order.rejectionReason}`
     } else if (status === 'CANCELLED' && order.cancellationReason) {
       const cancelledLabel =
         cancelledBy === "admin"
           ? "Admin"
-          : cancelledBy === "restaurant"
-            ? "Restaurant"
+          : cancelledBy === "shop"
+            ? "Shop"
             : "User"
       reason = `Cancelled by ${cancelledLabel}: ${order.cancellationReason}`
     } else if (status === 'REJECTED') {
-      reason = 'Rejected by Restaurant'
+      reason = 'Rejected by Shop'
     } else if (status === 'CANCELLED') {
       reason =
         cancelledBy === "admin"
           ? "Cancelled by Admin"
-          : cancelledBy === "restaurant"
-            ? "Cancelled by Restaurant"
+          : cancelledBy === "shop"
+            ? "Cancelled by Shop"
             : "Cancelled by User"
     }
     
@@ -264,7 +264,7 @@ export default function AllOrdersPage() {
       statusLabel,
       date,
       time,
-      restaurant: restaurantName,
+      shop: restaurantName,
       address,
       customer: customerName,
       items,
@@ -526,7 +526,7 @@ export default function AllOrdersPage() {
             <p className="text-sm text-gray-600">Showing order history for</p>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-gray-900">
-                {restaurantData?.name || 'Restaurant'}
+                {restaurantData?.name || 'Shop'}
               </h1>
               <ChevronDown className="w-4 h-4 text-gray-600" />
             </div>
@@ -649,7 +649,7 @@ export default function AllOrdersPage() {
                 delay: Math.min(index * 0.05, 0.3),
                 layout: { duration: 0.3 }
               }}
-              onClick={() => navigate(`/restaurant/orders/${order.id}`)}
+              onClick={() => navigate(`/shop/orders/${order.id}`)}
               className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
             >
             {/* Status and Order ID Row */}
@@ -682,8 +682,8 @@ export default function AllOrdersPage() {
               </button>
             </div>
 
-            {/* Restaurant + Address Info */}
-            <p className="text-sm text-gray-900 mb-0.5">{order.restaurant}</p>
+            {/* Shop + Address Info */}
+            <p className="text-sm text-gray-900 mb-0.5">{order.shop}</p>
             <p className="text-sm text-gray-600 mb-1 line-clamp-2 overflow-hidden">
               {order.address}
             </p>

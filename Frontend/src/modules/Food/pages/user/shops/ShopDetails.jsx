@@ -47,7 +47,7 @@ import { useProfile } from "@food/context/ProfileContext"
 import AddToCartAnimation from "@food/components/user/AddToCartAnimation"
 import { getCompanyNameAsync } from "@food/utils/businessSettings"
 import { isModuleAuthenticated } from "@food/utils/auth"
-import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
+import { getShopAvailabilityStatus } from "@food/utils/shopAvailability"
 import {
   buildCartLineId,
   getDefaultFoodVariant,
@@ -58,7 +58,7 @@ import {
 } from "@food/utils/foodVariants"
 import fssaiLogo from "@food/assets/fssai.png"
 import { RestaurantDetailSkeleton } from "@food/components/ui/loading-skeletons"
-import RestaurantFoodCard from "@food/components/user/restaurants/RestaurantFoodCard"
+import ShopFoodCard from "@food/components/user/shops/ShopFoodCard"
 
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -68,7 +68,7 @@ const debugError = (...args) => {}
 
 const FOOD_IMAGE_FALLBACK = "https://picsum.photos/seed/food-fallback/800/600"
 const RUPEE_SYMBOL = "\u20B9"
-const RESTAURANT_DETAILS_FILTERS_STORAGE_KEY = "food-restaurant-details-filters"
+const RESTAURANT_DETAILS_FILTERS_STORAGE_KEY = "food-shop-details-filters"
 const getNormalizedFoodType = (item = {}) =>
   String(item?.foodType || item?.type || item?.category || "")
     .trim()
@@ -187,7 +187,7 @@ function RestaurantDetailsContent() {
         }
       }
     } catch (error) {
-      debugWarn("Failed to initialize restaurant filters from localStorage:", error)
+      debugWarn("Failed to initialize shop filters from localStorage:", error)
     }
     return {
       sortBy: null,
@@ -202,11 +202,11 @@ function RestaurantDetailsContent() {
     ))
   }, [vegMode, filters.vegNonVeg])
 
-  // Restaurant data state
-  const [restaurant, setRestaurant] = useState(null)
+  // Shop data state
+  const [shop, setRestaurant] = useState(null)
   const [loadingRestaurant, setLoadingRestaurant] = useState(true)
   const [restaurantError, setRestaurantError] = useState(null)
-  const fetchedRestaurantRef = useRef(false) // Track if restaurant has been fetched for current slug
+  const fetchedRestaurantRef = useRef(false) // Track if shop has been fetched for current slug
   const fetchedSlugRef = useRef(null)
 
   const filteredRestaurantItemOffers = useMemo(() => {
@@ -214,8 +214,8 @@ function RestaurantDetailsContent() {
     
     // Helper to find the section/category a menu item belongs to
     const findSectionForItem = (itemId) => {
-      if (!restaurant?.menuSections || !itemId) return null
-      for (const section of restaurant.menuSections) {
+      if (!shop?.menuSections || !itemId) return null
+      for (const section of shop.menuSections) {
         const hasItem = section.items?.some(item => {
           const idStr = String(item?.id || item?._id || "")
           return idStr && idStr === String(itemId)
@@ -254,7 +254,7 @@ function RestaurantDetailsContent() {
         // Fallback to manual ID/Name check if the item wasn't matched in menuSections
         const categoryId = p.categoryId || p.productId?.categoryId || ""
         const categoryName = p.categoryName || p.category || p.productId?.categoryName || p.productId?.category || ""
-        const matchedSection = restaurant?.menuSections?.find(s => 
+        const matchedSection = shop?.menuSections?.find(s => 
           String(s?.categoryId || s?._id || s?.id || "") === String(categoryId || "") ||
           (categoryName && String(s?.name || s?.title || "").trim().toLowerCase() === String(categoryName).trim().toLowerCase())
         )
@@ -313,7 +313,7 @@ function RestaurantDetailsContent() {
         resolvedProducts: filteredProducts
       }
     }).filter(Boolean)
-  }, [publicRestaurantOffers, vegMode, filters.vegNonVeg, restaurant?.menuSections])
+  }, [publicRestaurantOffers, vegMode, filters.vegNonVeg, shop?.menuSections])
 
   const offerHighlightTexts = useMemo(() => {
     const titles =
@@ -370,35 +370,35 @@ function RestaurantDetailsContent() {
     showShareModal
   ])
 
-  // Fetch restaurant data from API
+  // Fetch shop data from API
   useEffect(() => {
     const fetchRestaurant = async () => {
       if (!slug) return
 
       // Prevent re-fetching for the same slug. Mobile location/zone updates can
       // trigger transient refetch failures that clear already-rendered content.
-      if (fetchedRestaurantRef.current && fetchedSlugRef.current === slug && restaurant) {
+      if (fetchedRestaurantRef.current && fetchedSlugRef.current === slug && shop) {
         return
       }
 
       try {
         // Keep the existing page visible on background retries.
-        setLoadingRestaurant(!fetchedRestaurantRef.current && !restaurant)
+        setLoadingRestaurant(!fetchedRestaurantRef.current && !shop)
         setRestaurantError(null)
 
-        debugLog('Fetching restaurant with slug:', slug)
+        debugLog('Fetching shop with slug:', slug)
         let response = null
         let apiRestaurant = null
 
         try {
-          // First, try to get restaurant directly by slug/ID (no zoneId needed)
+          // First, try to get shop directly by slug/ID (no zoneId needed)
           try {
             response = await restaurantAPI.getRestaurantById(slug, {
               params: { _ts: Date.now() },
             })
             if (response?.data?.success && response?.data?.data) {
               apiRestaurant = response.data.data
-              debugLog('? Found restaurant in restaurant API by slug/ID:', apiRestaurant)
+              debugLog('? Found shop in shop API by slug/ID:', apiRestaurant)
             }
           } catch (directLookupError) {
             // If direct lookup fails, try searching by name.
@@ -412,25 +412,25 @@ function RestaurantDetailsContent() {
               for (const searchParams of searchVariants) {
                 try {
                   const searchResponse = await restaurantAPI.getRestaurants(searchParams, { noCache: true })
-                  const restaurants = searchResponse?.data?.data?.restaurants || searchResponse?.data?.data || []
+                  const shops = searchResponse?.data?.data?.shops || searchResponse?.data?.data || []
 
                   // Try to find by slug match or name match
                   const restaurantName = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-                  const matchingRestaurant = restaurants.find(r =>
+                  const matchingRestaurant = shops.find(r =>
                     r.slug === slug ||
                     r.name?.toLowerCase().replace(/\s+/g, '-') === slug.toLowerCase() ||
                     r.name?.toLowerCase() === restaurantName.toLowerCase()
                   )
 
                   if (matchingRestaurant) {
-                    // Get full restaurant details by ID
+                    // Get full shop details by ID
                     const fullResponse = await restaurantAPI.getRestaurantById(
                       matchingRestaurant._id || matchingRestaurant.restaurantId,
                       { params: { _ts: Date.now() } },
                     )
                     if (fullResponse.data && fullResponse.data.success && fullResponse.data.data) {
                       apiRestaurant = fullResponse.data.data
-                      debugLog('? Found restaurant in restaurant API by name search:', apiRestaurant)
+                      debugLog('? Found shop in shop API by name search:', apiRestaurant)
                       break
                     }
                   }
@@ -440,18 +440,18 @@ function RestaurantDetailsContent() {
               }
             }
         } catch (restaurantError) {
-          debugError('? Restaurant not found in restaurant API either:', restaurantError)
+          debugError('? Shop not found in shop API either:', restaurantError)
         }
 
         if (apiRestaurant) {
-          debugLog('? Fetched restaurant from API:', apiRestaurant)
-          debugLog('? Restaurant data keys:', Object.keys(apiRestaurant))
-          debugLog('? Restaurant name field:', apiRestaurant?.name)
-          debugLog('? Restaurant restaurantId:', apiRestaurant?.restaurantId)
-          debugLog('? Restaurant _id:', apiRestaurant?._id)
-          debugLog('? Restaurant.restaurant:', apiRestaurant?.restaurant)
+          debugLog('? Fetched shop from API:', apiRestaurant)
+          debugLog('? Shop data keys:', Object.keys(apiRestaurant))
+          debugLog('? Shop name field:', apiRestaurant?.name)
+          debugLog('? Shop restaurantId:', apiRestaurant?.restaurantId)
+          debugLog('? Shop _id:', apiRestaurant?._id)
+          debugLog('? Shop.shop:', apiRestaurant?.shop)
 
-          const actualRestaurant = apiRestaurant?.restaurant || apiRestaurant
+          const actualRestaurant = apiRestaurant?.shop || apiRestaurant
 
           // Helper function to format address with zone and pin code
           const formatRestaurantAddress = (locationObj) => {
@@ -554,7 +554,7 @@ function RestaurantDetailsContent() {
           const formattedAddress = formatRestaurantAddress(locationObj)
           debugLog('? Final Formatted Address:', formattedAddress)
 
-          // Calculate distance from user to restaurant
+          // Calculate distance from user to shop
           const calculateDistance = (lat1, lng1, lat2, lng2) => {
             const R = 6371 // Earth's radius in kilometers
             const dLat = (lat2 - lat1) * Math.PI / 180
@@ -567,12 +567,12 @@ function RestaurantDetailsContent() {
             return R * c // Distance in kilometers
           }
 
-          // Get restaurant coordinates
+          // Get shop coordinates
           // Priority: latitude/longitude fields > coordinates array (GeoJSON format: [lng, lat])
           const restaurantLat = locationObj?.latitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[1] : null)
           const restaurantLng = locationObj?.longitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[0] : null)
 
-          debugLog('? Restaurant coordinates:', { restaurantLat, restaurantLng, locationObj })
+          debugLog('? Shop coordinates:', { restaurantLat, restaurantLng, locationObj })
 
           // Get user coordinates
           const userLat = userLocation?.latitude
@@ -592,7 +592,7 @@ function RestaurantDetailsContent() {
               const distanceInMeters = Math.round(distanceInKm * 1000)
               calculatedDistance = `${distanceInMeters} m`
             }
-            debugLog('? Calculated distance from user to restaurant:', calculatedDistance, 'km:', distanceInKm)
+            debugLog('? Calculated distance from user to shop:', calculatedDistance, 'km:', distanceInKm)
           } else {
             debugWarn('? Cannot calculate distance - missing coordinates:', {
               hasUserLocation: !!(userLat && userLng),
@@ -658,7 +658,7 @@ function RestaurantDetailsContent() {
               actualRestaurant?.restaurantName ||
               apiRestaurant?.name ||
               apiRestaurant?.restaurantName ||
-              "Unknown Restaurant",
+              "Unknown Shop",
             cuisine: resolvedTopCategory,
             topCategory: resolvedTopCategory,
             rating: actualRestaurant?.rating || apiRestaurant?.rating || actualRestaurant?.averageRating || apiRestaurant?.averageRating || 4.5,
@@ -737,18 +737,18 @@ function RestaurantDetailsContent() {
             offToday: actualRestaurant?.offToday ?? apiRestaurant?.offToday,
           }
 
-          debugLog('? Transformed restaurant:', transformedRestaurant)
-          debugLog('? Restaurant ID for menu fetch:', transformedRestaurant.id)
+          debugLog('? Transformed shop:', transformedRestaurant)
+          debugLog('? Shop ID for menu fetch:', transformedRestaurant.id)
 
           if (!transformedRestaurant.id) {
-            debugError('? No restaurant ID found! Cannot fetch menu.')
+            debugError('? No shop ID found! Cannot fetch menu.')
           }
 
           setRestaurant(transformedRestaurant)
           fetchedRestaurantRef.current = true // Mark as fetched
           fetchedSlugRef.current = slug
 
-          // Load public restaurant offers alongside the main restaurant payload so
+          // Load public shop offers alongside the main shop payload so
           // the top-of-page offer banner is always hydrated on first paint.
           try {
             const publicOfferRestaurantId =
@@ -773,7 +773,7 @@ function RestaurantDetailsContent() {
               }
             }
           } catch (publicOffersError) {
-            debugWarn("Failed to fetch public restaurant offers during restaurant load:", publicOffersError?.message)
+            debugWarn("Failed to fetch public shop offers during shop load:", publicOffersError?.message)
             if (Array.isArray(transformedRestaurant?.offers) && transformedRestaurant.offers.length > 0) {
               setPublicRestaurantOffers(transformedRestaurant.offers)
             }
@@ -793,12 +793,12 @@ function RestaurantDetailsContent() {
             debugWarn("Outlet timings fetch failed, falling back to delivery timings:", outletError?.message)
           }
 
-          // Fetch menu and inventory for this restaurant
-          // If no restaurant ID, try to find matching restaurant by name
+          // Fetch menu and inventory for this shop
+          // If no shop ID, try to find matching shop by name
           let restaurantIdForMenu = transformedRestaurant.id
 
           if (!restaurantIdForMenu) {
-            debugWarn('? No restaurant ID available, searching for restaurant by name...')
+            debugWarn('? No shop ID available, searching for shop by name...')
             try {
               const searchVariants = zoneId
                 ? [{ limit: 20, page: 1, zoneId: zoneId, _ts: Date.now() }, { limit: 20, page: 1, _ts: Date.now() }]
@@ -806,18 +806,18 @@ function RestaurantDetailsContent() {
 
               for (const searchParams of searchVariants) {
                 const searchResponse = await restaurantAPI.getRestaurants(searchParams, { noCache: true })
-                const restaurants = searchResponse?.data?.data?.restaurants || searchResponse?.data?.data || []
+                const shops = searchResponse?.data?.data?.shops || searchResponse?.data?.data || []
 
                 // Try to find by exact name match
-                const matchingRestaurant = restaurants.find(r =>
+                const matchingRestaurant = shops.find(r =>
                   r.name?.toLowerCase().trim() === transformedRestaurant.name?.toLowerCase().trim()
                 )
 
                 if (matchingRestaurant) {
                   restaurantIdForMenu = matchingRestaurant._id || matchingRestaurant.restaurantId || matchingRestaurant.id
-                  debugLog('? Found matching restaurant by name, ID:', restaurantIdForMenu)
+                  debugLog('? Found matching shop by name, ID:', restaurantIdForMenu)
 
-                  // Update the restaurant ID in state
+                  // Update the shop ID in state
                   setRestaurant(prev => ({
                     ...prev,
                     id: restaurantIdForMenu,
@@ -828,10 +828,10 @@ function RestaurantDetailsContent() {
               }
 
               if (!restaurantIdForMenu) {
-                debugWarn('? No matching restaurant found by name')
+                debugWarn('? No matching shop found by name')
               }
             } catch (searchError) {
-              debugError('? Error searching for restaurant:', searchError)
+              debugError('? Error searching for shop:', searchError)
             }
           }
 
@@ -908,7 +908,7 @@ function RestaurantDetailsContent() {
                     orderRestaurantField?._id,
                     orderRestaurantField?.id,
                     orderRestaurantField?.restaurantId,
-                    order?.restaurant,
+                    order?.shop,
                     order?.restaurant_id,
                   ].map(normalize).filter(Boolean)
 
@@ -919,7 +919,7 @@ function RestaurantDetailsContent() {
                   const candidateNames = [
                     order?.restaurantName,
                     orderRestaurantField?.name,
-                    order?.restaurant?.name,
+                    order?.shop?.name,
                   ].map(normalize).filter(Boolean)
 
                   return !!targetRestaurantName && candidateNames.includes(targetRestaurantName)
@@ -930,12 +930,12 @@ function RestaurantDetailsContent() {
             }
 
             try {
-              debugLog('? Fetching menu for restaurant ID:', restaurantIdForMenu)
+              debugLog('? Fetching menu for shop ID:', restaurantIdForMenu)
               let menuResponse = null
               let resolvedMenuLookupId = null
               for (const lookupId of normalizedLookupIds) {
                 try {
-                  debugLog('? Fetching menu for restaurant lookup ID:', lookupId)
+                  debugLog('? Fetching menu for shop lookup ID:', lookupId)
                   const response = await restaurantAPI.getMenuByRestaurantId(lookupId, { noCache: true })
                   if (response?.data?.success) {
                     menuResponse = response
@@ -1086,7 +1086,7 @@ function RestaurantDetailsContent() {
               }
             } catch (menuError) {
               if (menuError.response && menuError.response.status === 404) {
-                debugLog('? Menu not found for this restaurant.')
+                debugLog('? Menu not found for this shop.')
               } else {
                 debugError('? Error fetching menu:', menuError)
               }
@@ -1095,12 +1095,12 @@ function RestaurantDetailsContent() {
             }
 
             try {
-              debugLog('? Fetching inventory for restaurant ID:', restaurantIdForMenu)
+              debugLog('? Fetching inventory for shop ID:', restaurantIdForMenu)
               let inventoryResponse = null
               let resolvedInventoryLookupId = null
               for (const lookupId of normalizedLookupIds) {
                 try {
-                  debugLog('? Fetching inventory for restaurant lookup ID:', lookupId)
+                  debugLog('? Fetching inventory for shop lookup ID:', lookupId)
                   const response = await restaurantAPI.getInventoryByRestaurantId(lookupId)
                   if (response?.data?.success) {
                     inventoryResponse = response
@@ -1148,7 +1148,7 @@ function RestaurantDetailsContent() {
               }
             } catch (inventoryError) {
               if (inventoryError.response && inventoryError.response.status === 404) {
-                debugLog('? Inventory not found for this restaurant.')
+                debugLog('? Inventory not found for this shop.')
               } else {
                 debugError('? Error fetching inventory:', inventoryError)
               }
@@ -1158,11 +1158,11 @@ function RestaurantDetailsContent() {
             setLoadingMenuItems(false)
           }
         } else {
-          debugError('? No restaurant data found in API response')
+          debugError('? No shop data found in API response')
           debugError('? Response:', response)
           debugError('? apiRestaurant:', apiRestaurant)
           if (!fetchedRestaurantRef.current) {
-            setRestaurantError('Restaurant not found')
+            setRestaurantError('Shop not found')
             setRestaurant(null)
           }
         }
@@ -1170,30 +1170,30 @@ function RestaurantDetailsContent() {
         // Check if it's a network error (backend not running)
         const isNetworkError = error.code === 'ERR_NETWORK' || error.message === 'Network Error'
 
-        // Check if it's a 404 error (restaurant doesn't exist)
+        // Check if it's a 404 error (shop doesn't exist)
         const is404Error = error.response?.status === 404
 
         if (isNetworkError) {
           // Network error - backend is not running
-          // Don't show "Restaurant not found" for network errors
+          // Don't show "Shop not found" for network errors
           // The axios interceptor will show a toast notification
-          debugError('Network error fetching restaurant (backend may not be running):', error)
+          debugError('Network error fetching shop (backend may not be running):', error)
           if (!fetchedRestaurantRef.current) {
             setRestaurantError('Backend server is not connected. Please make sure the backend is running.')
             setRestaurant(null)
           }
         } else if (is404Error) {
-          // 404 error - restaurant doesn't exist in database
-          debugLog(`Restaurant "${slug}" not found in database`)
+          // 404 error - shop doesn't exist in database
+          debugLog(`Shop "${slug}" not found in database`)
           if (!fetchedRestaurantRef.current) {
-            setRestaurantError('Restaurant not found')
+            setRestaurantError('Shop not found')
             setRestaurant(null)
           }
         } else {
           // Other errors
-          debugError('Error fetching restaurant:', error)
+          debugError('Error fetching shop:', error)
           if (!fetchedRestaurantRef.current) {
-            setRestaurantError(error.message || 'Failed to load restaurant')
+            setRestaurantError(error.message || 'Failed to load shop')
             setRestaurant(null)
           }
         }
@@ -1204,20 +1204,20 @@ function RestaurantDetailsContent() {
     }
 
     // Reset fetched flag only when URL slug changes.
-    // Do not compare with restaurant.slug because canonical API slug may differ
-    // from route slug (e.g. "restaurant-2513"), causing refetch loops.
+    // Do not compare with shop.slug because canonical API slug may differ
+    // from route slug (e.g. "shop-2513"), causing refetch loops.
     if (fetchedRestaurantRef.current && fetchedSlugRef.current !== slug) {
       fetchedRestaurantRef.current = false
       fetchedSlugRef.current = null
     }
 
     fetchRestaurant()
-  }, [slug, zoneId, restaurant])
+  }, [slug, zoneId, shop])
 
-  // Fetch public offers for this restaurant so they show on the page
+  // Fetch public offers for this shop so they show on the page
   useEffect(() => {
-    // The public offers endpoint expects the restaurant Mongo _id, not a business-facing restaurantId string.
-    const restaurantId = restaurant?.mongoId || restaurant?._id || restaurant?.id || restaurant?.restaurantId
+    // The public offers endpoint expects the shop Mongo _id, not a business-facing restaurantId string.
+    const restaurantId = shop?.mongoId || shop?._id || shop?.id || shop?.restaurantId
     if (!restaurantId) return
 
     const fetchOffers = async () => {
@@ -1225,38 +1225,38 @@ function RestaurantDetailsContent() {
         // 1) Try scoped public endpoint (already filtered server-side)
         const res = await restaurantAPI.getPublicOffers(restaurantId)
         const list = res?.data?.data?.offers || res?.data?.offers || []
-        console.debug("Restaurant public offers (scoped)", { restaurantId, count: list?.length, list })
+        console.debug("Shop public offers (scoped)", { restaurantId, count: list?.length, list })
 
-        const fallback = Array.isArray(restaurant?.offers) ? restaurant.offers : []
+        const fallback = Array.isArray(shop?.offers) ? shop.offers : []
         setPublicRestaurantOffers(Array.isArray(list) ? list : fallback)
       } catch (err) {
-        debugWarn("Failed to fetch restaurant offers for user page", err?.message)
-        if (Array.isArray(restaurant?.offers)) {
-          setPublicRestaurantOffers(restaurant.offers)
+        debugWarn("Failed to fetch shop offers for user page", err?.message)
+        if (Array.isArray(shop?.offers)) {
+          setPublicRestaurantOffers(shop.offers)
         }
       }
     }
 
     fetchOffers()
-  }, [restaurant?.restaurantId, restaurant?.id, restaurant?._id, restaurant?.mongoId, restaurant?.offers])
+  }, [shop?.restaurantId, shop?.id, shop?._id, shop?.mongoId, shop?.offers])
 
   // Track previous values to prevent unnecessary recalculations
   const prevCoordsRef = useRef({ userLat: null, userLng: null, restaurantLat: null, restaurantLng: null })
   const prevDistanceRef = useRef(null)
 
-  // Extract restaurant coordinates as stable values (not array references)
-  const restaurantLat = restaurant?.locationObject?.latitude ||
-    (restaurant?.locationObject?.coordinates && Array.isArray(restaurant.locationObject.coordinates)
-      ? restaurant.locationObject.coordinates[1]
+  // Extract shop coordinates as stable values (not array references)
+  const restaurantLat = shop?.locationObject?.latitude ||
+    (shop?.locationObject?.coordinates && Array.isArray(shop.locationObject.coordinates)
+      ? shop.locationObject.coordinates[1]
       : null)
-  const restaurantLng = restaurant?.locationObject?.longitude ||
-    (restaurant?.locationObject?.coordinates && Array.isArray(restaurant.locationObject.coordinates)
-      ? restaurant.locationObject.coordinates[0]
+  const restaurantLng = shop?.locationObject?.longitude ||
+    (shop?.locationObject?.coordinates && Array.isArray(shop.locationObject.coordinates)
+      ? shop.locationObject.coordinates[0]
       : null)
 
   // Recalculate distance when user location updates
   useEffect(() => {
-    if (!restaurant || !userLocation?.latitude || !userLocation?.longitude) return
+    if (!shop || !userLocation?.latitude || !userLocation?.longitude) return
     if (!restaurantLat || !restaurantLng) return
 
     const userLat = userLocation.latitude
@@ -1306,10 +1306,10 @@ function RestaurantDetailsContent() {
 
       // Only update if distance actually changed
       if (calculatedDistance !== prevDistanceRef.current) {
-        debugLog('? Recalculated distance from user to restaurant:', calculatedDistance, 'km:', distanceInKm)
+        debugLog('? Recalculated distance from user to shop:', calculatedDistance, 'km:', distanceInKm)
         prevDistanceRef.current = calculatedDistance
 
-        // Update restaurant distance
+        // Update shop distance
         setRestaurant(prev => {
           // Only update if distance actually changed to prevent infinite loop
           if (prev?.distance === calculatedDistance) {
@@ -1324,19 +1324,19 @@ function RestaurantDetailsContent() {
     }
   }, [userLocation?.latitude, userLocation?.longitude, restaurantLat, restaurantLng])
 
-  // Sync quantities from cart on mount and when restaurant changes
+  // Sync quantities from cart on mount and when shop changes
   useEffect(() => {
-    if (!restaurant || !restaurant.name) return
+    if (!shop || !shop.name) return
 
     const cartQuantities = {}
     cart.forEach((item) => {
-      if (item.restaurant === restaurant.name) {
+      if (item.shop === shop.name) {
         cartQuantities[item.id] = item.quantity || 0
       }
     })
     setQuantities(cartQuantities)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurant?.name, cart])
+  }, [shop?.name, cart])
 
   useEffect(() => {
     if (!selectedItem) {
@@ -1356,15 +1356,15 @@ function RestaurantDetailsContent() {
       return
     }
 
-    // CRITICAL: Check if user is in service zone or restaurant is available
+    // CRITICAL: Check if user is in service zone or shop is available
     if (isOutOfService) {
       toast.error('You are outside the service zone. Please select a location within the service area.');
       return;
     }
 
-    const availability = getRestaurantAvailabilityStatus(restaurant)
+    const availability = getShopAvailabilityStatus(shop)
     if (!availability.isOpen) {
-      toast.error("Restaurant is currently offline. Please try again later.")
+      toast.error("Shop is currently offline. Please try again later.")
       return
     }
 
@@ -1377,33 +1377,33 @@ function RestaurantDetailsContent() {
       [lineItemId]: newQuantity,
     }))
 
-    // CRITICAL: Validate restaurant data before adding to cart
-    if (!restaurant || !restaurant.name) {
-      debugError('? Cannot add item to cart: Restaurant data is missing!');
-      toast.error('Restaurant information is missing. Please refresh the page.');
+    // CRITICAL: Validate shop data before adding to cart
+    if (!shop || !shop.name) {
+      debugError('? Cannot add item to cart: Shop data is missing!');
+      toast.error('Shop information is missing. Please refresh the page.');
       return;
     }
 
     // Ensure we have a valid restaurantId
-    const validRestaurantId = restaurant?.restaurantId || restaurant?._id || restaurant?.id;
+    const validRestaurantId = shop?.restaurantId || shop?._id || shop?.id;
     if (!validRestaurantId) {
-      debugError('? Cannot add item to cart: Restaurant ID is missing!', {
-        restaurant: restaurant,
-        restaurantId: restaurant?.restaurantId,
-        _id: restaurant?._id,
-        id: restaurant?.id
+      debugError('? Cannot add item to cart: Shop ID is missing!', {
+        shop: shop,
+        restaurantId: shop?.restaurantId,
+        _id: shop?._id,
+        id: shop?.id
       });
-      toast.error('Restaurant ID is missing. Please refresh the page.');
+      toast.error('Shop ID is missing. Please refresh the page.');
       return;
     }
 
     // Log for debugging
     debugLog('? Adding item to cart:', {
       itemName: item.name,
-      restaurantName: restaurant.name,
+      restaurantName: shop.name,
       restaurantId: validRestaurantId,
-      restaurant_id: restaurant._id,
-      restaurant_restaurantId: restaurant.restaurantId
+      restaurant_id: shop._id,
+      restaurant_restaurantId: shop.restaurantId
     });
 
     // Prepare cart item with all required properties
@@ -1417,7 +1417,7 @@ function RestaurantDetailsContent() {
       variantName: resolvedVariant?.name || "",
       variantPrice: resolvedVariant?.price ?? item.price,
       image: item.image,
-      restaurant: restaurant.name, // Use restaurant.name directly (already validated)
+      shop: shop.name, // Use shop.name directly (already validated)
       restaurantId: validRestaurantId, // Use validated restaurantId
       description: item.description,
       originalPrice: item.originalPrice,
@@ -1484,7 +1484,7 @@ function RestaurantDetailsContent() {
         if (newQuantity > existingCartItem.quantity && sourcePosition) {
           const result = addToCart(cartItem, sourcePosition)
           if (result?.ok === false) {
-            toast.error(result.error || 'Cannot add item from different restaurant. Please clear cart first.')
+            toast.error(result.error || 'Cannot add item from different shop. Please clear cart first.')
             return
           }
           if (newQuantity > existingCartItem.quantity + 1) {
@@ -1567,11 +1567,11 @@ function RestaurantDetailsContent() {
     return firstSubsectionImage || ""
   }
 
-  // Menu categories - dynamically generated from restaurant menu sections
+  // Menu categories - dynamically generated from shop menu sections
   const menuCategories = useMemo(() => {
-    if (!restaurant?.menuSections || !Array.isArray(restaurant.menuSections)) return []
+    if (!shop?.menuSections || !Array.isArray(shop.menuSections)) return []
 
-    return restaurant.menuSections
+    return shop.menuSections
       .map((section, index) => {
         if (isRecommendedSection(section)) return null
 
@@ -1654,7 +1654,7 @@ function RestaurantDetailsContent() {
       nextState[slug] = filters
       window.localStorage.setItem(RESTAURANT_DETAILS_FILTERS_STORAGE_KEY, JSON.stringify(nextState))
     } catch (error) {
-      debugWarn("Failed to persist restaurant filters:", error)
+      debugWarn("Failed to persist shop filters:", error)
     }
   }, [filters, slug])
 
@@ -1668,9 +1668,9 @@ function RestaurantDetailsContent() {
 
   // Handle bookmark click
   const handleBookmarkClick = (item) => {
-    const restaurantId = restaurant?.restaurantId || restaurant?._id || restaurant?.id
+    const restaurantId = shop?.restaurantId || shop?._id || shop?.id
     if (!restaurantId) {
-      toast.error("Restaurant information is missing")
+      toast.error("Shop information is missing")
       return
     }
 
@@ -1696,8 +1696,8 @@ function RestaurantDetailsContent() {
         originalPrice: item.originalPrice,
         image: item.image,
         restaurantId: restaurantId,
-        restaurantName: restaurant?.name || "",
-        restaurantSlug: restaurant?.slug || slug || "",
+        restaurantName: shop?.name || "",
+        restaurantSlug: shop?.slug || slug || "",
         foodType: item.foodType,
         customisable: item.customisable,
       }
@@ -1708,15 +1708,15 @@ function RestaurantDetailsContent() {
 
   // Handle add to collection
   const handleAddToCollection = () => {
-    const restaurantSlug = restaurant?.slug || slug || ""
+    const restaurantSlug = shop?.slug || slug || ""
 
     if (!restaurantSlug) {
-      toast.error("Restaurant information is missing")
+      toast.error("Shop information is missing")
       return
     }
 
-    if (!restaurant) {
-      toast.error("Restaurant data not available")
+    if (!shop) {
+      toast.error("Shop data not available")
       return
     }
 
@@ -1725,33 +1725,33 @@ function RestaurantDetailsContent() {
     if (isAlreadyFavorite) {
       // Remove from collection
       removeFavorite(restaurantSlug)
-      toast.success("Restaurant removed from collection")
+      toast.success("Shop removed from collection")
     } else {
       // Add to collection
       addFavorite({
         slug: restaurantSlug,
-        name: restaurant.name || "",
-        cuisine: restaurant.cuisine || "",
-        rating: restaurant.rating || 0,
-        deliveryTime: restaurant.deliveryTime || restaurant.estimatedDeliveryTime || "",
-        distance: restaurant.distance || "",
-        priceRange: restaurant.priceRange || "",
-        image: restaurant.profileImageUrl?.url || restaurant.image || ""
+        name: shop.name || "",
+        cuisine: shop.cuisine || "",
+        rating: shop.rating || 0,
+        deliveryTime: shop.deliveryTime || shop.estimatedDeliveryTime || "",
+        distance: shop.distance || "",
+        priceRange: shop.priceRange || "",
+        image: shop.profileImageUrl?.url || shop.image || ""
       })
-      toast.success("Restaurant added to collection")
+      toast.success("Shop added to collection")
     }
 
     setShowMenuOptionsSheet(false)
   }
 
-  // Handle share restaurant
+  // Handle share shop
   const handleShareRestaurant = async () => {
     const companyName = await getCompanyNameAsync()
-    const restaurantSlug = restaurant?.slug || slug || ""
-    const restaurantName = restaurant?.name || "this restaurant"
+    const restaurantSlug = shop?.slug || slug || ""
+    const restaurantName = shop?.name || "this shop"
 
     // Create share URL
-    const shareUrl = `${window.location.origin}/user/restaurants/${restaurantSlug}`
+    const shareUrl = `${window.location.origin}/user/shops/${restaurantSlug}`
     const shareText = `Check out ${restaurantName} on ${companyName}! ${shareUrl}`
 
     const payload = {
@@ -1768,7 +1768,7 @@ function RestaurantDetailsContent() {
 
     const shared = await tryNativeShare(payload)
     if (shared) {
-      toast.success("Restaurant shared successfully")
+      toast.success("Shop shared successfully")
       setShowMenuOptionsSheet(false)
       return
     }
@@ -1782,14 +1782,14 @@ function RestaurantDetailsContent() {
   // Handle share click
   const handleShareClick = async (item) => {
     const dishId = item.id || item._id
-    const restaurantSlug = restaurant?.slug || slug || ""
+    const restaurantSlug = shop?.slug || slug || ""
 
     // Create share URL
-    const shareUrl = `${window.location.origin}/user/restaurants/${restaurantSlug}?dish=${dishId}`
-    const shareText = `Check out ${item.name} from ${restaurant?.name || "this restaurant"}! ${shareUrl}`
+    const shareUrl = `${window.location.origin}/user/shops/${restaurantSlug}?dish=${dishId}`
+    const shareText = `Check out ${item.name} from ${shop?.name || "this shop"}! ${shareUrl}`
 
     const payload = {
-      title: `${item.name} - ${restaurant?.name || ""}`,
+      title: `${item.name} - ${shop?.name || ""}`,
       text: shareText,
       url: shareUrl,
     }
@@ -2070,9 +2070,9 @@ function RestaurantDetailsContent() {
   // Build renderable sections from the current filter state so section/subsection visibility
   // stays in sync with the actual filtered items shown on screen.
   const getFilteredSections = () => {
-    if (!restaurant?.menuSections) return []
+    if (!shop?.menuSections) return []
 
-    const visibleSections = restaurant.menuSections
+    const visibleSections = shop.menuSections
       .map((section, index) => {
         const filteredItems = sortMenuItems(
           filterMenuItems(
@@ -2161,7 +2161,7 @@ function RestaurantDetailsContent() {
 
   const filteredSections = useMemo(
     () => getFilteredSections(),
-    [restaurant?.menuSections, activeUnderPriceLimit, searchQuery, vegMode, filters, selectedMenuCategory, publicRestaurantOffers]
+    [shop?.menuSections, activeUnderPriceLimit, searchQuery, vegMode, filters, selectedMenuCategory, publicRestaurantOffers]
   )
 
   useEffect(() => {
@@ -2179,12 +2179,12 @@ function RestaurantDetailsContent() {
   }, [filteredSections, hasActiveMenuFilters])
 
   useEffect(() => {
-    if (!restaurant?.menuSections || !targetDishId) return
+    if (!shop?.menuSections || !targetDishId) return
 
     let matchedItem = null
     const sectionKeysToExpand = new Set()
 
-    restaurant.menuSections.forEach((section, originalIndex) => {
+    shop.menuSections.forEach((section, originalIndex) => {
       const sectionItems = toRenderableArray(section?.items)
       const matchedSectionItem = sectionItems.find(
         (item) => String(item?.id || item?._id || "").trim() === targetDishId,
@@ -2234,28 +2234,28 @@ function RestaurantDetailsContent() {
       window.clearTimeout(scrollTimer)
       window.clearTimeout(highlightTimer)
     }
-  }, [restaurant, targetDishId])
+  }, [shop, targetDishId])
 
   // Highlight offers/texts for the blue offer line
   const highlightOffers = [
     "Upto 50% OFF",
-    restaurant?.offerText || "",
+    shop?.offerText || "",
     ...(Array.isArray(restaurantItemOffers) ? restaurantItemOffers.map((offer) => offer?.title || "") : []),
-    ...(Array.isArray(restaurant?.offers) ? restaurant.offers.map((offer) => offer?.title || "") : []),
+    ...(Array.isArray(shop?.offers) ? shop.offers.map((offer) => offer?.title || "") : []),
   ].filter(Boolean)
 
   // Auto-rotate images every 3 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => {
-        const offersLength = Array.isArray(restaurant?.offers) && restaurant.offers.length > 0
-          ? restaurant.offers.length
+        const offersLength = Array.isArray(shop?.offers) && shop.offers.length > 0
+          ? shop.offers.length
           : 1
         return (prev + 1) % offersLength
       })
     }, 3000)
     return () => clearInterval(interval)
-  }, [restaurant?.offers?.length || 0])
+  }, [shop?.offers?.length || 0])
 
   // Auto-rotate highlight offer text every 2 seconds
   useEffect(() => {
@@ -2271,10 +2271,10 @@ function RestaurantDetailsContent() {
     return <RestaurantDetailSkeleton />
   }
 
-  // Show error state if restaurant not found or network error
-  if (restaurantError && !restaurant) {
+  // Show error state if shop not found or network error
+  if (restaurantError && !shop) {
     const isNetworkError = restaurantError.includes('Backend server is not connected')
-    const isNotFoundError = restaurantError === 'Restaurant not found'
+    const isNotFoundError = restaurantError === 'Shop not found'
 
     return (
       <AnimatedPage>
@@ -2286,7 +2286,7 @@ function RestaurantDetailsContent() {
             />
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                {isNetworkError ? 'Connection Error' : isNotFoundError ? 'Restaurant not found' : 'Error'}
+                {isNetworkError ? 'Connection Error' : isNotFoundError ? 'Shop not found' : 'Error'}
               </h2>
               <p className="text-sm text-gray-600 mb-4 max-w-md">{restaurantError}</p>
               {isNetworkError && (
@@ -2304,14 +2304,14 @@ function RestaurantDetailsContent() {
     )
   }
 
-  // Show error if restaurant is still null
-  if (!restaurant) {
+  // Show error if shop is still null
+  if (!shop) {
     return (
       <AnimatedPage>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <AlertCircle className="h-12 w-12 text-red-500" />
-            <span className="text-sm text-gray-600">Restaurant not found</span>
+            <span className="text-sm text-gray-600">Shop not found</span>
             <Button onClick={goBack} variant="outline">
               Go Back
             </Button>
@@ -2321,7 +2321,7 @@ function RestaurantDetailsContent() {
     )
   }
 
-  const availabilityStatus = getRestaurantAvailabilityStatus(restaurant, new Date(availabilityTick))
+  const availabilityStatus = getShopAvailabilityStatus(shop, new Date(availabilityTick))
   const isRestaurantOffline = !availabilityStatus.isOpen
   const shouldShowGrayscale = isOutOfService || isRestaurantOffline
 
@@ -2402,37 +2402,37 @@ function RestaurantDetailsContent() {
       {/* Main Content Card */}
       <div className="bg-white dark:bg-[#1a1a1a] rounded-t-3xl relative z-10 min-h-[40vh]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-5 md:py-6 lg:py-8 space-y-3 md:space-y-4 lg:space-y-5 pb-0">
-          {/* Restaurant Name and Rating */}
+          {/* Shop Name and Rating */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{restaurant?.name || "Unknown Restaurant"}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{shop?.name || "Unknown Shop"}</h1>
             </div>
             <div className="flex flex-col items-end">
               <Badge className="bg-green-600 text-white mb-1 flex items-center gap-1 px-2 py-1">
                 <Star className="h-3 w-3 fill-white" />
-                {restaurant?.rating || 4.5}
+                {shop?.rating || 4.5}
               </Badge>
-              <span className="text-xs text-gray-500">By {(restaurant.reviews || 0).toLocaleString()}+</span>
+              <span className="text-xs text-gray-500">By {(shop.reviews || 0).toLocaleString()}+</span>
             </div>
           </div>
 
           {/* Top Category */} 
           <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <Utensils className="h-4 w-4" />
-            <span>{restaurant?.topCategory || restaurant?.cuisine || "Multi-cuisine"}</span>
+            <span>{shop?.topCategory || shop?.cuisine || "Multi-cuisine"}</span>
           </div>
 
           {/* Location */}
           <div className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
             <MapPin className="h-4 w-4" />
-            <span>{restaurant?.distance || "1.2 km"} • {restaurant?.location || "Location"}</span>
+            <span>{shop?.distance || "1.2 km"} • {shop?.location || "Location"}</span>
           </div>
 
           {/* Delivery Time */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <Clock className="h-4 w-4" />
-              <span>{restaurant?.deliveryTime || "25-30 mins"}</span>
+              <span>{shop?.deliveryTime || "25-30 mins"}</span>
             </div>
             <Badge className={`${isRestaurantOffline ? "bg-rose-600" : "bg-emerald-600"} text-white`}>
               {isRestaurantOffline ? (availabilityStatus.badgeLabel || "Closed") : "Open now"}
@@ -2441,7 +2441,7 @@ function RestaurantDetailsContent() {
 
           {isRestaurantOffline && (
             <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              This restaurant is currently offline. Orders are unavailable right now.
+              This shop is currently offline. Orders are unavailable right now.
             </div>
           )}
 
@@ -2580,7 +2580,7 @@ function RestaurantDetailsContent() {
             </div>
           </div>
 
-          {/* Inline restaurant offers just below filters (outside scroll container) */}
+          {/* Inline shop offers just below filters (outside scroll container) */}
           {filteredRestaurantItemOffers.length > 0 && (
             <div className="w-full flex flex-col gap-3 px-0">
               {filteredRestaurantItemOffers.map((offer, idx) => (
@@ -2606,7 +2606,7 @@ function RestaurantDetailsContent() {
 
                         <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1a1a]">
                           {offerProducts.map((product, productIndex) => (
-                            <RestaurantFoodCard
+                            <ShopFoodCard
                               key={`${product?.id || product?.name || "offer-product"}-${productIndex}`}
                               item={product}
                               cardRef={(node) => {
@@ -2632,7 +2632,7 @@ function RestaurantDetailsContent() {
                               quantity={getDishQuantity(product)}
                               formattedPrice={product?.price != null ? getFoodPriceLabel(product) : ""}
                               onBookmark={handleBookmarkClick}
-                              isFavorite={isDishFavorite(product?.id || product?._id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)}
+                              isFavorite={isDishFavorite(product?.id || product?._id, shop?.restaurantId || shop?._id || shop?.id)}
                               onShare={handleShareClick}
                               onUpdateQuantity={handleCardQuantityUpdate}
                               disabled={shouldShowGrayscale}
@@ -2651,7 +2651,7 @@ function RestaurantDetailsContent() {
 
 
         {/* Menu Items Section */}
-        {restaurant?.menuSections && Array.isArray(restaurant.menuSections) && restaurant.menuSections.length > 0 && (
+        {shop?.menuSections && Array.isArray(shop.menuSections) && shop.menuSections.length > 0 && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-6 sm:py-8 md:py-10 lg:py-12 space-y-6 md:space-y-8 lg:space-y-10">
             {filteredSections.length === 0 && hasActiveMenuFilters && (
               <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] px-5 py-8 text-center">
@@ -2772,7 +2772,7 @@ function RestaurantDetailsContent() {
                         }
 
                         return (
-                          <RestaurantFoodCard
+                          <ShopFoodCard
                             key={item.id}
                             item={item}
                             cardRef={(node) => {
@@ -2795,7 +2795,7 @@ function RestaurantDetailsContent() {
                             quantity={quantity}
                             formattedPrice={getFoodPriceLabel(item)}
                             onBookmark={handleBookmarkClick}
-                            isFavorite={isDishFavorite(item.id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)}
+                            isFavorite={isDishFavorite(item.id, shop?.restaurantId || shop?._id || shop?.id)}
                             onShare={handleShareClick}
                             onUpdateQuantity={handleCardQuantityUpdate}
                             disabled={shouldShowGrayscale}
@@ -2856,7 +2856,7 @@ function RestaurantDetailsContent() {
                                   }
 
                                   return (
-                                    <RestaurantFoodCard
+                                    <ShopFoodCard
                                       key={item.id}
                                       item={item}
                                       cardRef={(node) => {
@@ -2879,7 +2879,7 @@ function RestaurantDetailsContent() {
                                       quantity={quantity}
                                       formattedPrice={getFoodPriceLabel(item)}
                                       onBookmark={handleBookmarkClick}
-                                      isFavorite={isDishFavorite(item.id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)}
+                                      isFavorite={isDishFavorite(item.id, shop?.restaurantId || shop?._id || shop?.id)}
                                       onShare={handleShareClick}
                                       onUpdateQuantity={handleCardQuantityUpdate}
                                       disabled={shouldShowGrayscale}
@@ -2904,7 +2904,7 @@ function RestaurantDetailsContent() {
       </div>
 
       {/* FSSAI License Information - Bottom of page */}
-      {restaurant?.onboarding?.step3?.fssai?.registrationNumber && (
+      {shop?.onboarding?.step3?.fssai?.registrationNumber && (
         <div className="px-4 py-4 mt-2 mb-40 border-t border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/30 dark:bg-white/5 mx-4 rounded-xl">
           <div className="flex items-center gap-4">
             <div className="h-12 w-20 flex items-center justify-center bg-white rounded-lg p-1.5 shadow-sm border border-gray-100">
@@ -2919,7 +2919,7 @@ function RestaurantDetailsContent() {
                 License No.
               </p>
               <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 font-mono tracking-wide">
-                {restaurant?.onboarding?.step3?.fssai?.registrationNumber}
+                {shop?.onboarding?.step3?.fssai?.registrationNumber}
               </p>
             </div>
           </div>
@@ -3210,17 +3210,17 @@ function RestaurantDetailsContent() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">All delivery outlets for</p>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-base">{(restaurant.name || "R").charAt(0).toUpperCase()}</span>
+                        <span className="text-white font-bold text-base">{(shop.name || "R").charAt(0).toUpperCase()}</span>
                       </div>
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">{restaurant?.name || "Unknown Restaurant"}</h2>
+                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">{shop?.name || "Unknown Shop"}</h2>
                     </div>
                   </div>
 
                   {/* Outlets List */}
                   <div className="flex-1 overflow-y-auto px-4 py-3">
-                    {restaurant?.outlets && Array.isArray(restaurant.outlets) && restaurant.outlets.length > 0 ? (
+                    {shop?.outlets && Array.isArray(shop.outlets) && shop.outlets.length > 0 ? (
                       <div className="space-y-2">
-                        {restaurant.outlets.map((outlet) => (
+                        {shop.outlets.map((outlet) => (
                           <div
                             key={outlet?.id || Math.random()}
                             className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a]"
@@ -3270,10 +3270,10 @@ function RestaurantDetailsContent() {
                   </div>
 
                   {/* Footer */}
-                  {restaurant?.outlets && Array.isArray(restaurant.outlets) && restaurant.outlets.length > 5 && (
+                  {shop?.outlets && Array.isArray(shop.outlets) && shop.outlets.length > 5 && (
                     <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3 bg-white dark:bg-[#1a1a1a]">
                       <button className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400 font-medium text-sm w-full">
-                        <span>See all {restaurant.outlets.length} outlets</span>
+                        <span>See all {shop.outlets.length} outlets</span>
                         <ChevronDown className="h-4 w-4" />
                       </button>
                     </div>
@@ -3341,7 +3341,7 @@ function RestaurantDetailsContent() {
                               checked={isDishFavorite(selectedItem.id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)}
                               onCheckedChange={(checked) => {
                                 if (!checked && selectedItem) {
-                                  const restaurantId = restaurant?.restaurantId || restaurant?._id || restaurant?.id
+                                  const restaurantId = shop?.restaurantId || shop?._id || shop?.id
                                   removeDishFavorite(selectedItem.id, restaurantId)
                                   setShowManageCollections(false)
                                 }
@@ -3357,7 +3357,7 @@ function RestaurantDetailsContent() {
                           )}
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {getDishFavorites().length} dishes � {getFavorites().length} restaurant
+                          {getDishFavorites().length} dishes � {getFavorites().length} shop
                         </p>
                       </div>
                     </button>
@@ -3456,7 +3456,7 @@ function RestaurantDetailsContent() {
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
-                          const restaurantId = restaurant?.restaurantId || restaurant?._id || restaurant?.id
+                          const restaurantId = shop?.restaurantId || shop?._id || shop?.id
                           const isFav = isDishFavorite(selectedItem.id || selectedItem._id, restaurantId)
                           if (isFav) {
                             removeDishFavorite(selectedItem.id || selectedItem._id, restaurantId)
@@ -3465,7 +3465,7 @@ function RestaurantDetailsContent() {
                           }
                         }}
                         className={`h-9 w-9 rounded-full flex items-center justify-center shadow-md transition-colors cursor-pointer ${
-                          isDishFavorite(selectedItem.id || selectedItem._id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)
+                          isDishFavorite(selectedItem.id || selectedItem._id, shop?.restaurantId || shop?._id || shop?.id)
                             ? "bg-red-500 text-white hover:bg-red-600"
                             : "bg-white/90 dark:bg-[#1a1a1a]/90 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-[#1a1a1a]"
                         }`}
@@ -3852,27 +3852,27 @@ function RestaurantDetailsContent() {
                   {/* Header */}
                   <div className="px-4 pt-6 pb-4 border-b border-gray-200 dark:border-gray-800">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      Offers at {restaurant?.name || "Unknown Restaurant"}
+                      Offers at {shop?.name || "Unknown Shop"}
                     </h2>
                   </div>
 
                   {/* Scrollable Content */}
                   <div className="flex-1 overflow-y-auto px-4 py-4">
                     {/* Gold Exclusive Offer Section */}
-                    {restaurant?.restaurantOffers?.goldOffer && (
+                    {shop?.restaurantOffers?.goldOffer && (
                       <div className="mb-6">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                          {restaurant.restaurantOffers.goldOffer?.title || "Gold exclusive offer"}
+                          {shop.restaurantOffers.goldOffer?.title || "Gold exclusive offer"}
                         </h3>
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 flex items-start justify-between gap-4">
                           <div className="flex items-start gap-3 flex-1">
                             <Lock className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: BRAND_THEME.colors.brand.primary }} />
                             <div className="flex-1">
                               <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                                {restaurant.restaurantOffers.goldOffer?.description || "Free delivery above ₹99"}
+                                {shop.restaurantOffers.goldOffer?.description || "Free delivery above ₹99"}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {restaurant.restaurantOffers.goldOffer?.unlockText || "join Gold to unlock"}
+                                {shop.restaurantOffers.goldOffer?.unlockText || "join Gold to unlock"}
                               </p>
                             </div>
                           </div>
@@ -3883,20 +3883,20 @@ function RestaurantDetailsContent() {
                               // Handle add gold
                             }}
                           >
-                            {restaurant.restaurantOffers.goldOffer?.buttonText || "Add Gold - ₹1"}
+                            {shop.restaurantOffers.goldOffer?.buttonText || "Add Gold - ₹1"}
                           </Button>
                         </div>
                       </div>
                     )}
 
-                    {/* Restaurant Coupons Section */}
-                    {restaurant?.restaurantOffers?.coupons && Array.isArray(restaurant.restaurantOffers.coupons) && restaurant.restaurantOffers.coupons.length > 0 && (
+                    {/* Shop Coupons Section */}
+                    {shop?.restaurantOffers?.coupons && Array.isArray(shop.restaurantOffers.coupons) && shop.restaurantOffers.coupons.length > 0 && (
                       <div>
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                          Restaurant coupons
+                          Shop coupons
                         </h3>
                         <div className="space-y-3">
-                          {restaurant.restaurantOffers.coupons.map((coupon, couponIndex) => {
+                          {shop.restaurantOffers.coupons.map((coupon, couponIndex) => {
                             const couponKey = coupon?.id || coupon?.code || `coupon-${couponIndex}`
                             const isExpanded = expandedCoupons.has(couponKey)
                             return (
@@ -3921,7 +3921,7 @@ function RestaurantDetailsContent() {
                                   <Percent className="h-5 w-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
                                   <div className="flex-1 text-left">
                                     <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                                      {coupon?.title || "Restaurant coupon"}
+                                      {coupon?.title || "Shop coupon"}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                       Use code {coupon?.code || "N/A"}
@@ -4008,7 +4008,7 @@ function RestaurantDetailsContent() {
                   {/* Header */}
                   <div className="px-4 pt-6 pb-4 border-b border-gray-200 dark:border-gray-800">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      {restaurant?.name || "Unknown Restaurant"}
+                      {shop?.name || "Unknown Shop"}
                     </h2>
                   </div>
 
@@ -4023,17 +4023,17 @@ function RestaurantDetailsContent() {
                       >
                         <Bookmark className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                         <span className="text-base text-gray-900 dark:text-white">
-                          {isFavorite(restaurant?.slug || slug || "") ? "Remove from Collection" : "Add to Collection"}
+                          {isFavorite(shop?.slug || slug || "") ? "Remove from Collection" : "Add to Collection"}
                         </span>
                       </button>
 
-                      {/* Share this restaurant */}
+                      {/* Share this shop */}
                       <button
                         className="w-full flex items-center gap-4 px-2 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors text-left"
                         onClick={handleShareRestaurant}
                       >
                         <Share2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                        <span className="text-base text-gray-900 dark:text-white">Share this restaurant</span>
+                        <span className="text-base text-gray-900 dark:text-white">Share this shop</span>
                       </button>
 
                     </div>
@@ -4041,12 +4041,12 @@ function RestaurantDetailsContent() {
                     {/* Disclaimer Text */}
                     <div className="mt-6 px-2">
                       <p className="text-xs text-gray-500 leading-relaxed">
-                        Menu items, prices, photos and descriptions are set directly by the restaurant. In case you see any incorrect information, please report it to us.
+                        Menu items, prices, photos and descriptions are set directly by the shop. In case you see any incorrect information, please report it to us.
                       </p>
                     </div>
 
                     {/* FSSAI License Information */}
-                    {restaurant?.onboarding?.step3?.fssai?.registrationNumber && (
+                    {shop?.onboarding?.step3?.fssai?.registrationNumber && (
                       <div className="mt-4 px-2 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center gap-3 opacity-80 mb-2">
                         <div className="h-8 w-14 flex items-center justify-center bg-white rounded p-1 border border-gray-100">
                           <img
@@ -4060,7 +4060,7 @@ function RestaurantDetailsContent() {
                             Lic. No.
                           </p>
                           <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                            {restaurant?.onboarding?.step3?.fssai?.registrationNumber}
+                            {shop?.onboarding?.step3?.fssai?.registrationNumber}
                           </p>
                         </div>
                       </div>
@@ -4196,7 +4196,7 @@ class RestaurantDetailsErrorBoundary extends Component {
                   Something went wrong
                 </h2>
                 <p className="text-sm text-gray-600 mb-4 max-w-md">
-                  We could not load this restaurant page right now.
+                  We could not load this shop page right now.
                 </p>
                 <Button onClick={() => window.location.reload()} variant="outline">
                   Reload Page

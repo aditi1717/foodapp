@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { ArrowLeft, Settings, ChevronRight } from "lucide-react"
 import { Switch } from "@food/components/ui/switch"
@@ -26,7 +26,7 @@ const persistRestaurantOnlineStatus = (isOnline) => {
   try {
     localStorage.setItem(RESTAURANT_ONLINE_STATUS_KEY, JSON.stringify(Boolean(isOnline)))
   } catch (error) {
-    debugError("Error persisting restaurant online status:", error)
+    debugError("Error persisting shop online status:", error)
   }
 }
 
@@ -73,9 +73,9 @@ const isWithinSlot = (nowMinutes, slot) => {
 }
 
 
-export default function RestaurantStatus() {
+export default function ShopStatus() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [deliveryStatus, setDeliveryStatus] = useState(false)
   const [restaurantData, setRestaurantData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -95,20 +95,20 @@ export default function RestaurantStatus() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch restaurant data from backend
+  // Fetch shop data from backend
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
         setLoading(true)
         const response = await restaurantAPI.getCurrentRestaurant()
-        const data = response?.data?.data?.restaurant || response?.data?.restaurant
+        const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
           setRestaurantData(data)
         }
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          debugError("Error fetching restaurant data:", error)
+          debugError("Error fetching shop data:", error)
         }
         // Continue with default values if fetch fails
       } finally {
@@ -143,7 +143,7 @@ export default function RestaurantStatus() {
     }
   }, [])
 
-  // Check if restaurant is currently open based on outlet timings only
+  // Check if shop is currently open based on outlet timings only
   useEffect(() => {
     const checkIfOpen = () => {
       const now = new Date()
@@ -207,16 +207,16 @@ export default function RestaurantStatus() {
     const loadDeliveryStatus = async () => {
       try {
         const response = await restaurantAPI.getCurrentRestaurant()
-        const restaurant = response?.data?.data?.restaurant || response?.data?.restaurant
-        if (restaurant?.isAcceptingOrders !== undefined) {
-          setDeliveryStatus(restaurant.isAcceptingOrders)
+        const shop = response?.data?.data?.shop || response?.data?.shop
+        if (shop?.isAcceptingOrders !== undefined) {
+          setDeliveryStatus(shop.isAcceptingOrders)
           try {
-            localStorage.setItem('restaurant_online_status', JSON.stringify(Boolean(restaurant.isAcceptingOrders)))
+            localStorage.setItem('restaurant_online_status', JSON.stringify(Boolean(shop.isAcceptingOrders)))
           } catch {}
-          persistRestaurantOnlineStatus(restaurant.isAcceptingOrders)
+          persistRestaurantOnlineStatus(shop.isAcceptingOrders)
           // Dispatch event to update navbar
           window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
-            detail: { isOnline: restaurant.isAcceptingOrders } 
+            detail: { isOnline: shop.isAcceptingOrders } 
           }))
         } else {
           setDeliveryStatus(false)
@@ -292,7 +292,7 @@ export default function RestaurantStatus() {
   // Handle dialog close and navigate to outlet timings
   const handleGoToOutletTimings = () => {
     setShowOutletClosedDialog(false)
-    navigate("/restaurant/outlet-timings")
+    navigate("/shop/outlet-timings")
   }
 
   // Format time from 24-hour to 12-hour format
@@ -383,21 +383,21 @@ export default function RestaurantStatus() {
             <ArrowLeft className="w-6 h-6 text-gray-900" />
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-gray-900">Restaurant status</h1>
-            <p className="text-sm text-gray-500 mt-0.5">You are mapped to 1 restaurant</p>
+            <h1 className="text-lg font-bold text-gray-900">Shop status</h1>
+            <p className="text-sm text-gray-500 mt-0.5">You are mapped to 1 shop</p>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="px-4 py-6">
-        {/* Restaurant Information Card */}
+        {/* Shop Information Card */}
         <Card className="bg-gray-50 border-none py-0 shadow-sm rounded-b-none rounded-t-lg">
           <CardContent className="p-4 gap-6 flex flex-col">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <h2 className="text-base font-bold text-gray-900 mb-1">
-                  {loading ? "Loading..." : (restaurantData?.name || "Restaurant")}
+                  {loading ? "Loading..." : (restaurantData?.name || "Shop")}
                 </h2>
                 <p className="text-sm text-gray-500">
                   {loading ? "Loading..." : (
@@ -412,8 +412,8 @@ export default function RestaurantStatus() {
               </div>
               <button
                 onClick={() => {
-                  // Navigate to restaurant settings
-                  navigate("/restaurant/explore")
+                  // Navigate to shop settings
+                  navigate("/shop/explore")
                 }}
                 className="ml-3 p-2 bg-gray-200 hover:bg-gray-300 rounded-full transition-colors shrink-0"
                 aria-label="Explore more"
@@ -458,7 +458,7 @@ export default function RestaurantStatus() {
               )}
             </p>
             <button
-              onClick={() => navigate("/restaurant/outlet-timings")}
+              onClick={() => navigate("/shop/outlet-timings")}
               className="flex items-center gap-1 text-brand-600 hover:text-brand-700 text-sm font-semibold shrink-0 ml-4"
             >
               Change
@@ -537,7 +537,7 @@ export default function RestaurantStatus() {
             <Button
               onClick={() => {
                 setShowOutsideTimingsDialog(false)
-                navigate("/restaurant/outlet-timings")
+                navigate("/shop/outlet-timings")
               }}
               className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white"
             >

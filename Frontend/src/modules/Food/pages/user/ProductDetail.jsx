@@ -112,7 +112,7 @@ export default function ProductDetail() {
   const [replyStates, setReplyStates] = useState({})
   const [replies, setReplies] = useState({})
 
-  const restaurant = product ? restaurantsData[product.restaurantSlug] : null
+  const shop = product ? restaurantsData[product.restaurantSlug] : null
   const inCart = product ? isInCart(product.id) : false
   const cartItem = product ? getCartItem(product.id) : null
   const orders = getAllOrders()
@@ -360,7 +360,7 @@ export default function ProductDetail() {
               <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
                 <Link to="/user" className={`${BRAND_THEME.tokens.productDetail.breadcrumbHover} transition-colors`}>Home</Link>
                 <span>/</span>
-                <span className="text-foreground font-medium truncate">{restaurant?.name || "Restaurant"}</span>
+                <span className="text-foreground font-medium truncate">{shop?.name || "Shop"}</span>
                 <span>/</span>
                 <span className="text-foreground font-medium truncate">{product.name}</span>
               </div>
@@ -452,31 +452,31 @@ export default function ProductDetail() {
             </div>
           </ScrollReveal>
 
-          {/* Restaurant Info */}
-          {restaurant && (
+          {/* Shop Info */}
+          {shop && (
             <ScrollReveal delay={0.1}>
               <div className="space-y-3 md:space-y-4 pb-4 md:pb-6 border-b">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg md:text-xl lg:text-2xl font-bold">
-                      {restaurant.name}
+                      {shop.name}
                     </h3>
-                    <p className="text-sm md:text-base text-muted-foreground">{restaurant.cuisine}</p>
+                    <p className="text-sm md:text-base text-muted-foreground">{shop.cuisine}</p>
                   </div>
-                  <Badge className={`${BRAND_THEME.tokens.productDetail.primaryBadge} text-sm md:text-base`}>{restaurant.priceRange}</Badge>
+                  <Badge className={`${BRAND_THEME.tokens.productDetail.primaryBadge} text-sm md:text-base`}>{shop.priceRange}</Badge>
                 </div>
                 <div className="flex items-center gap-4 md:gap-6 flex-wrap text-sm md:text-base">
                   <div className="flex items-center gap-1.5">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{restaurant.rating}</span>
+                    <span className="font-semibold">{shop.rating}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{restaurant.deliveryTime}</span>
+                    <span>{shop.deliveryTime}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{restaurant.distance}</span>
+                    <span>{shop.distance}</span>
                   </div>
                 </div>
               </div>

@@ -14,7 +14,7 @@ const getStatusColor = (orderStatus) => {
     "User Unavailable Review": "bg-orange-100 text-orange-700",
     "Canceled": "bg-rose-100 text-rose-700",
     "Cancelled by Admin": "bg-rose-100 text-rose-700",
-    "Cancelled by Restaurant": "bg-red-100 text-red-700",
+    "Cancelled by Shop": "bg-red-100 text-red-700",
     "Cancelled - User Unavailable": "bg-red-100 text-red-700",
     "Cancelled by User": "bg-orange-100 text-orange-700",
     "Payment Failed": "bg-red-100 text-red-700",
@@ -126,10 +126,10 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.restaurant && (
+              {visibleColumns.shop && (
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
-                    <span>Restaurant</span>
+                    <span>Shop</span>
                   </div>
                 </th>
               )}
@@ -211,9 +211,9 @@ export default function OrdersTable({
                     </div>
                   </td>
                 )}
-                {visibleColumns.restaurant && (
+                {visibleColumns.shop && (
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-slate-700">{formatRestaurantName(order.restaurant)}</span>
+                    <span className="text-sm font-medium text-slate-700">{formatRestaurantName(order.shop)}</span>
                   </td>
                 )}
                 {visibleColumns.foodItems && (
@@ -332,7 +332,7 @@ export default function OrdersTable({
                         <div className="text-xs text-red-600 mt-1">
                           <span className="font-medium">
                             {order.cancelledBy === 'user' ? 'Cancelled by User - ' : 
-                             order.cancelledBy === 'restaurant' ? 'Cancelled by Restaurant - ' : 
+                             order.cancelledBy === 'shop' ? 'Cancelled by Shop - ' : 
                              order.cancelledBy === 'admin' ? 'Cancelled by Admin - ' :
                              'Reason: '}
                           </span>
@@ -403,14 +403,14 @@ export default function OrdersTable({
                           )}
                         </button>
                       )}
-                      {/* Show Refund button or Refunded status for cancelled orders with Online/Wallet payment (restaurant or user cancelled) */}
+                      {/* Show Refund button or Refunded status for cancelled orders with Online/Wallet payment (shop or user cancelled) */}
                       {(() => {
-                        // Check if order is cancelled by restaurant or user
-                        const isCancelled = order.orderStatus === "Cancelled by Restaurant" || 
+                        // Check if order is cancelled by shop or user
+                        const isCancelled = order.orderStatus === "Cancelled by Shop" || 
                                           order.orderStatus === "Cancelled" || 
                                           order.orderStatus === "Cancelled by Admin" ||
                                           order.orderStatus === "Cancelled by User" ||
-                                          (order.status === "cancelled" && (order.cancelledBy === "user" || order.cancelledBy === "restaurant" || order.cancelledBy === "admin"));
+                                          (order.status === "cancelled" && (order.cancelledBy === "user" || order.cancelledBy === "shop" || order.cancelledBy === "admin"));
                         
                         // Check if payment type is Online or Wallet (not Cash on Delivery)
                         const paymentMethod = order.payment?.method || order.paymentMethod;

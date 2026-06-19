@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Lenis from "lenis"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
-import { useRestaurantNotifications } from "@food/hooks/useRestaurantNotifications"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
+import { useShopNotifications } from "@food/hooks/useShopNotifications"
 import { 
   Home,
   ShoppingBag,
@@ -35,8 +35,8 @@ export default function OrdersPage() {
   const [error, setError] = useState(null)
   const showOrdersSkeleton = useDelayedLoading(loading, { delay: 120, minDuration: 360 })
 
-  // Restaurant notifications hook
-  const { newOrder, clearNewOrder, cancelledOrderId, clearCancelledOrderId, isConnected } = useRestaurantNotifications()
+  // Shop notifications hook
+  const { newOrder, clearNewOrder, cancelledOrderId, clearCancelledOrderId, isConnected } = useShopNotifications()
 
   const notificationOrder = newOrder
     ? {
@@ -516,7 +516,7 @@ export default function OrdersPage() {
             >
               <Card 
                 className="bg-white shadow-sm border-0 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => navigate(`/restaurant/orders/${order.mongoId || order.id}`)}
+                onClick={() => navigate(`/shop/orders/${order.mongoId || order.id}`)}
               >
                 <CardContent className="p-3 md:p-5 py-0 gap-0">
                   {/* Header Row */}

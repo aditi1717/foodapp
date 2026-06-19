@@ -48,7 +48,7 @@ export default function SubscriptionOrders() {
   )
 
   const restaurants = useMemo(() => {
-    return [...new Set(emptySubscriptionOrders.map(o => o.restaurant))]
+    return [...new Set(emptySubscriptionOrders.map(o => o.shop))]
   }, [])
 
   // Statistics
@@ -66,7 +66,7 @@ export default function SubscriptionOrders() {
       subscriptionId: true,
       orderType: true,
       duration: true,
-      restaurant: true,
+      shop: true,
       customer: true,
       status: true,
       actions: true,
@@ -141,7 +141,7 @@ export default function SubscriptionOrders() {
         setFilters={setFilters}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-        restaurants={restaurants}
+        shops={shops}
       />
       <SettingsDialog
         isOpen={isSettingsOpen}

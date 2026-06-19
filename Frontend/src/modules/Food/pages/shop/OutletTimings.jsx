@@ -255,7 +255,7 @@ export default function OutletTimings() {
         <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-50">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate("/food/restaurant/explore")}
+              onClick={() => navigate("/food/shop/explore")}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Go back"
             >
@@ -308,7 +308,7 @@ export default function OutletTimings() {
                     <span>Select Operational Days</span>
                   </label>
                   <p className="text-[11px] text-slate-500">
-                    Choose the days of the week when your restaurant is open.
+                    Choose the days of the week when your shop is open.
                   </p>
                   <div className="grid grid-cols-7 gap-1.5 mt-2">
                     {DAY_NAMES.map((day) => {

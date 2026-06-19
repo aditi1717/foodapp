@@ -20,7 +20,7 @@ export default function AllZonesMap() {
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState("")
   const [mapLoading, setMapLoading] = useState(true)
   const [zones, setZones] = useState([])
-  const [restaurants, setRestaurants] = useState([])
+  const [shops, setRestaurants] = useState([])
   const [loading, setLoading] = useState(true)
   const [locationSearch, setLocationSearch] = useState("")
   const autocompleteInputRef = useRef(null)
@@ -55,17 +55,17 @@ export default function AllZonesMap() {
     }
   }, [mapLoading])
 
-  // Draw zones and restaurant markers when map and data are ready
+  // Draw zones and shop markers when map and data are ready
   useEffect(() => {
     if (!mapLoading && mapInstanceRef.current && window.google) {
-      if (zones.length > 0 && restaurants.length > 0) {
+      if (zones.length > 0 && shops.length > 0) {
         drawAllZonesOnMap(window.google, mapInstanceRef.current)
       }
-      if (restaurants.length > 0) {
+      if (shops.length > 0) {
         drawRestaurantMarkers(window.google, mapInstanceRef.current)
       }
     }
-  }, [zones, mapLoading, restaurants])
+  }, [zones, mapLoading, shops])
 
   const fetchZones = async () => {
     try {
@@ -85,11 +85,11 @@ export default function AllZonesMap() {
   const fetchRestaurants = async () => {
     try {
       const response = await adminAPI.getRestaurants({ limit: 1000 })
-      if (response.data?.success && response.data.data?.restaurants) {
-        setRestaurants(response.data.data.restaurants)
+      if (response.data?.success && response.data.data?.shops) {
+        setRestaurants(response.data.data.shops)
       }
     } catch (error) {
-      debugError("Error fetching restaurants:", error)
+      debugError("Error fetching shops:", error)
     }
   }
 
@@ -280,9 +280,9 @@ export default function AllZonesMap() {
     }
   }
 
-  // Draw restaurant markers on the map
+  // Draw shop markers on the map
   const drawRestaurantMarkers = (google, map) => {
-    if (!restaurants || restaurants.length === 0) return
+    if (!shops || shops.length === 0) return
 
     // Clear previous markers
     restaurantMarkersRef.current.forEach(marker => {
@@ -290,19 +290,19 @@ export default function AllZonesMap() {
     })
     restaurantMarkersRef.current = []
 
-    restaurants.forEach(restaurant => {
-      if (!restaurant.location) return
+    shops.forEach(shop => {
+      if (!shop.location) return
 
-      // Get coordinates from restaurant location
+      // Get coordinates from shop location
       let lat = null
       let lng = null
 
-      if (restaurant.location.coordinates && Array.isArray(restaurant.location.coordinates) && restaurant.location.coordinates.length >= 2) {
-        lng = restaurant.location.coordinates[0]
-        lat = restaurant.location.coordinates[1]
-      } else if (restaurant.location.latitude && restaurant.location.longitude) {
-        lat = parseFloat(restaurant.location.latitude)
-        lng = parseFloat(restaurant.location.longitude)
+      if (shop.location.coordinates && Array.isArray(shop.location.coordinates) && shop.location.coordinates.length >= 2) {
+        lng = shop.location.coordinates[0]
+        lat = shop.location.coordinates[1]
+      } else if (shop.location.latitude && shop.location.longitude) {
+        lat = parseFloat(shop.location.latitude)
+        lng = parseFloat(shop.location.longitude)
       }
 
       // Skip if no valid coordinates
@@ -315,7 +315,7 @@ export default function AllZonesMap() {
         return
       }
 
-      // Create custom icon for restaurant
+      // Create custom icon for shop
       const restaurantIcon = {
         path: google.maps.SymbolPath.CIRCLE,
         scale: 8,
@@ -330,7 +330,7 @@ export default function AllZonesMap() {
         position: { lat, lng },
         map: map,
         icon: restaurantIcon,
-        title: restaurant.name || "Restaurant",
+        title: shop.name || "Shop",
         zIndex: 1000, // Show above zones
       })
 
@@ -339,14 +339,14 @@ export default function AllZonesMap() {
         content: `
           <div style="padding: 12px; min-width: 200px;">
             <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1e293b;">
-              ${restaurant.name || 'Unnamed Restaurant'}
+              ${shop.name || 'Unnamed Shop'}
             </h3>
             <div style="font-size: 13px; color: #64748b; line-height: 1.6;">
-              ${restaurant.location?.formattedAddress || restaurant.location?.address || restaurant.location?.area || 'Location not specified'}
+              ${shop.location?.formattedAddress || shop.location?.address || shop.location?.area || 'Location not specified'}
             </div>
-            ${restaurant.ownerName ? `
+            ${shop.ownerName ? `
               <div style="margin-top: 8px; font-size: 12px; color: #94a3b8;">
-                <strong>Owner:</strong> ${restaurant.ownerName}
+                <strong>Owner:</strong> ${shop.ownerName}
               </div>
             ` : ''}
           </div>
@@ -385,7 +385,7 @@ export default function AllZonesMap() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">All Zones Map</h1>
-              <p className="text-sm text-slate-600">View all restaurant delivery zones on map</p>
+              <p className="text-sm text-slate-600">View all shop delivery zones on map</p>
             </div>
           </div>
         </div>
@@ -457,9 +457,9 @@ export default function AllZonesMap() {
                     Click on any <span className="font-semibold text-brand-600">zone</span> on the map to view details. Total zones: <strong>{zones.length}</strong>
                   </p>
                 )}
-                {restaurants.length > 0 && (
+                {shops.length > 0 && (
                   <p>
-                    Click on any <span className="font-semibold text-red-600">red marker</span> to view restaurant name and details. Total restaurants: <strong>{restaurants.length}</strong>
+                    Click on any <span className="font-semibold text-red-600">red marker</span> to view shop name and details. Total shops: <strong>{shops.length}</strong>
                   </p>
                 )}
               </div>

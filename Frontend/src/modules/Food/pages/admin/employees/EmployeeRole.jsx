@@ -21,13 +21,13 @@ const modulePermissions = [
   { id: "coupon", label: "Coupon" },
   { id: "deliverymenEarning", label: "Deliverymen earning provide" },
   { id: "order", label: "Order" },
-  { id: "restaurantWithdraws", label: "Restaurant withdraws" },
+  { id: "restaurantWithdraws", label: "Shop withdraws" },
   { id: "disbursement", label: "Disbursement" },
   // Column 3
   { id: "banner", label: "Banner" },
   { id: "customersSection", label: "Customers section" },
   { id: "employee", label: "Employee" },
-  { id: "restaurants", label: "Restaurants" },
+  { id: "shops", label: "Shops" },
   { id: "posSystem", label: "Pos system" },
   { id: "advertisement", label: "Advertisement" },
   // Column 4
@@ -49,7 +49,7 @@ const initialEmployeeRoles = [
   {
     id: 2,
     roleName: "Customer Care Executive",
-    modules: ["CustomerList", "Deliveryman", "Order", "Restaurant"],
+    modules: ["CustomerList", "Deliveryman", "Order", "Shop"],
     createdAt: "22 Aug 2021",
   },
 ]
@@ -74,7 +74,7 @@ export default function EmployeeRole() {
     { key: "en", label: "English(EN)" },
     { key: "bn", label: "Bengali - বাংলা(BN)" },
     { key: "ar", label: "Arabic - العربية(AR)" },
-    { key: "es", label: "Spanish - espa�ol(ES)" },
+    { key: "es", label: "Spanish - espa�ol(ES)" },
   ]
 
   const handlePermissionChange = (permissionId, checked) => {

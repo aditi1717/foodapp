@@ -22,9 +22,9 @@ export default function RestaurantSignIn() {
 
   // Redirect to restaurant home if already authenticated
   useEffect(() => {
-    const isAuthenticated = isModuleAuthenticated("restaurant")
+    const isAuthenticated = isModuleAuthenticated("shop")
     if (isAuthenticated) {
-      navigate("/restaurant", { replace: true })
+      navigate("/shop", { replace: true })
     }
   }, [navigate])
 
@@ -34,18 +34,18 @@ export default function RestaurantSignIn() {
     setIsLoading(true)
 
     try {
-      // Login with restaurant auth endpoint
+      // Login with shop auth endpoint
       const response = await restaurantAPI.login(email, password)
       const data = response?.data?.data || response?.data
       
-      if (data.accessToken && data.restaurant) {
+      if (data.accessToken && data.shop) {
         // Replace old token with new one (handles cross-module login)
-        setAuthData("restaurant", data.accessToken, data.restaurant)
+        setAuthData("shop", data.accessToken, data.shop)
         
         // Dispatch custom event for same-tab updates
         window.dispatchEvent(new Event('restaurantAuthChanged'))
         
-        navigate("/restaurant", { replace: true })
+        navigate("/shop", { replace: true })
       } else {
         throw new Error("Login failed. Please try again.")
       }
@@ -82,7 +82,7 @@ export default function RestaurantSignIn() {
               {companyName.toUpperCase()}
             </h1>
             <p className="text-base xl:text-lg opacity-95 max-w-xl">
-              Manage your restaurant, orders and website easily from a single dashboard.
+              Manage your shop, orders and website easily from a single dashboard.
             </p>
           </div>
         </div>
@@ -104,7 +104,7 @@ export default function RestaurantSignIn() {
                 {companyName}
               </span>
               <span className="text-xs font-medium text-gray-500">
-                Restaurant Panel
+                Shop Panel
               </span>
             </div>
           </div>
@@ -121,10 +121,10 @@ export default function RestaurantSignIn() {
           {/* Title */}
           <div className="mb-8 text-center">
             <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
-              Signin To Your Restaurant Panel
+              Signin To Your Shop Panel
             </h2>
             <p className="text-sm text-gray-500">
-              Enter your credentials to access the restaurant dashboard.
+              Enter your credentials to access the shop dashboard.
             </p>
           </div>
 
@@ -150,7 +150,7 @@ export default function RestaurantSignIn() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="test.restaurant@gmail.com"
+                  placeholder="test.shop@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-11 pl-9 border-gray-300 rounded-md shadow-sm focus-visible:ring-primary-orange focus-visible:ring-2 transition-colors placeholder:text-gray-400"
@@ -200,7 +200,7 @@ export default function RestaurantSignIn() {
               </label>
               <button
                 type="button"
-                onClick={() => navigate("/restaurant/forgot-password")}
+                onClick={() => navigate("/shop/forgot-password")}
                 className="text-primary-orange hover:underline font-medium"
               >
                 Forgot Password
@@ -221,7 +221,7 @@ export default function RestaurantSignIn() {
           <div className="mt-6 text-center text-sm text-gray-600">
             Don't have an account?{" "}
             <button
-              onClick={() => navigate("/restaurant/signup-email")}
+              onClick={() => navigate("/shop/signup-email")}
               className="text-primary-orange hover:underline font-medium"
             >
               Sign up
@@ -236,7 +236,7 @@ export default function RestaurantSignIn() {
             <div>
               <div className="font-semibold mb-1">Demo Credentials</div>
               <div>
-                <span className="font-semibold">Email :</span> test.restaurant@gmail.com
+                <span className="font-semibold">Email :</span> test.shop@gmail.com
               </div>
               <div>
                 <span className="font-semibold">Password :</span> 12345678

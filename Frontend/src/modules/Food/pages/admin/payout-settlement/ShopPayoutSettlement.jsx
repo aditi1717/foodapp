@@ -30,7 +30,7 @@ const htmlEscape = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")
 
-export default function RestaurantPayoutSettlement() {
+export default function ShopPayoutSettlement() {
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
   const [fromTime, setFromTime] = useState("00:00")
@@ -62,7 +62,7 @@ export default function RestaurantPayoutSettlement() {
     try {
       setLoading(true)
       const params = {
-        beneficiaryType: "restaurant",
+        beneficiaryType: "shop",
         search: searchQuery.trim() || undefined,
         page: 1,
         limit: 500,
@@ -123,13 +123,13 @@ export default function RestaurantPayoutSettlement() {
       .filter((row) => Number(row.payableNow || 0) > 0 || Number(row.codPending || 0) > 0)
       .map((row) => row.beneficiaryId)
 
-    const confirmText = `Mark all as paid for ${beneficiaryIds.length} restaurants (Earning: ${toCurrency(summary.totalPending)}, COD: ${toCurrency(summary.totalCodPending)}) for ${fromDate} to ${toDate}?`
+    const confirmText = `Mark all as paid for ${beneficiaryIds.length} shops (Earning: ${toCurrency(summary.totalPending)}, COD: ${toCurrency(summary.totalCodPending)}) for ${fromDate} to ${toDate}?`
     if (!window.confirm(confirmText)) return
 
     try {
       setSaving(true)
       const response = await adminAPI.markAllPayoutSettlementsPaid({
-        beneficiaryType: "restaurant",
+        beneficiaryType: "shop",
         fromDate,
         toDate,
         fromTime,
@@ -201,8 +201,8 @@ export default function RestaurantPayoutSettlement() {
           <table>
             <thead>
               <tr>
-                <th>Restaurant</th>
-                <th>Restaurant ID</th>
+                <th>Shop</th>
+                <th>Shop ID</th>
                 <th>Orders</th>
                 <th>Total Earning</th>
                 <th>Paid</th>
@@ -219,7 +219,7 @@ export default function RestaurantPayoutSettlement() {
               ${bodyRowsHtml}
               <tr class="total-row">
                 <td>TOTAL</td>
-                <td>${htmlEscape(`${rows.length} restaurants`)}</td>
+                <td>${htmlEscape(`${rows.length} shops`)}</td>
                 <td class="num">${htmlEscape(totalOrders.toFixed(0))}</td>
                 <td class="num">${htmlEscape(Number(summary.totalEarning || 0).toFixed(2))}</td>
                 <td class="num">${htmlEscape(Number(summary.totalPaid || 0).toFixed(2))}</td>
@@ -241,7 +241,7 @@ export default function RestaurantPayoutSettlement() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.download = `restaurant-settlement-${new Date().toISOString().slice(0, 10)}.xls`
+    link.download = `shop-settlement-${new Date().toISOString().slice(0, 10)}.xls`
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -258,8 +258,8 @@ export default function RestaurantPayoutSettlement() {
               <Receipt className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Restaurant Settlement</h1>
-              <p className="text-sm text-slate-600 mt-1">Select a date range to settle pending payouts for each restaurant.</p>
+              <h1 className="text-2xl font-bold text-slate-900">Shop Settlement</h1>
+              <p className="text-sm text-slate-600 mt-1">Select a date range to settle pending payouts for each shop.</p>
             </div>
           </div>
         </div>
@@ -280,7 +280,7 @@ export default function RestaurantPayoutSettlement() {
               </div>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Search Restaurant</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Search Shop</label>
               <div className="relative">
                 <input
                   type="text"
@@ -370,7 +370,7 @@ export default function RestaurantPayoutSettlement() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Restaurant</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Shop</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Orders</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Total Earning</th>
                   <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-700 uppercase tracking-wider">Paid</th>
@@ -396,7 +396,7 @@ export default function RestaurantPayoutSettlement() {
                 ) : rows.length === 0 ? (
                   <tr>
                     <td colSpan={11} className="px-6 py-14 text-center text-sm text-slate-500">
-                      No restaurant found for current filters.
+                      No shop found for current filters.
                     </td>
                   </tr>
                 ) : (

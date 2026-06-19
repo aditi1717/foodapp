@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { ArrowLeft, Check, Loader2, X } from "lucide-react"
 import { useNavigate, useParams } from "react-router-dom"
 import { restaurantAPI } from "@food/api"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
@@ -11,7 +11,7 @@ export default function AddOfferPage() {
   const navigate = useNavigate()
   const { id: offerId } = useParams()
   const isEditMode = !!offerId
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [form, setForm] = useState({
     title: "",
     productIds: [],

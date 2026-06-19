@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import Lenis from "lenis"
 import { ArrowLeft, Search, Utensils, User, ShoppingBag, X, Truck } from "lucide-react"
 import { Input } from "@food/components/ui/input"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 
 export default function ConversationListPage() {
   const navigate = useNavigate()
@@ -49,7 +49,7 @@ export default function ConversationListPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4 md:py-3 flex items-center gap-4 rounded-b-3xl md:rounded-b-none fixed top-0 left-0 right-0 z-50">
         <button
-          onClick={() => navigate("/restaurant")}
+          onClick={() => navigate("/shop")}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -134,7 +134,7 @@ export default function ConversationListPage() {
               transition={{ duration: 0.3, delay: index * 0.1 }}
               className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => {
-                navigate(`/restaurant/conversation/${conversation.id}`)
+                navigate(`/shop/conversation/${conversation.id}`)
               }}
             >
               <div className="flex items-start gap-3">

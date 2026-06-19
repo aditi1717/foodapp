@@ -139,8 +139,8 @@ export default function AdminHome() {
   const totalAdminEarnings = dashboardData?.totalAdminEarnings || 0
 
   // Additional stats
-  const totalRestaurants = dashboardData?.restaurants?.total || 0
-  const pendingRestaurantRequests = dashboardData?.restaurants?.pendingRequests || 0
+  const totalRestaurants = dashboardData?.shops?.total || 0
+  const pendingRestaurantRequests = dashboardData?.shops?.pendingRequests || 0
   const totalDeliveryBoys = dashboardData?.deliveryBoys?.total || 0
   const pendingDeliveryBoyRequests = dashboardData?.deliveryBoys?.pendingRequests || 0
   const totalFoods = dashboardData?.foods?.total || 0
@@ -234,7 +234,7 @@ export default function AdminHome() {
               helper={`${periodLabel} restaurant cut`}
               icon={<ArrowUpRight className="h-5 w-5 text-indigo-600" />}
               accent="bg-indigo-200/40"
-              path="/admin/food/restaurants/commission"
+              path="/admin/food/shops/commission"
             />
             <MetricCard
               title="Orders processed"
@@ -277,20 +277,20 @@ export default function AdminHome() {
               path="/admin/food/transaction-report"
             />
             <MetricCard
-              title="Total restaurants"
+              title="Total shops"
               value={totalRestaurants.toLocaleString("en-IN")}
               helper="Approved restaurants"
               icon={<Store className="h-5 w-5 text-brand-600" />}
               accent="bg-brand-200/40"
-              path="/admin/food/restaurants"
+              path="/admin/food/shops"
             />
             <MetricCard
-              title="Restaurant request pending"
+              title="Shop request pending"
               value={pendingRestaurantRequests.toLocaleString("en-IN")}
               helper="Awaiting approval"
               icon={<UserCheck className="h-5 w-5 text-orange-600" />}
               accent="bg-orange-200/40"
-              path="/admin/food/restaurants/joining-request"
+              path="/admin/food/shops/joining-request"
             />
             <MetricCard
               title="Total delivery boy"
@@ -522,7 +522,7 @@ export default function AdminHome() {
                           return <CheckCircle className="h-4 w-4 text-emerald-600" />
                         case "order_cancelled":
                           return <XCircle className="h-4 w-4 text-red-600" />
-                        case "restaurant":
+                        case "shop":
                           return <Store className="h-4 w-4 text-brand-600" />
                         case "delivery":
                           return <Truck className="h-4 w-4 text-purple-600" />
@@ -541,7 +541,7 @@ export default function AdminHome() {
                           return "bg-emerald-50"
                         case "order_cancelled":
                           return "bg-red-50"
-                        case "restaurant":
+                        case "shop":
                           return "bg-brand-50"
                         case "delivery":
                           return "bg-purple-50"

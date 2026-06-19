@@ -43,7 +43,7 @@ const statusConfig = {
   "user-unavailable": { title: "User Unavailable Review", color: "rose", icon: Package },
   "delivered": { title: "Delivered Orders", color: "emerald", icon: Package },
   "canceled": { title: "Canceled Orders", color: "rose", icon: Package },
-  "restaurant-cancelled": { title: "Restaurant Cancelled Orders", color: "red", icon: Package },
+  "shop-cancelled": { title: "Shop Cancelled Orders", color: "red", icon: Package },
   "payment-failed": { title: "Payment Failed Orders", color: "red", icon: Package },
   "refunded": { title: "Refunded Orders", color: "sky", icon: Package },
   "offline-payments": { title: "Offline Payments", color: "slate", icon: Package },
@@ -390,10 +390,10 @@ export default function OrdersPage({ statusKey = "all" }) {
             ? undefined
             : statusKey === "scheduled"
             ? undefined
-            : statusKey === "restaurant-cancelled"
+            : statusKey === "shop-cancelled"
               ? "cancelled"
               : statusKey,
-        cancelledBy: statusKey === "restaurant-cancelled" ? "restaurant" : undefined,
+        cancelledBy: statusKey === "shop-cancelled" ? "shop" : undefined,
       }
 
       const response = await adminAPI.getOrders(params)
@@ -585,8 +585,8 @@ export default function OrdersPage({ statusKey = "all" }) {
 
       const customerName = order.customerName || order.userId?.name || "N/A"
       const customerPhone = order.customerPhone || order.userId?.phone || "N/A"
-      const restaurant =
-        order.restaurant ||
+      const shop =
+        order.shop ||
         order.restaurantName ||
         order.restaurantId?.restaurantName ||
         ""
@@ -596,7 +596,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         (backendStatus === "cancelled_by_user"
           ? "user"
           : backendStatus === "cancelled_by_restaurant"
-            ? "restaurant"
+            ? "shop"
             : backendStatus === "cancelled_by_admin"
               ? "admin"
               : "")
@@ -611,7 +611,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         time,
         customerName,
         customerPhone,
-        restaurant,
+        shop,
         items,
         subtotal,
         totalItemAmount: subtotal,
@@ -658,7 +658,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     filteredOrders,
     count,
     activeFiltersCount,
-    restaurants,
+    shops,
     handleApplyFilters,
     handleResetFilters,
     handleExport,
@@ -1153,7 +1153,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         setFilters={setFilters}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-        restaurants={restaurants}
+        shops={shops}
       />
       <SettingsDialog
         isOpen={isSettingsOpen}

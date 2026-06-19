@@ -11,8 +11,8 @@ const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 const extractRestaurantPayload = (response) =>
-  response?.data?.data?.restaurant ||
-  response?.data?.restaurant ||
+  response?.data?.data?.shop ||
+  response?.data?.shop ||
   response?.data?.data?.user ||
   response?.data?.user ||
   response?.data?.data ||
@@ -61,7 +61,7 @@ const extractDaySlots = (dayData) => {
 }
 
 
-export default function RestaurantNavbar({
+export default function ShopNavbar({
   restaurantName: propRestaurantName,
   location: propLocation,
   showSearch = true,
@@ -78,7 +78,7 @@ export default function RestaurantNavbar({
   const [loading, setLoading] = useState(true)
   const [companyName, setCompanyName] = useState("")
   const [logoUrl, setLogoUrl] = useState(null)
-  const { unreadCount } = useNotificationInbox("restaurant", { limit: 20, pollMs: 5 * 60 * 1000 })
+  const { unreadCount } = useNotificationInbox("shop", { limit: 20, pollMs: 5 * 60 * 1000 })
 
   // Load business settings for branding
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function RestaurantNavbar({
     return () => window.removeEventListener('businessSettingsUpdated', handleSettingsUpdate)
   }, [])
 
-  // Fetch restaurant data and outlet timings on mount
+  // Fetch shop data and outlet timings on mount
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
@@ -120,7 +120,7 @@ export default function RestaurantNavbar({
         }
       } catch (error) {
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          debugError("Error fetching restaurant data:", error)
+          debugError("Error fetching shop data:", error)
         }
       } finally {
         setLoading(false)
@@ -222,8 +222,8 @@ export default function RestaurantNavbar({
     return parts.length > 0 ? parts.join(", ") : ""
   }
 
-  // Get restaurant name (use prop if provided, otherwise use fetched data)
-  const restaurantName = propRestaurantName || restaurantData?.name || "Restaurant"
+  // Get shop name (use prop if provided, otherwise use fetched data)
+  const restaurantName = propRestaurantName || restaurantData?.name || "Shop"
 
   const [location, setLocation] = useState("")
 
@@ -237,7 +237,7 @@ export default function RestaurantNavbar({
     }
     // Priority 2: Check restaurantData location
     else if (restaurantData) {
-      debugLog('?? Checking restaurant data for address:', {
+      debugLog('?? Checking shop data for address:', {
         hasLocation: !!restaurantData.location,
         locationKeys: restaurantData.location ? Object.keys(restaurantData.location) : [],
         formattedAddress: restaurantData.location?.formattedAddress,
@@ -286,9 +286,9 @@ export default function RestaurantNavbar({
     
     // Debug log
     if (newLocation) {
-      debugLog('?? Restaurant address displayed:', newLocation)
+      debugLog('?? Shop address displayed:', newLocation)
     } else if (restaurantData) {
-      debugLog('?? Restaurant data available but no address found')
+      debugLog('?? Shop data available but no address found')
     }
   }, [restaurantData, propLocation])
 
@@ -383,7 +383,7 @@ export default function RestaurantNavbar({
   }, [manualOnlineStatus, outletTimings])
 
   const handleStatusClick = () => {
-    navigate("/restaurant/status")
+    navigate("/shop/status")
   }
 
   const handleSearchClick = () => {
@@ -400,11 +400,11 @@ export default function RestaurantNavbar({
   }
 
   const handleMenuClick = () => {
-    navigate("/restaurant/explore")
+    navigate("/shop/explore")
   }
 
   const handleNotificationsClick = () => {
-    navigate("/restaurant/notifications")
+    navigate("/shop/notifications")
   }
 
   // Show search input when search is active
@@ -438,14 +438,14 @@ export default function RestaurantNavbar({
 
   return (
     <div className="w-full bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-      {/* Left Side - Restaurant Info */}
+      {/* Left Side - Shop Info */}
       <div className="flex-1 min-w-0 pr-4 flex items-center gap-3">
 
         <div className="min-w-0">
-          {/* Restaurant Name & Company */}
+          {/* Shop Name & Company */}
           <div className="flex items-baseline gap-1.5 min-w-0">
             <h1 className="text-[15px] font-bold text-gray-900 truncate">
-              {loading ? "Loading..." : (restaurantName || "Restaurant")}
+              {loading ? "Loading..." : (restaurantName || "Shop")}
             </h1>
 
           </div>

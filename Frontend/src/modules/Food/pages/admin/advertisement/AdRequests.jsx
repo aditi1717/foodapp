@@ -65,9 +65,9 @@ export default function AdRequests() {
       result = result.filter(r => r.adsType === filters.adsType)
     }
     
-    // Filter by restaurant
-    if (filters.restaurant) {
-      result = result.filter(r => r.restaurantName === filters.restaurant)
+    // Filter by shop
+    if (filters.shop) {
+      result = result.filter(r => r.restaurantName === filters.shop)
     }
     
     return result
@@ -135,11 +135,11 @@ export default function AdRequests() {
   const handleResetFilters = () => {
     setFilters({
       adsType: "",
-      restaurant: "",
+      shop: "",
     })
   }
 
-  const restaurants = [...new Set(requests.map(r => r.restaurantName))].filter(Boolean)
+  const shops = [...new Set(requests.map(r => r.restaurantName))].filter(Boolean)
   const adsTypes = [...new Set(requests.map(r => r.adsType))].filter(Boolean)
 
   const tabs = [
@@ -190,7 +190,7 @@ export default function AdRequests() {
               <div className="relative flex-1 sm:flex-initial min-w-[250px]">
                 <input
                   type="text"
-                  placeholder="Search by ads ID or restaurant"
+                  placeholder="Search by ads ID or shop"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
@@ -262,7 +262,7 @@ export default function AdRequests() {
                 {visibleColumns.si && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">SI</th>}
                 {visibleColumns.adsId && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads ID</th>}
                 {visibleColumns.adsTitle && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Title</th>}
-                {visibleColumns.restaurantInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Restaurant Info</th>}
+                {visibleColumns.restaurantInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop Info</th>}
                 {visibleColumns.adsType && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Type</th>}
                 {visibleColumns.duration && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Duration</th>}
                 {visibleColumns.actions && <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Action</th>}
@@ -394,16 +394,16 @@ export default function AdRequests() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Restaurant
+                Shop
               </label>
               <select
                 value={filters.restaurant}
-                onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
+                onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
               >
-                <option value="">All Restaurants</option>
-                {restaurants.map(restaurant => (
-                  <option key={restaurant} value={restaurant}>{restaurant}</option>
+                <option value="">All Shops</option>
+                {shops.map(shop => (
+                  <option key={restaurant} value={restaurant}>{shop}</option>
                 ))}
               </select>
             </div>
@@ -453,11 +453,11 @@ export default function AdRequests() {
                   <p className="text-sm text-slate-900">{selectedRequest.adsTitle}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Restaurant Name</p>
+                  <p className="text-sm font-semibold text-slate-700">Shop Name</p>
                   <p className="text-sm text-slate-900">{selectedRequest.restaurantName}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Restaurant Email</p>
+                  <p className="text-sm font-semibold text-slate-700">Shop Email</p>
                   <p className="text-sm text-slate-900">{selectedRequest.restaurantEmail}</p>
                 </div>
                 <div>

@@ -35,15 +35,15 @@ export const adminSidebarMenu = [
         label: "Foods",
         icon: "Utensils",
         subItems: [
-          { label: "Restaurant Foods List", path: "/admin/food/foods" },
-          { label: "Restaurant Addons List", path: "/admin/food/addons" },
+          { label: "Shop Foods List", path: "/admin/food/foods" },
+          { label: "Shop Addons List", path: "/admin/food/addons" },
         ],
       },
     ],
   },
   {
     type: "section",
-    label: "RESTAURANT MANAGEMENT",
+    label: "SHOP MANAGEMENT",
     items: [
       {
         type: "link",
@@ -53,15 +53,15 @@ export const adminSidebarMenu = [
       },
       {
         type: "expandable",
-        label: "Restaurants",
+        label: "Shops",
         icon: "UtensilsCrossed",
         subItems: [
-          { label: "Restaurants List", path: "/admin/food/restaurants" },
-          { label: "New Joining Request", path: "/admin/food/restaurants/joining-request" },
-          { label: "Restaurant Commission", path: "/admin/food/restaurants/commission" },
-          { label: "Restaurant Reviews", path: "/admin/food/restaurants/reviews" },
-          { label: "Restaurant Complaints", path: "/admin/food/restaurants/complaints" },
-          { label: "Wallet Withdrawals", path: "/admin/food/restaurants/withdrawals" },
+          { label: "Shops List", path: "/admin/food/shops" },
+          { label: "New Joining Request", path: "/admin/food/shops/joining-request" },
+          { label: "Shop Commission", path: "/admin/food/shops/commission" },
+          { label: "Shop Reviews", path: "/admin/food/shops/reviews" },
+          { label: "Shop Complaints", path: "/admin/food/shops/complaints" },
+          { label: "Wallet Withdrawals", path: "/admin/food/shops/withdrawals" },
         ],
       },
     ],
@@ -84,7 +84,7 @@ export const adminSidebarMenu = [
           { label: "User Unavailable", path: "/admin/food/orders/user-unavailable" },
           { label: "Delivered", path: "/admin/food/orders/delivered" },
           { label: "Cancelled", path: "/admin/food/orders/canceled" },
-          { label: "Restaurant cancelled", path: "/admin/food/orders/restaurant-cancelled" },
+          { label: "Shop cancelled", path: "/admin/food/orders/restaurant-cancelled" },
           { label: "Payment Failed", path: "/admin/food/orders/payment-failed" },
           { label: "Refunded", path: "/admin/food/orders/refunded" },
           { label: "Offline Payments", path: "/admin/food/orders/offline-payments" },
@@ -140,7 +140,7 @@ export const adminSidebarMenu = [
       },
       {
         type: "link",
-        label: "Support Tickets (User & Restaurant)",
+        label: "Support Tickets (User & Shop)",
         path: "/admin/food/support-tickets",
         icon: "MessageSquare",
       },
@@ -203,7 +203,7 @@ export const adminSidebarMenu = [
     type: "section",
     label: "HELP & SUPPORT",
     items: [
-      { type: "link", label: "Restaurant Share Feedback", path: "/admin/food/contact-messages", icon: "Mail" },
+      { type: "link", label: "Shop Share Feedback", path: "/admin/food/contact-messages", icon: "Mail" },
       { type: "link", label: "Safety Emergency Reports", path: "/admin/food/safety-emergency-reports", icon: "AlertTriangle" },
     ],
   },
@@ -216,12 +216,12 @@ export const adminSidebarMenu = [
       { type: "link", label: "Tax Report", path: "/admin/food/tax-report", icon: "Receipt" },
       {
         type: "expandable",
-        label: "Restaurant Report",
+        label: "Shop Report",
         icon: "FileText",
         subItems: [
-          { label: "Restaurant Report", path: "/admin/food/restaurant-report" },
-          { label: "Restaurant Settlement", path: "/admin/food/restaurant-report/settlement" },
-          { label: "Restaurant Settlement History", path: "/admin/food/restaurant-report/settlement-history" },
+          { label: "Shop Report", path: "/admin/food/shop-report" },
+          { label: "Shop Settlement", path: "/admin/food/shop-report/settlement" },
+          { label: "Shop Settlement History", path: "/admin/food/shop-report/settlement-history" },
         ],
       },
       {

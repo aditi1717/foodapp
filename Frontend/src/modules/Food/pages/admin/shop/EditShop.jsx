@@ -26,16 +26,16 @@ const normalizeZoneId = (zoneId) => {
   return zoneId?._id || zoneId?.id || ""
 }
 
-const normalizeLocationFormFromRestaurant = (restaurant) => {
+const normalizeLocationFormFromRestaurant = (shop) => {
   const loc =
-    restaurant?.location ||
-    restaurant?.onboarding?.step1?.location ||
+    shop?.location ||
+    shop?.onboarding?.step1?.location ||
     {}
 
   const lat =
-    toNumberOrEmpty(loc?.latitude ?? restaurant?.latitude)
+    toNumberOrEmpty(loc?.latitude ?? shop?.latitude)
   const lng =
-    toNumberOrEmpty(loc?.longitude ?? restaurant?.longitude)
+    toNumberOrEmpty(loc?.longitude ?? shop?.longitude)
 
   const hasValidCoords =
     Number.isFinite(Number(lat)) &&
@@ -46,46 +46,46 @@ const normalizeLocationFormFromRestaurant = (restaurant) => {
   const formattedAddress =
     loc?.formattedAddress ||
     loc?.addressLine1 ||
-    restaurant?.formattedAddress ||
-    restaurant?.addressLine1 ||
-    restaurant?.address ||
+    shop?.formattedAddress ||
+    shop?.addressLine1 ||
+    shop?.address ||
     ""
 
   return {
-    zoneId: normalizeZoneId(restaurant?.zoneId),
+    zoneId: normalizeZoneId(shop?.zoneId),
     formattedAddress,
-    addressLine1: loc?.addressLine1 || restaurant?.addressLine1 || formattedAddress,
-    addressLine2: loc?.addressLine2 || restaurant?.addressLine2 || "",
-    area: loc?.area || restaurant?.area || "",
-    city: loc?.city || restaurant?.city || "",
-    state: loc?.state || restaurant?.state || "",
-    pincode: loc?.pincode || restaurant?.pincode || "",
-    landmark: loc?.landmark || restaurant?.landmark || "",
+    addressLine1: loc?.addressLine1 || shop?.addressLine1 || formattedAddress,
+    addressLine2: loc?.addressLine2 || shop?.addressLine2 || "",
+    area: loc?.area || shop?.area || "",
+    city: loc?.city || shop?.city || "",
+    state: loc?.state || shop?.state || "",
+    pincode: loc?.pincode || shop?.pincode || "",
+    landmark: loc?.landmark || shop?.landmark || "",
     latitude: hasValidCoords ? lat : "",
     longitude: hasValidCoords ? lng : "",
   }
 }
 
-const normalizeDetailsFormFromRestaurant = (restaurant) => {
+const normalizeDetailsFormFromRestaurant = (shop) => {
   return {
-    name: restaurant?.name || restaurant?.restaurantName || "",
+    name: shop?.name || shop?.restaurantName || "",
     pureVegRestaurant:
-      restaurant?.pureVegRestaurant === true || restaurant?.pureVegRestaurant === "true",
-    ownerName: restaurant?.ownerName || "",
-    ownerEmail: restaurant?.ownerEmail || "",
-    ownerPhone: restaurant?.ownerPhone || "",
-    primaryContactNumber: restaurant?.primaryContactNumber || "",
-    email: restaurant?.email || "",
-    cuisinesText: Array.isArray(restaurant?.cuisines) ? restaurant.cuisines.join(", ") : "",
+      shop?.pureVegRestaurant === true || shop?.pureVegRestaurant === "true",
+    ownerName: shop?.ownerName || "",
+    ownerEmail: shop?.ownerEmail || "",
+    ownerPhone: shop?.ownerPhone || "",
+    primaryContactNumber: shop?.primaryContactNumber || "",
+    email: shop?.email || "",
+    cuisinesText: Array.isArray(shop?.cuisines) ? shop.cuisines.join(", ") : "",
     estimatedDeliveryTimeMinutes:
-      restaurant?.estimatedDeliveryTimeMinutes ??
-      restaurant?.estimatedDeliveryTime ??
+      shop?.estimatedDeliveryTimeMinutes ??
+      shop?.estimatedDeliveryTime ??
       "",
-    offer: restaurant?.offer || "",
-    openingTime: restaurant?.openingTime || restaurant?.deliveryTimings?.openingTime || "",
-    closingTime: restaurant?.closingTime || restaurant?.deliveryTimings?.closingTime || "",
-    openDays: Array.isArray(restaurant?.openDays) ? restaurant.openDays : [],
-    isActive: restaurant?.isActive !== false,
+    offer: shop?.offer || "",
+    openingTime: shop?.openingTime || shop?.deliveryTimings?.openingTime || "",
+    closingTime: shop?.closingTime || shop?.deliveryTimings?.closingTime || "",
+    openDays: Array.isArray(shop?.openDays) ? shop.openDays : [],
+    isActive: shop?.isActive !== false,
   }
 }
 
@@ -132,7 +132,7 @@ export default function EditRestaurant() {
   const [savingLocation, setSavingLocation] = useState(false)
   const [error, setError] = useState("")
 
-  const [restaurant, setRestaurant] = useState(null)
+  const [shop, setRestaurant] = useState(null)
   const [zones, setZones] = useState([])
   const [zonesLoading, setZonesLoading] = useState(false)
 
@@ -145,8 +145,8 @@ export default function EditRestaurant() {
 
   const restaurantId = useMemo(() => {
     if (id) return id
-    return normalizeRestaurantId(restaurant)
-  }, [id, restaurant])
+    return normalizeRestaurantId(shop)
+  }, [id, shop])
 
   useEffect(() => {
     let mounted = true
@@ -160,7 +160,7 @@ export default function EditRestaurant() {
         const data = res?.data?.data || null
         if (!mounted) return
         if (!res?.data?.success || !data) {
-          setError(res?.data?.message || "Failed to load restaurant")
+          setError(res?.data?.message || "Failed to load shop")
           setRestaurant(null)
           return
         }
@@ -171,7 +171,7 @@ export default function EditRestaurant() {
       } catch (e) {
         debugError(e)
         if (!mounted) return
-        setError(e?.response?.data?.message || "Failed to load restaurant")
+        setError(e?.response?.data?.message || "Failed to load shop")
       } finally {
         if (mounted) setLoading(false)
       }
@@ -326,13 +326,13 @@ export default function EditRestaurant() {
       }
 
       const res = await adminAPI.updateRestaurant(restaurantId, payload)
-      const updated = res?.data?.data?.restaurant || res?.data?.data || null
+      const updated = res?.data?.data?.shop || res?.data?.data || null
       if (updated) {
         setRestaurant((prev) => ({ ...(prev || {}), ...updated }))
       }
-      alert("Restaurant details updated successfully")
+      alert("Shop details updated successfully")
     } catch (e) {
-      alert(e?.response?.data?.message || "Failed to update restaurant details")
+      alert(e?.response?.data?.message || "Failed to update shop details")
     } finally {
       setSavingDetails(false)
     }
@@ -374,13 +374,13 @@ export default function EditRestaurant() {
       }
 
       const res = await adminAPI.updateRestaurantLocation(restaurantId, payload)
-      const updatedRestaurant = res?.data?.data?.restaurant || null
+      const updatedRestaurant = res?.data?.data?.shop || null
       if (updatedRestaurant) {
         setRestaurant((prev) => ({ ...(prev || {}), ...updatedRestaurant }))
       }
-      alert("Restaurant location updated successfully")
+      alert("Shop location updated successfully")
     } catch (e) {
-      alert(e?.response?.data?.message || "Failed to update restaurant location")
+      alert(e?.response?.data?.message || "Failed to update shop location")
     } finally {
       setSavingLocation(false)
     }
@@ -392,16 +392,16 @@ export default function EditRestaurant() {
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate("/admin/food/restaurants")}
+              onClick={() => navigate("/admin/food/shops")}
               className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50"
               title="Back"
             >
               <ArrowLeft className="w-4 h-4 text-slate-700" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Edit Restaurant</h1>
+              <h1 className="text-2xl font-bold text-slate-900">Edit Shop</h1>
               <p className="text-sm text-slate-500">
-                {restaurant?.name || restaurant?.restaurantName || restaurantId}
+                {shop?.name || shop?.restaurantName || restaurantId}
               </p>
             </div>
           </div>
@@ -422,11 +422,11 @@ export default function EditRestaurant() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5 mb-5">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">Basic Details</h2>
-                  <p className="text-xs text-slate-500 mt-1">Core restaurant identifiers and ownership</p>
+                  <p className="text-xs text-slate-500 mt-1">Core shop identifiers and ownership</p>
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Restaurant Type</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shop Type</span>
                     <div className="flex items-center gap-1 bg-slate-150 p-1 rounded-full w-fit border border-slate-200">
                       <button
                         type="button"
@@ -467,7 +467,7 @@ export default function EditRestaurant() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Restaurant Name</Label>
+                  <Label>Shop Name</Label>
                   <Input value={detailsForm.name} onChange={(e) => setDetailsForm((p) => ({ ...p, name: e.target.value }))} />
                 </div>
                 <div>
@@ -613,7 +613,7 @@ export default function EditRestaurant() {
                   <Label>Search location</Label>
                   <Input
                     ref={locationSearchInputRef}
-                    placeholder="Start typing your restaurant address..."
+                    placeholder="Start typing your shop address..."
                     className="mt-1 bg-white text-sm text-black! dark:text-white! placeholder:text-gray-500 dark:placeholder:text-gray-400 caret-black dark:caret-white"
                     style={{ color: "#000", WebkitTextFillColor: "#000" }}
                   />

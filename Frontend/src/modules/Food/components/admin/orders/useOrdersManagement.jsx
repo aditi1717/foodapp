@@ -86,7 +86,7 @@ export function useOrdersManagement(orders, statusKey, title) {
     maxAmount: "",
     fromDate: "",
     toDate: "",
-    restaurant: "",
+    shop: "",
   })
 
   const setFilters = (updater) => {
@@ -103,7 +103,7 @@ export function useOrdersManagement(orders, statusKey, title) {
     orderId: true,
     orderDate: true,
     customer: true,
-    restaurant: true,
+    shop: true,
     foodItems: true,
     totalAmount: true,
     paymentType: true,
@@ -112,9 +112,9 @@ export function useOrdersManagement(orders, statusKey, title) {
     actions: true,
   })
 
-  // Get unique restaurants from orders
-  const restaurants = useMemo(() => {
-    return [...new Set(orders.map(o => o.restaurant))]
+  // Get unique shops from orders
+  const shops = useMemo(() => {
+    return [...new Set(orders.map(o => o.shop))]
   }, [orders])
 
   // Apply search and filters
@@ -138,7 +138,7 @@ export function useOrdersManagement(orders, statusKey, title) {
           String(order.customerName || "")
             .toLowerCase()
             .includes(query) ||
-          String(order.restaurant || "")
+          String(order.shop || "")
             .toLowerCase()
             .includes(query) ||
           String(order.customerPhone || "").includes(query) ||
@@ -182,7 +182,7 @@ export function useOrdersManagement(orders, statusKey, title) {
     }
 
     if (filters.restaurant) {
-      result = result.filter(order => order.restaurant === filters.restaurant)
+      result = result.filter(order => order.shop === filters.shop)
     }
 
     // Helper function to parse date format "16 JUL 2025"

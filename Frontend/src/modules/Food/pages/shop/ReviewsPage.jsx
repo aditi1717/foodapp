@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { 
   ArrowLeft,
@@ -11,7 +11,7 @@ import {
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -19,7 +19,7 @@ const debugError = (...args) => {}
 
 export default function ReviewsPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [searchQuery, setSearchQuery] = useState("")
   const [failedImages, setFailedImages] = useState(new Set())
 
@@ -135,7 +135,7 @@ export default function ReviewsPage() {
                         debugLog("View reply for review:", review.id)
                         // Navigate to view reply page if needed
                       } else {
-                        navigate(`/restaurant/reviews/${review.id}/reply`)
+                        navigate(`/shop/reviews/${review.id}/reply`)
                       }
                     }}
                     className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-lg ${

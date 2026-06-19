@@ -64,7 +64,7 @@ export default function RestaurantLogin() {
       }))
       sessionStorage.setItem("restaurantLoginPhone", formattedPhone)
 
-      navigate("/food/restaurant/otp")
+      navigate("/food/shop/otp")
     } catch (err) {
       const message = err?.response?.data?.message || err?.response?.data?.error || err?.message || "Failed to send verification code. Please try again."
       setError(message)
@@ -89,7 +89,7 @@ export default function RestaurantLogin() {
               <span className="text-white text-xl font-semibold">R</span>
             )}
           </div>
-          <h1 className="text-xl font-semibold text-gray-900">Restaurant Login</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Shop Login</h1>
           <p className="text-sm text-gray-500">Continue with your phone number</p>
         </div>
 
@@ -127,7 +127,7 @@ export default function RestaurantLogin() {
         </Button>
 
         <p className="text-[11px] text-center text-gray-500">
-          By continuing, you agree to our <Link to="/food/restaurant/terms" className="font-semibold" style={{ color: BRAND_THEME.colors.brand.primary }}>Terms of Service</Link> &amp; <Link to="/food/restaurant/privacy" className="font-semibold" style={{ color: BRAND_THEME.colors.brand.primary }}>Privacy Policy</Link>
+          By continuing, you agree to our <Link to="/food/shop/terms" className="font-semibold" style={{ color: BRAND_THEME.colors.brand.primary }}>Terms of Service</Link> &amp; <Link to="/food/shop/privacy" className="font-semibold" style={{ color: BRAND_THEME.colors.brand.primary }}>Privacy Policy</Link>
         </p>
       </div>
     </div>

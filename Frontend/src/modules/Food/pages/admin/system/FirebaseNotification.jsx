@@ -10,7 +10,7 @@ const languageTabs = [
   { key: "en", label: "English(EN)" },
   { key: "bn", label: "Bengali - বাংলা(BN)" },
   { key: "ar", label: "Arabic - العربية (AR)" },
-  { key: "es", label: "Spanish - espa�ol(ES)" }
+  { key: "es", label: "Spanish - espa�ol(ES)" }
 ]
 
 const notificationMessages = [
@@ -38,8 +38,8 @@ const notificationMessages = [
   {
     id: 4,
     key: "restaurantHandover",
-    label: "Restaurant handover message",
-    defaultText: "Your order {orderId} has been handed over to restaurant {restaurantName}",
+    label: "Shop handover message",
+    defaultText: "Your order {orderId} has been handed over to shop {restaurantName}",
     enabled: true
   },
   {

@@ -2,13 +2,13 @@ import { useEffect, useState } from "react"
 import { ArrowLeft, Loader2, Trash2, Plus, Clock3, Pencil } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { restaurantAPI } from "@food/api"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { Card, CardContent } from "@food/components/ui/card"
-import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
+import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 
 export default function OffersPage() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const [offers, setOffers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -96,7 +96,7 @@ export default function OffersPage() {
                     {deleting[offer._id || offer.id] ? "Deleting..." : "Delete"}
                   </button>
                   <button
-                    onClick={() => navigate(`/restaurant/offers/${offer._id || offer.id}/edit`)}
+                    onClick={() => navigate(`/shop/offers/${offer._id || offer.id}/edit`)}
                     className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700"
                   >
                     <Pencil className="w-4 h-4" />
@@ -110,7 +110,7 @@ export default function OffersPage() {
       </div>
 
       <button
-        onClick={() => navigate("/restaurant/offers/new")}
+        onClick={() => navigate("/shop/offers/new")}
         className="fixed bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 bg-brand-600 hover:bg-brand-700 text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-colors"
       >
         <Plus className="w-6 h-6" />

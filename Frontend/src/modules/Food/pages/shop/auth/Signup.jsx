@@ -49,13 +49,13 @@ export default function RestaurantSignup() {
 
   const validateName = (name) => {
     if (!name.trim()) {
-      return "Restaurant name is required"
+      return "Shop name is required"
     }
     if (name.trim().length < 2) {
       return "Restaurant name must be at least 2 characters"
     }
     if (name.trim().length > 50) {
-      return "Restaurant name must be less than 50 characters"
+      return "Shop name must be less than 50 characters"
     }
     return ""
   }
@@ -119,11 +119,11 @@ export default function RestaurantSignup() {
         phone: fullPhone,
         name: formData.name,
         isSignUp: true,
-        module: "restaurant",
+        module: "shop",
       }
       sessionStorage.setItem("restaurantAuthData", JSON.stringify(authData))
 
-      navigate("/food/restaurant/otp")
+      navigate("/food/shop/otp")
     } catch (error) {
       const message =
         error?.response?.data?.message ||
@@ -178,7 +178,7 @@ export default function RestaurantSignup() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label className="text-[11px] font-semibold tracking-wide text-gray-600">
-                  Restaurant Name
+                  Shop Name
                 </Label>
                 <div
                   className="rounded-2xl border bg-white px-4 py-3 shadow-[0_8px_20px_-18px_rgba(37,99,235,0.5)]"
@@ -188,7 +188,7 @@ export default function RestaurantSignup() {
                     id="name"
                     name="name"
                     type="text"
-                    placeholder="Restaurant name"
+                    placeholder="Shop name"
                     value={formData.name}
                     onChange={handleChange}
                     className="w-full border-0 focus:outline-none focus:ring-0 text-base font-medium text-gray-900 placeholder-gray-400"
@@ -279,7 +279,7 @@ export default function RestaurantSignup() {
           <div className="flex items-center justify-center gap-1 text-brand-700 font-semibold">
             <button
               type="button"
-              onClick={() => navigate("/food/restaurant/terms")}
+              onClick={() => navigate("/food/shop/terms")}
               className="underline underline-offset-2"
             >
               Terms of Service
@@ -287,7 +287,7 @@ export default function RestaurantSignup() {
             <span className="text-gray-400">&</span>
             <button
               type="button"
-              onClick={() => navigate("/food/restaurant/privacy")}
+              onClick={() => navigate("/food/shop/privacy")}
               className="underline underline-offset-2"
             >
               Privacy Policy

@@ -98,7 +98,7 @@ let onboardingFileCache = {
   },
 }
 
-const ONBOARDING_FILES_DB = "RestaurantOnboardingFiles"
+const ONBOARDING_FILES_DB = "ShopOnboardingFiles"
 const ONBOARDING_FILES_STORE = "files"
 const MAX_MENU_FILES = 15
 
@@ -242,7 +242,7 @@ const getVerifiedPhoneFromStoredRestaurant = () => {
       user?.contactNumber,
       user?.contact?.phone,
       user?.owner?.phone,
-      user?.restaurant?.phone,
+      user?.shop?.phone,
     ]
     const phone = candidates.find((value) => typeof value === "string" && value.trim())
     return phone ? phone.trim() : ""
@@ -598,7 +598,7 @@ function TimeSelector({ label, value, onChange }) {
   )
 }
 
-export default function RestaurantOnboarding() {
+export default function ShopOnboarding() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -621,17 +621,17 @@ export default function RestaurantOnboarding() {
       clearOnboardingFileCache()
 
       await restaurantAPI.logout()
-      clearModuleAuth("restaurant")
+      clearModuleAuth("shop")
       clearAuthData()
       localStorage.removeItem(ONBOARDING_STORAGE_KEY)
       window.dispatchEvent(new Event("restaurantAuthChanged"))
-      navigate("/food/restaurant/login", { replace: true })
+      navigate("/food/shop/login", { replace: true })
     } catch (error) {
       debugError("Logout failed:", error)
       clearOnboardingFromLocalStorage()
       clearOnboardingFileCache()
-      clearModuleAuth("restaurant")
-      navigate("/food/restaurant/login", { replace: true })
+      clearModuleAuth("shop")
+      navigate("/food/shop/login", { replace: true })
     } finally {
       setIsLoggingOut(false)
     }
@@ -1109,7 +1109,7 @@ export default function RestaurantOnboarding() {
         const apiKey = await getGoogleMapsApiKey()
         if (!apiKey) return false
 
-        const existing = document.getElementById("restaurant-onboarding-maps-script")
+        const existing = document.getElementById("shop-onboarding-maps-script")
         if (existing) {
           for (let i = 0; i < 30; i += 1) {
             if (window.google?.maps?.places?.Autocomplete) {
@@ -1124,7 +1124,7 @@ export default function RestaurantOnboarding() {
         try {
           await new Promise((resolve, reject) => {
             const script = document.createElement("script")
-            script.id = "restaurant-onboarding-maps-script"
+            script.id = "shop-onboarding-maps-script"
             script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`
             script.async = true
             script.defer = true
@@ -1331,7 +1331,7 @@ export default function RestaurantOnboarding() {
         setLoading(true)
         // Use restaurantAPI.getCurrentRestaurant() to fetch real data
         const res = await restaurantAPI.getCurrentRestaurant()
-        const data = res?.data?.data?.restaurant || res?.data?.restaurant
+        const data = res?.data?.data?.shop || res?.data?.shop
 
         if (data) {
           setIsEditing(false)
@@ -1457,10 +1457,10 @@ export default function RestaurantOnboarding() {
     const errors = []
 
     if (!step1.restaurantName?.trim()) {
-      errors.push("Restaurant name is required")
+      errors.push("Shop name is required")
     }
     if (typeof step1.pureVegRestaurant !== "boolean") {
-      errors.push("Please select whether your restaurant is pure veg")
+      errors.push("Please select whether your shop is pure veg")
     }
     if (!step1.ownerName?.trim()) {
       errors.push("Owner name is required")
@@ -1535,7 +1535,7 @@ export default function RestaurantOnboarding() {
 
     // Check profile image - must be a File or existing URL
     if (!step2.profileImage) {
-      errors.push("Restaurant profile image is required")
+      errors.push("Shop profile image is required")
     } else {
       // Verify profile image is either a File or has a valid URL
       const isValidProfileImage =
@@ -1543,7 +1543,7 @@ export default function RestaurantOnboarding() {
         (step2.profileImage?.url && typeof step2.profileImage.url === 'string') ||
         (typeof step2.profileImage === 'string' && step2.profileImage.startsWith('http'))
       if (!isValidProfileImage) {
-        errors.push("Please upload a valid restaurant profile image")
+        errors.push("Please upload a valid shop profile image")
       }
     }
 
@@ -1730,7 +1730,7 @@ export default function RestaurantOnboarding() {
         setStep(4)
         window.scrollTo({ top: 0, behavior: "instant" })
       } else if (step === 4) {
-        // Final submit: create restaurant in DB using backend multipart endpoint.
+        // Final submit: create shop in DB using backend multipart endpoint.
         const formData = new FormData()
 
         // Step 1
@@ -1775,7 +1775,7 @@ export default function RestaurantOnboarding() {
 
         appendImageFileOrUrl(formData, "profileImage", step2.profileImage, {
           required: true,
-          label: "Restaurant profile image",
+          label: "Shop profile image",
         })
 
         // Step 3
@@ -1815,17 +1815,17 @@ export default function RestaurantOnboarding() {
         formData.append("offer", step4.offer || "")
 
         // Logging for verification
-        debugLog("?? Submitting restaurant data:", {
+        debugLog("?? Submitting shop data:", {
           openingTime: normalizeTimeValue(step2.openingTime),
           closingTime: normalizeTimeValue(step2.closingTime),
           openDays: (step2.openDays || []).join(",")
         });
 
         if (isRegistered) {
-          debugLog("?? Updating existing restaurant profile");
+          debugLog("?? Updating existing shop profile");
           await restaurantAPI.updateProfile(formData);
         } else {
-          debugLog("?? Registering new restaurant");
+          debugLog("?? Registering new shop");
           await restaurantAPI.register(formData);
         }
 
@@ -1837,7 +1837,7 @@ export default function RestaurantOnboarding() {
         } catch { }
 
         toast.success("Registration submitted. Awaiting admin approval.", { duration: 4000 })
-        navigate("/food/restaurant/pending-verification", {
+        navigate("/food/shop/pending-verification", {
           replace: true,
           state: {
             phone: normalizePhoneDigits(step1.ownerPhone),
@@ -1871,10 +1871,10 @@ export default function RestaurantOnboarding() {
   const renderStep1 = () => (
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md">
-        <h2 className="text-lg font-semibold text-black mb-4">Restaurant information</h2>
+        <h2 className="text-lg font-semibold text-black mb-4">Shop information</h2>
         <div className="space-y-3">
           <div>
-            <Label className="text-xs text-gray-700">Restaurant name*</Label>
+            <Label className="text-xs text-gray-700">Shop name*</Label>
             <Input
               value={step1.restaurantName || ""}
               onChange={(e) => setStep1({ ...step1, restaurantName: e.target.value })}
@@ -1890,7 +1890,7 @@ export default function RestaurantOnboarding() {
             />
           </div>
           <div>
-            <Label className="text-xs text-gray-700">Pure veg restaurant?*</Label>
+            <Label className="text-xs text-gray-700">Pure veg shop?*</Label>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
@@ -1915,7 +1915,7 @@ export default function RestaurantOnboarding() {
               </button>
             </div>
             <p className="text-[11px] text-gray-500 mt-1">
-              This helps users filter restaurants by dietary preference.
+              This helps users filter shops by dietary preference.
             </p>
           </div>
         </div>
@@ -1988,7 +1988,7 @@ export default function RestaurantOnboarding() {
       </section>
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
-        <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
+        <h2 className="text-lg font-semibold text-black">Shop contact & location</h2>
         <div>
           <Label className="text-xs text-gray-700">Primary contact number*</Label>
           <Input
@@ -2009,7 +2009,7 @@ export default function RestaurantOnboarding() {
             }}
             inputMode="numeric"
             className="mt-1 bg-white text-sm text-black placeholder-black"
-            placeholder="Restaurant's primary contact number"
+            placeholder="Shop's primary contact number"
             disabled={!isEditing}
           />
           <p className="text-[11px] text-gray-500 mt-1">
@@ -2019,7 +2019,7 @@ export default function RestaurantOnboarding() {
         </div>
         <div className="space-y-3">
           <p className="text-sm text-gray-700">
-            Add your restaurant's location for order pick-up.
+            Add your shop's location for order pick-up.
           </p>
           <div>
             <Label className="text-xs text-gray-700">Service zone*</Label>
@@ -2062,16 +2062,16 @@ export default function RestaurantOnboarding() {
               })}
             </select>
             <p className="text-[11px] text-gray-500 mt-1">
-              Choose the service zone where your restaurant will be available.
+              Choose the service zone where your shop will be available.
             </p>
           </div>
           <div className="p-3 bg-brand-50/50 rounded-lg border-2 border-brand-200 shadow-sm ring-2 ring-brand-100/50">
-            <Label className="text-xs font-bold text-brand-700 mb-1.5 block">Search & Set Restaurant Location*</Label>
+            <Label className="text-xs font-bold text-brand-700 mb-1.5 block">Search & Set Shop Location*</Label>
             <Input
               ref={locationSearchInputRef}
               className="mt-1 bg-white text-sm text-black! dark:text-white! placeholder:text-gray-500 dark:placeholder:text-gray-400 caret-black dark:caret-white border-brand-500 border-2 ring-2 ring-brand-100 focus:border-brand-600 focus:ring-brand-200 font-bold transition-all shadow-sm"
               style={{ color: "#000", WebkitTextFillColor: "#000" }}
-              placeholder="Search your restaurant address here..."
+              placeholder="Search your shop address here..."
               defaultValue={step1.location?.formattedAddress || ""}
               disabled={!isEditing}
               onChange={(e) => {
@@ -2290,7 +2290,7 @@ export default function RestaurantOnboarding() {
 
         {/* Profile image */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-gray-700">Restaurant profile image</Label>
+          <Label className="text-xs font-medium text-gray-700">Shop profile image</Label>
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
@@ -2333,7 +2333,7 @@ export default function RestaurantOnboarding() {
               <div className="flex flex-col">
                 <span className="text-xs font-medium text-gray-900">Upload profile image</span>
                 <span className="text-[11px] text-gray-500">
-                  This will be shown on your listing card and restaurant page.
+                  This will be shown on your listing card and shop page.
                 </span>
               </div>
 
@@ -2404,7 +2404,7 @@ export default function RestaurantOnboarding() {
             <span>Open days</span>
           </Label>
           <p className="text-[11px] text-gray-500">
-            Select the days your restaurant accepts delivery orders.
+            Select the days your shop accepts delivery orders.
           </p>
           <div className="mt-1 grid grid-cols-7 gap-1.5 sm:gap-2">
             {daysOfWeek.map((day) => {
@@ -2829,7 +2829,7 @@ export default function RestaurantOnboarding() {
   const renderStep4 = () => (
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
-        <h2 className="text-lg font-semibold text-black">Restaurant Display Information</h2>
+        <h2 className="text-lg font-semibold text-black">Shop Display Information</h2>
         <p className="text-sm text-gray-600">
           Add information that will be displayed to customers on the home page
         </p>
@@ -2911,13 +2911,13 @@ export default function RestaurantOnboarding() {
         <header className="px-4 py-4 sm:px-6 sm:py-5 bg-white flex items-center justify-between border-b">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate("/food/restaurant/explore")}
+              onClick={() => navigate("/food/shop/explore")}
               className="p-1 hover:bg-gray-100 rounded-full transition-colors"
               aria-label="Close onboarding"
             >
               <X className="w-5 h-5 text-gray-600" />
             </button>
-            <div className="text-sm font-semibold text-black">Restaurant onboarding</div>
+            <div className="text-sm font-semibold text-black">Shop onboarding</div>
           </div>
           <div className="flex items-center gap-3">
             {!loading && !isEditing && (

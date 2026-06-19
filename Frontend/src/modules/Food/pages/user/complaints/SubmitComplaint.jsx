@@ -69,7 +69,7 @@ export default function SubmitComplaint() {
         if (found) {
           setExistingTicket(found)
           setForm({
-            subject: found.issueType || "Restaurant Complaint",
+            subject: found.issueType || "Shop Complaint",
             description: found.description || "",
             orderId: routeOrderId,
           })
@@ -167,7 +167,7 @@ export default function SubmitComplaint() {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Restaurant Complaint</h1>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Shop Complaint</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {isReadOnly ? "Complaint already submitted for this order." : "Tell us what went wrong with this order."}
             </p>

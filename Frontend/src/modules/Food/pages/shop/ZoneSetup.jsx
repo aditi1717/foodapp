@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
+import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { MapPin, Search, Save, Loader2, ArrowLeft } from "lucide-react"
-import RestaurantNavbar from "@food/components/restaurant/RestaurantNavbar"
+import ShopNavbar from "@food/components/shop/ShopNavbar"
 import { restaurantAPI } from "@food/api"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { Loader } from "@googlemaps/js-api-loader"
@@ -52,7 +52,7 @@ const getSavedLocationCoords = (location) => {
 
 export default function ZoneSetup() {
   const navigate = useNavigate()
-  const goBack = useRestaurantBackNavigation()
+  const goBack = useShopBackNavigation()
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const markerRef = useRef(null)
@@ -107,7 +107,7 @@ export default function ZoneSetup() {
     }
   }, [mapLoading])
 
-  // Load existing restaurant location when data is fetched
+  // Load existing shop location when data is fetched
   useEffect(() => {
     if (restaurantData?.location && mapInstanceRef.current && !mapLoading && window.google) {
       const location = restaurantData.location
@@ -132,12 +132,12 @@ export default function ZoneSetup() {
   const fetchRestaurantData = async () => {
     try {
       const response = await restaurantAPI.getCurrentRestaurant()
-      const data = response?.data?.data?.restaurant || response?.data?.restaurant
+      const data = response?.data?.data?.shop || response?.data?.shop
       if (data) {
         setRestaurantData(data)
       }
     } catch (error) {
-      debugError("Error fetching restaurant data:", error)
+      debugError("Error fetching shop data:", error)
     }
   }
 
@@ -290,14 +290,14 @@ export default function ZoneSetup() {
       map: mapInstanceRef.current,
       draggable: true,
       animation: window.google.maps.Animation.DROP,
-      title: address || "Restaurant Location"
+      title: address || "Shop Location"
     })
 
     // Add info window
     const infoWindow = new window.google.maps.InfoWindow({
       content: `
         <div style="padding: 8px; max-width: 250px;">
-          <strong>Restaurant Location</strong><br/>
+          <strong>Shop Location</strong><br/>
           <small>${address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`}</small>
         </div>
       `
@@ -354,7 +354,7 @@ export default function ZoneSetup() {
       
       const { lat, lng, address } = selectedLocation
       
-      // Update restaurant location
+      // Update shop location
       const response = await restaurantAPI.updateProfile({
         location: {
           ...(restaurantData?.location || {}),
@@ -365,8 +365,8 @@ export default function ZoneSetup() {
         }
       })
 
-      if (response?.data?.data?.restaurant) {
-        setRestaurantData(response.data.data.restaurant)
+      if (response?.data?.data?.shop) {
+        setRestaurantData(response.data.data.shop)
         alert("Location saved successfully!")
         
         // Refresh the page to update navbar
@@ -384,7 +384,7 @@ export default function ZoneSetup() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <RestaurantNavbar showSearch={false} />
+      <ShopNavbar showSearch={false} />
       <div className="p-4 md:p-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -402,7 +402,7 @@ export default function ZoneSetup() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Zone Setup</h1>
-              <p className="text-sm text-gray-600">Set your restaurant location on the map</p>
+              <p className="text-sm text-gray-600">Set your shop location on the map</p>
             </div>
           </div>
         </div>
@@ -417,7 +417,7 @@ export default function ZoneSetup() {
                 type="text"
                 value={locationSearch}
                 onChange={(e) => setLocationSearch(e.target.value)}
-                placeholder="Search for your restaurant location..."
+                placeholder="Search for your shop location..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
@@ -458,7 +458,7 @@ export default function ZoneSetup() {
             <li>Search for your location using the search bar above, or</li>
             <li>Click anywhere on the map to place a pin at that location</li>
             <li>You can drag the pin to adjust the exact position</li>
-            <li>Click "Save Location" to save your restaurant location</li>
+            <li>Click "Save Location" to save your shop location</li>
           </ul>
         </div>
 

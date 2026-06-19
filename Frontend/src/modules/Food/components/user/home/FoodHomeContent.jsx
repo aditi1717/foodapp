@@ -21,7 +21,7 @@ import {
   LoadingSkeletonRegion,
   RestaurantGridSkeleton,
 } from "@food/components/ui/loading-skeletons";
-import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability";
+import { getShopAvailabilityStatus } from "@food/utils/shopAvailability";
 import foodPattern from "@food/assets/food_pattern_background.png";
 import discoveryBg from "@food/assets/food_discovery_bg.png";
 import BRAND_THEME from "@/config/brandTheme";
@@ -33,7 +33,7 @@ const PRIMARY_FILTERS = [
   { id: "distance-under-2km", label: "Under 2km", icon: MapPin },
 ];
 
-const FoodRestaurantCard = memo(function FoodRestaurantCard({
+const FoodShopCard = memo(function FoodShopCard({
   restaurant,
   index,
   isOutOfService,
@@ -54,7 +54,7 @@ const FoodRestaurantCard = memo(function FoodRestaurantCard({
       ? restaurant.slug.trim()
       : fallbackSlugSource.toLowerCase().replace(/\s+/g, "-");
 
-  const availability = getRestaurantAvailabilityStatus(restaurant, new Date(availabilityTick));
+  const availability = getShopAvailabilityStatus(restaurant, new Date(availabilityTick));
   const favorite = isFavorite(restaurantSlug);
 
   return (
@@ -67,7 +67,7 @@ const FoodRestaurantCard = memo(function FoodRestaurantCard({
       }}
     >
       <div className="h-full group">
-        <Link to={`/user/restaurants/${restaurantSlug}`} className="flex h-full">
+        <Link to={`/user/shops/${restaurantSlug}`} className="flex h-full">
           <Card
             className={`relative flex h-full w-full flex-col gap-0 overflow-hidden rounded-[28px] border-0 border-background bg-white py-0 shadow-sm transition-all duration-500 hover:shadow-xl dark:border-gray-800 dark:bg-[#1a1a1a] ${
               isOutOfService || !availability.isOpen ? "grayscale opacity-75" : ""
@@ -82,7 +82,7 @@ const FoodRestaurantCard = memo(function FoodRestaurantCard({
 
               <div className="absolute left-4 top-4 z-10 flex items-center transform transition-transform duration-300 group-hover:scale-105">
                 <div className="flex items-center rounded-full border border-white/20 bg-black/70 px-4 py-1.5 text-[11px] font-medium tracking-tight text-white shadow-2xl backdrop-blur-lg">
-                  {restaurant.featuredDish} • ₹{restaurant.featuredPrice}
+                  {shop.featuredDish} • ₹{shop.featuredPrice}
                 </div>
               </div>
 
@@ -90,7 +90,7 @@ const FoodRestaurantCard = memo(function FoodRestaurantCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={(event) => onFavoriteToggle(event, restaurant, restaurantSlug, favorite)}
+                  onClick={(event) => onFavoriteToggle(event, shop, restaurantSlug, favorite)}
                   aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
                   className={`flex h-11 w-11 items-center justify-center rounded-[20px] shadow-xl transition-all duration-300 ${
                     favorite
@@ -108,7 +108,7 @@ const FoodRestaurantCard = memo(function FoodRestaurantCard({
                 <div className="mb-2 flex items-start justify-between gap-2 lg:mb-3">
                   <div className="min-w-0 flex-1">
                     <h3 className="line-clamp-1 text-lg font-medium leading-tight tracking-tight text-gray-950 transition-colors duration-300 group-hover:text-[#8B9543] dark:text-white lg:text-2xl">
-                      {restaurant.name}
+                      {shop.name}
                     </h3>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span
@@ -133,26 +133,26 @@ const FoodRestaurantCard = memo(function FoodRestaurantCard({
                         : "bg-gray-400 text-white"
                     } flex items-center gap-1.5`}
                   >
-                    {Number(restaurant.rating) > 0 && (
+                    {Number(shop.rating) > 0 && (
                       <Star className="h-3.5 w-3.5 fill-emerald-500 text-emerald-500 lg:h-4.5 lg:w-4.5" strokeWidth={0} />
                     )}
                     <span className="text-sm font-medium tracking-tight lg:text-lg">
-                      {Number(restaurant.rating) > 0 ? Number(restaurant.rating).toFixed(1) : "NEW"}
+                      {Number(shop.rating) > 0 ? Number(shop.rating).toFixed(1) : "NEW"}
                     </span>
                   </div>
                 </div>
 
                 <div className="mb-2 flex items-center gap-1 text-sm text-gray-500 opacity-70 transition-opacity duration-300 group-hover:opacity-100 lg:mb-3 lg:text-base">
                   <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400 lg:h-5 lg:w-5" strokeWidth={1.5} />
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{restaurant.deliveryTime}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">{shop.deliveryTime}</span>
                   <span className="mx-1">|</span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{restaurant.distance}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">{shop.distance}</span>
                 </div>
 
-                {restaurant.offer && (
+                {shop.offer && (
                   <div className="mt-auto flex items-center gap-2 text-sm transition-transform duration-300 group-hover:translate-x-1 lg:text-base">
                     <BadgePercent className="h-4 w-4 text-black lg:h-5 lg:w-5" strokeWidth={2} />
-                    <span className="font-medium text-gray-700 dark:text-gray-300">{restaurant.offer}</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{shop.offer}</span>
                   </div>
                 )}
               </CardContent>
@@ -312,8 +312,8 @@ function FoodHomeContent({
           </h2>
 
           <div className="grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 lg:grid-cols-4">
-            {recommendedForYouRestaurants.map((restaurant, index) => {
-              const restaurantSlug = restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, "-");
+            {recommendedForYouRestaurants.map((shop, index) => {
+              const restaurantSlug = shop.slug || shop.name.toLowerCase().replace(/\s+/g, "-");
               return (
                 <motion.div
                   key={`recommended-${restaurant.mongoId || restaurant.id || restaurantSlug}`}
@@ -323,7 +323,7 @@ function FoodHomeContent({
                   transition={{ duration: 0.35, delay: index * 0.05 }}
                 >
                   <Link
-                    to={`/user/restaurants/${restaurantSlug}`}
+                    to={`/user/shops/${restaurantSlug}`}
                     className={`block overflow-hidden rounded-[20px] border ${homepage.shared.border} ${homepage.shared.surface} shadow-sm transition-shadow hover:shadow-md`}
                   >
                     <div className="relative h-24 bg-gray-50 sm:h-28 md:h-32">
@@ -340,15 +340,15 @@ function FoodHomeContent({
                             : "bg-gray-200/90 font-medium text-gray-600"
                         }`}
                       >
-                        {Number(restaurant.rating) > 0 && (
+                        {Number(shop.rating) > 0 && (
                           <Star className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500" strokeWidth={0} />
                         )}
-                        {Number(restaurant.rating) > 0 ? Number(restaurant.rating).toFixed(1) : "NEW"}
+                        {Number(shop.rating) > 0 ? Number(shop.rating).toFixed(1) : "NEW"}
                       </div>
                     </div>
                     <div className="p-2.5">
                       <p className={`truncate text-sm font-semibold tracking-tight ${homepage.shared.title}`}>
-                        {restaurant.name}
+                        {shop.name}
                       </p>
                       <p className={`mt-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${homepage.shared.accentText}`}>
                         <Flame className="h-3.5 w-3.5 fill-current" />
@@ -434,7 +434,7 @@ function FoodHomeContent({
         <div className="mb-3 px-4 lg:mb-4">
           <div className="flex flex-col gap-0.5 lg:gap-1">
             <h2 className={`text-xs font-semibold uppercase tracking-widest ${homepage.shared.heading} sm:text-sm lg:text-base`}>
-              {filteredRestaurants.length} Restaurants Delivering to You
+              {filteredRestaurants.length} Shops Delivering to You
             </h2>
             <span className={`text-base font-normal ${homepage.shared.mutedText} sm:text-lg lg:text-2xl`}>Featured</span>
           </div>
@@ -449,7 +449,7 @@ function FoodHomeContent({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
               >
-                <LoadingSkeletonRegion label="Loading restaurants" className="h-full p-1 sm:p-2">
+                <LoadingSkeletonRegion label="Loading shops" className="h-full p-1 sm:p-2">
                   <RestaurantGridSkeleton count={3} className="grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" compact />
                 </LoadingSkeletonRegion>
               </motion.div>
@@ -461,8 +461,8 @@ function FoodHomeContent({
               isLoadingFilterResults || loadingRestaurants ? "opacity-50" : "opacity-100"
             }`}
           >
-            {visibleRestaurants.map((restaurant, index) => (
-              <FoodRestaurantCard
+            {visibleRestaurants.map((shop, index) => (
+              <FoodShopCard
                 key={restaurant?.id || restaurant?._id || restaurant?.slug || index}
                 restaurant={restaurant}
                 index={index}
@@ -485,7 +485,7 @@ function FoodHomeContent({
               className="border-gray-300 text-sm font-medium"
               style={{ color: BRAND_THEME.colors.brand.primary, borderColor: BRAND_THEME.colors.brand.primary }}
             >
-              Load more restaurants
+              Load more shops
             </Button>
           )}
           <div ref={restaurantLoadMoreRef} className="h-1 w-full" aria-hidden="true" />

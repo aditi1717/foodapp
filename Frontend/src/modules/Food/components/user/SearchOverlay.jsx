@@ -7,7 +7,7 @@ import { searchAPI } from "@/services/api"
 import { useProfile } from "@food/context/ProfileContext"
 import { useLocation } from "@food/hooks/useLocation"
 import { useZone } from "@food/hooks/useZone"
-import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
+import { getShopAvailabilityStatus } from "@food/utils/shopAvailability"
 import { enrichSearchRestaurantsWithOutletTimings, isPureVegRestaurant } from "@food/utils/searchAvailability"
 import BRAND_THEME from "@/config/brandTheme"
 
@@ -122,19 +122,19 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
           lng: location?.longitude,
           zoneId,
         })
-        const restaurants = (await enrichSearchRestaurantsWithOutletTimings(
-          res?.data?.data?.restaurants || [],
-        )).filter((restaurant) => {
+        const shops = (await enrichSearchRestaurantsWithOutletTimings(
+          res?.data?.data?.shops || [],
+        )).filter((shop) => {
           if (!vegMode) return true
-          if (!isVegSearchResult(restaurant)) return false
-          return vegModePreference !== "pure-veg" || isPureVegRestaurant(restaurant)
+          if (!isVegSearchResult(shop)) return false
+          return vegModePreference !== "pure-veg" || isPureVegRestaurant(shop)
         })
-        const normalizedFoods = restaurants
+        const normalizedFoods = shops
           .map((item, index) => {
-            const availability = getRestaurantAvailabilityStatus(item, new Date())
+            const availability = getShopAvailabilityStatus(item, new Date())
             if (item?.matchType === "food" && item?.matchedDish) {
               return {
-                id: item?.matchedDishId || `${item?._id || "restaurant"}-dish-${index}`,
+                id: item?.matchedDishId || `${item?._id || "shop"}-dish-${index}`,
                 name: String(item.matchedDish).trim(),
                 image: item?.matchedDishImage || item?.image || item?.profileImage || "",
                 isOpen: availability.isOpen,
@@ -144,7 +144,7 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
 
             if (item?.restaurantName) {
               return {
-                id: item?._id || `restaurant-${index}`,
+                id: item?._id || `shop-${index}`,
                 name: String(item.restaurantName).trim(),
                 image: item?.image || item?.profileImage || "",
                 isOpen: availability.isOpen,
@@ -225,7 +225,7 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
                 ref={inputRef}
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search for food, restaurants..."
+                placeholder="Search for food, shops..."
                 className={`pl-12 pr-4 h-12 w-full ${searchOverlay.inputSurface} ${searchOverlay.inputBorder} focus:border-[var(--brand-search-focus)] rounded-full text-lg dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500`}
                 style={{ "--brand-search-focus": searchOverlay.inputFocusBorder }}
               />
