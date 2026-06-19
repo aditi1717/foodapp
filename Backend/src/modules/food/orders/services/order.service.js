@@ -1217,9 +1217,8 @@ async function filterEligibleDeliveryPartners(partnerIds, order = null) {
     .lean();
   const exclusiveSet = new Set(exclusiveRows.map(row => String(row.deliveryPartnerId)));
 
-  // 2. Fetch business settings limit
-  const businessSettings = await FoodBusinessSettings.findOne().lean();
-  const maxActiveOrders = businessSettings?.maxActiveOrdersPerRider || 1;
+  // 2. Auto-assignment only allows a single active order per rider
+  const maxActiveOrders = 1;
 
   // 3. Count active orders for each candidate
   const activeOrders = await FoodOrder.aggregate([
@@ -3445,7 +3444,8 @@ export async function assignDeliveryPartnerRestaurant(orderId, restaurantId, del
     }
   }
 
-  // Capacity check
+  // Capacity check bypassed for restaurant delivery partners manual assignments as per requirement
+  /*
   const businessSettings = await FoodBusinessSettings.findOne().lean();
   const maxActiveOrders = businessSettings?.maxActiveOrdersPerRider || 1;
   const activeOrdersCount = await FoodOrder.countDocuments({
@@ -3457,6 +3457,7 @@ export async function assignDeliveryPartnerRestaurant(orderId, restaurantId, del
   if (activeOrdersCount >= maxActiveOrders) {
     throw new ValidationError(`Delivery partner has already reached the maximum active orders limit of ${maxActiveOrders}`);
   }
+  */
 
   const from = order.dispatch?.status || "unassigned";
   order.dispatch.status = "assigned";

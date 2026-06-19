@@ -86,17 +86,7 @@ async function testRules() {
     });
     console.log('Created exclusivity association for Rider B with Restaurant:', restaurant._id);
 
-    // 3. Set business settings limit
-    let settings = await FoodBusinessSettings.findOne();
-    if (!settings) {
-      settings = await FoodBusinessSettings.create({
-        maxActiveOrdersPerRider: 2
-      });
-    } else {
-      settings.maxActiveOrdersPerRider = 2;
-      await settings.save();
-    }
-    console.log('Set business settings maxActiveOrdersPerRider to:', settings.maxActiveOrdersPerRider);
+
 
     // 4. Create active orders and assign to Rider A
     // Clean up older active orders assigned to Rider A to have a clean slate
@@ -167,7 +157,7 @@ async function testRules() {
       zoneId: partnerB.zoneId,
       items: [{ itemId: 'item3', name: 'French Fries', price: 80, quantity: 1 }],
       pricing: { subtotal: 80, total: 80 },
-      payment: { method: 'cash', status: 'cod_pending' },
+      payment: { method: 'razorpay', status: 'paid' },
       orderStatus: 'confirmed',
       dispatch: {
         status: 'unassigned'
@@ -176,9 +166,9 @@ async function testRules() {
 
     try {
       await assignDeliveryPartnerRestaurant(order3._id, restaurant._id, partnerB._id);
-      console.log('❌ Error: Allowed assigning order beyond capacity limit via Restaurant!');
+      console.log('✅ Correctly allowed Restaurant manual assignment for multiple orders!');
     } catch (err) {
-      console.log('✅ Correctly blocked Restaurant manual assignment! Received validation error:', err.message);
+      console.log('❌ Error: Blocked Restaurant manual assignment! Received validation error:', err.message);
     }
 
     console.log('\n--- Test Case 4: Admin Manual Assignment Block ---');

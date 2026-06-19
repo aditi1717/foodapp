@@ -29,9 +29,8 @@ async function filterEligibleDeliveryPartners(partnerIds, order = null) {
     .lean();
   const exclusiveSet = new Set(exclusiveRows.map(row => String(row.deliveryPartnerId)));
 
-  // 2. Fetch business settings limit
-  const businessSettings = await FoodBusinessSettings.findOne().lean();
-  const maxActiveOrders = businessSettings?.maxActiveOrdersPerRider || 1;
+  // 2. Auto-assignment only allows a single active order per rider
+  const maxActiveOrders = 1;
 
   // 3. Count active orders for each candidate
   const activeOrders = await FoodOrder.aggregate([

@@ -3124,7 +3124,7 @@ export default function Home() {
                 <Button
                   variant="outline"
                   onClick={loadMoreRestaurants}
-                  className="text-sm font-medium border-gray-300 hover:border-[#2979fb] hover:text-[#2979fb]">
+                  className="text-sm font-medium border-gray-300 hover:border-[#8B9543] hover:text-[#8B9543]">
                   Load more restaurants
                 </Button>
               )}
@@ -4305,5 +4305,6 @@ export default function Home() {
     </div>
   );
 }
+
 
 

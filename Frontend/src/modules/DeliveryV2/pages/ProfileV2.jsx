@@ -200,7 +200,7 @@ export const ProfileV2 = () => {
               className="px-4 py-3.5 border-b border-gray-50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                 <Store className="w-4 h-4 text-[#2979fb]" />
+                 <Store className="w-4 h-4 text-[#8B9543]" />
                  <span className="text-sm font-medium text-gray-800">Exclusivity Requests</span>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -284,3 +284,4 @@ export const ProfileV2 = () => {
 }
 
 export default ProfileV2;
+

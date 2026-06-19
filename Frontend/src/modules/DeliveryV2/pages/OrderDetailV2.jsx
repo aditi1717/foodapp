@@ -550,7 +550,7 @@ const getItemLineTotal = (item = {}) => {
 
 const StatusPill = ({ tone = 'slate', children }) => {
   const tones = {
-    brand: 'border-[#2979fb]/10 bg-[#2979fb]/5 text-[#2979fb]',
+    brand: 'border-[#8B9543]/10 bg-[#8B9543]/5 text-[#8B9543]',
     blue: 'border-sky-100 bg-sky-50 text-sky-700',
     emerald: 'border-emerald-100 bg-emerald-50 text-emerald-700',
     amber: 'border-amber-100 bg-amber-50 text-amber-700',
@@ -569,7 +569,7 @@ const CompactSection = ({ title, icon: Icon, children, action }) => (
   <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 text-[#2979fb]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 text-[#8B9543]">
           {Icon && <Icon className="h-4 w-4" />}
         </div>
         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">{title}</h3>
@@ -589,7 +589,7 @@ const ActionButton = ({ disabled, busy, onClick, children, variant = 'primary' }
       disabled || busy
         ? 'cursor-not-allowed bg-slate-100 text-slate-400'
         : variant === 'primary'
-        ? 'bg-[#2979fb] text-white shadow-lg shadow-[#2979fb]/20'
+        ? 'bg-[#8B9543] text-white shadow-lg shadow-[#8B9543]/20'
         : 'bg-white border border-slate-200 text-slate-700'
     }`}
   >
@@ -1240,7 +1240,7 @@ const OrderDetailV2 = () => {
           <button
             type="button"
             onClick={() => navigate('/food/delivery/orders')}
-            className="mt-8 w-full rounded-2xl bg-[#2979fb] py-4 text-sm font-semibold text-white"
+            className="mt-8 w-full rounded-2xl bg-[#8B9543] py-4 text-sm font-semibold text-white"
           >
             Go back to orders list
           </button>
@@ -1389,9 +1389,9 @@ const OrderDetailV2 = () => {
                   if (!sliderStepConfig?.run) return;
                   await sliderStepConfig.run();
                 }}
-                color="bg-[#2979fb]"
+                color="bg-[#8B9543]"
                 containerStyle={{ backgroundColor: '#E8F3EE' }}
-                style={{ background: 'linear-gradient(135deg, #2979fb 0%, #0A7A45 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #8B9543 0%, #0A7A45 100%)' }}
               />
               {hasReachedDrop && dropOtpRequired && !dropOtpVerified && (
                 <p className="mt-2 text-[11px] font-medium text-amber-700">
@@ -1575,7 +1575,7 @@ const OrderDetailV2 = () => {
                 maxLength={6}
                 value={dropOtpCode}
                 onChange={(e) => setDropOtpCode(String(e.target.value || '').replace(/\D/g, '').slice(0, 6))}
-                className="mt-3 h-11 w-full rounded-xl border border-slate-300 px-3 text-base font-semibold tracking-[0.2em] text-slate-900 focus:border-[#2979fb] focus:outline-none"
+                className="mt-3 h-11 w-full rounded-xl border border-slate-300 px-3 text-base font-semibold tracking-[0.2em] text-slate-900 focus:border-[#8B9543] focus:outline-none"
                 placeholder="OTP"
               />
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1591,7 +1591,7 @@ const OrderDetailV2 = () => {
                   type="button"
                   onClick={handleVerifyDropOtp}
                   disabled={Boolean(busyAction)}
-                  className="rounded-xl bg-[#2979fb] py-2.5 text-xs font-semibold text-white disabled:opacity-60"
+                  className="rounded-xl bg-[#8B9543] py-2.5 text-xs font-semibold text-white disabled:opacity-60"
                 >
                   {busyAction === 'verify-drop-otp' ? 'Verifying...' : 'Verify OTP'}
                 </button>
@@ -1614,7 +1614,7 @@ const OrderDetailV2 = () => {
                 href={googleMapsDirectionsHref}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-[#2979fb] bg-white px-4 py-3 text-sm font-semibold text-[#2979fb]"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-[#8B9543] bg-white px-4 py-3 text-sm font-semibold text-[#8B9543]"
               >
                 Open Google Maps
               </a>
@@ -1641,16 +1641,16 @@ const OrderDetailV2 = () => {
             >
               <div className="grid grid-cols-1 gap-1 text-xs text-slate-600">
                 <p>
-                  <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#2979fb]">Restaurant</span>
+                  <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#8B9543]">Restaurant</span>
                   <span className="font-semibold text-slate-900">{restaurantName || '--'}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <span>
-                    <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#2979fb]">Phone</span>
+                    <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#8B9543]">Phone</span>
                     <span className="font-semibold text-slate-900">{pickupDisplayPhone || '--'}</span>
                   </span>
                   {pickupMeta.dialPhone && (
-                    <a href={`tel:${pickupMeta.dialPhone}`} className="inline-flex items-center font-medium text-[#2979fb]">
+                    <a href={`tel:${pickupMeta.dialPhone}`} className="inline-flex items-center font-medium text-[#8B9543]">
                       <Phone className="mr-1 h-3.5 w-3.5" /> Call
                     </a>
                   )}
@@ -1665,16 +1665,16 @@ const OrderDetailV2 = () => {
             >
               <div className="mb-2 grid grid-cols-1 gap-1 text-xs text-slate-600">
                 <p>
-                  <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#2979fb]">Recipient</span>
+                  <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#8B9543]">Recipient</span>
                   <span className="font-semibold text-slate-900">{customerMeta.name || '--'}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <span>
-                    <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#2979fb]">Number</span>
+                    <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#8B9543]">Number</span>
                     <span className="font-semibold text-slate-900">{customerDisplayPhone || '--'}</span>
                   </span>
                   {customerMeta.dialPhone && (
-                    <a href={`tel:${customerMeta.dialPhone}`} className="inline-flex items-center font-medium text-[#2979fb]">
+                    <a href={`tel:${customerMeta.dialPhone}`} className="inline-flex items-center font-medium text-[#8B9543]">
                       <Phone className="mr-1 h-3.5 w-3.5" /> Call
                     </a>
                   )}
@@ -1684,7 +1684,7 @@ const OrderDetailV2 = () => {
                 <div className="space-y-1.5">
                   {customerAddressSegments.map((segment) => (
                     <p key={segment.key} className="text-sm leading-5 text-slate-900">
-                      <span className="mr-1.5 rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-xs font-bold text-[#2979fb]">
+                      <span className="mr-1.5 rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-xs font-bold text-[#8B9543]">
                         {segment.label}
                       </span>
                       <span className="font-semibold text-slate-900">{segment.value}</span>
@@ -1769,3 +1769,4 @@ const OrderDetailV2 = () => {
 };
 
 export default OrderDetailV2;
+

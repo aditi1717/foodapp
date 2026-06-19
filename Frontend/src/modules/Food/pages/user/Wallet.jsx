@@ -210,7 +210,7 @@ export default function Wallet() {
                   transition={{ duration: 0.4 }}
                   className="relative w-full aspect-[1.7/1] rounded-2xl overflow-hidden shadow-lg p-4 sm:p-4 flex flex-col justify-between text-white select-none group border border-white/10 dark:border-white/5"
                   style={{
-                    background: "linear-gradient(135deg, #2979fb 0%, #1b5ed4 50%, #103b87 100%)"
+                    background: "linear-gradient(135deg, #8B9543 0%, #6F7734 50%, #474C23 100%)"
                   }}
                 >
                   {/* Glassmorphic overlay */}
@@ -303,7 +303,7 @@ export default function Wallet() {
                 {/* Quick Recharge */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between flex-1 shadow-sm transition-colors duration-300">
                   <div className="flex items-center gap-2 mb-2">
-                    <CreditCard className="h-4 w-4 text-[#2979fb] dark:text-[#2979fb]" />
+                    <CreditCard className="h-4 w-4 text-[#8B9543] dark:text-[#8B9543]" />
                     <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">Quick Recharge</h3>
                   </div>
 
@@ -312,7 +312,7 @@ export default function Wallet() {
                       <button
                         key={preset}
                         onClick={() => handlePresetClick(preset)}
-                        className="py-1 rounded-lg border border-slate-200/70 dark:border-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-[#2979fb]/5 dark:hover:bg-[#2979fb]/5 hover:border-[#2979fb]/30 dark:hover:border-[#2979fb]/30 transition-all text-center"
+                        className="py-1 rounded-lg border border-slate-200/70 dark:border-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-[#8B9543]/5 dark:hover:bg-[#8B9543]/5 hover:border-[#8B9543]/30 dark:hover:border-[#8B9543]/30 transition-all text-center"
                       >
                         +{preset}
                       </button>
@@ -324,7 +324,7 @@ export default function Wallet() {
                       setInitialAmount("")
                       setAddMoneyModalOpen(true)
                     }}
-                    className="w-full h-8.5 bg-[#2979fb] hover:bg-[#1b5ed4] text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1 shadow-md shadow-[#2979fb]/10"
+                    className="w-full h-8.5 bg-[#8B9543] hover:bg-[#6F7734] text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1 shadow-md shadow-[#8B9543]/10"
                   >
                     <Plus className="h-4.5 w-4.5" />
                     Add Money
@@ -365,7 +365,7 @@ export default function Wallet() {
                             transition={{ type: "spring", stiffness: 380, damping: 30 }}
                           />
                         )}
-                        <span className={`relative z-10 ${isSelected ? "text-[#2979fb] dark:text-[#2979fb]" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}`}>
+                        <span className={`relative z-10 ${isSelected ? "text-[#8B9543] dark:text-[#8B9543]" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}`}>
                           {filter.label}
                         </span>
                       </button>
@@ -393,7 +393,7 @@ export default function Wallet() {
                           transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.3) }}
                           className={`border rounded-xl overflow-hidden transition-all duration-200 ${
                             isExpanded 
-                              ? "border-[#2979fb]/40 dark:border-[#2979fb]/40 bg-slate-50/50 dark:bg-slate-900/30 shadow-md"
+                              ? "border-[#8B9543]/40 dark:border-[#8B9543]/40 bg-slate-50/50 dark:bg-slate-900/30 shadow-md"
                               : "border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-900 hover:border-slate-200/80 dark:hover:border-slate-800/80 shadow-sm"
                           }`}
                         >
@@ -527,3 +527,4 @@ export default function Wallet() {
     </AnimatedPage>
   )
 }
+

@@ -2991,7 +2991,7 @@ export default function OrdersMain() {
       {/* Content Area - Scrollable */}
       <div
         ref={contentRef}
-        className="flex-1 overflow-y-auto px-4 pb-24 content-scroll bg-[#eaf2ff]"
+        className="flex-1 overflow-y-auto px-4 pb-24 content-scroll bg-[#E7EBCD]"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -5578,6 +5578,7 @@ function EmptyState({ message = "Temporarily closed" }) {
     </div>
   );
 }
+
 
 
 

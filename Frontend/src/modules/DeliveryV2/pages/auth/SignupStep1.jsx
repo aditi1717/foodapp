@@ -249,7 +249,7 @@ export default function SignupStep1() {
               value={formData.name}
               onChange={handleChange}
               inputMode="text"
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb] ${errors.name ? "border-red-500" : "border-gray-300"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543] ${errors.name ? "border-red-500" : "border-gray-300"
                 }`}
               placeholder="Enter your full name"
             />
@@ -270,7 +270,7 @@ export default function SignupStep1() {
               autoCorrect="off"
               autoComplete="email"
               inputMode="email"
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb] ${errors.email ? "border-red-500" : "border-gray-300"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543] ${errors.email ? "border-red-500" : "border-gray-300"
                 }`}
               placeholder="name@example.com"
             />
@@ -287,7 +287,7 @@ export default function SignupStep1() {
               value={formData.address}
               onChange={handleChange}
               rows={3}
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb] ${errors.address ? "border-red-500" : "border-gray-300"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543] ${errors.address ? "border-red-500" : "border-gray-300"
                 }`}
               placeholder="Enter your address"
             />
@@ -305,7 +305,7 @@ export default function SignupStep1() {
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb] ${errors.city ? "border-red-500" : "border-gray-300"
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543] ${errors.city ? "border-red-500" : "border-gray-300"
                   }`}
                 placeholder="City"
               />
@@ -320,7 +320,7 @@ export default function SignupStep1() {
                 name="state"
                 value={formData.state}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb] ${errors.state ? "border-red-500" : "border-gray-300"
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543] ${errors.state ? "border-red-500" : "border-gray-300"
                   }`}
                 placeholder="State"
               />
@@ -337,7 +337,7 @@ export default function SignupStep1() {
               name="vehicleType"
               value={formData.vehicleType}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb]"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543]"
             >
               <option value="bike">Bike</option>
               <option value="scooter">Scooter</option>
@@ -356,7 +356,7 @@ export default function SignupStep1() {
               name="vehicleName"
               value={formData.vehicleName}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb]"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543]"
               placeholder="e.g., Honda Activa"
             />
           </div>
@@ -372,7 +372,7 @@ export default function SignupStep1() {
               value={formData.vehicleNumber}
               onChange={handleChange}
               maxLength={10}
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb] ${errors.vehicleNumber ? "border-red-500" : "border-gray-300"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543] ${errors.vehicleNumber ? "border-red-500" : "border-gray-300"
                 }`}
               placeholder="e.g., MH12AB1234"
             />
@@ -390,7 +390,7 @@ export default function SignupStep1() {
               value={formData.drivingLicenseNumber}
               onChange={handleChange}
               maxLength={15}
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb] uppercase ${errors.drivingLicenseNumber ? "border-red-500" : "border-gray-300"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543] uppercase ${errors.drivingLicenseNumber ? "border-red-500" : "border-gray-300"
                 }`}
               placeholder="e.g., MH1220110012345"
             />
@@ -409,7 +409,7 @@ export default function SignupStep1() {
               value={formData.panNumber}
               onChange={handleChange}
               maxLength={10}
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb] uppercase ${errors.panNumber ? "border-red-500" : "border-gray-300"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543] uppercase ${errors.panNumber ? "border-red-500" : "border-gray-300"
                 }`}
               placeholder="ABCDE1234F"
             />
@@ -428,7 +428,7 @@ export default function SignupStep1() {
               onChange={handleChange}
               maxLength={12}
               inputMode="numeric"
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2979fb] ${errors.aadharNumber ? "border-red-500" : "border-gray-300"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B9543] ${errors.aadharNumber ? "border-red-500" : "border-gray-300"
                 }`}
               placeholder="123456789012"
             />
@@ -446,7 +446,7 @@ export default function SignupStep1() {
             style={
               isSubmitting
                 ? undefined
-                : { background: "linear-gradient(135deg, #2979fb 0%, #1e5fd1 100%)", boxShadow: "0 12px 28px -18px #1e5fd1" }
+                : { background: "linear-gradient(135deg, #8B9543 0%, #6F7734 100%)", boxShadow: "0 12px 28px -18px #6F7734" }
             }
           >
             {isSubmitting ? "Saving..." : "Continue"}
@@ -456,5 +456,7 @@ export default function SignupStep1() {
     </div>
   )
 }
+
+
 
 

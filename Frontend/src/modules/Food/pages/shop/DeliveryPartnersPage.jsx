@@ -196,8 +196,8 @@ export default function DeliveryPartnersPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400">Invite and manage exclusive delivery partners</p>
             </div>
           </div>
-          <div className="bg-[#2979fb]/10 px-3 py-1.5 rounded-full border border-[#2979fb]/20">
-            <span className="text-xs font-bold text-[#2979fb]">
+          <div className="bg-[#8B9543]/10 px-3 py-1.5 rounded-full border border-[#8B9543]/20">
+            <span className="text-xs font-bold text-[#8B9543]">
               Active: {associatedRiders.length}
             </span>
           </div>
@@ -213,8 +213,8 @@ export default function DeliveryPartnersPage() {
           className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-md border border-gray-100 dark:border-gray-800 transition-all duration-300"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-[#2979fb]/10 flex items-center justify-center">
-              <UserPlus className="h-5 w-5 text-[#2979fb]" />
+            <div className="w-10 h-10 rounded-xl bg-[#8B9543]/10 flex items-center justify-center">
+              <UserPlus className="h-5 w-5 text-[#8B9543]" />
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900 dark:text-white">Invite Delivery Partner</h2>
@@ -231,13 +231,13 @@ export default function DeliveryPartnersPage() {
                 maxLength={10}
                 value={searchPhone}
                 onChange={(e) => setSearchPhone(e.target.value.replace(/\D/g, ""))}
-                className="pl-10 h-11 rounded-xl border-gray-200 focus:border-[#2979fb] focus:ring-1 focus:ring-[#2979fb] dark:border-gray-800"
+                className="pl-10 h-11 rounded-xl border-gray-200 focus:border-[#8B9543] focus:ring-1 focus:ring-[#8B9543] dark:border-gray-800"
               />
             </div>
             <Button
               type="submit"
               disabled={searching}
-              className="h-11 px-6 bg-[#2979fb] hover:bg-[#1b5ed4] text-white font-bold rounded-xl transition-all shadow-md shadow-[#2979fb]/10 flex items-center gap-2"
+              className="h-11 px-6 bg-[#8B9543] hover:bg-[#6F7734] text-white font-bold rounded-xl transition-all shadow-md shadow-[#8B9543]/10 flex items-center gap-2"
             >
               {searching ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -307,7 +307,7 @@ export default function DeliveryPartnersPage() {
                       ) : (
                         <Button
                           onClick={() => handleSendInvite(searchResult)}
-                          className="bg-[#2979fb] hover:bg-[#1b5ed4] text-white font-bold text-xs h-9 px-4 rounded-lg flex items-center gap-1.5"
+                          className="bg-[#8B9543] hover:bg-[#6F7734] text-white font-bold text-xs h-9 px-4 rounded-lg flex items-center gap-1.5"
                         >
                           <Send className="h-3.5 w-3.5" />
                           Send Invitation
@@ -334,8 +334,8 @@ export default function DeliveryPartnersPage() {
             onClick={() => setActiveTab("active")}
             className={`flex-1 py-2 text-center text-xs font-bold rounded-lg relative transition-all duration-200 ${
               activeTab === "active"
-                ? "bg-white dark:bg-slate-900 text-[#2979fb] shadow-sm"
-                : "text-gray-400 dark:text-gray-500 hover:text-[#2979fb]"
+                ? "bg-white dark:bg-slate-900 text-[#8B9543] shadow-sm"
+                : "text-gray-400 dark:text-gray-500 hover:text-[#8B9543]"
             }`}
           >
             <span className="relative z-10 flex items-center justify-center gap-1.5">
@@ -347,8 +347,8 @@ export default function DeliveryPartnersPage() {
             onClick={() => setActiveTab("pending")}
             className={`flex-1 py-2 text-center text-xs font-bold rounded-lg relative transition-all duration-200 ${
               activeTab === "pending"
-                ? "bg-white dark:bg-slate-900 text-[#2979fb] shadow-sm"
-                : "text-gray-400 dark:text-gray-500 hover:text-[#2979fb]"
+                ? "bg-white dark:bg-slate-900 text-[#8B9543] shadow-sm"
+                : "text-gray-400 dark:text-gray-500 hover:text-[#8B9543]"
             }`}
           >
             <span className="relative z-10 flex items-center justify-center gap-1.5">
@@ -360,8 +360,8 @@ export default function DeliveryPartnersPage() {
             onClick={() => setActiveTab("rejected")}
             className={`flex-1 py-2 text-center text-xs font-bold rounded-lg relative transition-all duration-200 ${
               activeTab === "rejected"
-                ? "bg-white dark:bg-slate-900 text-[#2979fb] shadow-sm"
-                : "text-gray-400 dark:text-gray-500 hover:text-[#2979fb]"
+                ? "bg-white dark:bg-slate-900 text-[#8B9543] shadow-sm"
+                : "text-gray-400 dark:text-gray-500 hover:text-[#8B9543]"
             }`}
           >
             <span className="relative z-10 flex items-center justify-center gap-1.5">
@@ -384,7 +384,7 @@ export default function DeliveryPartnersPage() {
             >
               {loading ? (
                 <div className="flex justify-center py-12">
-                  <div className="w-8 h-8 border-4 border-[#2979fb] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-4 border-[#8B9543] border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : associatedRiders.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -395,7 +395,7 @@ export default function DeliveryPartnersPage() {
                       className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4 transition-all duration-300"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-11 h-11 rounded-full bg-[#2979fb]/10 flex items-center justify-center text-[#2979fb]">
+                        <div className="w-11 h-11 rounded-full bg-[#8B9543]/10 flex items-center justify-center text-[#8B9543]">
                           <User className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
@@ -444,7 +444,7 @@ export default function DeliveryPartnersPage() {
             >
               {loading ? (
                 <div className="flex justify-center py-12">
-                  <div className="w-8 h-8 border-4 border-[#2979fb] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-4 border-[#8B9543] border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : pendingInvites.length > 0 ? (
                 <div className="space-y-3">
@@ -497,7 +497,7 @@ export default function DeliveryPartnersPage() {
             >
               {loading ? (
                 <div className="flex justify-center py-12">
-                  <div className="w-8 h-8 border-4 border-[#2979fb] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-4 border-[#8B9543] border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : rejectedInvites.length > 0 ? (
                 <div className="space-y-3">
@@ -546,3 +546,4 @@ export default function DeliveryPartnersPage() {
     </div>
   )
 }
+

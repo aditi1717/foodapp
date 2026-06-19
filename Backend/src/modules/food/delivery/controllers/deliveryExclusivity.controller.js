@@ -224,9 +224,7 @@ export const listExclusivityPartnersController = async (req, res, next) => {
             })
             .lean();
 
-        // 1. Get business settings limit
-        const businessSettings = await FoodBusinessSettings.findOne().lean();
-        const maxActiveOrders = businessSettings?.maxActiveOrdersPerRider || 1;
+
 
         // 2. Collect partner IDs of associated records
         const associatedPartnerIds = [];
@@ -301,10 +299,7 @@ export const listExclusivityPartnersController = async (req, res, next) => {
                     }
                 }
 
-                const activeCount = activeCountMap.get(String(partner._id)) || 0;
-                if (activeCount < maxActiveOrders) {
-                    associatedRiders.push(formatted);
-                }
+                associatedRiders.push(formatted);
             } else if (rec.status === 'pending') {
                 pendingInvites.push(formatted);
             } else if (rec.status === 'rejected') {

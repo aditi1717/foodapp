@@ -63,8 +63,7 @@ export async function updateBusinessSettings(req, res, next) {
             region,
             logoUrl,
             faviconUrl,
-            maintenanceModes,
-            maxActiveOrdersPerRider
+            maintenanceModes
         } = data;
 
         // Validation
@@ -85,12 +84,6 @@ export async function updateBusinessSettings(req, res, next) {
         }
         if (pincode && !/^\d{4,10}$/.test(pincode.trim())) {
             return res.status(400).json({ success: false, message: 'Invalid pincode (4-10 digits required)' });
-        }
-        if (maxActiveOrdersPerRider !== undefined) {
-            const val = Number(maxActiveOrdersPerRider);
-            if (!Number.isInteger(val) || val < 1) {
-                return res.status(400).json({ success: false, message: 'Max active orders per rider must be a positive integer' });
-            }
         }
 
         let settings = await FoodBusinessSettings.findOne();
@@ -127,9 +120,6 @@ export async function updateBusinessSettings(req, res, next) {
                 maintenanceModes,
                 settings.maintenanceModes || {}
             );
-        }
-        if (maxActiveOrdersPerRider !== undefined) {
-            settings.maxActiveOrdersPerRider = Number(maxActiveOrdersPerRider);
         }
 
         // Handle file uploads

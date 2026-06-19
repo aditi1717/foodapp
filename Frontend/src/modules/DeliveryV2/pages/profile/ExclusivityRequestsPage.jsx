@@ -127,7 +127,7 @@ export default function ExclusivityRequestsPage() {
         </div>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-3">
-            <div className="w-10 h-10 border-4 border-[#2979fb] border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-[#8B9543] border-t-transparent rounded-full animate-spin" />
             <p className="text-xs text-gray-400 dark:text-slate-500 font-medium">Loading exclusivity requests...</p>
           </div>
         ) : (
@@ -256,7 +256,7 @@ export default function ExclusivityRequestsPage() {
                             className={`flex-1 py-3 font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
                               currentAssociation !== null
                                 ? "bg-gray-100 dark:bg-slate-800/40 text-gray-400 dark:text-slate-600 cursor-not-allowed border border-gray-200/50 dark:border-slate-800/40"
-                                : "bg-[#2979fb] hover:bg-[#1b5ed4] text-white shadow-md shadow-[#2979fb]/10"
+                                : "bg-[#8B9543] hover:bg-[#6F7734] text-white shadow-md shadow-[#8B9543]/10"
                             }`}
                           >
                             <Check className="w-4 h-4" />
@@ -310,3 +310,4 @@ export default function ExclusivityRequestsPage() {
     </div>
   )
 }
+

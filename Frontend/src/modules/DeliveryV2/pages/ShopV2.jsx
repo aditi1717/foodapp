@@ -20,9 +20,9 @@ import {
 import { BRAND_THEME } from '@/config/brandTheme';
 
 const RUPEE = '\u20B9';
-const BRAND_PRIMARY = BRAND_THEME?.colors?.brand?.primary || '#2979fb';
-const BRAND_PRIMARY_DARK = BRAND_THEME?.colors?.brand?.primaryDark || '#1e5fd1';
-const BRAND_SOFT = BRAND_THEME?.colors?.brand?.primarySoft || '#eaf2ff';
+const BRAND_PRIMARY = BRAND_THEME?.colors?.brand?.primary || '#8B9543';
+const BRAND_PRIMARY_DARK = BRAND_THEME?.colors?.brand?.primaryDark || '#6F7734';
+const BRAND_SOFT = BRAND_THEME?.colors?.brand?.primarySoft || '#E7EBCD';
 
 const formatCurrency = (value) => `${RUPEE}${Number(value || 0).toFixed(2)}`;
 const formatPdfCurrency = (value) => `Rs. ${Number(value || 0).toFixed(2)}`;
@@ -1546,3 +1546,5 @@ export default function ShopV2() {
     </div>
   );
 }
+
+

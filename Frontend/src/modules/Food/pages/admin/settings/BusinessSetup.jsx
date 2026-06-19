@@ -45,7 +45,6 @@ export default function BusinessSetup() {
     pincode: "",
     region: "",
     maintenanceModes: DEFAULT_MAINTENANCE_MODES,
-    maxActiveOrdersPerRider: 1,
   });
 
   // Fetch business settings on mount
@@ -86,7 +85,6 @@ export default function BusinessSetup() {
               paragraph: settings?.maintenanceModes?.restaurantApp?.paragraph || DEFAULT_MAINTENANCE_MODES.restaurantApp.paragraph,
             },
           },
-          maxActiveOrdersPerRider: settings.maxActiveOrdersPerRider ?? 1,
         });
 
         // Set logo and favicon previews if they exist
@@ -162,11 +160,7 @@ export default function BusinessSetup() {
         return;
       }
 
-      const maxActive = Number(formData.maxActiveOrdersPerRider);
-      if (isNaN(maxActive) || !Number.isInteger(maxActive) || maxActive < 1) {
-        toast.error("Max active orders per rider must be a positive integer");
-        return;
-      }
+
 
       const maintenanceEntries = Object.entries(formData.maintenanceModes || {});
       for (const [, config] of maintenanceEntries) {
@@ -211,7 +205,6 @@ export default function BusinessSetup() {
             paragraph: String(formData?.maintenanceModes?.restaurantApp?.paragraph || "").trim(),
           },
         },
-        maxActiveOrdersPerRider: maxActive,
       };
 
       // Prepare files
@@ -421,30 +414,6 @@ export default function BusinessSetup() {
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, "");
                     handleInputChange("pincode", val);
-                  }}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Max Active Orders Per Rider <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Enter Max Active Orders"
-                  value={formData.maxActiveOrdersPerRider || ""}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "");
-                    let num = val ? Number(val) : "";
-                    if (num !== "" && num < 1) num = 1;
-                    handleInputChange("maxActiveOrdersPerRider", num);
-                  }}
-                  onBlur={() => {
-                    if (!formData.maxActiveOrdersPerRider || Number(formData.maxActiveOrdersPerRider) < 1) {
-                      handleInputChange("maxActiveOrdersPerRider", 1);
-                    }
                   }}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 />

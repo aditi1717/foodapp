@@ -187,7 +187,7 @@ export default function DeliverySignup() {
         {/* Orange half-circle text block attached to the left with animation */}
         <div className="absolute inset-0 flex items-center text-white pointer-events-none">
           <div
-            className="bg-[#2979fb] sm:bg-[#1e5fd1] rounded-r-full py-10 xl:py-20 pl-10 xl:pl-14 pr-10 xl:pr-20 max-w-[70%] shadow-xl backdrop-blur-[1px]"
+            className="bg-[#8B9543] sm:bg-[#6F7734] rounded-r-full py-10 xl:py-20 pl-10 xl:pl-14 pr-10 xl:pr-20 max-w-[70%] shadow-xl backdrop-blur-[1px]"
             style={{ animation: "slideInLeft 0.8s ease-out both" }}
           >
             <h1 className="text-3xl xl:text-4xl font-extrabold mb-4 tracking-wide leading-tight">
@@ -210,11 +210,11 @@ export default function DeliverySignup() {
             className="flex items-center gap-3"
             style={{ animation: "fadeInDown 0.7s ease-out both" }}
           >
-            <div className="h-11 w-11 rounded-xl bg-[#2979fb] flex items-center justify-center text-white shadow-lg">
+            <div className="h-11 w-11 rounded-xl bg-[#8B9543] flex items-center justify-center text-white shadow-lg">
               <Truck className="h-6 w-6" />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-2xl font-bold tracking-wide text-[#2979fb]">
+              <span className="text-2xl font-bold tracking-wide text-[#8B9543]">
                 {companyName}
               </span>
               <span className="text-xs font-medium text-gray-500">
@@ -306,7 +306,7 @@ export default function DeliverySignup() {
                       placeholder="Enter 10-digit number"
                       value={formData.phone}
                       onChange={handleChange}
-                      className={`h-11 pl-9 border-gray-300 rounded-md shadow-sm focus-visible:ring-[#2979fb] focus-visible:ring-2 transition-colors placeholder:text-gray-400 ${errors.phone ? "border-red-500" : ""}`}
+                      className={`h-11 pl-9 border-gray-300 rounded-md shadow-sm focus-visible:ring-[#8B9543] focus-visible:ring-2 transition-colors placeholder:text-gray-400 ${errors.phone ? "border-red-500" : ""}`}
                       required
                     />
                   </div>
@@ -324,7 +324,7 @@ export default function DeliverySignup() {
             <Button
               type="submit"
               className="mt-2 h-11 w-full text-white text-base font-semibold rounded-md shadow-md transition-all"
-              style={{ background: "linear-gradient(135deg, #2979fb 0%, #1e5fd1 100%)" }}
+              style={{ background: "linear-gradient(135deg, #8B9543 0%, #6F7734 100%)" }}
               disabled={isLoading}
             >
               {isLoading ? (
@@ -343,14 +343,14 @@ export default function DeliverySignup() {
               <span className="text-gray-600">Already have an account? </span>
               <Link
                 to="/food/delivery/login"
-                className="text-[#2979fb] hover:underline font-medium"
+                className="text-[#8B9543] hover:underline font-medium"
               >
                 Login
               </Link>
             </p>
             <p className="text-xs text-gray-500">
               By continuing, you agree to our{" "}
-              <Link to="/food/delivery/terms" className="text-[#2979fb] hover:underline">
+              <Link to="/food/delivery/terms" className="text-[#8B9543] hover:underline">
                 Terms and Conditions
               </Link>
             </p>
@@ -358,7 +358,7 @@ export default function DeliverySignup() {
 
           {/* Demo credentials / info bar */}
           <div className="mt-8 w-full max-w-lg rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-xs sm:text-sm text-gray-800 flex items-start gap-3">
-            <div className="mt-0.5 text-[#2979fb]">
+            <div className="mt-0.5 text-[#8B9543]">
               <AlertCircle className="h-4 w-4" />
             </div>
             <div>
@@ -410,5 +410,7 @@ export default function DeliverySignup() {
     </div>
   )
 }
+
+
 
 

@@ -119,7 +119,7 @@ export default function BottomNavigation() {
             src={profileImage || DEFAULT_USER_AVATAR}
             alt="Profile"
             className={`w-7 h-7 rounded-full border-2 object-cover ${
-              isActive("/delivery/profile") ? "border-[#2979fb]" : "border-gray-300"
+              isActive("/delivery/profile") ? "border-[#8B9543]" : "border-gray-300"
             }`}
               onError={(e) => {
                 e.currentTarget.onerror = null
@@ -132,4 +132,5 @@ export default function BottomNavigation() {
     </div>
   )
 }
+
 

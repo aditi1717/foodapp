@@ -134,8 +134,8 @@ export default function Collections() {
                           <Store className="h-6 w-6" style={{ color: BRAND_THEME.colors.brand.primary }} />
                         </div>
                         {/* Striped awning */}
-                        <div className="absolute -top-0.5 left-0 right-0 h-2 bg-gradient-to-r from-[#1b5ed4] via-white to-[#1b5ed4]"
-                          style={{ backgroundSize: '8px 100%', backgroundImage: 'repeating-linear-gradient(90deg, #1b5ed4 0px, #1b5ed4 4px, white 4px, white 8px)' }}
+                        <div className="absolute -top-0.5 left-0 right-0 h-2 bg-gradient-to-r from-[#6F7734] via-white to-[#6F7734]"
+                          style={{ backgroundSize: '8px 100%', backgroundImage: 'repeating-linear-gradient(90deg, #6F7734 0px, #6F7734 4px, white 4px, white 8px)' }}
                         />
                       </div>
                     </div>
@@ -157,7 +157,7 @@ export default function Collections() {
               onClick={() => setIsCreateDialogOpen(true)}
               className="bg-white dark:bg-[#1a1a1a] border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-4 h-48 flex flex-col items-center justify-center gap-3 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              <div className="w-12 h-12 rounded-full bg-[#eaf2ff] dark:bg-brand-950/30 flex items-center justify-center border-2" style={{ borderColor: `${BRAND_THEME.colors.brand.primary}4d` }}>
+              <div className="w-12 h-12 rounded-full bg-[#E7EBCD] dark:bg-brand-950/30 flex items-center justify-center border-2" style={{ borderColor: `${BRAND_THEME.colors.brand.primary}4d` }}>
                 <Plus className="h-6 w-6" style={{ color: BRAND_THEME.colors.brand.primary }} />
               </div>
               <div className="text-center">
@@ -250,3 +250,5 @@ export default function Collections() {
     </div>
   )
 }
+
+

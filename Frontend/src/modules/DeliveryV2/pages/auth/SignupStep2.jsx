@@ -615,7 +615,7 @@ export default function SignupStep2() {
             style={
               isSubmitting || !uploadedDocs.profilePhoto || !uploadedDocs.aadharPhoto || !uploadedDocs.panPhoto || !uploadedDocs.drivingLicensePhoto
                 ? undefined
-                : { background: "linear-gradient(135deg, #2979fb 0%, #1e5fd1 100%)", boxShadow: "0 12px 28px -18px #1e5fd1" }
+                : { background: "linear-gradient(135deg, #8B9543 0%, #6F7734 100%)", boxShadow: "0 12px 28px -18px #6F7734" }
             }
           >
             {isSubmitting ? "Submitting..." : "Complete Signup"}
@@ -626,4 +626,6 @@ export default function SignupStep2() {
     </div>
   )
 }
+
+
 
