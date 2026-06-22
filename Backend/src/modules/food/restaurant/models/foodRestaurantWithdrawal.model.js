@@ -33,7 +33,7 @@ const foodRestaurantWithdrawalSchema = new mongoose.Schema({
     transactionId: String, // Final bank transaction reference from admin
     processedAt: Date
 }, { 
-    collection: 'food_restaurant_withdrawals', 
+    collection: 'food_shop_withdrawals', 
     timestamps: true 
 });
 

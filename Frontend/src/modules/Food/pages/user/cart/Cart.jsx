@@ -730,7 +730,7 @@ export default function Cart() {
 
           debugLog("?? Fetching shop data by restaurantId from cart:", cartRestaurantId)
           const response = await restaurantAPI.getRestaurantById(cartRestaurantId)
-          const data = response?.data?.data?.shop || response?.data?.shop
+          const data = response?.data?.data?.shop || response?.data?.data?.restaurant || response?.data?.shop || response?.data?.restaurant
 
           if (data) {
             // CRITICAL: Validate that fetched shop matches cart items

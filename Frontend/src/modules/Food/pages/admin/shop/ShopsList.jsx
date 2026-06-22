@@ -1607,7 +1607,7 @@ export default function RestaurantsList() {
                   ) : (
                     filteredRestaurants.map((shop, index) => (
                       <tr
-                        key={restaurant.id}
+                        key={shop.id}
                         className="hover:bg-slate-50 transition-colors"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -1620,8 +1620,8 @@ export default function RestaurantsList() {
                               onClick={() => handleViewDetails(shop)}
                             >
                               <img
-                                src={restaurant.logo}
-                                alt={restaurant.name}
+                                src={shop.logo}
+                                alt={shop.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   e.target.src = PLACEHOLDER_40
@@ -1659,7 +1659,7 @@ export default function RestaurantsList() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col gap-1">
-                            <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold ${approvalStatusBadgeClass(restaurant.approvalStatus)}`}>
+                            <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold ${approvalStatusBadgeClass(shop.approvalStatus)}`}>
                               {approvalStatusLabel(shop.approvalStatus)}
                             </span>
                             <span className="text-[11px] text-slate-500">

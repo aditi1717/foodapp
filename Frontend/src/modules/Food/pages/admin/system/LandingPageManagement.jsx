@@ -1216,7 +1216,7 @@ export default function LandingPageManagement() {
       setError(null)
       await api.patch(`/food/hero-banners/gourmet/${id}/order`, { order: newOrder }, getAuthConfig())
       if (otherRestaurant) {
-        await api.patch(`/food/hero-banners/gourmet/${otherRestaurant._id}/order`, { order: restaurant.order }, getAuthConfig())
+        await api.patch(`/food/hero-banners/gourmet/${otherRestaurant._id}/order`, { order: shop.order }, getAuthConfig())
       }
       await fetchGourmetRestaurants()
     } catch (err) {
@@ -1430,7 +1430,7 @@ export default function LandingPageManagement() {
                             <p className="text-xs text-slate-600 mb-1">Linked Shops ({banner.linkedRestaurants.length}):</p>
                             <div className="flex flex-wrap gap-1">
                               {banner.linkedRestaurants.slice(0, 3).map((shop) => (
-                                <span key={restaurant._id || restaurant} className="px-2 py-0.5 bg-brand-50 text-brand-700 rounded text-xs">
+                                <span key={shop._id || shop} className="px-2 py-0.5 bg-brand-50 text-brand-700 rounded text-xs">
                                   {shop.name || 'Shop'}
                                 </span>
                               ))}
@@ -1890,7 +1890,7 @@ export default function LandingPageManagement() {
                         {allRestaurants
                           .filter(r => !gourmetRestaurants.some(gr => gr.shop?._id === r._id))
                           .map((shop) => (
-                            <option key={restaurant._id} value={restaurant._id}>
+                            <option key={shop._id} value={shop._id}>
                               {shop.name}
                             </option>
                           ))}
@@ -2041,7 +2041,7 @@ export default function LandingPageManagement() {
 
                       return (
                         <div
-                          key={restaurant._id}
+                          key={shop._id}
                           className={`px-6 py-4 transition-all cursor-pointer ${isSelected
                             ? 'bg-brand-50 border-l-4 border-l-brand-500'
                             : 'hover:bg-slate-50'

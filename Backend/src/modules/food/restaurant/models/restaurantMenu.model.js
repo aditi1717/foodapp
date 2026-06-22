@@ -16,7 +16,7 @@ const restaurantMenuSchema = new mongoose.Schema(
         }
     },
     {
-        collection: 'food_restaurant_menus',
+        collection: 'food_shop_menus',
         timestamps: true
     }
 );

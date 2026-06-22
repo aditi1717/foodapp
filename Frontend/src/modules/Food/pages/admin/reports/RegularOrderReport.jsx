@@ -770,13 +770,13 @@ export default function RegularOrderReport() {
 
             <div className="relative flex-1 min-w-0">
               <select
-                value={filters.restaurant}
+                value={filters.shop}
                 onChange={(e) => handleFilterChange("shop", e.target.value)}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs appearance-none cursor-pointer"
               >
-                <option value="All restaurants">All shops</option>
+                <option value="All shops">All shops</option>
                 {shops.map((shop) => (
-                  <option key={restaurant._id} value={restaurant._id}>
+                  <option key={shop._id || shop.id} value={shop._id || shop.id}>
                     {shop.restaurantName || shop.name}
                   </option>
                 ))}

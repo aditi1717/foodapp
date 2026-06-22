@@ -21,7 +21,7 @@ const restaurantOfferSchema = new mongoose.Schema(
         approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending', index: true },
         rejectionReason: { type: String, default: '' }
     },
-    { collection: 'restaurant_offers', timestamps: true }
+    { collection: 'shop_offers', timestamps: true }
 );
 
 restaurantOfferSchema.index({ restaurantId: 1, createdAt: -1 });

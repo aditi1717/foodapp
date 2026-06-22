@@ -23,7 +23,7 @@ const foodGourmetRestaurantSchema = new mongoose.Schema(
         }
     },
     {
-        collection: 'food_gourmet_restaurants',
+        collection: 'food_gourmet_shops',
         timestamps: true
     }
 );

@@ -21,7 +21,7 @@ const restaurantWalletSchema = new mongoose.Schema(
         /** Total amount already settled/paid out */
         totalSettled: { type: Number, default: 0, min: 0 }
     },
-    { collection: 'food_restaurant_wallets', timestamps: true }
+    { collection: 'food_shop_wallets', timestamps: true }
 );
 
 export const FoodRestaurantWallet = mongoose.model('FoodRestaurantWallet', restaurantWalletSchema);

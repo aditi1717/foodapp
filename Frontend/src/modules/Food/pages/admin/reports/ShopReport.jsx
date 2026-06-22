@@ -695,7 +695,7 @@ export default function ShopReport() {
                   </tr>
                 ) : (
                   filteredRestaurants.map((shop) => (
-                    <tr key={restaurant.sl} className="hover:bg-slate-50 transition-colors">
+                    <tr key={shop.sl} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-slate-700">{shop.sl}</span>
                       </td>
@@ -704,8 +704,8 @@ export default function ShopReport() {
                           <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0">
                             {shop.icon ? (
                               <img
-                                src={restaurant.icon}
-                                alt={restaurant.restaurantName}
+                                src={shop.icon}
+                                alt={shop.restaurantName}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   e.target.src = "https://via.placeholder.com/32"

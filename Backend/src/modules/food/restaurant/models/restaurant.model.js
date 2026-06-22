@@ -254,7 +254,7 @@ const restaurantSchema = new mongoose.Schema(
     },
   },
   {
-    collection: "food_restaurants",
+    collection: "food_shops",
     timestamps: true,
   },
 );

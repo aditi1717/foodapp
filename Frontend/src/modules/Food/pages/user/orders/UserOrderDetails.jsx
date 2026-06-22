@@ -115,10 +115,10 @@ export default function UserOrderDetails() {
         if (restaurantId && typeof restaurantId === 'string' && !orderData.shop) {
           try {
             const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantId)
-            if (restaurantResponse?.data?.success && restaurantResponse.data.data?.shop) {
-              setRestaurant(restaurantResponse.data.data.shop)
-            } else if (restaurantResponse?.data?.shop) {
-              setRestaurant(restaurantResponse.data.shop)
+            if (restaurantResponse?.data?.success && (restaurantResponse.data.data?.shop || restaurantResponse.data.data?.restaurant)) {
+              setRestaurant(restaurantResponse.data.data.shop || restaurantResponse.data.data?.restaurant)
+            } else if (restaurantResponse?.data?.shop || restaurantResponse?.data?.restaurant) {
+              setRestaurant(restaurantResponse.data.shop || restaurantResponse.data.restaurant)
             }
           } catch (restaurantError) {
             debugWarn("Failed to fetch shop details:", restaurantError)

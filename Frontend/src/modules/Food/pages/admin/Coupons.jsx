@@ -690,7 +690,7 @@ export default function Coupons() {
                     >
                       <option value="">Choose a shop</option>
                       {shops.map((shop) => (
-                        <option key={restaurant._id} value={restaurant._id}>
+                        <option key={shop._id || shop.id} value={shop._id || shop.id}>
                           {shop.name}
                         </option>
                       ))}

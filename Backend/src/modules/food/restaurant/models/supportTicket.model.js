@@ -21,7 +21,7 @@ const restaurantSupportTicketSchema = new mongoose.Schema(
         status: { type: String, enum: ['open', 'in-progress', 'resolved'], default: 'open', index: true },
         adminResponse: { type: String, default: '' }
     },
-    { collection: 'food_restaurant_support_tickets', timestamps: true }
+    { collection: 'food_shop_support_tickets', timestamps: true }
 );
 
 restaurantSupportTicketSchema.index({ restaurantId: 1, createdAt: -1 });

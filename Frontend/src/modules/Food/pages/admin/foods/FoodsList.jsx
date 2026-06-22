@@ -106,9 +106,13 @@ export default function FoodsList() {
 
       const activeRestaurants = activeRestaurantsResponse?.data?.data?.shops ||
         activeRestaurantsResponse?.data?.shops ||
+        activeRestaurantsResponse?.data?.data?.restaurants ||
+        activeRestaurantsResponse?.data?.restaurants ||
         []
       const inactiveRestaurants = inactiveRestaurantsResponse?.data?.data?.shops ||
         inactiveRestaurantsResponse?.data?.shops ||
+        inactiveRestaurantsResponse?.data?.data?.restaurants ||
+        inactiveRestaurantsResponse?.data?.restaurants ||
         []
 
       const restaurantsMap = new Map()
@@ -613,7 +617,7 @@ export default function FoodsList() {
             >
               <option value="all">All Shops</option>
               {restaurantOptions.map((shop) => (
-                <option key={restaurant.id} value={restaurant.id}>
+                <option key={shop.id} value={shop.id}>
                   {shop.name}
                 </option>
               ))}
@@ -897,7 +901,7 @@ export default function FoodsList() {
                 >
                   <option value="">Select shop</option>
                   {restaurantOptions.map((shop) => (
-                    <option key={restaurant.id} value={restaurant.id}>
+                    <option key={shop.id} value={shop.id}>
                       {shop.name}
                     </option>
                   ))}

@@ -157,6 +157,7 @@ const resolveUnderPriceLimit = (value, fallback = DEFAULT_UNDER_PRICE_LIMIT) => 
 };
 
 const getRestaurantDisplayName = (restaurant) => {
+  const shop = restaurant;
   const nameCandidates = [
     shop?.name,
     shop?.restaurantName,
@@ -173,7 +174,7 @@ const getRestaurantDisplayName = (restaurant) => {
 
 // Shop Image Carousel Component
 const RestaurantImageCarousel = React.memo(
-  ({ shop, priority = false, backendOrigin = "" }) => {
+  ({ restaurant, shop = restaurant, priority = false, backendOrigin = "" }) => {
     const webviewSessionKeyRef = useRef(WEBVIEW_SESSION_CACHE_BUSTER);
     const imageElementRef = useRef(null);
 
@@ -347,7 +348,7 @@ const RestaurantImageCarousel = React.memo(
             <img
               ref={imageElementRef}
               src={renderSrc}
-              alt={`${restaurant.name} - Image ${safeIndex + 1}`}
+              alt={`${shop?.name || shop?.restaurantName || "Shop"} - Image ${safeIndex + 1}`}
               className="w-full h-full object-cover"
               loading={priority ? "eager" : "lazy"}
               fetchPriority={priority ? "high" : "auto"}
@@ -2737,7 +2738,7 @@ export default function Home() {
 
                       return (
                         <motion.div
-                          key={`recommended-${restaurant.mongoId || restaurant.id || restaurantSlug}`}
+                          key={`recommended-${shop.mongoId || shop.id || restaurantSlug}`}
                           initial={{ opacity: 0, y: 12 }}
                           whileInView={{ opacity: 1, y: 0 }}
                           viewport={{ once: true }}
@@ -2749,12 +2750,12 @@ export default function Home() {
                           >
                             <div className="relative h-24 sm:h-28 md:h-32 bg-gray-50">
                               <img
-                                src={restaurant.image}
-                                alt={restaurant.name}
+                                src={shop.image}
+                                alt={shop.name}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                               />
-                              <div className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-lg ${Number(restaurant.rating) > 0 ? "bg-black/80 backdrop-blur-md text-white font-medium" : "bg-gray-200/90 text-gray-600 font-medium"} text-[10px] shadow-lg border border-white/10`}>
+                              <div className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-lg ${Number(shop.rating) > 0 ? "bg-black/80 backdrop-blur-md text-white font-medium" : "bg-gray-200/90 text-gray-600 font-medium"} text-[10px] shadow-lg border border-white/10`}>
                                 {Number(shop.rating) > 0 ? Number(shop.rating).toFixed(1) : "NEW"}
                               </div>
                               {/* Favorite Icon for Recommended */}
@@ -2977,8 +2978,8 @@ export default function Home() {
                   return (
                     <div
                       key={
-                        restaurant?.id ||
-                        restaurant?._id ||
+                        shop?.id ||
+                        shop?._id ||
                         restaurantSlug ||
                         index
                       }
@@ -3003,7 +3004,7 @@ export default function Home() {
                             {/* Image Section with Carousel */}
                             <div className="relative">
                               <RestaurantImageCarousel
-                                restaurant={restaurant}
+                                restaurant={shop}
                                 priority={index < 3}
                                 backendOrigin={BACKEND_ORIGIN}
                               />
@@ -3071,7 +3072,7 @@ export default function Home() {
                                         )}
                                     </div>
                                   </div>
-                                  <div className={`flex-shrink-0 ${Number(restaurant.rating) > 0 ? "border border-emerald-100 bg-emerald-50 text-emerald-700" : BRAND_THEME.tokens.homepage.home.restaurantCard.ratingIdle} px-3 py-1.5 rounded-2xl flex items-center gap-1.5 shadow-md transform transition-transform duration-300 group-hover:scale-110`}>
+                                  <div className={`flex-shrink-0 ${Number(shop.rating) > 0 ? "border border-emerald-100 bg-emerald-50 text-emerald-700" : BRAND_THEME.tokens.homepage.home.restaurantCard.ratingIdle} px-3 py-1.5 rounded-2xl flex items-center gap-1.5 shadow-md transform transition-transform duration-300 group-hover:scale-110`}>
                                     {Number(shop.rating) > 0 && <Star className="h-3.5 w-3.5 lg:h-4.5 lg:w-4.5 fill-emerald-500 text-emerald-500" strokeWidth={0} />}
                                     <span className="text-sm lg:text-lg font-medium tracking-tight">
                                       {Number(shop.rating) > 0 ? Number(shop.rating).toFixed(1) : "NEW"}

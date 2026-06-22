@@ -537,7 +537,7 @@ export default function RestaurantCommission() {
                 .filter((shop) => !shop.hasCommissionSetup)
                 .map((shop) => (
                   <button
-                    key={restaurant._id}
+                    key={shop._id || shop.id}
                     onClick={() => handleSelectRestaurant(shop)}
                     className="w-full rounded-lg border border-slate-200 p-3 text-left transition-all hover:border-brand-300 hover:bg-brand-50"
                   >

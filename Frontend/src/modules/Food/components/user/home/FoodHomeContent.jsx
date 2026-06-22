@@ -34,7 +34,7 @@ const PRIMARY_FILTERS = [
 ];
 
 const FoodShopCard = memo(function FoodShopCard({
-  restaurant,
+  restaurant: shop,
   index,
   isOutOfService,
   availabilityTick,
@@ -43,23 +43,23 @@ const FoodShopCard = memo(function FoodShopCard({
   RestaurantImageCarousel,
   backendOrigin,
 }) {
-  const nameStr = typeof restaurant?.name === "string" ? restaurant.name.trim() : "";
+  const nameStr = typeof shop?.name === "string" ? shop.name.trim() : "";
   const fallbackSlugSource =
     nameStr ||
-    (typeof restaurant?.restaurantName === "string" ? restaurant.restaurantName.trim() : "") ||
-    String(restaurant?.slug || restaurant?.id || restaurant?._id || `restaurant-${index}`);
+    (typeof shop?.restaurantName === "string" ? shop.restaurantName.trim() : "") ||
+    String(shop?.slug || shop?.id || shop?._id || `restaurant-${index}`);
 
   const restaurantSlug =
-    typeof restaurant?.slug === "string" && restaurant.slug.trim()
-      ? restaurant.slug.trim()
+    typeof shop?.slug === "string" && shop.slug.trim()
+      ? shop.slug.trim()
       : fallbackSlugSource.toLowerCase().replace(/\s+/g, "-");
 
-  const availability = getShopAvailabilityStatus(restaurant, new Date(availabilityTick));
+  const availability = getShopAvailabilityStatus(shop, new Date(availabilityTick));
   const favorite = isFavorite(restaurantSlug);
 
   return (
     <div
-      key={restaurant?.id || restaurant?._id || restaurantSlug || index}
+      key={shop?.id || shop?._id || restaurantSlug || index}
       className="h-full transform transition-all duration-300 hover:-translate-y-3 hover:scale-[1.02]"
       style={{
         perspective: 1000,
@@ -75,7 +75,7 @@ const FoodShopCard = memo(function FoodShopCard({
           >
             <div className="relative">
               <RestaurantImageCarousel
-                restaurant={restaurant}
+                restaurant={shop}
                 priority={index < 3}
                 backendOrigin={backendOrigin}
               />
@@ -128,7 +128,7 @@ const FoodShopCard = memo(function FoodShopCard({
                   </div>
                   <div
                     className={`flex-shrink-0 rounded-2xl px-3 py-1.5 shadow-md transition-transform duration-300 group-hover:scale-110 ${
-                      Number(restaurant.rating) > 0
+                      Number(shop.rating) > 0
                         ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
                         : "bg-gray-400 text-white"
                     } flex items-center gap-1.5`}
@@ -316,7 +316,7 @@ function FoodHomeContent({
               const restaurantSlug = shop.slug || shop.name.toLowerCase().replace(/\s+/g, "-");
               return (
                 <motion.div
-                  key={`recommended-${restaurant.mongoId || restaurant.id || restaurantSlug}`}
+                  key={`recommended-${shop.mongoId || shop.id || restaurantSlug}`}
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -328,14 +328,14 @@ function FoodHomeContent({
                   >
                     <div className="relative h-24 bg-gray-50 sm:h-28 md:h-32">
                       <img
-                        src={restaurant.image}
-                        alt={restaurant.name}
+                        src={shop.image}
+                        alt={shop.name}
                         className="h-full w-full object-cover"
                         loading="lazy"
                       />
                       <div
                         className={`absolute bottom-2 left-2 flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] shadow-lg ${
-                          Number(restaurant.rating) > 0
+                          Number(shop.rating) > 0
                             ? "border border-emerald-100 bg-emerald-50 font-medium text-emerald-700"
                             : "bg-gray-200/90 font-medium text-gray-600"
                         }`}
@@ -463,8 +463,8 @@ function FoodHomeContent({
           >
             {visibleRestaurants.map((shop, index) => (
               <FoodShopCard
-                key={restaurant?.id || restaurant?._id || restaurant?.slug || index}
-                restaurant={restaurant}
+                key={shop?.id || shop?._id || shop?.slug || index}
+                restaurant={shop}
                 index={index}
                 isOutOfService={isOutOfService}
                 availabilityTick={availabilityTick}

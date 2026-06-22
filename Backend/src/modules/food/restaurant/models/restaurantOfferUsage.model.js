@@ -7,7 +7,7 @@ const restaurantOfferUsageSchema = new mongoose.Schema(
         count: { type: Number, default: 0, min: 0 },
         lastUsedAt: { type: Date, default: null }
     },
-    { collection: 'restaurant_offer_usages', timestamps: true }
+    { collection: 'shop_offer_usages', timestamps: true }
 );
 
 restaurantOfferUsageSchema.index({ offerId: 1, userId: 1 }, { unique: true });

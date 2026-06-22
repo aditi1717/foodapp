@@ -38,7 +38,7 @@ const outletTimingsSchema = new mongoose.Schema(
     },
   },
   {
-    collection: "food_restaurant_outlet_timings",
+    collection: "food_shop_outlet_timings",
     timestamps: true,
   },
 );

@@ -1283,7 +1283,7 @@ export const listApprovedRestaurants = async (query = {}) => {
         .map((id) => new mongoose.Types.ObjectId(id));
 
     if (!visibleRestaurantObjectIds.length) {
-        return { restaurants: [], total: 0, page, limit };
+        return { restaurants: [], shops: [], total: 0, page, limit };
     }
 
     filter._id = { $in: visibleRestaurantObjectIds };
@@ -1378,8 +1378,10 @@ export const listApprovedRestaurants = async (query = {}) => {
             ]);
 
             const total = totalDocs?.[0]?.count || 0;
+            const shops = attachPriorityListingFlag(pageDocs, priorityRestaurantIds);
             return {
-                restaurants: attachPriorityListingFlag(pageDocs, priorityRestaurantIds),
+                restaurants: shops,
+                shops,
                 total,
                 page,
                 limit
@@ -1441,8 +1443,10 @@ export const listApprovedRestaurants = async (query = {}) => {
                 : Promise.resolve([])
         ]);
 
+        const shops = attachPriorityListingFlag([...priorityDocs, ...normalDocs], priorityRestaurantIds);
         return {
-            restaurants: attachPriorityListingFlag([...priorityDocs, ...normalDocs], priorityRestaurantIds),
+            restaurants: shops,
+            shops,
             total,
             page,
             limit
@@ -1529,7 +1533,7 @@ export const listApprovedRestaurants = async (query = {}) => {
         menuImages: Array.isArray(r.menuImages) ? r.menuImages : []
     }));
 
-    return { restaurants, total, page, limit };
+    return { restaurants, shops: restaurants, total, page, limit };
 };
 
 export const getApprovedRestaurantByIdOrSlug = async (idOrSlug) => {

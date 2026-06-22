@@ -451,7 +451,7 @@ function RestaurantDetailsContent() {
           debugLog('? Shop _id:', apiRestaurant?._id)
           debugLog('? Shop.shop:', apiRestaurant?.shop)
 
-          const actualRestaurant = apiRestaurant?.shop || apiRestaurant
+          const actualRestaurant = apiRestaurant?.shop || apiRestaurant?.restaurant || apiRestaurant
 
           // Helper function to format address with zone and pin code
           const formatRestaurantAddress = (locationObj) => {
@@ -684,9 +684,9 @@ function RestaurantDetailsContent() {
             restaurantOffers: {
               goldOffer: {
                 title: normalizedRestaurantOffers?.goldOffer?.title || "Gold exclusive offer",
-                description: apiRestaurant?.restaurantOffers?.goldOffer?.description || "Free delivery above ₹99",
+                description: normalizedRestaurantOffers?.goldOffer?.description || "Free delivery above ₹99",
                 unlockText: normalizedRestaurantOffers?.goldOffer?.unlockText || "join Gold to unlock",
-                buttonText: apiRestaurant?.restaurantOffers?.goldOffer?.buttonText || "Add Gold - ₹1",
+                buttonText: normalizedRestaurantOffers?.goldOffer?.buttonText || "Add Gold - ₹1",
               },
               coupons: Array.isArray(normalizedRestaurantOffers?.coupons)
                 ? normalizedRestaurantOffers.coupons
@@ -1632,7 +1632,7 @@ function RestaurantDetailsContent() {
         }
       })
       .filter(Boolean)
-  }, [restaurant?.menuSections, vegMode, activeUnderPriceLimit, searchQuery, filters.vegNonVeg])
+  }, [shop?.menuSections, vegMode, activeUnderPriceLimit, searchQuery, filters.vegNonVeg])
 
   // Count active filters
   const getActiveFilterCount = () => {
@@ -3338,7 +3338,7 @@ function RestaurantDetailsContent() {
                           <span className="text-base font-medium text-gray-900 dark:text-white">Bookmarks</span>
                           {selectedItem && (
                             <Checkbox
-                              checked={isDishFavorite(selectedItem.id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)}
+                              checked={isDishFavorite(selectedItem.id, shop?.restaurantId || shop?._id || shop?.id)}
                               onCheckedChange={(checked) => {
                                 if (!checked && selectedItem) {
                                   const restaurantId = shop?.restaurantId || shop?._id || shop?.id
@@ -3471,7 +3471,7 @@ function RestaurantDetailsContent() {
                         }`}
                         aria-label="Bookmark dish"
                       >
-                        <Bookmark size={16} className={isDishFavorite(selectedItem.id || selectedItem._id, restaurant?.restaurantId || restaurant?._id || restaurant?.id) ? "fill-white" : ""} />
+                        <Bookmark size={16} className={isDishFavorite(selectedItem.id || selectedItem._id, shop?.restaurantId || shop?._id || shop?.id) ? "fill-white" : ""} />
                       </button>
                       <button
                         type="button"

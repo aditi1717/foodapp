@@ -717,7 +717,7 @@ export async function getRestaurants(query, adminScope = {}) {
             .lean(),
         FoodRestaurant.countDocuments(filter)
     ]);
-    return { restaurants, total, page, limit };
+    return { restaurants, shops: restaurants, total, page, limit };
 }
 
 const CANCELLED_ORDER_STATUSES = ['cancelled_by_user', 'cancelled_by_restaurant', 'cancelled_by_admin'];
@@ -3849,6 +3849,14 @@ export async function getRestaurantAddonsAdmin(query = {}) {
         _id: a._id,
         restaurantId: a.restaurantId?._id ? String(a.restaurantId._id) : String(a.restaurantId),
         restaurant: a.restaurantId?._id
+            ? {
+                _id: a.restaurantId._id,
+                name: a.restaurantId.restaurantName || '',
+                ownerName: a.restaurantId.ownerName || '',
+                ownerPhone: a.restaurantId.ownerPhone || ''
+            }
+            : null,
+        shop: a.restaurantId?._id
             ? {
                 _id: a.restaurantId._id,
                 name: a.restaurantId.restaurantName || '',

@@ -275,13 +275,13 @@ export default function TransactionReport() {
 
             <div className="relative flex-1 min-w-0">
               <select
-                value={filters.restaurant}
+                value={filters.shop}
                 onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs appearance-none cursor-pointer"
               >
-                <option value="All restaurants">All shops</option>
+                <option value="All shops">All shops</option>
                 {shops.map(shop => (
-                  <option key={restaurant._id} value={restaurant.restaurantName || restaurant.name}>{shop.restaurantName || shop.name}</option>
+                  <option key={shop._id || shop.id} value={shop.restaurantName || shop.name}>{shop.restaurantName || shop.name}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />

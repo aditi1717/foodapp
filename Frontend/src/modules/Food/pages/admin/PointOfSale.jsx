@@ -370,7 +370,7 @@ export default function PointOfSale() {
                   <div className="absolute z-50 w-full mt-1 bg-white border border-[#e3e6ef] rounded-md shadow-lg max-h-60 overflow-y-auto">
                     {filteredRestaurants.map(shop => (
                       <button
-                        key={restaurant._id}
+                        key={shop._id}
                         type="button"
                         onMouseDown={(e) => {
                           e.preventDefault()
@@ -425,7 +425,7 @@ export default function PointOfSale() {
                       >
                   <option value="">Select Shop</option>
                   {shops.map(shop => (
-                    <option key={restaurant._id} value={restaurant._id}>
+                    <option key={shop._id} value={shop._id}>
                       {shop.name}
                           </option>
                         ))}

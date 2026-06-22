@@ -284,9 +284,9 @@ export default function AddonsList() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
-                        <span className="text-sm text-slate-900">{addon?.shop?.name || "-"}</span>
-                        {addon?.shop?.ownerPhone ? (
-                          <span className="text-xs text-slate-500">{addon.shop.ownerPhone}</span>
+                        <span className="text-sm text-slate-900">{addon?.shop?.name || addon?.restaurant?.name || "-"}</span>
+                        {addon?.shop?.ownerPhone || addon?.restaurant?.ownerPhone ? (
+                          <span className="text-xs text-slate-500">{addon?.shop?.ownerPhone || addon?.restaurant?.ownerPhone}</span>
                         ) : null}
                       </div>
                     </td>
@@ -355,7 +355,7 @@ export default function AddonsList() {
               <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 border border-slate-200 rounded-lg p-4">
                 <p>
                   <span className="font-semibold text-slate-700">Shop:</span>{" "}
-                  <span className="text-slate-900">{selectedAddon?.shop?.name || "-"}</span>
+                  <span className="text-slate-900">{selectedAddon?.shop?.name || selectedAddon?.restaurant?.name || "-"}</span>
                 </p>
                 <p>
                   <span className="font-semibold text-slate-700">Price:</span>{" "}
