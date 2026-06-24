@@ -157,7 +157,8 @@ export function clearModuleAuth(module) {
   }
   // Clear cached FCM web token for this module
   localStorage.removeItem(`fcm_web_registered_token_${module}`);
-  if (module === "restaurant") {
+  // "shop" is the frontend module name that maps to restaurant backend
+  if (module === "shop" || module === "restaurant") {
     clearRestaurantSessionCache();
     try {
       const openRequest = indexedDB.open("ShopOnboardingFiles");
@@ -231,7 +232,7 @@ export function clearRestaurantPendingPhone() {
  * Clear all authentication data for all modules
  */
 export function clearAuthData() {
-  const modules = ['admin', 'restaurant', 'delivery', 'user'];
+  const modules = ['admin', 'shop', 'restaurant', 'delivery', 'user'];
   modules.forEach(module => {
     clearModuleAuth(module);
   });
@@ -273,7 +274,7 @@ export function setAuthData(module, token, user, refreshToken = null) {
     const userKey = `${module}_user`;
 
     // Prevent stale restaurant profile data from previous account after re-login.
-    if (module === "restaurant") {
+    if (module === "shop" || module === "restaurant") {
       clearRestaurantSessionCache();
     }
 

@@ -641,7 +641,7 @@ const ShopProfile = () => {
 
       // Redirect if the update triggered a status change to 'pending' (requires approval)
       if (updatedData?.status === 'pending') {
-        clearModuleAuth("shop")
+        clearModuleAuth("restaurant")
         window.dispatchEvent(new Event("restaurantAuthChanged"))
         toast.success("Update submitted for approval. Please log in again.")
         navigate("/food/shop/login", { replace: true })

@@ -143,7 +143,7 @@ export default function RestaurantSignupEmail() {
       
       if (data.accessToken && data.shop) {
         // Replace old token with new one (handles cross-module login)
-        setAuthData("shop", data.accessToken, data.shop)
+        setAuthData("restaurant", data.accessToken, data.shop)
         
         window.dispatchEvent(new Event("restaurantAuthChanged"))
         

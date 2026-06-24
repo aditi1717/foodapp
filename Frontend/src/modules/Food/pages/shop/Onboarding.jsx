@@ -621,7 +621,7 @@ export default function ShopOnboarding() {
       clearOnboardingFileCache()
 
       await restaurantAPI.logout()
-      clearModuleAuth("shop")
+      clearModuleAuth("restaurant")
       clearAuthData()
       localStorage.removeItem(ONBOARDING_STORAGE_KEY)
       window.dispatchEvent(new Event("restaurantAuthChanged"))
@@ -630,7 +630,7 @@ export default function ShopOnboarding() {
       debugError("Logout failed:", error)
       clearOnboardingFromLocalStorage()
       clearOnboardingFileCache()
-      clearModuleAuth("shop")
+      clearModuleAuth("restaurant")
       navigate("/food/shop/login", { replace: true })
     } finally {
       setIsLoggingOut(false)

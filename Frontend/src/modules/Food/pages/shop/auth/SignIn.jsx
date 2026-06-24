@@ -22,7 +22,7 @@ export default function RestaurantSignIn() {
 
   // Redirect to restaurant home if already authenticated
   useEffect(() => {
-    const isAuthenticated = isModuleAuthenticated("shop")
+    const isAuthenticated = isModuleAuthenticated("restaurant")
     if (isAuthenticated) {
       navigate("/shop", { replace: true })
     }

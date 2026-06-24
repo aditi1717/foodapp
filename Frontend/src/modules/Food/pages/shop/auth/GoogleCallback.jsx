@@ -60,7 +60,7 @@ export default function RestaurantGoogleCallback() {
         }
 
         // Store authentication data using utility function
-        setAuthData("shop", token, user)
+        setAuthData("restaurant", token, user)
 
         // Notify any listeners that auth state has changed
         window.dispatchEvent(new Event("restaurantAuthChanged"))

@@ -256,7 +256,7 @@ export default function EditOwner() {
       }
 
       // Clear shop module authentication data
-      clearModuleAuth("shop")
+      clearModuleAuth("restaurant")
       
       // Clear all shop-related localStorage data
       localStorage.removeItem(STORAGE_KEY)

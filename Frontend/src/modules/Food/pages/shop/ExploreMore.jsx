@@ -475,7 +475,7 @@ export default function ExploreMore() {
 
   // Get user data from logged in session and shop data
   const userData = useMemo(() => {
-    const sessionUser = getCurrentUser("shop")
+    const sessionUser = getCurrentUser("restaurant")
     
     // Priority 1: Data from the currently logged in session user
     if (sessionUser && sessionUser.name && sessionUser.role) {
@@ -545,7 +545,7 @@ export default function ExploreMore() {
       }
 
       // Clear shop module authentication data
-      clearModuleAuth("shop")
+      clearModuleAuth("restaurant")
 
       // Clear any onboarding data from localStorage
       localStorage.removeItem("restaurant_onboarding")
@@ -566,7 +566,7 @@ export default function ExploreMore() {
     } catch (error) {
       // Even if there's an error, we should still clear local data and logout
       debugError("Error during logout:", error)
-      clearModuleAuth("shop")
+      clearModuleAuth("restaurant")
       localStorage.removeItem("restaurant_onboarding")
       localStorage.removeItem("restaurant_accessToken")
       localStorage.removeItem("restaurant_authenticated")
