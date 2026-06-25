@@ -34,9 +34,6 @@ const defaultCartContext = {
   cleanCartForShop: () => {
     debugWarn('CartProvider not available - cleanCartForShop called');
   },
-  cleanCartForShop: () => {
-    debugWarn('CartProvider not available - cleanCartForShop called');
-  },
   replaceCart: () => {
     debugWarn('CartProvider not available - replaceCart called');
   },
@@ -178,8 +175,6 @@ const normalizeCartData = (rawCart) => {
             ? Math.floor(parsedQuantity)
             : 1,
         price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
-        shop: normalizedShopName,
-        shopId: normalizedShopId,
         shop: normalizedShopName,
         shopId: normalizedShopId,
         image: normalizedImage,
