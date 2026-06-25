@@ -1296,7 +1296,7 @@ export default function LandingPageSettings({ type = "admin" }) {
                   </label>
                   <input
                     type="number"
-                    value={reactBusinessStats.restaurant}
+                    value={reactBusinessStats.shop}
                     onChange={(e) =>
                       setReactBusinessStats((prev) => ({ ...prev, shop: e.target.value }))
                     }

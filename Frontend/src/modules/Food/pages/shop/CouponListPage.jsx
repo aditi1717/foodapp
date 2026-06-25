@@ -6,7 +6,7 @@ import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { Card, CardContent } from "@food/components/ui/card"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { formatCurrency } from "@food/utils/currency"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
 
 const badge = (approvalStatus) => {
@@ -30,7 +30,7 @@ export default function CouponListPage() {
     try {
       setLoading(true)
       setError("")
-      const res = await restaurantAPI.getCoupons()
+      const res = await shopAPI.getCoupons()
       const list = res?.data?.data?.offers || res?.data?.offers || []
       setCoupons(list)
     } catch (err) {
@@ -48,7 +48,7 @@ export default function CouponListPage() {
     if (!id || deleting[id]) return
     try {
       setDeleting((prev) => ({ ...prev, [id]: true }))
-      await restaurantAPI.deleteCoupon(id)
+      await shopAPI.deleteCoupon(id)
       setCoupons((prev) => prev.filter((c) => String(c.id || c._id) !== String(id)))
     } catch (err) {
       setError(err?.response?.data?.message || "Unable to delete coupon")
@@ -93,7 +93,7 @@ export default function CouponListPage() {
           coupons.map((coupon, index) => {
             const status = badge(coupon.approvalStatus)
             const id = String(coupon.id || coupon._id)
-            const canDelete = !!coupon.createdByRestaurantId
+            const canDelete = !!coupon.createdByShopId
             const isFinalized = (coupon.approvalStatus || "").toLowerCase() === "approved" || (coupon.approvalStatus || "").toLowerCase() === "rejected"
             return (
               <motion.div

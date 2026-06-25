@@ -171,10 +171,10 @@ export default function NewOrderNotification({ order, onClose, onViewOrder }) {
                   </div>
                 )}
 
-                {(order.restaurantNote || order.note) && (
+                {(order.shopNote || order.note) && (
                   <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
                     <p className="mb-1 text-xs font-medium text-yellow-800">Shop Note:</p>
-                    <p className="text-sm text-yellow-900">{order.restaurantNote || order.note}</p>
+                    <p className="text-sm text-yellow-900">{order.shopNote || order.note}</p>
                   </div>
                 )}
               </div>

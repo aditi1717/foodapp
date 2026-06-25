@@ -9,7 +9,7 @@ const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 
-export default function RestaurantGoogleCallback() {
+export default function ShopGoogleCallback() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [status, setStatus] = useState("loading") // "loading", "success", "error"
@@ -60,10 +60,10 @@ export default function RestaurantGoogleCallback() {
         }
 
         // Store authentication data using utility function
-        setAuthData("restaurant", token, user)
+        setAuthData("shop", token, user)
 
         // Notify any listeners that auth state has changed
-        window.dispatchEvent(new Event("restaurantAuthChanged"))
+        window.dispatchEvent(new Event("shopAuthChanged"))
 
         setStatus("success")
 

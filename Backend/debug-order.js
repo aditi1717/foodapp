@@ -29,15 +29,15 @@ async function checkOrder() {
 
     console.log('\n🔍 Discount Breakdown Check:');
     console.log('couponByAdmin exists?', 'couponByAdmin' in (order.pricing || {}));
-    console.log('couponByRestaurant exists?', 'couponByRestaurant' in (order.pricing || {}));
-    console.log('offerByRestaurant exists?', 'offerByRestaurant' in (order.pricing || {}));
+    console.log('couponByShop exists?', 'couponByShop' in (order.pricing || {}));
+    console.log('offerByShop exists?', 'offerByShop' in (order.pricing || {}));
 
-    if ('offerByRestaurant' in (order.pricing || {})) {
+    if ('offerByShop' in (order.pricing || {})) {
       console.log('\n✅ Discount breakdown fields EXIST');
       console.log('Values:');
       console.log('  - couponByAdmin:', order.pricing.couponByAdmin);
-      console.log('  - couponByRestaurant:', order.pricing.couponByRestaurant);
-      console.log('  - offerByRestaurant:', order.pricing.offerByRestaurant);
+      console.log('  - couponByShop:', order.pricing.couponByShop);
+      console.log('  - offerByShop:', order.pricing.offerByShop);
     } else {
       console.log('\n❌ Discount breakdown fields DO NOT EXIST');
       console.log('This is an OLD order (placed before backend update)');
@@ -49,9 +49,9 @@ async function checkOrder() {
     const latestOrder = await FoodOrder.findOne().sort({ createdAt: -1 }).lean();
     console.log('Latest Order ID:', latestOrder.orderId);
     console.log('Created At:', latestOrder.createdAt);
-    console.log('Has discount breakdown?', 'offerByRestaurant' in (latestOrder.pricing || {}));
+    console.log('Has discount breakdown?', 'offerByShop' in (latestOrder.pricing || {}));
 
-    if ('offerByRestaurant' in (latestOrder.pricing || {})) {
+    if ('offerByShop' in (latestOrder.pricing || {})) {
       console.log('✅ Latest order has new fields - Backend update is working!');
     } else {
       console.log('❌ Latest order does NOT have new fields');

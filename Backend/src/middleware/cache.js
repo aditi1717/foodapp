@@ -5,7 +5,7 @@ import { config } from '../config/env.js';
 /**
  * Higher-order function to create a caching middleware.
  * @param {number} ttlInSeconds - Time to live for the cache in seconds.
- * @param {string} prefix - Optional key prefix for Redis (e.g. 'restaurants').
+ * @param {string} prefix - Optional key prefix for Redis (e.g. 'shops').
  * @returns {import('express').RequestHandler}
  */
 export const cacheResponse = (ttlInSeconds = 300, prefix = 'api_cache') => {
@@ -48,7 +48,7 @@ export const cacheResponse = (ttlInSeconds = 300, prefix = 'api_cache') => {
 };
 
 /**
- * Clear cache by pattern (e.g. 'api_cache:GET:/api/food/restaurants*')
+ * Clear cache by pattern (e.g. 'api_cache:GET:/api/food/shops*')
  * WARNING: 'keys' is O(N), use with care or switch to SCAN for large datasets.
  * @param {string} pattern - Redis glob pattern for keys to delete.
  */

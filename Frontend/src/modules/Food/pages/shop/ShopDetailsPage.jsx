@@ -29,15 +29,15 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@food/components/ui/card"
 import { useNavigate } from "react-router-dom"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
-import { getRestaurantData } from "@food/utils/shopManagement"
+import { getShopData } from "@food/utils/shopManagement"
 import BRAND_THEME from "@/config/brandTheme"
 
 export default function ShopDetailsPage() {
   const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState("all")
-  const [restaurantData, setRestaurantData] = useState(() => getRestaurantData())
+  const [shopData, setShopData] = useState(() => getShopData())
   const [foodItems, setFoodItems] = useState([])
   const [logoLoadFailed, setLogoLoadFailed] = useState(false)
 
@@ -63,21 +63,21 @@ export default function ShopDetailsPage() {
 
   // Load shop data and listen for updates
   useEffect(() => {
-    const refreshRestaurantData = () => {
-      setRestaurantData(getRestaurantData())
+    const refreshShopData = () => {
+      setShopData(getShopData())
       setLogoLoadFailed(false)
     }
 
     // Initial load
-    refreshRestaurantData()
+    refreshShopData()
 
     // Listen for shop data changes
-    window.addEventListener('restaurantDataUpdated', refreshRestaurantData)
-    window.addEventListener('storage', refreshRestaurantData)
+    window.addEventListener('shopDataUpdated', refreshShopData)
+    window.addEventListener('storage', refreshShopData)
 
     return () => {
-      window.removeEventListener('restaurantDataUpdated', refreshRestaurantData)
-      window.removeEventListener('storage', refreshRestaurantData)
+      window.removeEventListener('shopDataUpdated', refreshShopData)
+      window.removeEventListener('storage', refreshShopData)
     }
   }, [])
 
@@ -87,7 +87,7 @@ export default function ShopDetailsPage() {
 
     const refreshFoods = async () => {
       try {
-        const response = await restaurantAPI.getMenu()
+        const response = await shopAPI.getMenu()
         const menu = getMenuFromResponse(response)
         const foods = flattenMenuItems(menu)
         if (isMounted) {
@@ -147,8 +147,8 @@ export default function ShopDetailsPage() {
       {/* Hero Image Section */}
       <div className="relative w-full h-[250px] md:h-[300px] overflow-hidden">
         <img 
-          src={restaurantData.cover || "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&h=400&fit=crop"}
-          alt="Restaurant Hero"
+          src={shopData.cover || "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&h=400&fit=crop"}
+          alt="Shop Hero"
           className="w-full h-full object-cover"
         />
         
@@ -157,10 +157,10 @@ export default function ShopDetailsPage() {
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0">
               <div className="bg-primary-orange rounded-lg p-3">
-                {restaurantData.logo && !logoLoadFailed ? (
+                {shopData.logo && !logoLoadFailed ? (
                   <img 
-                    src={restaurantData.logo} 
-                    alt="Restaurant Logo" 
+                    src={shopData.logo} 
+                    alt="Shop Logo" 
                     className="w-6 h-6 md:w-8 md:h-8 object-cover rounded"
                     onError={() => setLogoLoadFailed(true)}
                   />
@@ -172,7 +172,7 @@ export default function ShopDetailsPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between mb-2">
                 <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                  {restaurantData.restaurantName?.english || "Hungry Puppets"}
+                  {shopData.shopName?.english || "Hungry Puppets"}
                 </h2>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
@@ -184,18 +184,18 @@ export default function ShopDetailsPage() {
                 </motion.button>
               </div>
               <p className="text-gray-600 text-sm md:text-base mb-2">
-                {restaurantData.address || "House: 00, Road: 00, Test City"}
+                {shopData.address || "House: 00, Road: 00, Test City"}
               </p>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                   <span className="text-gray-900 font-semibold text-sm md:text-base">
-                    {restaurantData.rating || 4.7}
+                    {shopData.rating || 4.7}
                   </span>
                 </div>
                 <span className="text-gray-400">|</span>
                 <span className="text-gray-600 text-sm md:text-base underline">
-                  {restaurantData.totalRatings || 3} Ratings
+                  {shopData.totalRatings || 3} Ratings
                 </span>
               </div>
             </div>

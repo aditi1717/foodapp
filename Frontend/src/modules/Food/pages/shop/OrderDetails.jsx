@@ -5,7 +5,7 @@ import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { formatOrderAddressWithLabels } from "@food/utils/orderAddressFormatter"
 import {
   ArrowLeft,
@@ -107,7 +107,7 @@ export default function OrderDetails() {
         setLoading(true)
         setError(null)
         
-        const response = await restaurantAPI.getOrderById(orderId)
+        const response = await shopAPI.getOrderById(orderId)
         
         if (response.data?.success && response.data.data?.order) {
           const order = response.data.data.order
@@ -147,9 +147,9 @@ export default function OrderDetails() {
           const discount = firstNumber(pricing.discount, order.discount) ?? 0
           const couponDiscount = firstNumber(pricing.couponDiscount, order.couponDiscount) ?? 0
           const referralDiscount = firstNumber(pricing.referralDiscount, order.referralDiscount) ?? 0
-          const couponByRestaurant = firstNumber(pricing.couponByRestaurant, order.couponByRestaurant) ?? 0
-          const offerByRestaurant = firstNumber(pricing.offerByRestaurant, order.offerByRestaurant) ?? 0
-          const commission = firstNumber(order.commission, pricing.restaurantCommission) ?? 0
+          const couponByShop = firstNumber(pricing.couponByShop, order.couponByShop) ?? 0
+          const offerByShop = firstNumber(pricing.offerByShop, order.offerByShop) ?? 0
+          const commission = firstNumber(order.commission, pricing.shopCommission) ?? 0
           let dueAmount =
             firstNumber(
               pricing.previousDue,
@@ -187,21 +187,21 @@ export default function OrderDetails() {
           }
 
           const paidAmount = firstNumber(order.payment?.amountDue, order.payment?.amount, total) ?? total
-          const directRestaurantEarning = firstNumber(
-            order.restaurantEarning,
+          const directShopEarning = firstNumber(
+            order.shopEarning,
             order.payout,
-            pricing.restaurantEarning,
-            pricing.payoutToRestaurant
+            pricing.shopEarning,
+            pricing.payoutToShop
           )
-          const restaurantEarning =
-            directRestaurantEarning ??
+          const shopEarning =
+            directShopEarning ??
             Math.max(
               0,
               itemSubtotal +
                 packagingFee -
                 commission -
-                couponByRestaurant -
-                offerByRestaurant
+                couponByShop -
+                offerByShop
             )
 
           const fullAddress = formatOrderAddressWithLabels(
@@ -220,12 +220,12 @@ export default function OrderDetails() {
             order.customerInfo?.name,
           ) || "Customer"
 
-          const restaurantName = firstText(
-            order.restaurantName,
-            order.shop?.restaurantName,
+          const shopName = firstText(
+            order.shopName,
+            order.shop?.shopName,
             order.shop?.name,
-            order.restaurantId?.restaurantName,
-            order.restaurantId?.name,
+            order.shopId?.shopName,
+            order.shopId?.name,
             order.outletName
           ) || "Shop"
 
@@ -267,7 +267,7 @@ export default function OrderDetails() {
             status: statusForUi,
             date: new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
             time: new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-            shop: restaurantName,
+            shop: shopName,
             address: fullAddress,
             customer: {
               name: customerName,
@@ -292,7 +292,7 @@ export default function OrderDetails() {
               couponDiscount,
               referralDiscount,
               dueAmount,
-              restaurantEarning,
+              shopEarning,
               total,
               paidAmount,
               paymentStatus
@@ -1014,7 +1014,7 @@ export default function OrderDetails() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-emerald-800">Your earning</span>
                 <span className="text-sm font-bold text-emerald-800">
-                  {formatMoney(orderData.billing.restaurantEarning)}
+                  {formatMoney(orderData.billing.shopEarning)}
                 </span>
               </div>
             </div>

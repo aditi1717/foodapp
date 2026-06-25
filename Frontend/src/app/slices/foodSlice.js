@@ -1,21 +1,21 @@
 import { createSlice } from '@reduxjs/toolkit'
 
-const findCartItemIndex = (items, id, restaurantId) =>
+const findCartItemIndex = (items, id, shopId) =>
   items.findIndex(
     (item) =>
       item.id === id &&
-      (restaurantId == null || item.restaurantId === restaurantId)
+      (shopId == null || item.shopId === shopId)
   )
 
 const initialState = {
   // Cart: food delivery items
   cart: {
-    items: [], // [{ id, restaurantId, name, price, quantity, ... }]
+    items: [], // [{ id, shopId, name, price, quantity, ... }]
   },
-  // Restaurants list / selected (for UI state, not full catalog)
-  restaurants: {
+  // Shops list / selected (for UI state, not full catalog)
+  shops: {
     list: [],
-    selectedRestaurantId: null,
+    selectedShopId: null,
   },
   // User's food orders (summary for UI; full data from API)
   orders: {
@@ -35,23 +35,23 @@ const foodSlice = createSlice({
   reducers: {
     // —— Cart ——
     addToCart(state, action) {
-      const { id, restaurantId, quantity = 1, ...rest } = action.payload || {}
+      const { id, shopId, quantity = 1, ...rest } = action.payload || {}
       if (!id) return
       const items = state.cart.items
-      const idx = findCartItemIndex(items, id, restaurantId)
+      const idx = findCartItemIndex(items, id, shopId)
       if (idx === -1) {
-        state.cart.items.push({ id, restaurantId, quantity, ...rest })
+        state.cart.items.push({ id, shopId, quantity, ...rest })
       } else {
         state.cart.items[idx].quantity += quantity
       }
     },
     removeFromCart(state, action) {
-      const { id, restaurantId } = action.payload || {}
+      const { id, shopId } = action.payload || {}
       state.cart.items = state.cart.items.filter(
         (item) =>
           !(
             item.id === id &&
-            (restaurantId == null || item.restaurantId === restaurantId)
+            (shopId == null || item.shopId === shopId)
           )
       )
     },
@@ -62,14 +62,14 @@ const foodSlice = createSlice({
       state.cart.items = Array.isArray(action.payload) ? action.payload : []
     },
 
-    // —— Restaurants ——
-    setRestaurantsList(state, action) {
-      state.restaurants.list = Array.isArray(action.payload)
+    // —— Shops ——
+    setShopsList(state, action) {
+      state.shops.list = Array.isArray(action.payload)
         ? action.payload
         : []
     },
-    setSelectedRestaurant(state, action) {
-      state.restaurants.selectedRestaurantId = action.payload ?? null
+    setSelectedShop(state, action) {
+      state.shops.selectedShopId = action.payload ?? null
     },
 
     // —— Orders ——
@@ -99,8 +99,8 @@ const foodSlice = createSlice({
     // Reset entire food slice (e.g. on logout)
     resetFood(state) {
       state.cart.items = []
-      state.restaurants.list = []
-      state.restaurants.selectedRestaurantId = null
+      state.shops.list = []
+      state.shops.selectedShopId = null
       state.orders.list = []
       state.orders.activeOrderId = null
       state.zoneId = null
@@ -115,8 +115,8 @@ export const {
   removeFromCart,
   clearCart,
   setCart,
-  setRestaurantsList,
-  setSelectedRestaurant,
+  setShopsList,
+  setSelectedShop,
   setOrdersList,
   setActiveOrderId,
   setZoneId,

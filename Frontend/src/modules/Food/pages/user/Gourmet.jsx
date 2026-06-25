@@ -8,7 +8,7 @@ import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
 import { toast } from "sonner"
 import { API_BASE_URL } from "@food/api/config"
 import OptimizedImage from "@food/components/OptimizedImage"
-import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
+import { ShopGridSkeleton } from "@food/components/ui/loading-skeletons"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 import { useLocation } from "@food/hooks/useLocation"
 import BRAND_THEME from "@/config/brandTheme"
@@ -24,7 +24,7 @@ export default function Gourmet() {
   const navigate = useNavigate()
   const goBack = useAppBackNavigation()
   const [favorites, setFavorites] = useState(new Set())
-  const [gourmetRestaurants, setGourmetRestaurants] = useState([])
+  const [gourmetShops, setGourmetShops] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { location } = useLocation()
@@ -43,26 +43,26 @@ export default function Gourmet() {
 
   // Fetch Gourmet shops from public API
   useEffect(() => {
-    const fetchGourmetRestaurants = async () => {
+    const fetchGourmetShops = async () => {
       try {
         setLoading(true)
         setError(null)
         const response = await api.get('/food/hero-banners/gourmet/public')
         const data = response?.data?.data
         const list = data?.shops ?? (Array.isArray(data) ? data : [])
-        setGourmetRestaurants(list)
+        setGourmetShops(list)
       } catch (err) {
         debugError('Error fetching Gourmet shops:', err)
         const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load Gourmet shops'
         setError(errorMessage)
         toast.error(errorMessage)
-        setGourmetRestaurants([])
+        setGourmetShops([])
       } finally {
         setLoading(false)
       }
     }
 
-    fetchGourmetRestaurants()
+    fetchGourmetShops()
   }, [])
 
   const toggleFavorite = (id) => {
@@ -110,11 +110,11 @@ export default function Gourmet() {
 
           {/* Shop Count */}
           <p className={`text-xs sm:text-sm font-semibold ${BRAND_THEME.tokens.homepage.shared.heading} tracking-widest uppercase`}>
-            {showGourmetSkeleton ? '...' : gourmetRestaurants.length} GOURMET SHOPS
+            {showGourmetSkeleton ? '...' : gourmetShops.length} GOURMET SHOPS
           </p>
 
           {/* Loading State */}
-          {showGourmetSkeleton && <RestaurantGridSkeleton count={4} />}
+          {showGourmetSkeleton && <ShopGridSkeleton count={4} />}
 
           {/* Error State */}
           {error && !loading && (
@@ -127,16 +127,16 @@ export default function Gourmet() {
           {/* Shop Cards */}
           {!showGourmetSkeleton && !error && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {gourmetRestaurants.length === 0 ? (
+              {gourmetShops.length === 0 ? (
                 <div className="col-span-full text-center py-12">
                   <p className="text-gray-500 dark:text-gray-400">No Gourmet shops available at the moment</p>
                 </div>
               ) : (
-                gourmetRestaurants.map((item) => {
+                gourmetShops.map((item) => {
                   const shop = item.shop || item
-                  const restaurantSlug = shop.slug || shop.restaurantName?.toLowerCase().replace(/\s+/g, "-") || shop.name?.toLowerCase().replace(/\s+/g, "-") || ""
-                  const restaurantId = shop._id || shop.restaurantId || shop.id
-                  const isFavorite = favorites.has(restaurantId)
+                  const shopSlug = shop.slug || shop.shopName?.toLowerCase().replace(/\s+/g, "-") || shop.name?.toLowerCase().replace(/\s+/g, "-") || ""
+                  const shopId = shop._id || shop.shopId || shop.id
+                  const isFavorite = favorites.has(shopId)
 
                   // Calculate distance if coordinates are available
                   const calculateDistance = (lat1, lng1, lat2, lng2) => {
@@ -154,11 +154,11 @@ export default function Gourmet() {
                   };
 
                   let distanceStr = '1.2 km'
-                  const restaurantLat = shop.location?.latitude || shop.location?.coordinates?.[1]
-                  const restaurantLng = shop.location?.longitude || shop.location?.coordinates?.[0]
+                  const shopLat = shop.location?.latitude || shop.location?.coordinates?.[1]
+                  const shopLng = shop.location?.longitude || shop.location?.coordinates?.[0]
                   
-                  if (location?.latitude && location?.longitude && restaurantLat && restaurantLng) {
-                    const d = calculateDistance(location.latitude, location.longitude, restaurantLat, restaurantLng)
+                  if (location?.latitude && location?.longitude && shopLat && shopLng) {
+                    const d = calculateDistance(location.latitude, location.longitude, shopLat, shopLng)
                     distanceStr = `${d.toFixed(1)} km`
                   } else if (shop.distance) {
                     distanceStr = shop.distance
@@ -173,24 +173,24 @@ export default function Gourmet() {
                     ? shop.menuImages.map(img => img.url || img).filter(Boolean)
                     : []
 
-                  const rawRestaurantImage =
+                  const rawShopImage =
                     coverImages.length > 0
                       ? coverImages[0]
                       : (menuImages.length > 0
                         ? menuImages[0]
                         : (shop.profileImage?.url || shop.profileImage || shop.image || ""))
 
-                  const restaurantImage = resolveImageUrl(rawRestaurantImage)
+                  const shopImage = resolveImageUrl(rawShopImage)
 
                   return (
-                    <Link key={restaurantId} to={`/user/shops/${restaurantSlug}`}>
+                    <Link key={shopId} to={`/user/shops/${shopSlug}`}>
                       <Card className={`overflow-hidden cursor-pointer border-0 group ${BRAND_THEME.tokens.homepage.shared.surface} shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-2xl mb-4`}>
                         {/* Image Section */}
                         <div className="relative h-44 sm:h-52 md:h-56 w-full overflow-hidden rounded-t-2xl">
-                          {restaurantImage ? (
+                          {shopImage ? (
                             <OptimizedImage
-                              src={restaurantImage}
-                              alt={restaurant.restaurantName || restaurant.name}
+                              src={shopImage}
+                              alt={shop.shopName || shop.name}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (
@@ -209,7 +209,7 @@ export default function Gourmet() {
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
-                              toggleFavorite(restaurantId)
+                              toggleFavorite(shopId)
                             }}
                           >
                             <Bookmark className={`h-5 w-5 ${isFavorite ? "fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200" : "text-gray-600 dark:text-gray-400"}`} strokeWidth={2} />
@@ -222,7 +222,7 @@ export default function Gourmet() {
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex-1 min-w-0">
                               <h3 className={`text-lg sm:text-xl font-bold ${BRAND_THEME.tokens.homepage.shared.title} line-clamp-1`}>
-                                {shop.restaurantName || shop.name}
+                                {shop.shopName || shop.name}
                               </h3>
                             </div>
                             <div className="flex-shrink-0 bg-green-600 text-white px-2 py-1 rounded-lg flex items-center gap-1">

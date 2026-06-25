@@ -27,11 +27,11 @@ export const PickupActionModal = ({
   if (!order) return null;
 
   const isAtPickup = status === 'REACHED_PICKUP';
-  const restaurantName = order.restaurantName || order.restaurant_name || 'Restaurant';
-  const restaurantAddress = order.restaurantAddress || order.restaurant_address || order.restaurantLocation?.address || 'Address not available';
-  const restaurantPhone = order.restaurantPhone || order.restaurant_phone || order.restaurantId?.phone || '';
+  const shopName = order.shopName || order.shop_name || 'Shop';
+  const shopAddress = order.shopAddress || order.shop_address || order.shopLocation?.address || 'Address not available';
+  const shopPhone = order.shopPhone || order.shop_phone || order.shopId?.phone || '';
   const items = order.items || [];
-  const restaurantLogo = order.restaurantImage || order.restaurant?.logo || order.restaurant?.profileImage || 'https://cdn-icons-png.flaticon.com/512/3170/3170733.png';
+  const shopLogo = order.shopImage || order.shop?.logo || order.shop?.profileImage || 'https://cdn-icons-png.flaticon.com/512/3170/3170733.png';
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-[110] p-0 sm:p-4 h-full flex items-end">
@@ -54,14 +54,14 @@ export const PickupActionModal = ({
           </button>
         </div>
 
-        {/* Restaurant Header */}
+        {/* Shop Header */}
         <div className="flex items-start justify-between mb-5 pb-3 border-b border-gray-50">
           <div className="flex gap-3">
             <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-black/5 overflow-hidden border border-gray-100">
-              <img src={restaurantLogo} alt="Logo" className="w-full h-full object-cover" />
+              <img src={shopLogo} alt="Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h3 className="text-gray-950 text-lg font-extrabold leading-none">{restaurantName}</h3>
+              <h3 className="text-gray-950 text-lg font-extrabold leading-none">{shopName}</h3>
               <p className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 mt-2">
                 {isAtPickup ? (
                   <span style={{ color: BRAND_THEME.colors.semantic.success }}>Reached Location</span>
@@ -75,9 +75,9 @@ export const PickupActionModal = ({
           </div>
 
           <div className="flex gap-2">
-            {restaurantPhone && (
+            {shopPhone && (
               <button
-                onClick={() => window.location.href = `tel:${restaurantPhone}`}
+                onClick={() => window.location.href = `tel:${shopPhone}`}
                 className="w-9 h-9 rounded-full flex items-center justify-center border transition-opacity hover:opacity-80"
                 style={{ backgroundColor: BRAND_THEME.colors.brand.primarySoft, color: BRAND_THEME.colors.brand.primary, borderColor: BRAND_THEME.colors.brand.primary + '33' }}
               >
@@ -85,7 +85,7 @@ export const PickupActionModal = ({
               </button>
             )}
             <button 
-              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurantAddress)}`, '_blank')}
+              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shopAddress)}`, '_blank')}
               className="w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg"
               style={{ backgroundColor: BRAND_THEME.colors.neutral.textPrimary }}
             >
@@ -102,7 +102,7 @@ export const PickupActionModal = ({
                 className="text-center text-[10px] font-bold uppercase tracking-widest mb-3 transition-colors"
                 style={{ color: isWithinRange ? BRAND_THEME.colors.semantic.success : BRAND_THEME.colors.brand.primary }}
               >
-                {isWithinRange ? 'Ready - Swipe to confirm arrival' : 'Get closer to restaurant'}
+                {isWithinRange ? 'Ready - Swipe to confirm arrival' : 'Get closer to shop'}
               </p>
               <ActionSlider 
                 key="action-reach"

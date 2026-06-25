@@ -8,7 +8,7 @@ import { useProfile } from "@food/context/ProfileContext"
 import { useLocation } from "@food/hooks/useLocation"
 import { useZone } from "@food/hooks/useZone"
 import { getShopAvailabilityStatus } from "@food/utils/shopAvailability"
-import { enrichSearchRestaurantsWithOutletTimings, isPureVegRestaurant } from "@food/utils/searchAvailability"
+import { enrichSearchShopsWithOutletTimings, isPureVegShop } from "@food/utils/searchAvailability"
 import BRAND_THEME from "@/config/brandTheme"
 
 const SEARCH_HISTORY_KEY = "user_recent_searches_v1"
@@ -122,12 +122,12 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
           lng: location?.longitude,
           zoneId,
         })
-        const shops = (await enrichSearchRestaurantsWithOutletTimings(
+        const shops = (await enrichSearchShopsWithOutletTimings(
           res?.data?.data?.shops || [],
         )).filter((shop) => {
           if (!vegMode) return true
           if (!isVegSearchResult(shop)) return false
-          return vegModePreference !== "pure-veg" || isPureVegRestaurant(shop)
+          return vegModePreference !== "pure-veg" || isPureVegShop(shop)
         })
         const normalizedFoods = shops
           .map((item, index) => {
@@ -142,10 +142,10 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
               }
             }
 
-            if (item?.restaurantName) {
+            if (item?.shopName) {
               return {
                 id: item?._id || `shop-${index}`,
-                name: String(item.restaurantName).trim(),
+                name: String(item.shopName).trim(),
                 image: item?.image || item?.profileImage || "",
                 isOpen: availability.isOpen,
                 statusLabel: availability.badgeLabel,

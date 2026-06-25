@@ -181,7 +181,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       })
     }
 
-    if (filters.restaurant) {
+    if (filters.shop) {
       result = result.filter(order => order.shop === filters.shop)
     }
 
@@ -239,7 +239,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       maxAmount: "",
       fromDate: "",
       toDate: "",
-      restaurant: "",
+      shop: "",
     })
   }
 
@@ -349,7 +349,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       )
       const customerName = formatDisplayText(order.customerName)
       const customerPhone = formatDisplayText(order.customerPhone)
-      const restaurantName = formatDisplayText(order.restaurant)
+      const shopName = formatDisplayText(order.shop)
       const deliveryType = formatDisplayText(order.deliveryType)
       const deliveryAddress = formatOrderAddress(order.address || order.customerAddress || order.deliveryAddress)
       const itemCount = items.reduce((sum, item) => sum + toNumber(item?.quantity || 1), 0) || items.length
@@ -438,8 +438,8 @@ export function useOrdersManagement(orders, statusKey, title) {
         { label: "Phone", value: customerPhone },
         { label: "Address", value: deliveryAddress },
       ])
-      const restaurantCardHeight = drawInfoCard("Restaurant", 76, 53, 58, [
-        { label: "Name", value: restaurantName },
+      const shopCardHeight = drawInfoCard("Shop", 76, 53, 58, [
+        { label: "Name", value: shopName },
         { label: "Delivery", value: deliveryType },
         { label: "Items", value: `${itemCount} item${itemCount === 1 ? "" : "s"}` },
       ], [37, 99, 235])
@@ -449,7 +449,7 @@ export function useOrdersManagement(orders, statusKey, title) {
         { label: "Payment", value: paymentType },
       ], [249, 115, 22])
 
-      const infoCardsBottomY = 53 + Math.max(customerCardHeight, restaurantCardHeight, deliveryCardHeight)
+      const infoCardsBottomY = 53 + Math.max(customerCardHeight, shopCardHeight, deliveryCardHeight)
 
       autoTable(doc, {
         startY: infoCardsBottomY + 8,
@@ -559,7 +559,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       doc.setFontSize(9)
       doc.setTextColor(100, 116, 139)
       doc.text(`Generated on ${new Date().toLocaleString()}`, 14, footerY)
-      doc.text("Includes customer, restaurant, and delivery partner details.", pageWidth - 14, footerY, { align: "right" })
+      doc.text("Includes customer, shop, and delivery partner details.", pageWidth - 14, footerY, { align: "right" })
 
       const filename = `Invoice_${orderId}_${new Date().toISOString().split("T")[0]}.pdf`
       doc.save(filename)
@@ -582,7 +582,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       orderId: true,
       orderDate: true,
       customer: true,
-      restaurant: true,
+      shop: true,
       foodItems: true,
       totalAmount: true,
       paymentType: true,
@@ -608,7 +608,7 @@ export function useOrdersManagement(orders, statusKey, title) {
     filteredOrders,
     count,
     activeFiltersCount,
-    restaurants,
+    shops,
     handleApplyFilters,
     handleResetFilters,
     handleExport,

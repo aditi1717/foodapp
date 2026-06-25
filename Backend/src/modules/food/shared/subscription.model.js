@@ -98,7 +98,7 @@ const subscriptionSchema = new mongoose.Schema(
     {
         ownerType: {
             type: String,
-            enum: ['USER', 'RESTAURANT'],
+            enum: ['USER', 'SHOP'],
             required: true,
             index: true,
         },

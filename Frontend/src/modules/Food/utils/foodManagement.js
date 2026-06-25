@@ -4,7 +4,7 @@ const debugError = (...args) => {}
 
 /**
  * Food Management Utility Functions
- * Centralized management for restaurant foods across the restaurant module
+ * Centralized management for shop foods across the shop module
  */
 
 import { usdToInr } from './currency'
@@ -142,8 +142,8 @@ const DEFAULT_FOODS = [
   }
 ]
 
-const FOODS_STORAGE_KEY = 'restaurant_foods'
-const FOOD_ID_COUNTER_KEY = 'restaurant_food_id_counter'
+const FOODS_STORAGE_KEY = 'shop_foods'
+const FOOD_ID_COUNTER_KEY = 'shop_food_id_counter'
 
 /**
  * Get all foods (Legacy function, no longer uses localStorage)

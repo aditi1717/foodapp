@@ -52,14 +52,14 @@ const parseTimeToMinutes = (timeValue) => {
   return hour * 60 + minute
 }
 
-const getTodayTiming = (restaurant, dayName) => {
-  const outletTimingsArray = restaurant?.outletTimings?.timings
+const getTodayTiming = (shop, dayName) => {
+  const outletTimingsArray = shop?.outletTimings?.timings
   if (Array.isArray(outletTimingsArray)) {
     const matches = outletTimingsArray.filter((entry) => normalizeDay(entry?.day) === dayName)
     if (matches.length > 0) return matches
   }
 
-  const outletTimingsObject = restaurant?.outletTimings
+  const outletTimingsObject = shop?.outletTimings
   if (outletTimingsObject && typeof outletTimingsObject === "object" && !Array.isArray(outletTimingsObject)) {
     const direct = outletTimingsObject[dayName]
     if (direct && typeof direct === "object") return [direct]
@@ -90,27 +90,27 @@ const isTruthyClosedStatus = (value) => {
   )
 }
 
-const hasExplicitClosedFlag = (restaurant) => {
-  if (!restaurant || typeof restaurant !== "object") return false
-  if (restaurant?.availability?.isOnline === false) return true
-  if (restaurant.isOnline === false) return true
-  if (restaurant.isOpen === false) return true
-  if (restaurant.openNow === false) return true
-  if (restaurant.isOpenNow === false) return true
-  if (restaurant.isRestaurantOpen === false) return true
-  if (restaurant.todayOpen === false) return true
-  if (restaurant.isOpenToday === false) return true
-  if (restaurant.closedToday === true) return true
-  if (restaurant.isClosedToday === true) return true
-  if (restaurant.dayOff === true) return true
-  if (restaurant.isDayOff === true) return true
-  if (restaurant.offToday === true) return true
-  if (isTruthyClosedStatus(restaurant.status)) return true
-  if (isTruthyClosedStatus(restaurant.availabilityStatus)) return true
-  if (isTruthyClosedStatus(restaurant?.availability?.status)) return true
-  if (isTruthyClosedStatus(restaurant.currentStatus)) return true
-  if (restaurant?.outletTimings?.isOpen === false) return true
-  if (restaurant?.outletTimings?.today?.isOpen === false) return true
+const hasExplicitClosedFlag = (shop) => {
+  if (!shop || typeof shop !== "object") return false
+  if (shop?.availability?.isOnline === false) return true
+  if (shop.isOnline === false) return true
+  if (shop.isOpen === false) return true
+  if (shop.openNow === false) return true
+  if (shop.isOpenNow === false) return true
+  if (shop.isShopOpen === false) return true
+  if (shop.todayOpen === false) return true
+  if (shop.isOpenToday === false) return true
+  if (shop.closedToday === true) return true
+  if (shop.isClosedToday === true) return true
+  if (shop.dayOff === true) return true
+  if (shop.isDayOff === true) return true
+  if (shop.offToday === true) return true
+  if (isTruthyClosedStatus(shop.status)) return true
+  if (isTruthyClosedStatus(shop.availabilityStatus)) return true
+  if (isTruthyClosedStatus(shop?.availability?.status)) return true
+  if (isTruthyClosedStatus(shop.currentStatus)) return true
+  if (shop?.outletTimings?.isOpen === false) return true
+  if (shop?.outletTimings?.today?.isOpen === false) return true
   return false
 }
 
@@ -252,15 +252,15 @@ const getDisplayStatus = ({
   }
 }
 
-export const getShopAvailabilityStatus = (restaurant, now = new Date(), options = {}) => {
-  if (!restaurant) {
-    const display = getDisplayStatus({ isOpen: false, reason: "missing-restaurant" })
+export const getShopAvailabilityStatus = (shop, now = new Date(), options = {}) => {
+  if (!shop) {
+    const display = getDisplayStatus({ isOpen: false, reason: "missing-shop" })
     return {
       isOpen: false,
       isActive: false,
       isAcceptingOrders: false,
       isWithinTimings: false,
-      reason: "missing-restaurant",
+      reason: "missing-shop",
       badgeLabel: display.badgeLabel,
       detailLabel: display.detailLabel,
       state: display.state,
@@ -269,21 +269,21 @@ export const getShopAvailabilityStatus = (restaurant, now = new Date(), options 
 
   const ignoreOperationalStatus = options?.ignoreOperationalStatus === true
   const availabilityStatus = String(
-    restaurant?.availabilityStatus ||
-    restaurant?.availability?.status ||
+    shop?.availabilityStatus ||
+    shop?.availability?.status ||
     ""
   ).trim().toLowerCase()
   const hasOnlineFlag =
-    restaurant?.availability?.isOnline === true ||
-    restaurant?.availability?.isOnline === false ||
-    restaurant?.isOnline === true ||
-    restaurant?.isOnline === false
+    shop?.availability?.isOnline === true ||
+    shop?.availability?.isOnline === false ||
+    shop?.isOnline === true ||
+    shop?.isOnline === false
   const isOnlineByFlag = hasOnlineFlag
-    ? (restaurant?.availability?.isOnline ?? restaurant?.isOnline) !== false
+    ? (shop?.availability?.isOnline ?? shop?.isOnline) !== false
     : true
   const isOfflineByStatus = availabilityStatus === "offline" || availabilityStatus === "closed"
-  const isActive = restaurant.isActive !== false
-  const isAcceptingOrders = restaurant.isAcceptingOrders !== false && isOnlineByFlag && !isOfflineByStatus
+  const isActive = shop.isActive !== false
+  const isAcceptingOrders = shop.isAcceptingOrders !== false && isOnlineByFlag && !isOfflineByStatus
 
   if (!ignoreOperationalStatus && !isActive) {
     const display = getDisplayStatus({ isOpen: false, reason: "inactive" })
@@ -313,7 +313,7 @@ export const getShopAvailabilityStatus = (restaurant, now = new Date(), options 
     }
   }
 
-  if (hasExplicitClosedFlag(restaurant)) {
+  if (hasExplicitClosedFlag(shop)) {
     const display = getDisplayStatus({ isOpen: false, reason: "closed-day", nextWorkingDay: getNextDayName(DAY_NAMES[now.getDay()]) })
     return {
       isOpen: false,
@@ -328,14 +328,14 @@ export const getShopAvailabilityStatus = (restaurant, now = new Date(), options 
   }
 
   const dayName = DAY_NAMES[now.getDay()]
-  const todayTiming = getTodayTiming(restaurant, dayName)
+  const todayTiming = getTodayTiming(shop, dayName)
   const previousDayName = getPreviousDayName(dayName)
-  const previousDayTiming = previousDayName ? getTodayTiming(restaurant, previousDayName) : []
+  const previousDayTiming = previousDayName ? getTodayTiming(shop, previousDayName) : []
   const todayTimingEntries = Array.isArray(todayTiming) ? todayTiming : [todayTiming].filter(Boolean)
   const hasTodayTiming = todayTimingEntries.length > 0
 
   // Legacy openDays can get stale; enforce only when no explicit outlet timing exists for today.
-  const openDays = Array.isArray(restaurant.openDays) ? restaurant.openDays : []
+  const openDays = Array.isArray(shop.openDays) ? shop.openDays : []
   if (!hasTodayTiming && openDays.length > 0) {
     const normalizedOpenDays = new Set(openDays.map((day) => normalizeDay(day)).filter(Boolean))
     if (normalizedOpenDays.size > 0 && !normalizedOpenDays.has(dayName)) {
@@ -378,13 +378,13 @@ export const getShopAvailabilityStatus = (restaurant, now = new Date(), options 
 
   const openingTime =
     todayTiming?.openingTime ||
-    restaurant?.deliveryTimings?.openingTime ||
-    restaurant?.openingTime ||
+    shop?.deliveryTimings?.openingTime ||
+    shop?.openingTime ||
     null
   const closingTime =
     todayTiming?.closingTime ||
-    restaurant?.deliveryTimings?.closingTime ||
-    restaurant?.closingTime ||
+    shop?.deliveryTimings?.closingTime ||
+    shop?.closingTime ||
     null
 
   const derivedSlots = extractDaySlots(todayTiming)

@@ -381,8 +381,8 @@ export default function OrderInvoice() {
       if (invoicePlatformFee > 0) addAmount("Platform Fee:", invoicePlatformFee)
       addAmount("Tax:", invoiceTax)
       if (invoiceCouponByAdmin > 0) addAmount("Admin Coupon:", -invoiceCouponByAdmin, { color: [22, 101, 52] })
-      if (invoiceCouponByRestaurant > 0) addAmount("Shop Coupon:", -invoiceCouponByRestaurant, { color: [22, 101, 52] })
-      if (invoiceOfferByRestaurant > 0) addAmount("Shop Offer:", -invoiceOfferByRestaurant, { color: [22, 101, 52] })
+      if (invoiceCouponByShop > 0) addAmount("Shop Coupon:", -invoiceCouponByShop, { color: [22, 101, 52] })
+      if (invoiceOfferByShop > 0) addAmount("Shop Offer:", -invoiceOfferByShop, { color: [22, 101, 52] })
       if (invoiceOtherDiscount > 0) addAmount("Discount:", -invoiceOtherDiscount, { color: [22, 101, 52] })
       if (invoicePreviousDue > 0) addAmount("Previous Due:", invoicePreviousDue)
 
@@ -412,10 +412,10 @@ export default function OrderInvoice() {
   const invoicePlatformFee = toMoneyNumber(order?.platformFee ?? pricing.platformFee)
   const invoiceTax = toMoneyNumber(order?.tax ?? order?.gst ?? pricing.tax ?? pricing.gst)
   const invoiceCouponByAdmin = toMoneyNumber(pricing.couponByAdmin ?? order?.couponByAdmin)
-  const invoiceCouponByRestaurant = toMoneyNumber(pricing.couponByRestaurant ?? order?.couponByRestaurant)
-  const invoiceOfferByRestaurant = toMoneyNumber(pricing.offerByRestaurant ?? order?.offerByRestaurant)
+  const invoiceCouponByShop = toMoneyNumber(pricing.couponByShop ?? order?.couponByShop)
+  const invoiceOfferByShop = toMoneyNumber(pricing.offerByShop ?? order?.offerByShop)
   const invoiceDiscount = toMoneyNumber(order?.discount ?? pricing.discount)
-  const shownDiscountBreakdown = invoiceCouponByAdmin + invoiceCouponByRestaurant + invoiceOfferByRestaurant
+  const shownDiscountBreakdown = invoiceCouponByAdmin + invoiceCouponByShop + invoiceOfferByShop
   const invoiceOtherDiscount = Math.max(0, invoiceDiscount - shownDiscountBreakdown)
   const invoicePreviousDue = 0
   const invoiceTotal = toMoneyNumber(
@@ -609,16 +609,16 @@ export default function OrderInvoice() {
                     <span>-{formatCurrency(invoiceCouponByAdmin)}</span>
                   </div>
                 ) : null}
-                {invoiceCouponByRestaurant > 0 ? (
+                {invoiceCouponByShop > 0 ? (
                   <div className="total-row flex justify-between text-xs sm:text-sm sm:text-base py-1 sm:py-2 text-green-700">
                     <span>Shop Coupon:</span>
-                    <span>-{formatCurrency(invoiceCouponByRestaurant)}</span>
+                    <span>-{formatCurrency(invoiceCouponByShop)}</span>
                   </div>
                 ) : null}
-                {invoiceOfferByRestaurant > 0 ? (
+                {invoiceOfferByShop > 0 ? (
                   <div className="total-row flex justify-between text-xs sm:text-sm sm:text-base py-1 sm:py-2 text-green-700">
                     <span>Shop Offer:</span>
-                    <span>-{formatCurrency(invoiceOfferByRestaurant)}</span>
+                    <span>-{formatCurrency(invoiceOfferByShop)}</span>
                   </div>
                 ) : null}
                 {invoiceOtherDiscount > 0 ? (

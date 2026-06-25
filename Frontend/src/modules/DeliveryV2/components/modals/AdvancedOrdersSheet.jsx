@@ -25,19 +25,19 @@ const getOrderIdentity = (orderLike) =>
 const toCurrency = (value) =>
   `\u20B9${Number(value || 0).toFixed(2)}`;
 
-const getRestaurantName = (order) =>
-  order?.restaurantName ||
-  order?.restaurantId?.restaurantName ||
-  order?.restaurantId?.name ||
-  'Restaurant';
+const getShopName = (order) =>
+  order?.shopName ||
+  order?.shopId?.shopName ||
+  order?.shopId?.name ||
+  'Shop';
 
-const getRestaurantAddress = (order) => {
-  const restaurant = order?.restaurantId || {};
+const getShopAddress = (order) => {
+  const shop = order?.shopId || {};
   const parts = [
-    order?.restaurantAddress,
-    restaurant?.addressLine1,
-    restaurant?.area,
-    restaurant?.city,
+    order?.shopAddress,
+    shop?.addressLine1,
+    shop?.area,
+    shop?.city,
   ]
     .map((item) => String(item || '').trim())
     .filter(Boolean);
@@ -128,8 +128,8 @@ function AdvancedOrderDetailModal({ order, onClose, onAccept, onReject }) {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Pickup</p>
-                <p className="mt-1 text-lg font-bold text-slate-950">{getRestaurantName(order)}</p>
-                <p className="mt-1 text-sm text-slate-600">{getRestaurantAddress(order)}</p>
+                <p className="mt-1 text-lg font-bold text-slate-950">{getShopName(order)}</p>
+                <p className="mt-1 text-sm text-slate-600">{getShopAddress(order)}</p>
               </div>
               <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${getQueueTone(order)}`}>
                 {getQueueLabel(order)}
@@ -286,8 +286,8 @@ export function AdvancedOrdersSheet({
                             <div className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
                               Accepted Queue
                             </div>
-                            <p className="mt-3 text-lg font-bold text-slate-950">{getRestaurantName(order)}</p>
-                            <p className="mt-1 text-sm text-slate-500 line-clamp-2">{getRestaurantAddress(order)}</p>
+                            <p className="mt-3 text-lg font-bold text-slate-950">{getShopName(order)}</p>
+                            <p className="mt-1 text-sm text-slate-500 line-clamp-2">{getShopAddress(order)}</p>
                           </div>
                           <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
                         </div>
@@ -328,8 +328,8 @@ export function AdvancedOrdersSheet({
                                 </span>
                               )}
                             </div>
-                            <p className="mt-3 text-lg font-bold text-slate-950">{getRestaurantName(order)}</p>
-                            <p className="mt-1 text-sm text-slate-500 line-clamp-2">{getRestaurantAddress(order)}</p>
+                            <p className="mt-3 text-lg font-bold text-slate-950">{getShopName(order)}</p>
+                            <p className="mt-1 text-sm text-slate-500 line-clamp-2">{getShopAddress(order)}</p>
                             <div className="mt-3 flex flex-wrap gap-2">
                               <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700">
                                 <Clock3 className="w-3.5 h-3.5" />

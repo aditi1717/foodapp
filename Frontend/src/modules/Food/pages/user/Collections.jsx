@@ -29,7 +29,7 @@ export default function Collections() {
   const [newCollectionName, setNewCollectionName] = useState("")
 
   const [deliveryCollections, setDeliveryCollections] = useState([
-    { id: "bookmarks", name: "Bookmarks", dishes: 0, restaurants: 0, isDefault: true }
+    { id: "bookmarks", name: "Bookmarks", dishes: 0, shops: 0, isDefault: true }
   ])
 
   const currentCollections = deliveryCollections

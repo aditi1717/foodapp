@@ -8,7 +8,7 @@ import { initiateRefund } from '../../core/payments/refund.service.js';
  * Called by BullMQ when a delivery_completed event fires.
  *
  * Splits the order total into:
- * 1. Restaurant commission credit
+ * 1. Shop commission credit
  * 2. Delivery partner earning credit
  * 3. Platform profit credit (admin wallet)
  *
@@ -52,27 +52,27 @@ export const processPaymentJob = async (job) => {
 async function handleDeliveryCompleted(data) {
     const {
         orderMongoId, orderId,
-        restaurantId, deliveryPartnerId,
+        shopId, deliveryPartnerId,
         riderEarning = 0, platformProfit = 0,
         commissionAmount = 0,
         total = 0, paymentMethod
     } = data;
 
-    // 1. Credit restaurant wallet with their commission (payout)
-    if (restaurantId && commissionAmount > 0) {
+    // 1. Credit shop wallet with their commission (payout)
+    if (shopId && commissionAmount > 0) {
         try {
             await creditWallet({
-                entityType: 'restaurant',
-                entityId: restaurantId,
+                entityType: 'shop',
+                entityId: shopId,
                 amount: commissionAmount,
-                description: `Order ${orderId} - restaurant commission`,
+                description: `Order ${orderId} - shop commission`,
                 category: 'commission',
                 orderId: orderMongoId,
                 metadata: { orderId, paymentMethod }
             });
-            logger.info(`[PaymentProcessor] Restaurant ${restaurantId} credited ${commissionAmount} for order ${orderId}`);
+            logger.info(`[PaymentProcessor] Shop ${shopId} credited ${commissionAmount} for order ${orderId}`);
         } catch (err) {
-            logger.error(`[PaymentProcessor] Failed to credit restaurant: ${err.message}`);
+            logger.error(`[PaymentProcessor] Failed to credit shop: ${err.message}`);
         }
     }
 

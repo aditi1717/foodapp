@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import { ArrowLeft, Bell, HelpCircle, Loader2, Menu, Search, SlidersHorizontal, Star, X } from "lucide-react"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
 
 
@@ -60,8 +60,8 @@ export default function Feedback() {
   const tabFromUrl = searchParams.get("tab")
   const [activeTab, setActiveTab] = useState(tabFromUrl === "complaints" ? "complaints" : "reviews")
 
-  const [restaurantData, setRestaurantData] = useState(null)
-  const [isLoadingRestaurant, setIsLoadingRestaurant] = useState(true)
+  const [shopData, setShopData] = useState(null)
+  const [isLoadingShop, setIsLoadingShop] = useState(true)
 
   const [reviews, setReviews] = useState([])
   const [complaints, setComplaints] = useState([])
@@ -94,19 +94,19 @@ export default function Feedback() {
   }, [tabFromUrl])
 
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       try {
-        setIsLoadingRestaurant(true)
-        const response = await restaurantAPI.getCurrentRestaurant()
+        setIsLoadingShop(true)
+        const response = await shopAPI.getCurrentShop()
         if (response.data?.success && response.data.data?.shop) {
-          setRestaurantData(response.data.data.shop)
+          setShopData(response.data.data.shop)
         }
       } finally {
-        setIsLoadingRestaurant(false)
+        setIsLoadingShop(false)
       }
     }
 
-    fetchRestaurantData()
+    fetchShopData()
   }, [])
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function Feedback() {
 
       try {
         setIsLoadingComplaints(true)
-        const response = await restaurantAPI.getComplaints({})
+        const response = await shopAPI.getComplaints({})
         if (response?.data?.success && response.data.data?.complaints) {
           setComplaints(response.data.data.complaints)
         } else {
@@ -143,7 +143,7 @@ export default function Feedback() {
 
         while (hasMore && page <= maxPages) {
           try {
-            const response = await restaurantAPI.getOrders({
+            const response = await shopAPI.getOrders({
               page,
               limit,
               status: "delivered",
@@ -202,10 +202,10 @@ export default function Feedback() {
       }
     }
 
-    if (!isLoadingRestaurant) {
+    if (!isLoadingShop) {
       fetchReviews()
     }
-  }, [isLoadingRestaurant, restaurantData])
+  }, [isLoadingShop, shopData])
 
   const complaintIssueTypeOptions = useMemo(() => {
     const values = complaints
@@ -326,7 +326,7 @@ export default function Feedback() {
               <p className="text-[10px] tracking-wider text-gray-500 uppercase">
                 {activeTab === "complaints" ? "Customer Complaints" : "Customer Reviews"}
               </p>
-              <p className="text-md font-bold text-gray-900">{restaurantData?.name || "Shop"}</p>
+              <p className="text-md font-bold text-gray-900">{shopData?.name || "Shop"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

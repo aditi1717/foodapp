@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { Search, Download, ChevronDown, Filter, Calendar, ClipboardList, DollarSign, FileText, AlertCircle, Settings, FileSpreadsheet, Code } from "lucide-react"
-import { emptyShopVATReports, emptyRestaurantVATStats } from "@food/utils/adminFallbackData"
+import { emptyShopVATReports, emptyShopVATStats } from "@food/utils/adminFallbackData"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@food/components/ui/dialog"
 import { exportReportsToCSV, exportReportsToExcel, exportReportsToPDF, exportReportsToJSON } from "@food/components/admin/reports/reportsExportUtils"
@@ -10,7 +10,7 @@ export default function ShopVATReport() {
   const [reports, setReports] = useState(emptyShopVATReports)
   const [filters, setFilters] = useState({
     dateRange: "",
-    restaurant: "All Restaurants",
+    shop: "All Shops",
   })
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -21,12 +21,12 @@ export default function ShopVATReport() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(report =>
-        report.restaurantName?.toLowerCase().includes(query)
+        report.shopName?.toLowerCase().includes(query)
       )
     }
 
     if (filters.shop !== "All Shops") {
-      result = result.filter(r => r.restaurantName === filters.shop)
+      result = result.filter(r => r.shopName === filters.shop)
     }
 
     return result
@@ -41,16 +41,16 @@ export default function ShopVATReport() {
     }
     const headers = [
       { key: "sl", label: "SI" },
-      { key: "restaurantName", label: "Shop Info" },
+      { key: "shopName", label: "Shop Info" },
       { key: "totalOrder", label: "Total Order" },
       { key: "totalOrderAmount", label: "Total Order Amount" },
       { key: "taxAmount", label: "Tax Amount" },
     ]
     switch (format) {
-      case "csv": exportReportsToCSV(filteredReports, headers, "restaurant_vat_report"); break
-      case "excel": exportReportsToExcel(filteredReports, headers, "restaurant_vat_report"); break
-      case "pdf": exportReportsToPDF(filteredReports, headers, "restaurant_vat_report", "Shop VAT Report"); break
-      case "json": exportReportsToJSON(filteredReports, "restaurant_vat_report"); break
+      case "csv": exportReportsToCSV(filteredReports, headers, "shop_vat_report"); break
+      case "excel": exportReportsToExcel(filteredReports, headers, "shop_vat_report"); break
+      case "pdf": exportReportsToPDF(filteredReports, headers, "shop_vat_report", "Shop VAT Report"); break
+      case "json": exportReportsToJSON(filteredReports, "shop_vat_report"); break
     }
   }
 
@@ -100,14 +100,14 @@ export default function ShopVATReport() {
                   Select Shop
                 </label>
                 <select
-                  value={filters.restaurant}
+                  value={filters.shop}
                   onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  <option value="All Restaurants">All Shops</option>
+                  <option value="All Shops">All Shops</option>
                   <option value="Caf� Monarch">Caf� Monarch</option>
                   <option value="Hungry Puppets">Hungry Puppets</option>
-                  <option value="Cheesy Restaurant">Cheesy Shop</option>
+                  <option value="Cheesy Shop">Cheesy Shop</option>
                   <option value="Cheese Burger">Cheese Burger</option>
                   <option value="Frying Nemo">Frying Nemo</option>
                 </select>
@@ -148,8 +148,8 @@ export default function ShopVATReport() {
               <div className="flex-1">
                 <p className="text-sm font-bold text-slate-900 mb-1">Total Orders</p>
                 <p className="text-xs text-slate-600 mb-2">Total Orders</p>
-                <p className="text-3xl font-bold text-brand-600">{emptyRestaurantVATStats.totalOrders}</p>
-                <p className="text-lg font-semibold text-brand-600 mt-1">{emptyRestaurantVATStats.totalOrders}</p>
+                <p className="text-3xl font-bold text-brand-600">{emptyShopVATStats.totalOrders}</p>
+                <p className="text-lg font-semibold text-brand-600 mt-1">{emptyShopVATStats.totalOrders}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-brand-100 flex items-center justify-center flex-shrink-0">
                 <ClipboardList className="w-7 h-7 text-brand-600" />
@@ -163,8 +163,8 @@ export default function ShopVATReport() {
               <div className="flex-1">
                 <p className="text-sm font-bold text-slate-900 mb-1">Total Order Amount</p>
                 <p className="text-xs text-slate-600 mb-2">Total Order Amount</p>
-                <p className="text-3xl font-bold text-green-600">{emptyRestaurantVATStats.totalOrderAmount}</p>
-                <p className="text-lg font-semibold text-green-600 mt-1">{emptyRestaurantVATStats.totalOrderAmount}</p>
+                <p className="text-3xl font-bold text-green-600">{emptyShopVATStats.totalOrderAmount}</p>
+                <p className="text-lg font-semibold text-green-600 mt-1">{emptyShopVATStats.totalOrderAmount}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center flex-shrink-0">
                 <DollarSign className="w-7 h-7 text-yellow-600" />
@@ -178,8 +178,8 @@ export default function ShopVATReport() {
               <div className="flex-1">
                 <p className="text-sm font-bold text-slate-900 mb-1">Total Tax Amount</p>
                 <p className="text-xs text-slate-600 mb-2">Total Tax Amount</p>
-                <p className="text-3xl font-bold text-red-600">{emptyRestaurantVATStats.totalTaxAmount}</p>
-                <p className="text-lg font-semibold text-red-600 mt-1">{emptyRestaurantVATStats.totalTaxAmount}</p>
+                <p className="text-3xl font-bold text-red-600">{emptyShopVATStats.totalTaxAmount}</p>
+                <p className="text-lg font-semibold text-red-600 mt-1">{emptyShopVATStats.totalTaxAmount}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
                 <FileText className="w-7 h-7 text-purple-600" />
@@ -279,9 +279,9 @@ export default function ShopVATReport() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           {report.icon && (
-                            <img src={report.icon} alt={report.restaurantName} className="w-8 h-8 rounded" />
+                            <img src={report.icon} alt={report.shopName} className="w-8 h-8 rounded" />
                           )}
-                          <span className="text-sm text-slate-700">{report.restaurantName}</span>
+                          <span className="text-sm text-slate-700">{report.shopName}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">

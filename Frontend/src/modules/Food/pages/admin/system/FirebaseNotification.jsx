@@ -37,9 +37,9 @@ const notificationMessages = [
   },
   {
     id: 4,
-    key: "restaurantHandover",
+    key: "shopHandover",
     label: "Shop handover message",
-    defaultText: "Your order {orderId} has been handed over to shop {restaurantName}",
+    defaultText: "Your order {orderId} has been handed over to shop {shopName}",
     enabled: true
   },
   {

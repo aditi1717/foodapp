@@ -21,7 +21,7 @@ export default function CollectionDetail() {
     id: id,
     name: "My Collection",
     dishes: 0,
-    restaurants: 0,
+    shops: 0,
     items: []
   })
 
@@ -114,13 +114,13 @@ export default function CollectionDetail() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
           {collection.items.map((shop, index) => (
-            <ScrollReveal key={restaurant.slug} delay={index * 0.1}>
-              <Link to={`/user/shops/${restaurant.slug}`}>
+            <ScrollReveal key={shop.slug} delay={index * 0.1}>
+              <Link to={`/user/shops/${shop.slug}`}>
                 <Card className="overflow-hidden h-full p-0 gap-0">
                   <div className="h-48 w-full relative overflow-hidden">
                     <img
-                      src={restaurant.image}
-                      alt={restaurant.name}
+                      src={shop.image}
+                      alt={shop.name}
                       className="w-full h-full object-cover"
                       loading="lazy"
                       onError={(e) => {

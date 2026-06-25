@@ -10,7 +10,7 @@ export default function FoodReport() {
   const [foods, setFoods] = useState(emptyFoodReports)
   const [filters, setFilters] = useState({
     zone: "All Zones",
-    restaurant: "All restaurants",
+    shop: "All shops",
     category: "All Categories",
     type: "All types",
     time: "All Time",
@@ -137,11 +137,11 @@ export default function FoodReport() {
                   Shop
                 </label>
                 <select
-                  value={filters.restaurant}
+                  value={filters.shop}
                   onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  <option value="All restaurants">All shops</option>
+                  <option value="All shops">All shops</option>
                   <option value="Hungry Puppets">Hungry Puppets</option>
                   <option value="Caf? Monarch">Caf? Monarch</option>
                   <option value="Redcliff Cafe">Redcliff Cafe</option>

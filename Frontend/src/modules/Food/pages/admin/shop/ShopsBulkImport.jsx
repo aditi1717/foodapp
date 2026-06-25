@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { FileSpreadsheet, Download, Upload, FileCheck, ArrowRight, FileX, RefreshCw } from "lucide-react"
 
-export default function RestaurantsBulkImport() {
+export default function ShopsBulkImport() {
   const [selectedFile, setSelectedFile] = useState(null)
 
   const handleFileChange = (e) => {

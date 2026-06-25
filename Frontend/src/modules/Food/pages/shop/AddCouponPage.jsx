@@ -6,7 +6,7 @@ import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
 
 const discountTypes = [
@@ -54,7 +54,7 @@ export default function AddCouponPage(props) {
       if (!isEditMode) return
       try {
         setLoading(true)
-        const res = await restaurantAPI.getCoupons()
+        const res = await shopAPI.getCoupons()
         const list = res?.data?.data?.offers || res?.data?.offers || []
         const match = list.find((o) => String(o.id || o._id) === String(couponId))
         if (match && mounted) {
@@ -130,7 +130,7 @@ export default function AddCouponPage(props) {
       discountType: form.discountType,
       discountValue: discountValueNum,
       customerScope: form.customerScope,
-      restaurantScope: "selected",
+      shopScope: "selected",
       minOrderValue: form.minOrderValue === "" ? undefined : Number(form.minOrderValue),
       maxDiscount: form.discountType === "percentage" ? maxDiscountNum : undefined,
       usageLimit: Number(form.usageLimit),
@@ -152,10 +152,10 @@ export default function AddCouponPage(props) {
       setSaving(true)
       const payload = buildPayload()
       if (isEditMode) {
-        await restaurantAPI.updateCoupon(couponId, payload)
+        await shopAPI.updateCoupon(couponId, payload)
         setSuccess("Coupon updated and resubmitted for approval")
       } else {
-        await restaurantAPI.createCoupon(payload)
+        await shopAPI.createCoupon(payload)
         setSuccess("Coupon submitted for approval")
       }
       navigate("/shop/coupon")

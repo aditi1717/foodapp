@@ -157,35 +157,35 @@ export async function updateDispatchSettingsController(req, res, next) {
     }
 }
 
-export async function listOrdersRestaurantController(req, res, next) {
+export async function listOrdersShopController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
-        const result = await orderService.listOrdersRestaurant(restaurantId, req.query);
+        const shopId = req.user?.userId;
+        const result = await orderService.listOrdersShop(shopId, req.query);
         return sendResponse(res, 200, 'Orders retrieved', result);
     } catch (err) {
         next(err);
     }
 }
 
-export async function getOrderByIdRestaurantController(req, res, next) {
+export async function getOrderByIdShopController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
+        const shopId = req.user?.userId;
         const orderId = req.params.orderId;
-        const order = await orderService.getOrderById(orderId, { restaurantId });
+        const order = await orderService.getOrderById(orderId, { shopId });
         return sendResponse(res, 200, 'Order retrieved', { order });
     } catch (err) {
         next(err);
     }
 }
 
-export async function updateOrderStatusRestaurantController(req, res, next) {
+export async function updateOrderStatusShopController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
+        const shopId = req.user?.userId;
         const orderId = req.params.orderId;
         const dto = validateOrderStatusDto(req.body);
-        const order = await orderService.updateOrderStatusRestaurant(
+        const order = await orderService.updateOrderStatusShop(
             orderId,
-            restaurantId,
+            shopId,
             dto.orderStatus,
             dto.reason,
             {
@@ -402,23 +402,23 @@ export async function assignDeliveryPartnerController(req, res, next) {
     }
 }
 
-export async function assignDeliveryPartnerRestaurantController(req, res, next) {
+export async function assignDeliveryPartnerShopController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
+        const shopId = req.user?.userId;
         const orderId = req.params.orderId;
         const dto = validateAssignDeliveryDto(req.body);
-        const order = await orderService.assignDeliveryPartnerRestaurant(orderId, restaurantId, dto.deliveryPartnerId);
+        const order = await orderService.assignDeliveryPartnerShop(orderId, shopId, dto.deliveryPartnerId);
         return sendResponse(res, 200, 'Delivery partner assigned', { order });
     } catch (err) {
         next(err);
     }
 }
 
-export async function autoAssignDeliveryPartnerRestaurantController(req, res, next) {
+export async function autoAssignDeliveryPartnerShopController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
+        const shopId = req.user?.userId;
         const orderId = req.params.orderId;
-        const result = await orderService.resendDeliveryNotificationRestaurant(orderId, restaurantId);
+        const result = await orderService.resendDeliveryNotificationShop(orderId, shopId);
         return sendResponse(res, 200, 'Auto-assign request sent', result);
     } catch (err) {
         next(err);
@@ -447,11 +447,11 @@ export async function deleteOrderAdminController(req, res, next) {
     }
 }
 
-export async function resendDeliveryNotificationRestaurantController(req, res, next) {
+export async function resendDeliveryNotificationShopController(req, res, next) {
     try {
-        const restaurantId = req.user?.userId;
+        const shopId = req.user?.userId;
         const orderId = req.params.orderId;
-        const result = await orderService.resendDeliveryNotificationRestaurant(orderId, restaurantId);
+        const result = await orderService.resendDeliveryNotificationShop(orderId, shopId);
         return sendResponse(res, 200, 'Notification resent successfully', result);
     } catch (err) {
         next(err);

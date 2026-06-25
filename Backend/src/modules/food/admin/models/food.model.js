@@ -20,7 +20,7 @@ const foodVariantSchema = new mongoose.Schema(
 
 const foodSchema = new mongoose.Schema(
     {
-        restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodRestaurant', required: true, index: true },
+        shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodShop', required: true, index: true },
         categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodCategory', index: true },
         categoryName: { type: String, trim: true, default: '' },
         subcategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodSubcategory', index: true },
@@ -46,9 +46,9 @@ const foodSchema = new mongoose.Schema(
     }
 );
 
-foodSchema.index({ restaurantId: 1, createdAt: -1 });
+foodSchema.index({ shopId: 1, createdAt: -1 });
 foodSchema.index({ approvalStatus: 1, createdAt: -1 });
 foodSchema.index({ approvalStatus: 1, requestedAt: -1 });
-foodSchema.index({ restaurantId: 1, approvalStatus: 1, createdAt: -1 });
+foodSchema.index({ shopId: 1, approvalStatus: 1, createdAt: -1 });
 
 export const FoodItem = mongoose.model('FoodItem', foodSchema);

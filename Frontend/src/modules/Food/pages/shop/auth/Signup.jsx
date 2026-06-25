@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Phone, User, AlertCircle, Loader2, UtensilsCrossed } from "lucide-react"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
@@ -21,7 +21,7 @@ const countryCodes = [
   { code: "+91", country: "IN", flag: "🇮🇳" },
 ]
 
-export default function RestaurantSignup() {
+export default function ShopSignup() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     phone: "",
@@ -52,7 +52,7 @@ export default function RestaurantSignup() {
       return "Shop name is required"
     }
     if (name.trim().length < 2) {
-      return "Restaurant name must be at least 2 characters"
+      return "Shop name must be at least 2 characters"
     }
     if (name.trim().length > 50) {
       return "Shop name must be less than 50 characters"
@@ -111,7 +111,7 @@ export default function RestaurantSignup() {
 
     try {
       // Send OTP with purpose 'register'
-      await restaurantAPI.sendOTP(fullPhone, "register")
+      await shopAPI.sendOTP(fullPhone, "register")
 
       // Store auth data in sessionStorage for OTP page
       const authData = {
@@ -121,7 +121,7 @@ export default function RestaurantSignup() {
         isSignUp: true,
         module: "shop",
       }
-      sessionStorage.setItem("restaurantAuthData", JSON.stringify(authData))
+      sessionStorage.setItem("shopAuthData", JSON.stringify(authData))
 
       navigate("/food/shop/otp")
     } catch (error) {

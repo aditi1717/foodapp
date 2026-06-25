@@ -3,10 +3,10 @@ import { Link, useNavigate } from "react-router-dom"
 import { ArrowLeft, Star, Clock } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Card, CardContent } from "@food/components/ui/card"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
 import { toast } from "sonner"
-import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
+import { ShopGridSkeleton } from "@food/components/ui/loading-skeletons"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 import BRAND_THEME from "@/config/brandTheme"
 
@@ -32,7 +32,7 @@ export default function Offers() {
       try {
         setLoading(true)
         setError(null)
-        const response = await restaurantAPI.getPublicOffers()
+        const response = await shopAPI.getPublicOffers()
         const data = response?.data?.data
         
         if (data) {
@@ -79,7 +79,7 @@ export default function Offers() {
       <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-6 md:py-8 lg:py-10 space-y-6 md:space-y-8">
         <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
         {/* Loading State */}
-        {showOffersSkeleton && <RestaurantGridSkeleton count={4} compact />}
+        {showOffersSkeleton && <ShopGridSkeleton count={4} compact />}
 
         {/* Error State */}
         {error && !loading && (
@@ -106,14 +106,14 @@ export default function Offers() {
                   {dishes.slice(0, 8).map((dish) => (
                     <Link 
                       key={dish.id} 
-                      to={`/user/shops/${dish.restaurantSlug}`}
+                      to={`/user/shops/${dish.shopSlug}`}
                       className="w-full"
                     >
                       <div className="group">
                         {/* Image Container */}
                         <div className="relative h-32 sm:h-36 rounded-xl overflow-hidden mb-2">
                           <img 
-                            src={dish.dishImage || dish.restaurantImage || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"} 
+                            src={dish.dishImage || dish.shopImage || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"} 
                             alt={dish.dishName}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -126,14 +126,14 @@ export default function Offers() {
                         {/* Rating Badge */}
                         <div className="flex items-center gap-1 mb-1">
                           <div className="bg-green-600 text-white text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            {dish.restaurantRating?.toFixed(1) || '0.0'}
+                            {dish.shopRating?.toFixed(1) || '0.0'}
                             <Star className="h-2.5 w-2.5 fill-white" />
                           </div>
                         </div>
                         
                         {/* Shop Info */}
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm line-clamp-1">
-                          {dish.restaurantName}
+                          {dish.shopName}
                         </h3>
                         <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1 mb-1">
                           {dish.dishName} - ₹{dish.discountedPrice}
@@ -172,7 +172,7 @@ export default function Offers() {
                         </div>
                         <p className="text-sm text-slate-700 dark:text-slate-300">
                           <span className="font-semibold">Shop:</span>{" "}
-                          {o.restaurantName || "All Shops"}
+                          {o.shopName || "All Shops"}
                         </p>
                         {o.endDate && (
                           <p className="text-xs text-slate-500 dark:text-slate-400">

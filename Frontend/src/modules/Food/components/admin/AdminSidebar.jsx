@@ -152,11 +152,11 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
     if (l.includes("food approval")) return badges.foodApprovals
     if (l === "foods") return badges.foods
     if (l === "shops" || l.includes("new joining request")) return badges.shops
-    if (l.includes("shop complaints")) return badges.restaurantComplaints
+    if (l.includes("shop complaints")) return badges.shopComplaints
     if (p.includes("orders/pending")) return badges.orders
     if (p.includes("offline-payments")) return badges.offlinePayments
     if (l.includes("support tickets")) return l.includes("delivery") ? badges.deliverySupportTickets : badges.userSupportTickets
-    if (l.includes("withdrawal")) return l.includes("delivery") ? badges.deliveryWithdrawals : badges.restaurantWithdrawals
+    if (l.includes("withdrawal")) return l.includes("delivery") ? badges.deliveryWithdrawals : badges.shopWithdrawals
     if (l.includes("emergency help")) return badges.emergencyHelp
     if (l.includes("safety emergency reports")) return badges.safetyReports
     if (l === "deliveryman" && !p.includes("join-request")) return badges.deliveryPartners // expandable parent

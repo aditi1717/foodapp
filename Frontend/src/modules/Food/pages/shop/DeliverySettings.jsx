@@ -6,15 +6,15 @@ import Lenis from "lenis"
 import { ArrowLeft, Truck, X, CheckCircle, AlertCircle } from "lucide-react"
 import { Switch } from "@food/components/ui/switch"
 import { Card, CardContent } from "@food/components/ui/card"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 
-const DELIVERY_STATUS_KEY = "restaurant_delivery_status"
-const RESTAURANT_ONLINE_STATUS_KEY = "restaurant_online_status"
+const DELIVERY_STATUS_KEY = "shop_delivery_status"
+const SHOP_ONLINE_STATUS_KEY = "shop_online_status"
 
 export default function DeliverySettings() {
   const navigate = useNavigate()
@@ -51,12 +51,12 @@ export default function DeliverySettings() {
     const value = Boolean(status)
     try {
       localStorage.setItem(DELIVERY_STATUS_KEY, JSON.stringify(value))
-      localStorage.setItem(RESTAURANT_ONLINE_STATUS_KEY, JSON.stringify(value))
+      localStorage.setItem(SHOP_ONLINE_STATUS_KEY, JSON.stringify(value))
     } catch (error) {
       debugError("Error saving delivery status locally:", error)
     }
 
-    window.dispatchEvent(new CustomEvent("restaurantStatusChanged", {
+    window.dispatchEvent(new CustomEvent("shopStatusChanged", {
       detail: { isOnline: value }
     }))
   }
@@ -67,7 +67,7 @@ export default function DeliverySettings() {
 
     const loadDeliveryStatus = async () => {
       try {
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const shop =
           response?.data?.data?.shop ||
           response?.data?.shop ||
@@ -174,7 +174,7 @@ export default function DeliverySettings() {
     try {
       setSavingStatus(true)
       saveDeliveryStatus(nextStatus)
-      await restaurantAPI.updateAcceptingOrders(nextStatus)
+      await shopAPI.updateAcceptingOrders(nextStatus)
     } catch (error) {
       setDeliveryStatus(previousStatus)
       syncStatusLocally(previousStatus)

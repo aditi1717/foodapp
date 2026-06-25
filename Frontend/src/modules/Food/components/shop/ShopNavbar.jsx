@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Search, Menu, ChevronRight, MapPin, X, Bell } from "lucide-react"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import useNotificationInbox from "@food/hooks/useNotificationInbox"
 import BRAND_THEME from "@/config/brandTheme"
@@ -10,7 +10,7 @@ const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
-const extractRestaurantPayload = (response) =>
+const extractShopPayload = (response) =>
   response?.data?.data?.shop ||
   response?.data?.shop ||
   response?.data?.data?.user ||
@@ -62,7 +62,7 @@ const extractDaySlots = (dayData) => {
 
 
 export default function ShopNavbar({
-  restaurantName: propRestaurantName,
+  shopName: propShopName,
   location: propLocation,
   showSearch = true,
   showOfflineOnlineTag = true,
@@ -73,12 +73,12 @@ export default function ShopNavbar({
   const [searchValue, setSearchValue] = useState("")
   const [status, setStatus] = useState("Offline")
   const [manualOnlineStatus, setManualOnlineStatus] = useState(false)
-  const [restaurantData, setRestaurantData] = useState(null)
+  const [shopData, setShopData] = useState(null)
   const [outletTimings, setOutletTimings] = useState(null)
   const [loading, setLoading] = useState(true)
   const [companyName, setCompanyName] = useState("")
   const [logoUrl, setLogoUrl] = useState(null)
-  const { unreadCount } = useNotificationInbox("restaurant", { limit: 20, pollMs: 5 * 60 * 1000 })
+  const { unreadCount } = useNotificationInbox("shop", { limit: 20, pollMs: 5 * 60 * 1000 })
 
   // Load business settings for branding
   useEffect(() => {
@@ -110,13 +110,13 @@ export default function ShopNavbar({
 
   // Fetch shop data and outlet timings on mount
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       try {
         setLoading(true)
-        const response = await restaurantAPI.getCurrentRestaurant()
-        const data = extractRestaurantPayload(response)
+        const response = await shopAPI.getCurrentShop()
+        const data = extractShopPayload(response)
         if (data) {
-          setRestaurantData(data)
+          setShopData(data)
         }
       } catch (error) {
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
@@ -129,7 +129,7 @@ export default function ShopNavbar({
 
     const fetchOutletTimings = async () => {
       try {
-        const response = await restaurantAPI.getOutletTimings()
+        const response = await shopAPI.getOutletTimings()
         const timings = response?.data?.data?.outletTimings || response?.data?.outletTimings
         if (timings) {
           setOutletTimings(timings)
@@ -139,7 +139,7 @@ export default function ShopNavbar({
       }
     }
 
-    fetchRestaurantData()
+    fetchShopData()
     fetchOutletTimings()
 
     // Listen for outlet timings updates
@@ -223,11 +223,11 @@ export default function ShopNavbar({
   }
 
   // Get shop name (use prop if provided, otherwise use fetched data)
-  const restaurantName = propRestaurantName || restaurantData?.name || "Shop"
+  const shopName = propShopName || shopData?.name || "Shop"
 
   const [location, setLocation] = useState("")
 
-  // Update location when restaurantData or propLocation changes
+  // Update location when shopData or propLocation changes
   useEffect(() => {
     let newLocation = ""
     
@@ -235,33 +235,33 @@ export default function ShopNavbar({
     if (propLocation && propLocation.trim() !== "") {
       newLocation = propLocation.trim()
     }
-    // Priority 2: Check restaurantData location
-    else if (restaurantData) {
+    // Priority 2: Check shopData location
+    else if (shopData) {
       debugLog('?? Checking shop data for address:', {
-        hasLocation: !!restaurantData.location,
-        locationKeys: restaurantData.location ? Object.keys(restaurantData.location) : [],
-        formattedAddress: restaurantData.location?.formattedAddress,
-        address: restaurantData.location?.address,
-        directAddress: restaurantData.address,
-        fullLocation: restaurantData.location
+        hasLocation: !!shopData.location,
+        locationKeys: shopData.location ? Object.keys(shopData.location) : [],
+        formattedAddress: shopData.location?.formattedAddress,
+        address: shopData.location?.address,
+        directAddress: shopData.address,
+        fullLocation: shopData.location
       })
       
-      if (restaurantData.location) {
+      if (shopData.location) {
         // Use stored formattedAddress first (from database)
-        if (restaurantData.location.formattedAddress && 
-            restaurantData.location.formattedAddress.trim() !== "" && 
-            restaurantData.location.formattedAddress !== "Select location") {
+        if (shopData.location.formattedAddress && 
+            shopData.location.formattedAddress.trim() !== "" && 
+            shopData.location.formattedAddress !== "Select location") {
           // Check if it's just coordinates (latitude, longitude format)
-          const isCoordinates = /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(restaurantData.location.formattedAddress.trim())
+          const isCoordinates = /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(shopData.location.formattedAddress.trim())
           if (!isCoordinates) {
-            newLocation = restaurantData.location.formattedAddress.trim()
+            newLocation = shopData.location.formattedAddress.trim()
             debugLog('? Using formattedAddress:', newLocation)
           }
         }
         
         // If formattedAddress is not available or is coordinates, try formatAddress function
         if (!newLocation) {
-          const formatted = formatAddress(restaurantData.location)
+          const formatted = formatAddress(shopData.location)
           if (formatted && formatted.trim() !== "") {
             newLocation = formatted.trim()
             debugLog('? Using formatAddress result:', newLocation)
@@ -269,16 +269,16 @@ export default function ShopNavbar({
         }
         
         // Additional fallback: check if address is directly on location
-        if (!newLocation && restaurantData.location.address && restaurantData.location.address.trim() !== "") {
-          newLocation = restaurantData.location.address.trim()
+        if (!newLocation && shopData.location.address && shopData.location.address.trim() !== "") {
+          newLocation = shopData.location.address.trim()
           debugLog('? Using location.address:', newLocation)
         }
       }
       
-      // Priority 3: Fallback - check if address is directly on restaurantData (not in location object)
-      if (!newLocation && restaurantData.address && restaurantData.address.trim() !== "") {
-        newLocation = restaurantData.address.trim()
-        debugLog('? Using restaurantData.address:', newLocation)
+      // Priority 3: Fallback - check if address is directly on shopData (not in location object)
+      if (!newLocation && shopData.address && shopData.address.trim() !== "") {
+        newLocation = shopData.address.trim()
+        debugLog('? Using shopData.address:', newLocation)
       }
     }
     
@@ -287,24 +287,24 @@ export default function ShopNavbar({
     // Debug log
     if (newLocation) {
       debugLog('?? Shop address displayed:', newLocation)
-    } else if (restaurantData) {
+    } else if (shopData) {
       debugLog('?? Shop data available but no address found')
     }
-  }, [restaurantData, propLocation])
+  }, [shopData, propLocation])
 
   // Load manual accepts orders status on mount and listen for changes
   useEffect(() => {
     const updateManualStatus = () => {
       try {
-        const savedStatus = localStorage.getItem('restaurant_online_status')
+        const savedStatus = localStorage.getItem('shop_online_status')
         if (savedStatus !== null) {
           setManualOnlineStatus(JSON.parse(savedStatus))
-        } else if (restaurantData) {
-          setManualOnlineStatus(Boolean(restaurantData.isAcceptingOrders))
+        } else if (shopData) {
+          setManualOnlineStatus(Boolean(shopData.isAcceptingOrders))
         }
       } catch (error) {
-        if (restaurantData) {
-          setManualOnlineStatus(Boolean(restaurantData.isAcceptingOrders))
+        if (shopData) {
+          setManualOnlineStatus(Boolean(shopData.isAcceptingOrders))
         }
       }
     }
@@ -316,12 +316,12 @@ export default function ShopNavbar({
       setManualOnlineStatus(isOnline)
     }
 
-    window.addEventListener('restaurantStatusChanged', handleStatusChange)
+    window.addEventListener('shopStatusChanged', handleStatusChange)
     
     return () => {
-      window.removeEventListener('restaurantStatusChanged', handleStatusChange)
+      window.removeEventListener('shopStatusChanged', handleStatusChange)
     }
-  }, [restaurantData])
+  }, [shopData])
 
   // Dynamically compute final Online/Offline status based on all 3 conditions:
   // 1. Manual status must be ON
@@ -445,7 +445,7 @@ export default function ShopNavbar({
           {/* Shop Name & Company */}
           <div className="flex items-baseline gap-1.5 min-w-0">
             <h1 className="text-[15px] font-bold text-gray-900 truncate">
-              {loading ? "Loading..." : (restaurantName || "Shop")}
+              {loading ? "Loading..." : (shopName || "Shop")}
             </h1>
 
           </div>

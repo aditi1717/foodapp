@@ -3,7 +3,7 @@ import { FoodItem } from '../admin/models/food.model.js';
 
 export const CATEGORY_APPROVAL_STATUSES = ['pending', 'approved', 'rejected'];
 export const CATEGORY_FOOD_TYPE_SCOPES = ['Veg', 'Non-Veg', 'Both'];
-export const GLOBAL_CATEGORY_FILTER = [{ restaurantId: { $exists: false } }, { restaurantId: null }];
+export const GLOBAL_CATEGORY_FILTER = [{ shopId: { $exists: false } }, { shopId: null }];
 const CATEGORY_TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export const toObjectId = (value) => new mongoose.Types.ObjectId(String(value));
@@ -85,8 +85,8 @@ export const categoryAllowsFoodType = (scope, foodType) => {
 };
 
 export const isGlobalCategory = (category = {}) => {
-    const restaurantId = category?.restaurantId;
-    return !restaurantId;
+    const shopId = category?.shopId;
+    return !shopId;
 };
 
 export const getCategoryApprovalStatus = (category = {}) => {
@@ -147,17 +147,17 @@ export const backfillLegacyCategoryWorkflow = async (categories = []) => {
 
         const stats = statsById.get(categoryId) || null;
         const next = {};
-        const hasRestaurantOwner = Boolean(category?.restaurantId);
+        const hasShopOwner = Boolean(category?.shopId);
         const currentApprovalStatus = String(category?.approvalStatus || '').trim();
         const currentFoodTypeScope = String(category?.foodTypeScope || '').trim();
 
-        if (!category?.createdByRestaurantId && hasRestaurantOwner) {
-            next.createdByRestaurantId = category.restaurantId;
+        if (!category?.createdByShopId && hasShopOwner) {
+            next.createdByShopId = category.shopId;
         }
 
         if (!CATEGORY_APPROVAL_STATUSES.includes(currentApprovalStatus)) {
             let approvalStatus = 'approved';
-            if (hasRestaurantOwner) {
+            if (hasShopOwner) {
                 if (Number(stats?.totalFoods || 0) > 0) {
                     approvalStatus = 'approved';
                 } else if (category?.isApproved === false) {
@@ -209,15 +209,15 @@ export const serializeCategoryForResponse = (category = {}, options = {}) => {
     const categoryId = String(category?._id || category?.id || '');
     const stats = statsById.get(categoryId) || null;
     const approvalStatus = getCategoryApprovalStatus(category);
-    const restaurantId = category?.restaurantId?._id
-        ? String(category.restaurantId._id)
-        : (category?.restaurantId ? String(category.restaurantId) : null);
-    const createdByRestaurantId = category?.createdByRestaurantId?._id
-        ? String(category.createdByRestaurantId._id)
-        : (category?.createdByRestaurantId ? String(category.createdByRestaurantId) : null);
-    const isGlobal = !restaurantId;
-    const isOwnedByRestaurant = options.currentRestaurantId
-        ? createdByRestaurantId === String(options.currentRestaurantId) || restaurantId === String(options.currentRestaurantId)
+    const shopId = category?.shopId?._id
+        ? String(category.shopId._id)
+        : (category?.shopId ? String(category.shopId) : null);
+    const createdByShopId = category?.createdByShopId?._id
+        ? String(category.createdByShopId._id)
+        : (category?.createdByShopId ? String(category.createdByShopId) : null);
+    const isGlobal = !shopId;
+    const isOwnedByShop = options.currentShopId
+        ? createdByShopId === String(options.currentShopId) || shopId === String(options.currentShopId)
         : false;
 
     return {
@@ -232,34 +232,34 @@ export const serializeCategoryForResponse = (category = {}, options = {}) => {
         approvalStatus,
         foodTypeScope: normalizeCategoryFoodTypeScope(category.foodTypeScope, 'Both'),
         rejectionReason: category.rejectionReason || '',
-        restaurantId,
-        createdByRestaurantId,
+        shopId,
+        createdByShopId,
         isGlobal,
         globalizedAt: category.globalizedAt || null,
         requestedAt: category.requestedAt || null,
         approvedAt: category.approvedAt || null,
         rejectedAt: category.rejectedAt || null,
-        ownedByRestaurant: isOwnedByRestaurant,
-        canEdit: options.currentRestaurantId
-            ? Boolean(restaurantId && restaurantId === String(options.currentRestaurantId))
+        ownedByShop: isOwnedByShop,
+        canEdit: options.currentShopId
+            ? Boolean(shopId && shopId === String(options.currentShopId))
             : true,
-        canDelete: options.currentRestaurantId
-            ? Boolean(restaurantId && restaurantId === String(options.currentRestaurantId) && Number(stats?.totalFoods || 0) === 0)
+        canDelete: options.currentShopId
+            ? Boolean(shopId && shopId === String(options.currentShopId) && Number(stats?.totalFoods || 0) === 0)
             : Number(stats?.totalFoods || 0) === 0,
-        restaurant: category?.restaurantId?._id
+        shop: category?.shopId?._id
             ? {
-                _id: category.restaurantId._id,
-                name: category.restaurantId.restaurantName || '',
-                ownerName: category.restaurantId.ownerName || '',
-                ownerPhone: category.restaurantId.ownerPhone || ''
+                _id: category.shopId._id,
+                name: category.shopId.shopName || '',
+                ownerName: category.shopId.ownerName || '',
+                ownerPhone: category.shopId.ownerPhone || ''
             }
             : null,
-        createdByRestaurant: category?.createdByRestaurantId?._id
+        createdByShop: category?.createdByShopId?._id
             ? {
-                _id: category.createdByRestaurantId._id,
-                name: category.createdByRestaurantId.restaurantName || '',
-                ownerName: category.createdByRestaurantId.ownerName || '',
-                ownerPhone: category.createdByRestaurantId.ownerPhone || ''
+                _id: category.createdByShopId._id,
+                name: category.createdByShopId.shopName || '',
+                ownerName: category.createdByShopId.ownerName || '',
+                ownerPhone: category.createdByShopId.ownerPhone || ''
             }
             : null,
         zoneId: category.zoneId || null,

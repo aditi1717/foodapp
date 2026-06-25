@@ -6,7 +6,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
 import { Switch } from "@food/components/ui/switch"
 import { useCompanyName } from "@food/hooks/useCompanyName"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 const MAX_SLOTS = 1
@@ -147,7 +147,7 @@ export default function OutletTimings() {
     ;(async () => {
       try {
         setLoading(true)
-        const res = await restaurantAPI.getOutletTimings()
+        const res = await shopAPI.getOutletTimings()
         const outletTimings = res?.data?.data?.outletTimings || res?.data?.outletTimings
         if (!active) return
         setSchedule(normalizeScheduleFromApi(outletTimings))
@@ -183,7 +183,7 @@ export default function OutletTimings() {
       try {
         setSavingState("saving")
         const outletTimings = buildPayloadForAllDays(schedule)
-        await restaurantAPI.saveOutletTimings(outletTimings)
+        await shopAPI.saveOutletTimings(outletTimings)
         setSavingState("saved")
         window.dispatchEvent(new Event("outletTimingsUpdated"))
       } catch (_) {

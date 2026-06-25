@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { ArrowLeft, Loader2, Trash2, Plus, Clock3, Pencil } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { Card, CardContent } from "@food/components/ui/card"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
@@ -18,7 +18,7 @@ export default function OffersPage() {
     try {
       setLoading(true)
       setError("")
-      const res = await restaurantAPI.getRestaurantOffers()
+      const res = await shopAPI.getShopOffers()
       const list = res?.data?.data?.offers || res?.data?.offers || []
       setOffers(list)
     } catch (err) {
@@ -36,7 +36,7 @@ export default function OffersPage() {
     if (!id || deleting[id]) return
     try {
       setDeleting((prev) => ({ ...prev, [id]: true }))
-      await restaurantAPI.deleteRestaurantOffer(id)
+      await shopAPI.deleteShopOffer(id)
       setOffers((prev) => prev.filter((o) => String(o.id || o._id) !== String(id)))
     } catch (err) {
       setError(err?.response?.data?.message || "Unable to delete offer")

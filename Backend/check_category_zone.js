@@ -17,18 +17,18 @@ async function diagnose() {
       console.log(`Zone ID: ${z._id}, Name: ${z.name}`);
     });
 
-    // 2. Get all restaurants, their names, and their zones
-    const restaurants = await db.collection('food_restaurants').find({}).toArray();
-    console.log('\n--- RESTAURANTS ---');
-    restaurants.forEach(r => {
-      console.log(`Restaurant ID: ${r._id}, Name: ${r.restaurantName || r.name}, Zone ID: ${r.zoneId || r.serviceZoneId}, status: ${r.status}`);
+    // 2. Get all shops, their names, and their zones
+    const shops = await db.collection('food_shops').find({}).toArray();
+    console.log('\n--- SHOPS ---');
+    shops.forEach(r => {
+      console.log(`Shop ID: ${r._id}, Name: ${r.shopName || r.name}, Zone ID: ${r.zoneId || r.serviceZoneId}, status: ${r.status}`);
     });
 
     // 3. Get all food items with category containing 'chat' or similar
     const foods = await db.collection('food_items').find({}).toArray();
     console.log('\n--- FOOD ITEMS ---');
     foods.forEach(f => {
-      console.log(`Food ID: ${f._id}, Name: ${f.name}, Restaurant ID: ${f.restaurantId}, Category: ${f.categoryName || f.category}, Status: ${f.approvalStatus}`);
+      console.log(`Food ID: ${f._id}, Name: ${f.name}, Shop ID: ${f.shopId}, Category: ${f.categoryName || f.category}, Status: ${f.approvalStatus}`);
     });
 
     process.exit(0);

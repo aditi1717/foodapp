@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { ArrowLeft, AlertCircle, Upload, Loader2 } from "lucide-react"
-import { restaurantAPI, uploadAPI } from "@food/api"
+import { shopAPI, uploadAPI } from "@food/api"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
 import { toast } from "sonner"
@@ -86,7 +86,7 @@ export default function UpdateBankDetails() {
   const loadProfile = async () => {
     try {
       setLoading(true)
-      const response = await restaurantAPI.getCurrentRestaurant()
+      const response = await shopAPI.getCurrentShop()
       const doc = response?.data?.data?.shop || response?.data?.shop || null
       if (!doc) return
 
@@ -161,7 +161,7 @@ export default function UpdateBankDetails() {
 
     try {
       setSaving(true)
-      await restaurantAPI.updateProfile(payload)
+      await shopAPI.updateProfile(payload)
       await loadProfile()
       setErrors({})
       alert("Bank details updated successfully")

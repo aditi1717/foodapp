@@ -1,6 +1,6 @@
 import { Download, RefreshCw, FileSpreadsheet } from "lucide-react"
 
-export default function RestaurantsBulkExport() {
+export default function ShopsBulkExport() {
   const handleExport = () => {
     // Handle export logic here
     alert("Exporting all shop data...")

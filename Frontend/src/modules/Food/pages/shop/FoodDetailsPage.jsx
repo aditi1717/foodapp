@@ -16,7 +16,7 @@ import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { formatCurrency } from "@food/utils/currency"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
 
 const toFoodData = (food, fallbackId = "") => {
@@ -84,7 +84,7 @@ export default function FoodDetailsPage() {
       try {
         setLoading(true)
         setError("")
-        const response = await restaurantAPI.getMenu()
+        const response = await shopAPI.getMenu()
         const menu = getMenuFromResponse(response)
         const sections = Array.isArray(menu?.sections) ? menu.sections : []
         const items = flattenMenuItems(menu)
@@ -154,7 +154,7 @@ export default function FoodDetailsPage() {
   // Handle stock update
   const handleUpdateStock = async () => {
     try {
-      const res = await restaurantAPI.updateFood(String(id), {
+      const res = await shopAPI.updateFood(String(id), {
         stock: stockData.mainStock,
         variations: Array.isArray(foodData.variations)
           ? foodData.variations.map((variation) => {

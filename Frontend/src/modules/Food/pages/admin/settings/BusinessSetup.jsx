@@ -18,7 +18,7 @@ const DEFAULT_MAINTENANCE_MODES = {
     heading: "Delivery is Temporarily Closed",
     paragraph: "Please check again shortly.",
   },
-  restaurantApp: {
+  shopApp: {
     enabled: false,
     heading: "Shop Panel is Temporarily Closed",
     paragraph: "Maintenance is in progress. Please come back soon.",
@@ -79,10 +79,10 @@ export default function BusinessSetup() {
               heading: settings?.maintenanceModes?.deliveryApp?.heading || DEFAULT_MAINTENANCE_MODES.deliveryApp.heading,
               paragraph: settings?.maintenanceModes?.deliveryApp?.paragraph || DEFAULT_MAINTENANCE_MODES.deliveryApp.paragraph,
             },
-            restaurantApp: {
-              enabled: Boolean(settings?.maintenanceModes?.restaurantApp?.enabled),
-              heading: settings?.maintenanceModes?.restaurantApp?.heading || DEFAULT_MAINTENANCE_MODES.restaurantApp.heading,
-              paragraph: settings?.maintenanceModes?.restaurantApp?.paragraph || DEFAULT_MAINTENANCE_MODES.restaurantApp.paragraph,
+            shopApp: {
+              enabled: Boolean(settings?.maintenanceModes?.shopApp?.enabled),
+              heading: settings?.maintenanceModes?.shopApp?.heading || DEFAULT_MAINTENANCE_MODES.shopApp.heading,
+              paragraph: settings?.maintenanceModes?.shopApp?.paragraph || DEFAULT_MAINTENANCE_MODES.shopApp.paragraph,
             },
           },
         });
@@ -199,10 +199,10 @@ export default function BusinessSetup() {
             heading: String(formData?.maintenanceModes?.deliveryApp?.heading || "").trim(),
             paragraph: String(formData?.maintenanceModes?.deliveryApp?.paragraph || "").trim(),
           },
-          restaurantApp: {
-            enabled: Boolean(formData?.maintenanceModes?.restaurantApp?.enabled),
-            heading: String(formData?.maintenanceModes?.restaurantApp?.heading || "").trim(),
-            paragraph: String(formData?.maintenanceModes?.restaurantApp?.paragraph || "").trim(),
+          shopApp: {
+            enabled: Boolean(formData?.maintenanceModes?.shopApp?.enabled),
+            heading: String(formData?.maintenanceModes?.shopApp?.heading || "").trim(),
+            paragraph: String(formData?.maintenanceModes?.shopApp?.paragraph || "").trim(),
           },
         },
       };
@@ -568,7 +568,7 @@ export default function BusinessSetup() {
                 {[
                   { key: "userApp", label: "User App" },
                   { key: "deliveryApp", label: "Delivery App" },
-                  { key: "restaurantApp", label: "Shop App" },
+                  { key: "shopApp", label: "Shop App" },
                 ].map((item) => (
                   <div key={item.key} className="rounded-lg border border-slate-200 bg-white p-3">
                     <div className="flex items-center justify-between gap-3 mb-3">

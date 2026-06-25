@@ -5,9 +5,9 @@ import { FoodOrder } from './src/modules/food/orders/models/order.model.js';
 import { FoodDeliveryPartner } from './src/modules/food/delivery/models/deliveryPartner.model.js';
 import { FoodDeliveryExclusivity } from './src/modules/food/delivery/models/deliveryExclusivity.model.js';
 import { FoodBusinessSettings } from './src/modules/food/admin/models/businessSettings.model.js';
-import { FoodRestaurant } from './src/modules/food/restaurant/models/restaurant.model.js';
+import { FoodShop } from './src/modules/food/shop/models/shop.model.js';
 import {
-  assignDeliveryPartnerRestaurant,
+  assignDeliveryPartnerShop,
   assignDeliveryPartnerAdmin
 } from './src/modules/food/orders/services/order.service.js';
 
@@ -20,11 +20,11 @@ async function testRules() {
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
-    // 1. Fetch or create a test Restaurant
-    let restaurant = await FoodRestaurant.findOne();
-    if (!restaurant) {
-      restaurant = await FoodRestaurant.create({
-        restaurantName: 'Test Verify Restaurant',
+    // 1. Fetch or create a test Shop
+    let shop = await FoodShop.findOne();
+    if (!shop) {
+      shop = await FoodShop.create({
+        shopName: 'Test Verify Shop',
         name: 'Test Owner',
         phone: '9999999999',
         location: {
@@ -33,7 +33,7 @@ async function testRules() {
         },
         address: 'Bangalore, India'
       });
-      console.log('Created mock restaurant:', restaurant._id);
+      console.log('Created mock shop:', shop._id);
     }
 
     // 2. Fetch or create test Delivery Partners
@@ -79,12 +79,12 @@ async function testRules() {
     // Setup exclusivity association for Rider B
     await FoodDeliveryExclusivity.deleteOne({ deliveryPartnerId: partnerB._id });
     const exclusivity = await FoodDeliveryExclusivity.create({
-      restaurantId: restaurant._id,
+      shopId: shop._id,
       deliveryPartnerId: partnerB._id,
       status: 'associated',
       associatedAt: new Date()
     });
-    console.log('Created exclusivity association for Rider B with Restaurant:', restaurant._id);
+    console.log('Created exclusivity association for Rider B with Shop:', shop._id);
 
 
 
@@ -98,7 +98,7 @@ async function testRules() {
     console.log('Rider B is exclusive. Verify that Rider B is completely excluded from auto-assignment.');
     // Let's import listNearbyOnlineDeliveryPartners dynamically to test
     const { listNearbyOnlineDeliveryPartners } = await import('./src/modules/food/orders/services/order.service.js');
-    const { partners } = await listNearbyOnlineDeliveryPartners(restaurant._id, { maxKm: 15, limit: 10 });
+    const { partners } = await listNearbyOnlineDeliveryPartners(shop._id, { maxKm: 15, limit: 10 });
     const foundRiderB = partners.some(p => String(p.partnerId) === String(partnerB._id));
     console.log('Is Rider B found in online search?', foundRiderB ? '❌ Yes (Bug!)' : '✅ No (Correctly skipped)');
 
@@ -107,7 +107,7 @@ async function testRules() {
     const order1 = await FoodOrder.create({
       orderId: 'TEST-ORD-1',
       orderType: 'quick',
-      restaurantId: restaurant._id,
+      shopId: shop._id,
       zoneId: partnerA.zoneId,
       items: [{ itemId: 'item1', name: 'Veg Burger', price: 100, quantity: 1 }],
       pricing: { subtotal: 100, total: 100 },
@@ -123,7 +123,7 @@ async function testRules() {
     const order2 = await FoodOrder.create({
       orderId: 'TEST-ORD-2',
       orderType: 'quick',
-      restaurantId: restaurant._id,
+      shopId: shop._id,
       zoneId: partnerA.zoneId,
       items: [{ itemId: 'item2', name: 'Cheese Pizza', price: 200, quantity: 1 }],
       pricing: { subtotal: 200, total: 200 },
@@ -138,22 +138,22 @@ async function testRules() {
     console.log('Created 2 active orders assigned to Rider A.');
 
     // Search online partners again. Since Rider A has 2 active orders and limit is 2, Rider A should be skipped.
-    const searchAfterLimit = await listNearbyOnlineDeliveryPartners(restaurant._id, { maxKm: 15, limit: 10 });
+    const searchAfterLimit = await listNearbyOnlineDeliveryPartners(shop._id, { maxKm: 15, limit: 10 });
     const foundRiderA = searchAfterLimit.partners.some(p => String(p.partnerId) === String(partnerA._id));
     console.log('Is Rider A found in online search after reaching capacity?', foundRiderA ? '❌ Yes (Bug!)' : '✅ No (Correctly skipped)');
 
-    console.log('\n--- Test Case 3: Restaurant Manual Assignment Guard ---');
+    console.log('\n--- Test Case 3: Shop Manual Assignment Guard ---');
     console.log('Assigning 2 active orders to Rider B (exclusive/associated) to reach capacity...');
     order1.dispatch.deliveryPartnerId = partnerB._id;
     await order1.save();
     order2.dispatch.deliveryPartnerId = partnerB._id;
     await order2.save();
 
-    console.log('Attempting to manually assign a 3rd order to Rider B via restaurant (capacity reached)...');
+    console.log('Attempting to manually assign a 3rd order to Rider B via shop (capacity reached)...');
     const order3 = await FoodOrder.create({
       orderId: 'TEST-ORD-3',
       orderType: 'quick',
-      restaurantId: restaurant._id,
+      shopId: shop._id,
       zoneId: partnerB.zoneId,
       items: [{ itemId: 'item3', name: 'French Fries', price: 80, quantity: 1 }],
       pricing: { subtotal: 80, total: 80 },
@@ -165,10 +165,10 @@ async function testRules() {
     });
 
     try {
-      await assignDeliveryPartnerRestaurant(order3._id, restaurant._id, partnerB._id);
-      console.log('✅ Correctly allowed Restaurant manual assignment for multiple orders!');
+      await assignDeliveryPartnerShop(order3._id, shop._id, partnerB._id);
+      console.log('✅ Correctly allowed Shop manual assignment for multiple orders!');
     } catch (err) {
-      console.log('❌ Error: Blocked Restaurant manual assignment! Received validation error:', err.message);
+      console.log('❌ Error: Blocked Shop manual assignment! Received validation error:', err.message);
     }
 
     console.log('\n--- Test Case 4: Admin Manual Assignment Block ---');

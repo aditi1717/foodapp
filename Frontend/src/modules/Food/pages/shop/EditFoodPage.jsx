@@ -17,7 +17,7 @@ import {
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { findItemInSections, flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
 import { useRef } from "react"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
@@ -89,7 +89,7 @@ export default function EditFoodPage() {
 
     const loadFromMenu = async () => {
       try {
-        const response = await restaurantAPI.getMenu()
+        const response = await shopAPI.getMenu()
         const menu = getMenuFromResponse(response)
         const sections = Array.isArray(menu?.sections) ? menu.sections : []
         if (!isMounted) return
@@ -139,7 +139,7 @@ export default function EditFoodPage() {
 
     const loadCategories = async () => {
       try {
-        const response = await restaurantAPI.getCategories()
+        const response = await shopAPI.getCategories()
         const categories = response?.data?.data?.categories || []
         if (!isMounted) return
 
@@ -416,7 +416,7 @@ export default function EditFoodPage() {
 
     if (isNewFood) {
       try {
-        const res = await restaurantAPI.createFood({
+        const res = await shopAPI.createFood({
           ...foodDataToSave,
           categoryId: matchedCategory.id,
           categoryName: matchedCategory.name,
@@ -436,7 +436,7 @@ export default function EditFoodPage() {
     }
 
     try {
-      const res = await restaurantAPI.updateFood(String(id), {
+      const res = await shopAPI.updateFood(String(id), {
         ...foodDataToSave,
         categoryId: matchedCategory.id,
         categoryName: matchedCategory.name,

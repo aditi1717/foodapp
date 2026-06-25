@@ -23,7 +23,7 @@ import { Input } from "@food/components/ui/input"
 import { Card, CardContent } from "@food/components/ui/card"
 import BRAND_THEME from "@/config/brandTheme"
 import { toast } from "sonner"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 
 export default function DeliveryPartnersPage() {
   const navigate = useNavigate()
@@ -41,7 +41,7 @@ export default function DeliveryPartnersPage() {
   const fetchPartners = async () => {
     try {
       setLoading(true)
-      const res = await restaurantAPI.listExclusivityPartners()
+      const res = await shopAPI.listExclusivityPartners()
       if (res.data?.success && res.data?.data) {
         const { associatedRiders, pendingInvites, rejectedInvites } = res.data.data
         setAssociatedRiders(associatedRiders || [])
@@ -94,7 +94,7 @@ export default function DeliveryPartnersPage() {
     setSearchResult(null)
 
     try {
-      const res = await restaurantAPI.searchDeliveryPartner(cleanPhone)
+      const res = await shopAPI.searchDeliveryPartner(cleanPhone)
       if (res.data?.success && res.data?.data) {
         const partner = res.data.data
         const isAssociated = associatedRiders.some(r => r.phone === cleanPhone)
@@ -124,7 +124,7 @@ export default function DeliveryPartnersPage() {
     if (driver.isAlreadyAssociated || driver.isAlreadyPending) return
 
     try {
-      const res = await restaurantAPI.sendExclusivityInvite(driver.phone)
+      const res = await shopAPI.sendExclusivityInvite(driver.phone)
       if (res.data?.success) {
         toast.success(res.data.message || `Invitation sent to ${driver.name}`)
         fetchPartners()
@@ -141,7 +141,7 @@ export default function DeliveryPartnersPage() {
 
   const handleCancelInvite = async (id, name, phone) => {
     try {
-      const res = await restaurantAPI.cancelExclusivityInvite(phone)
+      const res = await shopAPI.cancelExclusivityInvite(phone)
       if (res.data?.success) {
         toast.info(res.data.message || `Invitation to ${name} cancelled`)
         fetchPartners()
@@ -158,7 +158,7 @@ export default function DeliveryPartnersPage() {
 
   const handleRemoveRider = async (id, name, phone) => {
     try {
-      const res = await restaurantAPI.removeExclusivityRider(phone)
+      const res = await shopAPI.removeExclusivityRider(phone)
       if (res.data?.success) {
         toast.error(res.data.message || `${name} has been removed from your delivery fleet`)
         fetchPartners()

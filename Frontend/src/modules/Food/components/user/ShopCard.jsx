@@ -6,7 +6,7 @@ import BRAND_THEME from "@/config/brandTheme";
 
 const WEBVIEW_SESSION_CACHE_BUSTER = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-const RestaurantImageCarousel = React.memo(({ restaurant, priority = false, backendOrigin = "" }) => {
+const ShopImageCarousel = React.memo(({ shop, priority = false, backendOrigin = "" }) => {
   const webviewSessionKeyRef = useRef(WEBVIEW_SESSION_CACHE_BUSTER);
   const imageElementRef = useRef(null);
 
@@ -134,7 +134,7 @@ const RestaurantImageCarousel = React.memo(({ restaurant, priority = false, back
       <OptimizedImage
         ref={imageElementRef}
         src={renderSrc}
-        alt={restaurant.name}
+        alt={shop.name}
         priority={priority}
         className={`w-full h-full object-cover transform scale-100 group-hover:scale-110 transition-transform duration-700 ${
           loadedBySrc[renderSrc] ? 'opacity-100' : 'opacity-0'
@@ -189,13 +189,13 @@ const ShopCard = ({
       className={`rounded-2xl overflow-hidden border ${homepage.shared.border} ${homepage.shared.surface} shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 group relative cursor-pointer transform hover:-translate-y-1 active:scale-95`}
     >
       <div className="relative">
-        <RestaurantImageCarousel restaurant={restaurant} backendOrigin={backendOrigin} />
+        <ShopImageCarousel shop={shop} backendOrigin={backendOrigin} />
         <button
           onClick={(e) => {
             e.stopPropagation();
             onFavoriteClick(shop.id);
           }}
-          className={`absolute top-3 right-3 p-2 rounded-full shadow-sm hover:shadow-md hover:scale-110 transition-all duration-300 z-10 ${isFavorite ? homepage.home.restaurantCard.bookmarkActive : homepage.home.restaurantCard.bookmarkIdle}`}
+          className={`absolute top-3 right-3 p-2 rounded-full shadow-sm hover:shadow-md hover:scale-110 transition-all duration-300 z-10 ${isFavorite ? homepage.home.shopCard.bookmarkActive : homepage.home.shopCard.bookmarkIdle}`}
         >
           <Heart
             className={`w-4 h-4 transition-colors duration-300 ${
@@ -207,7 +207,7 @@ const ShopCard = ({
 
       <div className="p-3 sm:p-4">
         <div className="flex justify-between items-start gap-2 mb-1.5">
-          <h3 className={`text-[15px] sm:text-[17px] font-bold text-slate-900 dark:text-white line-clamp-1 transition-colors duration-200 flex-1 tracking-tight ${homepage.home.restaurantCard.nameHover}`}>
+          <h3 className={`text-[15px] sm:text-[17px] font-bold text-slate-900 dark:text-white line-clamp-1 transition-colors duration-200 flex-1 tracking-tight ${homepage.home.shopCard.nameHover}`}>
             {shop.name}
           </h3>
           <div className="flex items-center gap-1 bg-green-600 text-white px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold shadow-sm flex-shrink-0">

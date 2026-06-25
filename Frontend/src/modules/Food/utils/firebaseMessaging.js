@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { userAPI, restaurantAPI, deliveryAPI, adminAPI } from "@food/api";
+import { userAPI, shopAPI, deliveryAPI, adminAPI } from "@food/api";
 import { initializeApp, getApp, getApps } from "firebase/app";
 import fallbackNotificationSound from "@food/assets/audio/alert.mp3";
 
@@ -34,7 +34,7 @@ const pushDebugWarn = (prefix, message, data = {}) => {
 };
 
 function normalizeModuleFromPath(pathname = window.location.pathname) {
-  if (pathname.includes("/restaurant") && !pathname.includes("/restaurants")) return "restaurant";
+  if (pathname.includes("/shop") && !pathname.includes("/shops")) return "shop";
   if (pathname.includes("/delivery")) return "delivery";
   if (pathname.includes("/admin")) return "admin";
   return "user";
@@ -45,8 +45,8 @@ function isRecord(value) {
 }
 
 function getPushSoundSources(moduleName = normalizeModuleFromPath()) {
-  // Delivery and restaurant should always use the alert tone for FCM pushes.
-  if (moduleName === "delivery" || moduleName === "restaurant") {
+  // Delivery and shop should always use the alert tone for FCM pushes.
+  if (moduleName === "delivery" || moduleName === "shop") {
     return [fallbackNotificationSound];
   }
   return [pushNotificationSoundPath, fallbackNotificationSound];
@@ -473,8 +473,8 @@ function setSavedToken(moduleName, token) {
 
 async function saveTokenByModule(moduleName, token, platform = "web") {
   pushDebugLog(PUSH_DEBUG_PREFIX, "saveTokenByModule starting", { moduleName, platform, tokenPreview: `${token?.slice(0, 10)}...` });
-  if (moduleName === "restaurant") {
-    await restaurantAPI.saveFcmToken(token, platform);
+  if (moduleName === "shop") {
+    await shopAPI.saveFcmToken(token, platform);
     return;
   }
   if (moduleName === "delivery") {
@@ -789,7 +789,7 @@ export async function registerWebPushForCurrentModule(pathname = window.location
   }
 
   // Flutter WebView fallback: register native token when browser web push isn't available.
-  // This keeps restaurant/delivery FCM alerts working even when Web Push APIs are limited.
+  // This keeps shop/delivery FCM alerts working even when Web Push APIs are limited.
   await registerNativeWebViewFcmToken(moduleName);
   return null;
 }

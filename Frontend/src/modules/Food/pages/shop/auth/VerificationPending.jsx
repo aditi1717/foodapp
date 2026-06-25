@@ -3,11 +3,11 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { Clock3, ShieldCheck } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { useCompanyName } from "@food/hooks/useCompanyName"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import {
-  clearRestaurantPendingPhone,
+  clearShopPendingPhone,
   getModuleToken,
-  getRestaurantPendingPhone,
+  getShopPendingPhone,
 } from "@food/utils/auth"
 
 export default function VerificationPending() {
@@ -19,7 +19,7 @@ export default function VerificationPending() {
   const pendingPhone = useMemo(() => {
     return (
       location.state?.phone ||
-      getRestaurantPendingPhone() ||
+      getShopPendingPhone() ||
       ""
     )
   }, [location.state?.phone])
@@ -35,7 +35,7 @@ export default function VerificationPending() {
       }
 
       try {
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const shop =
           response?.data?.data?.shop ||
           response?.data?.shop ||
@@ -45,7 +45,7 @@ export default function VerificationPending() {
         if (cancelled) return
 
         if (String(shop?.status || "").toLowerCase() === "approved") {
-          clearRestaurantPendingPhone()
+          clearShopPendingPhone()
           navigate("/food/shop", { replace: true })
           return
         }
@@ -120,7 +120,7 @@ export default function VerificationPending() {
             <Button
               className="h-12 w-full rounded-xl bg-brand-600 text-base font-semibold hover:bg-brand-700"
               onClick={() => {
-                clearRestaurantPendingPhone()
+                clearShopPendingPhone()
                 navigate("/food/shop/login", { replace: true })
               }}
             >

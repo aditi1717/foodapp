@@ -16,13 +16,13 @@ export default function AdRequests() {
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [filters, setFilters] = useState({
     adsType: "",
-    restaurant: "",
+    shop: "",
   })
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     adsId: true,
     adsTitle: true,
-    restaurantInfo: true,
+    shopInfo: true,
     adsType: true,
     duration: true,
     actions: true,
@@ -32,7 +32,7 @@ export default function AdRequests() {
     si: "Serial Number",
     adsId: "Ads ID",
     adsTitle: "Ads Title",
-    restaurantInfo: "Restaurant Info",
+    shopInfo: "Shop Info",
     adsType: "Ads Type",
     duration: "Duration",
     actions: "Actions",
@@ -55,7 +55,7 @@ export default function AdRequests() {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(request =>
         request.adsId?.toLowerCase().includes(query) ||
-        request.restaurantName?.toLowerCase().includes(query) ||
+        request.shopName?.toLowerCase().includes(query) ||
         request.adsTitle?.toLowerCase().includes(query)
       )
     }
@@ -67,7 +67,7 @@ export default function AdRequests() {
     
     // Filter by shop
     if (filters.shop) {
-      result = result.filter(r => r.restaurantName === filters.shop)
+      result = result.filter(r => r.shopName === filters.shop)
     }
     
     return result
@@ -121,7 +121,7 @@ export default function AdRequests() {
       si: true,
       adsId: true,
       adsTitle: true,
-      restaurantInfo: true,
+      shopInfo: true,
       adsType: true,
       duration: true,
       actions: true,
@@ -139,7 +139,7 @@ export default function AdRequests() {
     })
   }
 
-  const shops = [...new Set(requests.map(r => r.restaurantName))].filter(Boolean)
+  const shops = [...new Set(requests.map(r => r.shopName))].filter(Boolean)
   const adsTypes = [...new Set(requests.map(r => r.adsType))].filter(Boolean)
 
   const tabs = [
@@ -262,7 +262,7 @@ export default function AdRequests() {
                 {visibleColumns.si && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">SI</th>}
                 {visibleColumns.adsId && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads ID</th>}
                 {visibleColumns.adsTitle && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Title</th>}
-                {visibleColumns.restaurantInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop Info</th>}
+                {visibleColumns.shopInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop Info</th>}
                 {visibleColumns.adsType && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Type</th>}
                 {visibleColumns.duration && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Duration</th>}
                 {visibleColumns.actions && <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Action</th>}
@@ -297,15 +297,15 @@ export default function AdRequests() {
                         <span className="text-sm font-medium text-slate-900">{request.adsTitle}</span>
                       </td>
                     )}
-                    {visibleColumns.restaurantInfo && (
+                    {visibleColumns.shopInfo && (
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                             <Building2 className="w-5 h-5 text-orange-600" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-slate-900">{request.restaurantName}</span>
-                            <span className="text-xs text-slate-500">{request.restaurantEmail}</span>
+                            <span className="text-sm font-medium text-slate-900">{request.shopName}</span>
+                            <span className="text-xs text-slate-500">{request.shopEmail}</span>
                           </div>
                         </div>
                       </td>
@@ -397,13 +397,13 @@ export default function AdRequests() {
                 Shop
               </label>
               <select
-                value={filters.restaurant}
+                value={filters.shop}
                 onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
               >
                 <option value="">All Shops</option>
                 {shops.map(shop => (
-                  <option key={restaurant} value={restaurant}>{shop}</option>
+                  <option key={shop} value={shop}>{shop}</option>
                 ))}
               </select>
             </div>
@@ -454,11 +454,11 @@ export default function AdRequests() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Shop Name</p>
-                  <p className="text-sm text-slate-900">{selectedRequest.restaurantName}</p>
+                  <p className="text-sm text-slate-900">{selectedRequest.shopName}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Shop Email</p>
-                  <p className="text-sm text-slate-900">{selectedRequest.restaurantEmail}</p>
+                  <p className="text-sm text-slate-900">{selectedRequest.shopEmail}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Ads Type</p>

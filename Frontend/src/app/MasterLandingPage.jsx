@@ -17,14 +17,14 @@ const MODULES = [
   {
     id: "food",
     title: "Food Delivery",
-    description: "Delicious meals from your favorite restaurants delivered hot and fast to your doorstep.",
+    description: "Delicious meals from your favorite shops delivered hot and fast to your doorstep.",
     icon: UtensilsCrossed,
     color: "from-orange-500 to-rose-500",
     shadow: "shadow-orange-500/20",
     bg: "bg-orange-50",
     iconColor: "text-orange-600",
     path: "/food/user",
-    stats: "500+ Restaurants"
+    stats: "500+ Shops"
   },
   {
     id: "taxi",

@@ -163,7 +163,7 @@ export function normalizeOrderForClient(orderDoc) {
       order?.deliveryState?.deliveredAt || order?.deliveredAt || null,
     deliveryPartnerId:
       order?.dispatch?.deliveryPartnerId || order?.deliveryPartnerId || null,
-    rating: order?.ratings?.restaurant?.rating ?? order?.rating ?? null,
+    rating: order?.ratings?.shop?.rating ?? order?.rating ?? null,
     deliveryState: {
       ...(order?.deliveryState || {}),
       currentLocation: order?.lastRiderLocation?.coordinates?.length >= 2 ? {
@@ -191,10 +191,10 @@ export async function applyAggregateRating(model, entityId, newRating) {
   await doc.save();
 }
 
-export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
+export function buildDeliverySocketPayload(orderDoc, shopDoc = null) {
   const order = orderDoc?.toObject ? orderDoc.toObject() : orderDoc || {};
-  const restaurant = restaurantDoc || order?.restaurantId || null;
-  const restaurantLocation = restaurant?.location || {};
+  const shop = shopDoc || order?.shopId || null;
+  const shopLocation = shop?.location || {};
   const deliveryAddress = order?.deliveryAddress || {};
 
   return {
@@ -207,28 +207,28 @@ export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
     total: order?.pricing?.total,
     payment: order?.payment,
     paymentMethod: order?.payment?.method,
-    restaurantId:
-      order?.restaurantId?._id?.toString?.() ||
-      order?.restaurantId?.toString?.() ||
-      order?.restaurantId,
-    restaurantName: restaurant?.restaurantName || order?.restaurantName,
-    restaurantAddress:
-      restaurantLocation?.address ||
-      restaurantLocation?.formattedAddress ||
-      restaurant?.addressLine1 ||
+    shopId:
+      order?.shopId?._id?.toString?.() ||
+      order?.shopId?.toString?.() ||
+      order?.shopId,
+    shopName: shop?.shopName || order?.shopName,
+    shopAddress:
+      shopLocation?.address ||
+      shopLocation?.formattedAddress ||
+      shop?.addressLine1 ||
       "",
-    restaurantPhone: restaurant?.phone || "",
-    restaurantLocation: {
-      latitude: restaurantLocation?.latitude,
-      longitude: restaurantLocation?.longitude,
+    shopPhone: shop?.phone || "",
+    shopLocation: {
+      latitude: shopLocation?.latitude,
+      longitude: shopLocation?.longitude,
       address:
-        restaurantLocation?.address ||
-        restaurantLocation?.formattedAddress ||
-        restaurant?.addressLine1 ||
+        shopLocation?.address ||
+        shopLocation?.formattedAddress ||
+        shop?.addressLine1 ||
         "",
-      area: restaurantLocation?.area || restaurant?.area || "",
-      city: restaurantLocation?.city || restaurant?.city || "",
-      state: restaurantLocation?.state || restaurant?.state || "",
+      area: shopLocation?.area || shop?.area || "",
+      city: shopLocation?.city || shop?.city || "",
+      state: shopLocation?.state || shop?.state || "",
     },
     deliveryAddress: order?.deliveryAddress,
     customerAddress:
@@ -241,7 +241,7 @@ export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
     userName: order?.customerName || order?.deliveryAddress?.fullName || order?.deliveryAddress?.name || order?.userId?.name || "",
     userPhone: order?.customerPhone || order?.deliveryAddress?.phone || order?.userId?.phone || "",
     note: order?.note || "",
-    restaurantNote: order?.restaurantNote || "",
+    shopNote: order?.shopNote || "",
     riderEarning: order?.riderEarning || 0,
     earnings: order?.riderEarning || order?.pricing?.deliveryFee || 0,
     deliveryFee: order?.pricing?.deliveryFee || 0,
@@ -252,16 +252,16 @@ export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
   };
 }
 
-export function canExposeOrderToRestaurant(orderLike) {
+export function canExposeOrderToShop(orderLike) {
   const method = String(orderLike?.payment?.method || "").toLowerCase();
   const status = String(orderLike?.payment?.status || "").toLowerCase();
   if (["cash", "wallet"].includes(method)) return true;
   return ["paid", "authorized", "captured", "settled"].includes(status);
 }
 
-export async function notifyRestaurantNewOrder(orderDoc) {
+export async function notifyShopNewOrder(orderDoc) {
   try {
-    if (!orderDoc || !canExposeOrderToRestaurant(orderDoc)) return;
+    if (!orderDoc || !canExposeOrderToShop(orderDoc)) return;
 
     const io = getIO();
     if (io) {
@@ -271,13 +271,13 @@ export async function notifyRestaurantNewOrder(orderDoc) {
         orderId: orderDoc.orderId || orderDoc.order_id || orderDoc._id?.toString?.(),
       };
       logger.info(
-        `[RestaurantOrders] Emitting new_order to ${rooms.restaurant(orderDoc.restaurantId)} for order ${orderDoc._id?.toString?.() || ''}`,
+        `[ShopOrders] Emitting new_order to ${rooms.shop(orderDoc.shopId)} for order ${orderDoc._id?.toString?.() || ''}`,
       );
-      io.to(rooms.restaurant(orderDoc.restaurantId)).emit("new_order", payload);
+      io.to(rooms.shop(orderDoc.shopId)).emit("new_order", payload);
     }
 
     await notifyOwnersSafely(
-      [{ ownerType: "RESTAURANT", ownerId: orderDoc.restaurantId }],
+      [{ ownerType: "SHOP", ownerId: orderDoc.shopId }],
       {
         title: "New order received",
         body: `Order #${orderDoc.orderId || orderDoc.order_id || orderDoc._id} is waiting for review.`,
@@ -285,7 +285,7 @@ export async function notifyRestaurantNewOrder(orderDoc) {
           type: "new_order",
           orderId: orderDoc._id.toString(),
           orderMongoId: orderDoc._id?.toString?.() || "",
-          link: `/restaurant/orders/${orderDoc._id?.toString?.() || ""}`,
+          link: `/shop/orders/${orderDoc._id?.toString?.() || ""}`,
         },
       },
     );
@@ -305,7 +305,7 @@ export const STATUS_PRIORITY = {
   user_unavailable_review: 75,
   delivered: 80,
   cancelled_by_user: 100,
-  cancelled_by_restaurant: 100,
+  cancelled_by_shop: 100,
   cancelled_by_user_unavailable: 100,
   cancelled_by_admin: 100,
 };

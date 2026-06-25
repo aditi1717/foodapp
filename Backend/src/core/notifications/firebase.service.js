@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { FoodUser } from '../users/user.model.js';
-import { FoodRestaurant } from '../../modules/food/restaurant/models/restaurant.model.js';
+import { FoodShop } from '../../modules/food/shop/models/shop.model.js';
 import { FoodDeliveryPartner } from '../../modules/food/delivery/models/deliveryPartner.model.js';
 import { FoodAdmin } from '../admin/admin.model.js';
 import { config } from '../../config/env.js';
@@ -14,7 +14,7 @@ const FCM_SEND_URL = (projectId) =>
     `https://fcm.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/messages:send`;
 const OWNER_MODELS = {
     USER: FoodUser,
-    RESTAURANT: FoodRestaurant,
+    SHOP: FoodShop,
     DELIVERY_PARTNER: FoodDeliveryPartner,
     ADMIN: FoodAdmin
 };
@@ -24,7 +24,7 @@ const OWNER_TOKEN_FIELDS = {
 };
 const OWNER_APP_PREFIXES = {
     USER: '',
-    RESTAURANT: '',
+    SHOP: '',
     DELIVERY_PARTNER: '',
     ADMIN: ''
 };

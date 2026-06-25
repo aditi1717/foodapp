@@ -28,7 +28,7 @@ const formatBulkPricingSummary = (bulkOrderPricing = {}, variants = []) => {
 
 
 const createFoodForm = () => ({
-  restaurantId: "",
+  shopId: "",
   categoryId: "",
   categoryName: "",
   subcategoryId: "",
@@ -50,9 +50,9 @@ const createVariantDraft = (variant = {}) => ({
 
 export default function FoodsList() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedRestaurant, setSelectedRestaurant] = useState("all")
+  const [selectedShop, setSelectedShop] = useState("all")
   const [foods, setFoods] = useState([])
-  const [restaurantsForFilter, setRestaurantsForFilter] = useState([])
+  const [shopsForFilter, setShopsForFilter] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [selectedFood, setSelectedFood] = useState(null)
@@ -99,36 +99,36 @@ export default function FoodsList() {
     try {
       setLoading(true)
 
-      const [activeRestaurantsResponse, inactiveRestaurantsResponse] = await Promise.all([
-        adminAPI.getRestaurants({ limit: 1000 }),
-        adminAPI.getRestaurants({ limit: 1000, status: "inactive" }),
+      const [activeShopsResponse, inactiveShopsResponse] = await Promise.all([
+        adminAPI.getShops({ limit: 1000 }),
+        adminAPI.getShops({ limit: 1000, status: "inactive" }),
       ])
 
-      const activeRestaurants = activeRestaurantsResponse?.data?.data?.shops ||
-        activeRestaurantsResponse?.data?.shops ||
-        activeRestaurantsResponse?.data?.data?.restaurants ||
-        activeRestaurantsResponse?.data?.restaurants ||
+      const activeShops = activeShopsResponse?.data?.data?.shops ||
+        activeShopsResponse?.data?.shops ||
+        activeShopsResponse?.data?.data?.shops ||
+        activeShopsResponse?.data?.shops ||
         []
-      const inactiveRestaurants = inactiveRestaurantsResponse?.data?.data?.shops ||
-        inactiveRestaurantsResponse?.data?.shops ||
-        inactiveRestaurantsResponse?.data?.data?.restaurants ||
-        inactiveRestaurantsResponse?.data?.restaurants ||
+      const inactiveShops = inactiveShopsResponse?.data?.data?.shops ||
+        inactiveShopsResponse?.data?.shops ||
+        inactiveShopsResponse?.data?.data?.shops ||
+        inactiveShopsResponse?.data?.shops ||
         []
 
-      const restaurantsMap = new Map()
-      ;[...activeRestaurants, ...inactiveRestaurants].forEach((shop) => {
-        const restaurantId = String(shop?._id || shop?.id || "")
-        if (!restaurantId) return
-        if (!restaurantsMap.has(restaurantId)) {
-          restaurantsMap.set(restaurantId, shop)
+      const shopsMap = new Map()
+      ;[...activeShops, ...inactiveShops].forEach((shop) => {
+        const shopId = String(shop?._id || shop?.id || "")
+        if (!shopId) return
+        if (!shopsMap.has(shopId)) {
+          shopsMap.set(shopId, shop)
         }
       })
-      const shops = Array.from(restaurantsMap.values())
-      setRestaurantsForFilter(
+      const shops = Array.from(shopsMap.values())
+      setShopsForFilter(
         shops
           .map((shop) => ({
             id: String(shop?._id || shop?.id || ""),
-            name: shop?.name || shop?.restaurantName || "Unknown Shop",
+            name: shop?.name || shop?.shopName || "Unknown Shop",
           }))
           .filter((shop) => shop.id)
           .sort((a, b) => a.name.localeCompare(b.name))
@@ -152,8 +152,8 @@ export default function FoodsList() {
               name: f.name || "Unnamed Item",
               image: f.image || "https://via.placeholder.com/40",
               status: f.isAvailable !== false && String(f.approvalStatus || "").toLowerCase() !== "rejected",
-              restaurantId: String(f.restaurantId || ""),
-              restaurantName: f.restaurantName || "Unknown Shop",
+              shopId: String(f.shopId || ""),
+              shopName: f.shopName || "Unknown Shop",
               categoryId: String(f.categoryId || ""),
               categoryName: f.categoryName || "",
               subcategoryId: String(f.subcategoryId || ""),
@@ -176,7 +176,7 @@ export default function FoodsList() {
       debugError("Error fetching foods:", error)
       toast.error("Failed to load foods")
       setFoods([])
-      setRestaurantsForFilter([])
+      setShopsForFilter([])
     } finally {
       setLoading(false)
     }
@@ -239,19 +239,19 @@ export default function FoodsList() {
       result = result.filter(food =>
         food.name.toLowerCase().includes(query) ||
         food.id.toString().includes(query) ||
-        food.restaurantName?.toLowerCase().includes(query) ||
+        food.shopName?.toLowerCase().includes(query) ||
         food.categoryName?.toLowerCase().includes(query) ||
         food.subcategoryName?.toLowerCase().includes(query)
       )
     }
 
-    if (selectedRestaurant !== "all") {
-      result = result.filter((food) => String(food.restaurantId) === selectedRestaurant)
+    if (selectedShop !== "all") {
+      result = result.filter((food) => String(food.shopId) === selectedShop)
     }
 
     result.sort((a, b) => getItemCreatedMs(b) - getItemCreatedMs(a))
     return result
-  }, [foods, searchQuery, selectedRestaurant])
+  }, [foods, searchQuery, selectedShop])
 
   const totalPages = useMemo(() => {
     if (filteredFoods.length === 0) return 1
@@ -265,7 +265,7 @@ export default function FoodsList() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, selectedRestaurant, pageSize])
+  }, [searchQuery, selectedShop, pageSize])
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -273,16 +273,16 @@ export default function FoodsList() {
     }
   }, [currentPage, totalPages])
 
-  const restaurantOptions = useMemo(() => {
-    return restaurantsForFilter
-  }, [restaurantsForFilter])
+  const shopOptions = useMemo(() => {
+    return shopsForFilter
+  }, [shopsForFilter])
 
   const openAddFoodModal = () => {
     setFoodFormMode("add")
     setEditingFood(null)
     setFoodForm({
       ...createFoodForm(),
-      restaurantId: selectedRestaurant !== "all" ? selectedRestaurant : "",
+      shopId: selectedShop !== "all" ? selectedShop : "",
     })
     setSelectedImageFile(null)
     setImagePreviewUrl("")
@@ -295,7 +295,7 @@ export default function FoodsList() {
     setFoodFormMode("edit")
     setEditingFood(food)
     setFoodForm({
-      restaurantId: String(food.restaurantId || ""),
+      shopId: String(food.shopId || ""),
       categoryId: String(food.categoryId || ""),
       categoryName: String(food.categoryName || ""),
       subcategoryId: String(food.subcategoryId || ""),
@@ -327,10 +327,10 @@ export default function FoodsList() {
 
     const loadCategoryOptions = async () => {
       try {
-        // Fetch categories - pass restaurantId if available to get union of Global + Shop categories
+        // Fetch categories - pass shopId if available to get union of Global + Shop categories
         const params = { limit: 1000 }
-        if (foodForm.restaurantId) {
-          params.restaurantId = foodForm.restaurantId
+        if (foodForm.shopId) {
+          params.shopId = foodForm.shopId
         }
 
         const res = await adminAPI.getCategories(params)
@@ -338,21 +338,21 @@ export default function FoodsList() {
         const options = Array.isArray(list)
           ? list
               .map((c) => {
-                const rId = String(c.restaurantId || c.createdByRestaurantId || "")
-                const isGlobal = Boolean(c.isGlobal || (!c.restaurantId && !c.createdByRestaurantId))
+                const rId = String(c.shopId || c.createdByShopId || "")
+                const isGlobal = Boolean(c.isGlobal || (!c.shopId && !c.createdByShopId))
                 return {
                   id: String(c.id || c._id || ""),
                   name: String(c.name || "").trim(),
                   foodTypeScope: String(c.foodTypeScope || "Both"),
                   isGlobal,
-                  restaurantId: rId,
+                  shopId: rId,
                 }
               })
               .filter((c) => {
                 if (!c.name) return false
                 // If a shop is selected, strictly show only its private categories + global ones
-                if (foodForm.restaurantId) {
-                  return c.isGlobal || c.restaurantId === String(foodForm.restaurantId)
+                if (foodForm.shopId) {
+                  return c.isGlobal || c.shopId === String(foodForm.shopId)
                 }
                 // If no shop selected, show only global categories to avoid clutter
                 return c.isGlobal
@@ -371,7 +371,7 @@ export default function FoodsList() {
     return () => {
       cancelled = true
     }
-  }, [showFoodFormModal, foodForm.restaurantId])
+  }, [showFoodFormModal, foodForm.shopId])
 
   useEffect(() => {
     if (!showFoodFormModal || !foodForm.categoryId) {
@@ -436,7 +436,7 @@ export default function FoodsList() {
   }
 
   const handleFoodFormSubmit = async () => {
-    if (!foodForm.restaurantId) {
+    if (!foodForm.shopId) {
       toast.error("Please select a shop")
       return
     }
@@ -503,7 +503,7 @@ export default function FoodsList() {
           const scope = subScope && subScope !== "Both" ? subScope : categoryScope
           return scope === "Veg" ? "Veg" : "Non-Veg"
         })(),
-        restaurantId: foodForm.restaurantId,
+        shopId: foodForm.shopId,
         categoryId: foodForm.categoryId || undefined,
         categoryName: String(foodForm.categoryName || "").trim(),
         subcategoryId: foodForm.subcategoryId || undefined,
@@ -611,12 +611,12 @@ export default function FoodsList() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             </div>
             <select
-              value={selectedRestaurant}
-              onChange={(e) => setSelectedRestaurant(e.target.value)}
+              value={selectedShop}
+              onChange={(e) => setSelectedShop(e.target.value)}
               className="px-4 py-2.5 min-w-[220px] text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
             >
               <option value="all">All Shops</option>
-              {restaurantOptions.map((shop) => (
+              {shopOptions.map((shop) => (
                 <option key={shop.id} value={shop.id}>
                   {shop.name}
                 </option>
@@ -707,7 +707,7 @@ export default function FoodsList() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-slate-800">{food.restaurantName || "-"}</span>
+                        <span className="text-sm font-medium text-slate-800">{food.shopName || "-"}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -836,7 +836,7 @@ export default function FoodsList() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 border border-slate-200 rounded-lg p-4">
-                <p><span className="font-semibold text-slate-700">Shop:</span> <span className="text-slate-900">{selectedFood.restaurantName || "-"}</span></p>
+                <p><span className="font-semibold text-slate-700">Shop:</span> <span className="text-slate-900">{selectedFood.shopName || "-"}</span></p>
                 <p><span className="font-semibold text-slate-700">Price:</span> <span className="text-slate-900">{selectedFood.variants?.length ? `Starting from \u20B9${selectedFood.price}` : `\u20B9${selectedFood.price}`}</span></p>
                 <p><span className="font-semibold text-slate-700">Category:</span> <span className="text-slate-900">{selectedFood.categoryName || "-"}</span></p>
                 <p><span className="font-semibold text-slate-700">Approval:</span> <span className="text-slate-900 capitalize">{selectedFood.approvalStatus || "-"}</span></p>
@@ -894,13 +894,13 @@ export default function FoodsList() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Shop</label>
                 <select
-                  value={foodForm.restaurantId}
-                  onChange={(e) => setFoodForm((prev) => ({ ...prev, restaurantId: e.target.value, categoryId: "", categoryName: "", subcategoryId: "", subcategoryName: "" }))}
+                  value={foodForm.shopId}
+                  onChange={(e) => setFoodForm((prev) => ({ ...prev, shopId: e.target.value, categoryId: "", categoryName: "", subcategoryId: "", subcategoryName: "" }))}
                   disabled={foodFormMode === "edit"}
                   className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white disabled:bg-slate-100"
                 >
                   <option value="">Select shop</option>
-                  {restaurantOptions.map((shop) => (
+                  {shopOptions.map((shop) => (
                     <option key={shop.id} value={shop.id}>
                       {shop.name}
                     </option>

@@ -3,7 +3,7 @@ import { sendResponse, sendError } from '../../../../utils/response.js';
 
 /**
  * Create a new feedback experience entry.
- * POST /api/v1/food/restaurant/feedback-experience
+ * POST /api/v1/food/shop/feedback-experience
  */
 export const createFeedbackExperience = async (req, res) => {
     try {
@@ -31,9 +31,9 @@ export const createFeedbackExperience = async (req, res) => {
         };
 
         // Determine user model based on role
-        if (req.user?.role === 'RESTAURANT') {
-            feedbackData.userModel = 'FoodRestaurant';
-            feedbackData.restaurantId = userId;
+        if (req.user?.role === 'SHOP') {
+            feedbackData.userModel = 'FoodShop';
+            feedbackData.shopId = userId;
         } else if (req.user?.role === 'DELIVERY_PARTNER') {
             feedbackData.userModel = 'FoodDeliveryPartner';
         } else {
@@ -99,8 +99,8 @@ export const getFeedbackExperiences = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
         
         const feedbacks = await FeedbackExperience.find(query)
-            .populate('userId', 'name phone email restaurantName ownerPhone ownerEmail')
-            .populate('restaurantId', 'restaurantName')
+            .populate('userId', 'name phone email shopName ownerPhone ownerEmail')
+            .populate('shopId', 'shopName')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit));
@@ -134,7 +134,7 @@ export const getFeedbackExperiences = async (req, res) => {
             const user = fb.userId || {};
             return {
                 ...fb.toObject(),
-                userName: user.name || user.restaurantName || 'N/A',
+                userName: user.name || user.shopName || 'N/A',
                 userPhone: user.phone || user.ownerPhone || 'N/A',
                 userEmail: user.email || user.ownerEmail || 'N/A'
             };

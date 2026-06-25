@@ -3,13 +3,13 @@ const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 /**
- * Restaurant Management Utility Functions
- * Centralized management for restaurant details across the restaurant module
+ * Shop Management Utility Functions
+ * Centralized management for shop details across the shop module
  */
 
-// Default restaurant data
-const DEFAULT_RESTAURANT_DATA = {
-  restaurantName: {
+// Default shop data
+const DEFAULT_SHOP_DATA = {
+  shopName: {
     english: "Hungry Puppets",
     bengali: "",
     arabic: "",
@@ -19,14 +19,14 @@ const DEFAULT_RESTAURANT_DATA = {
   address: "House: 00, Road: 00, Test City",
   logo: null,
   cover: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&h=400&fit=crop",
-  metaTitle: "Hungry Puppets Restaurant: Where Fla",
-  metaDescription: "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Restaurant. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
+  metaTitle: "Hungry Puppets Shop: Where Fla",
+  metaDescription: "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Shop. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
   metaImage: null,
   rating: 4.7,
   totalRatings: 3
 }
 
-const RESTAURANT_STORAGE_KEY = 'restaurant_data'
+const SHOP_STORAGE_KEY = 'shop_data'
 
 const isValidImageValue = (value) => {
   if (!value || typeof value !== 'string') return false
@@ -40,73 +40,74 @@ const isValidImageValue = (value) => {
   )
 }
 
-const normalizeRestaurantData = (data = {}) => ({
-  ...DEFAULT_RESTAURANT_DATA,
-  ...data,
-  restaurantName: {
-    ...DEFAULT_RESTAURANT_DATA.restaurantName,
-    ...(data.restaurantName || {})
-  },
-  logo: isValidImageValue(data.logo) ? data.logo : null,
-  cover: isValidImageValue(data.cover) ? data.cover : DEFAULT_RESTAURANT_DATA.cover,
-  metaImage: isValidImageValue(data.metaImage) ? data.metaImage : null
-})
+const normalizeShopData = (data = {}) => {
+  const shopName = data.shopName || {};
+  return {
+    ...DEFAULT_SHOP_DATA,
+    ...data,
+    shopName: {
+      ...DEFAULT_SHOP_DATA.shopName,
+      ...shopName
+    },
+    logo: isValidImageValue(data.logo) ? data.logo : null,
+    cover: isValidImageValue(data.cover) ? data.cover : DEFAULT_SHOP_DATA.cover,
+    metaImage: isValidImageValue(data.metaImage) ? data.metaImage : null
+  };
+}
 
 /**
- * Get restaurant data from localStorage
- * @returns {Object} - Restaurant data object
+ * Get shop data from localStorage
+ * @returns {Object} - Shop data object
  */
-export const getRestaurantData = () => {
+export const getShopData = () => {
   try {
-    const saved = localStorage.getItem(RESTAURANT_STORAGE_KEY)
+    const saved = localStorage.getItem(SHOP_STORAGE_KEY)
     if (saved) {
-      const normalizedData = normalizeRestaurantData(JSON.parse(saved))
-      localStorage.setItem(RESTAURANT_STORAGE_KEY, JSON.stringify(normalizedData))
+      const normalizedData = normalizeShopData(JSON.parse(saved))
+      localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify(normalizedData))
       return normalizedData
     }
     // Initialize with default data
-    setRestaurantData(DEFAULT_RESTAURANT_DATA)
-    return DEFAULT_RESTAURANT_DATA
+    setShopData(DEFAULT_SHOP_DATA)
+    return DEFAULT_SHOP_DATA
   } catch (error) {
-    debugError('Error reading restaurant data from localStorage:', error)
-    return DEFAULT_RESTAURANT_DATA
+    debugError('Error reading shop data from localStorage:', error)
+    return DEFAULT_SHOP_DATA
   }
 }
 
 /**
- * Save restaurant data to localStorage
- * @param {Object} restaurantData - Restaurant data object
+ * Save shop data to localStorage
+ * @param {Object} shopData - Shop data object
  */
-export const setRestaurantData = (restaurantData) => {
+export const setShopData = (shopData) => {
   try {
-    const normalizedData = normalizeRestaurantData(restaurantData)
-    localStorage.setItem(RESTAURANT_STORAGE_KEY, JSON.stringify(normalizedData))
-    // Dispatch custom event for other components
-    window.dispatchEvent(new CustomEvent('restaurantDataUpdated'))
+    const normalizedData = normalizeShopData(shopData)
+    localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify(normalizedData))
+    // Dispatch custom events for other components
+    window.dispatchEvent(new CustomEvent('shopDataUpdated'))
     // Trigger storage event for cross-tab updates
     window.dispatchEvent(new Event('storage'))
   } catch (error) {
-    debugError('Error saving restaurant data to localStorage:', error)
+    debugError('Error saving shop data to localStorage:', error)
   }
 }
 
 /**
- * Update restaurant data (merge with existing)
- * @param {Object} updates - Partial restaurant data to update
- * @returns {Object} - Updated restaurant data
+ * Update shop data (merge with existing)
+ * @param {Object} updates - Partial shop data to update
+ * @returns {Object} - Updated shop data
  */
-export const updateRestaurantData = (updates) => {
-  const currentData = getRestaurantData()
+export const updateShopData = (updates) => {
+  const currentData = getShopData()
+  const shopNameUpdates = updates.shopName;
   const updatedData = {
     ...currentData,
     ...updates,
-    // Merge restaurantName object if it exists
-    restaurantName: updates.restaurantName 
-      ? { ...currentData.restaurantName, ...updates.restaurantName }
-      : currentData.restaurantName
+    shopName: shopNameUpdates 
+      ? { ...currentData.shopName, ...shopNameUpdates }
+      : currentData.shopName
   }
-  setRestaurantData(updatedData)
+  setShopData(updatedData)
   return updatedData
 }
-
-

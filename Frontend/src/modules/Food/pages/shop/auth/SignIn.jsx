@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { isModuleAuthenticated, setAuthData } from "@food/utils/auth"
 import { Mail, Lock, EyeOff, Eye, CheckSquare, UtensilsCrossed } from "lucide-react"
 import { Button } from "@food/components/ui/button"
@@ -10,7 +10,7 @@ import { Checkbox } from "@food/components/ui/checkbox"
 import loginBg from "@food/assets/loginbanner.png"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 
-export default function RestaurantSignIn() {
+export default function ShopSignIn() {
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -20,9 +20,9 @@ export default function RestaurantSignIn() {
   const [error, setError] = useState("")
   const companyName = useCompanyName()
 
-  // Redirect to restaurant home if already authenticated
+  // Redirect to shop home if already authenticated
   useEffect(() => {
-    const isAuthenticated = isModuleAuthenticated("restaurant")
+    const isAuthenticated = isModuleAuthenticated("shop")
     if (isAuthenticated) {
       navigate("/shop", { replace: true })
     }
@@ -35,7 +35,7 @@ export default function RestaurantSignIn() {
 
     try {
       // Login with shop auth endpoint
-      const response = await restaurantAPI.login(email, password)
+      const response = await shopAPI.login(email, password)
       const data = response?.data?.data || response?.data
       
       if (data.accessToken && data.shop) {
@@ -43,7 +43,7 @@ export default function RestaurantSignIn() {
         setAuthData("shop", data.accessToken, data.shop)
         
         // Dispatch custom event for same-tab updates
-        window.dispatchEvent(new Event('restaurantAuthChanged'))
+        window.dispatchEvent(new Event('shopAuthChanged'))
         
         navigate("/shop", { replace: true })
       } else {
@@ -67,7 +67,7 @@ export default function RestaurantSignIn() {
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
           src={loginBg}
-          alt="Restaurant background"
+          alt="Shop background"
           className="w-full h-full object-cover"
         />
         {/* Orange half-circle text block attached to the left with animation */}

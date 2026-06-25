@@ -9,11 +9,11 @@ const foodSubcategorySchema = new mongoose.Schema(
         foodTypeScope: { type: String, enum: ['Veg', 'Non-Veg', 'Both'], default: 'Both', index: true },
         /**
          * Subcategory scope:
-         * - When restaurantId is missing: subcategory is admin/global
-         * - When restaurantId is set: subcategory is private to that restaurant
+         * - When shopId is missing: subcategory is admin/global
+         * - When shopId is set: subcategory is private to that shop
          */
-        restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodRestaurant', index: true, default: undefined },
-        createdByRestaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodRestaurant', index: true, default: undefined },
+        shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodShop', index: true, default: undefined },
+        createdByShopId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodShop', index: true, default: undefined },
         approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved', index: true },
         isApproved: { type: Boolean, default: true, index: true },
         rejectionReason: { type: String, trim: true, default: '' },
@@ -35,8 +35,8 @@ const foodSubcategorySchema = new mongoose.Schema(
 );
 
 foodSubcategorySchema.index({ categoryId: 1, isApproved: 1, createdAt: -1 });
-foodSubcategorySchema.index({ restaurantId: 1, isApproved: 1, createdAt: -1 });
+foodSubcategorySchema.index({ shopId: 1, isApproved: 1, createdAt: -1 });
 foodSubcategorySchema.index({ approvalStatus: 1, createdAt: -1 });
-foodSubcategorySchema.index({ createdByRestaurantId: 1, categoryId: 1, createdAt: -1 });
+foodSubcategorySchema.index({ createdByShopId: 1, categoryId: 1, createdAt: -1 });
 
 export const FoodSubcategory = mongoose.model('FoodSubcategory', foodSubcategorySchema);

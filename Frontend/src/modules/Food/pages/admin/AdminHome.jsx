@@ -139,8 +139,8 @@ export default function AdminHome() {
   const totalAdminEarnings = dashboardData?.totalAdminEarnings || 0
 
   // Additional stats
-  const totalRestaurants = dashboardData?.shops?.total || 0
-  const pendingRestaurantRequests = dashboardData?.shops?.pendingRequests || 0
+  const totalShops = dashboardData?.shops?.total || 0
+  const pendingShopRequests = dashboardData?.shops?.pendingRequests || 0
   const totalDeliveryBoys = dashboardData?.deliveryBoys?.total || 0
   const pendingDeliveryBoyRequests = dashboardData?.deliveryBoys?.pendingRequests || 0
   const totalFoods = dashboardData?.foods?.total || 0
@@ -231,7 +231,7 @@ export default function AdminHome() {
             <MetricCard
               title="Commission earned"
               value={formatCurrency(commissionTotal)}
-              helper={`${periodLabel} restaurant cut`}
+              helper={`${periodLabel} shop cut`}
               icon={<ArrowUpRight className="h-5 w-5 text-indigo-600" />}
               accent="bg-indigo-200/40"
               path="/admin/food/shops/commission"
@@ -278,15 +278,15 @@ export default function AdminHome() {
             />
             <MetricCard
               title="Total shops"
-              value={totalRestaurants.toLocaleString("en-IN")}
-              helper="Approved restaurants"
+              value={totalShops.toLocaleString("en-IN")}
+              helper="Approved shops"
               icon={<Store className="h-5 w-5 text-brand-600" />}
               accent="bg-brand-200/40"
               path="/admin/food/shops"
             />
             <MetricCard
               title="Shop request pending"
-              value={pendingRestaurantRequests.toLocaleString("en-IN")}
+              value={pendingShopRequests.toLocaleString("en-IN")}
               helper="Awaiting approval"
               icon={<UserCheck className="h-5 w-5 text-orange-600" />}
               accent="bg-orange-200/40"

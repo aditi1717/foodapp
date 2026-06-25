@@ -4,7 +4,7 @@ const foodPayoutSettlementSchema = new mongoose.Schema(
     {
         beneficiaryType: {
             type: String,
-            enum: ['restaurant', 'delivery'],
+            enum: ['shop', 'delivery'],
             required: true,
             index: true
         },

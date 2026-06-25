@@ -39,7 +39,7 @@ export default function DispatchFilterPanel({ isOpen, onClose, filters, setFilte
             </label>
             <input
               type="text"
-              value={filters.restaurant || ""}
+              value={filters.shop || ""}
               onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
               placeholder="Enter shop name"
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"

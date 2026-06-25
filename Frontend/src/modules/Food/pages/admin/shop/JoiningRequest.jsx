@@ -3,7 +3,7 @@ import {
   Search, Filter, Eye, Check, X, UtensilsCrossed, ArrowUpDown, Loader2,
   FileText, Image as ImageIcon, ExternalLink, CreditCard, Calendar, Star, Building2, User, Phone, Mail, MapPin, Clock
 } from "lucide-react"
-import { adminAPI, restaurantAPI } from "@food/api"
+import { adminAPI, shopAPI } from "@food/api"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -68,7 +68,7 @@ export default function JoiningRequest() {
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [rejectionReason, setRejectionReason] = useState("")
   const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [restaurantDetails, setRestaurantDetails] = useState(null)
+  const [shopDetails, setShopDetails] = useState(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [showFilterDialog, setShowFilterDialog] = useState(false)
   const [filters, setFilters] = useState({
@@ -101,7 +101,7 @@ export default function JoiningRequest() {
       setLoading(true)
       setError(null)
 
-      const response = await adminAPI.getPendingRestaurants()
+      const response = await adminAPI.getPendingShops()
       const list = (response?.data?.data || []).map((request, index) =>
         normalizeRequestRecord(request, index),
       )
@@ -138,7 +138,7 @@ export default function JoiningRequest() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       filtered = filtered.filter(request =>
-        request.restaurantName?.toLowerCase().includes(query) ||
+        request.shopName?.toLowerCase().includes(query) ||
         request.ownerName?.toLowerCase().includes(query) ||
         request.ownerPhone?.includes(query)
       )
@@ -182,15 +182,15 @@ export default function JoiningRequest() {
   const hasActiveFilters = filters.zone || filters.dateFrom || filters.dateTo
 
   const handleApprove = async (request) => {
-    if (window.confirm(`Are you sure you want to approve "${request.restaurantName}" shop request?`)) {
+    if (window.confirm(`Are you sure you want to approve "${request.shopName}" shop request?`)) {
       try {
         setProcessing(true)
-        await adminAPI.approveRestaurant(request._id)
+        await adminAPI.approveShop(request._id)
         
         // Refresh the list
         await fetchRequests()
         
-        alert(`Successfully approved ${request.restaurantName}'s join request!`)
+        alert(`Successfully approved ${request.shopName}'s join request!`)
       } catch (err) {
         debugError("Error approving request:", err)
         alert(err.response?.data?.message || "Failed to approve request. Please try again.")
@@ -214,7 +214,7 @@ export default function JoiningRequest() {
 
     try {
       setProcessing(true)
-      await adminAPI.rejectRestaurant(selectedRequest._id, rejectionReason)
+      await adminAPI.rejectShop(selectedRequest._id, rejectionReason)
       
       // Refresh the list
       await fetchRequests()
@@ -223,7 +223,7 @@ export default function JoiningRequest() {
       setSelectedRequest(null)
       setRejectionReason("")
       
-      alert(`Successfully rejected ${selectedRequest.restaurantName}'s join request!`)
+      alert(`Successfully rejected ${selectedRequest.shopName}'s join request!`)
     } catch (err) {
       debugError("Error rejecting request:", err)
       alert(err.response?.data?.message || "Failed to reject request. Please try again.")
@@ -242,26 +242,26 @@ export default function JoiningRequest() {
     setSelectedRequest(request)
     setShowDetailsModal(true)
     setLoadingDetails(true)
-    setRestaurantDetails(null)
+    setShopDetails(null)
     
     try {
       // First, use fullData if available (has all details from API)
       if (request.fullData) {
         debugLog("Using fullData from request:", request.fullData)
-        setRestaurantDetails(request.fullData)
+        setShopDetails(request.fullData)
         setLoadingDetails(false)
         return
       }
       
       // Try to fetch full shop details from API
-      const restaurantId = request._id || request.id
+      const shopId = request._id || request.id
       let response = null
       
-      if (restaurantId) {
+      if (shopId) {
         try {
           // Try admin API first
-          if (adminAPI.getRestaurantById) {
-            response = await adminAPI.getRestaurantById(restaurantId)
+          if (adminAPI.getShopById) {
+            response = await adminAPI.getShopById(shopId)
           }
         } catch (err) {
           debugLog("Admin API failed, trying shop API:", err)
@@ -270,7 +270,7 @@ export default function JoiningRequest() {
         // Fallback to regular shop API
         if (!response || !response?.data?.success) {
           try {
-            response = await restaurantAPI.getRestaurantById(restaurantId)
+            response = await shopAPI.getShopById(shopId)
           } catch (err) {
             debugLog("Shop API also failed:", err)
           }
@@ -281,20 +281,20 @@ export default function JoiningRequest() {
       if (response?.data?.success) {
         const data = response.data.data
         if (data?.shop) {
-          setRestaurantDetails(data.shop)
+          setShopDetails(data.shop)
         } else if (data) {
-          setRestaurantDetails(data)
+          setShopDetails(data)
         } else {
-          setRestaurantDetails(request)
+          setShopDetails(request)
         }
       } else {
         // Use the request data we already have
-        setRestaurantDetails(request)
+        setShopDetails(request)
       }
     } catch (err) {
       debugError("Error fetching shop details:", err)
       // Use the request data we already have
-      setRestaurantDetails(request)
+      setShopDetails(request)
     } finally {
       setLoadingDetails(false)
     }
@@ -303,7 +303,7 @@ export default function JoiningRequest() {
   const closeDetailsModal = () => {
     setShowDetailsModal(false)
     setSelectedRequest(null)
-    setRestaurantDetails(null)
+    setShopDetails(null)
   }
 
   const getNormalizedImageUrl = (image) => {
@@ -446,7 +446,7 @@ export default function JoiningRequest() {
                   </tr>
                 ) : (
                   filteredRequests.map((request, index) => (
-                    <tr key={request._id || request.id || `${request.restaurantName}-${index}`} className="hover:bg-slate-50 transition-colors">
+                    <tr key={request._id || request.id || `${request.shopName}-${index}`} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-slate-700">{request.sl ?? index + 1}</span>
                       </td>
@@ -461,13 +461,13 @@ export default function JoiningRequest() {
                                 getNormalizedImageUrl(request?.coverImages?.[0]) ||
                                 (typeof request.profileImage === "string"
                                   ? request.profileImage
-                                  : (request.profileImage?.url || request.profileImageUrl?.url || request.restaurantImage)) ||
-                                "https://via.placeholder.com/40?text=" + (request.restaurantName?.slice(0, 2) || "R").toUpperCase()
+                                  : (request.profileImage?.url || request.profileImageUrl?.url || request.shopImage)) ||
+                                "https://via.placeholder.com/40?text=" + (request.shopName?.slice(0, 2) || "R").toUpperCase()
                               }
-                              alt={request.restaurantName || "Restaurant"}
+                              alt={request.shopName || "Shop"}
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                e.target.src = "https://via.placeholder.com/40?text=" + (request.restaurantName?.slice(0, 2) || "R").toUpperCase()
+                                e.target.src = "https://via.placeholder.com/40?text=" + (request.shopName?.slice(0, 2) || "R").toUpperCase()
                               }}
                             />
                           </div>
@@ -475,7 +475,7 @@ export default function JoiningRequest() {
                             className="text-sm font-medium text-slate-900 cursor-pointer hover:text-brand-600 transition-colors"
                             onClick={() => handleViewDetails(request)}
                           >
-                            {request.restaurantName}
+                            {request.shopName}
                           </span>
                         </div>
                       </td>
@@ -650,7 +650,7 @@ export default function JoiningRequest() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Reject Shop Request</h3>
-                  <p className="text-sm text-slate-600">{selectedRequest.restaurantName}</p>
+                  <p className="text-sm text-slate-600">{selectedRequest.shopName}</p>
                 </div>
               </div>
               
@@ -718,7 +718,7 @@ export default function JoiningRequest() {
                 <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center">
                   <UtensilsCrossed className="w-5 h-5 text-brand-600" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">Shop Details - {selectedRequest.restaurantName || "N/A"}</h2>
+                <h2 className="text-xl font-bold text-slate-900">Shop Details - {selectedRequest.shopName || "N/A"}</h2>
               </div>
               <button
                 onClick={closeDetailsModal}
@@ -736,12 +736,12 @@ export default function JoiningRequest() {
                   <span className="ml-3 text-slate-600">Loading details...</span>
                 </div>
               )}
-              {!loadingDetails && (restaurantDetails || selectedRequest) && (() => {
-                const r = restaurantDetails || selectedRequest
-                const restaurantPhotoList = Array.isArray(r?.coverImages) ? r.coverImages.filter(Boolean) : []
+              {!loadingDetails && (shopDetails || selectedRequest) && (() => {
+                const r = shopDetails || selectedRequest
+                const shopPhotoList = Array.isArray(r?.coverImages) ? r.coverImages.filter(Boolean) : []
                 const profileImgUrl =
-                  getNormalizedImageUrl(restaurantPhotoList[0]) ||
-                  (typeof r?.profileImage === "string" ? r.profileImage : (r?.profileImage?.url || r?.profileImageUrl?.url || r?.restaurantImage))
+                  getNormalizedImageUrl(shopPhotoList[0]) ||
+                  (typeof r?.profileImage === "string" ? r.profileImage : (r?.profileImage?.url || r?.profileImageUrl?.url || r?.shopImage))
                 const addressParts = [
                   r?.addressLine1,
                   r?.addressLine2,
@@ -769,7 +769,7 @@ export default function JoiningRequest() {
                     <div className="w-24 h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
                       <img
                         src={profileImgUrl || "https://via.placeholder.com/96"}
-                        alt={r?.restaurantName || r?.name || "Restaurant"}
+                        alt={r?.shopName || r?.name || "Shop"}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.src = "https://via.placeholder.com/96"
@@ -778,7 +778,7 @@ export default function JoiningRequest() {
                     </div>
                     <div className="flex-1">
                       <h3 className="text-2xl font-bold text-slate-900 mb-2">
-                        {r?.restaurantName || r?.name || "N/A"}
+                        {r?.shopName || r?.name || "N/A"}
                       </h3>
                       <div className="flex items-center gap-4 flex-wrap">
                         {r?.rating != null && (
@@ -791,7 +791,7 @@ export default function JoiningRequest() {
                         )}
                         <div className="flex items-center gap-1 text-slate-600">
                           <Building2 className="w-4 h-4" />
-                          <span className="text-sm">{r?.restaurantId || r?._id || "N/A"}</span>
+                          <span className="text-sm">{r?.shopId || r?._id || "N/A"}</span>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           approvalStatus === "approved" ? "bg-green-100 text-green-700" : approvalStatus === "rejected" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
@@ -866,11 +866,11 @@ export default function JoiningRequest() {
                     <div>
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Cuisine & Details</h4>
                       <div className="space-y-3">
-                        {typeof r?.pureVegRestaurant === "boolean" && (
+                        {typeof r?.pureVegShop === "boolean" && (
                           <div>
                             <p className="text-xs text-slate-500 mb-1">Food Type</p>
                             <p className="text-sm font-medium text-slate-900">
-                              {r.pureVegRestaurant ? "Pure Veg" : "Mixed"}
+                              {r.pureVegShop ? "Pure Veg" : "Mixed"}
                             </p>
                           </div>
                         )}
@@ -935,12 +935,12 @@ export default function JoiningRequest() {
                   </div>
 
                   {/* Registration Documents – flat schema (PAN, GST, FSSAI, Bank) */}
-                  {restaurantPhotoList.length > 0 && (
+                  {shopPhotoList.length > 0 && (
                     <div className="pt-6 border-t border-slate-200">
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Shop Photos</h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {restaurantPhotoList.map((restaurantImg, idx) => {
-                          const imgUrl = getNormalizedImageUrl(restaurantImg)
+                        {shopPhotoList.map((shopImg, idx) => {
+                          const imgUrl = getNormalizedImageUrl(shopImg)
                           return imgUrl ? (
                             <a
                               key={idx}
@@ -951,7 +951,7 @@ export default function JoiningRequest() {
                             >
                               <img
                                 src={imgUrl}
-                                alt={`Restaurant ${idx + 1}`}
+                                alt={`Shop ${idx + 1}`}
                                 className="w-full h-32 object-cover"
                                 onError={(e) => {
                                   e.target.src = "https://via.placeholder.com/200"
@@ -1173,7 +1173,7 @@ export default function JoiningRequest() {
                   )}
 
                   {/* Registration & approval info */}
-                  {(r?.createdAt || r?.restaurantId || r?.businessModel || r?.approvedAt != null) && (
+                  {(r?.createdAt || r?.shopId || r?.businessModel || r?.approvedAt != null) && (
                     <div className="pt-6 border-t border-slate-200">
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Registration & Approval</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -1194,10 +1194,10 @@ export default function JoiningRequest() {
                             </div>
                           </div>
                         )}
-                        {r.restaurantId && (
+                        {r.shopId && (
                           <div>
                             <p className="text-xs text-slate-500 mb-1">Shop ID</p>
-                            <p className="font-medium text-slate-900">{r.restaurantId}</p>
+                            <p className="font-medium text-slate-900">{r.shopId}</p>
                           </div>
                         )}
                         {r.approvedAt != null && (
@@ -1251,7 +1251,7 @@ export default function JoiningRequest() {
                 </div>
                 )
               })()}
-              {!loadingDetails && !restaurantDetails && !selectedRequest && (
+              {!loadingDetails && !shopDetails && !selectedRequest && (
                 <div className="flex flex-col items-center justify-center py-20">
                   <p className="text-lg font-semibold text-slate-700 mb-2">No Details Available</p>
                   <p className="text-sm text-slate-500">Unable to load shop details</p>

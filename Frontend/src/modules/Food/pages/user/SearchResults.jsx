@@ -4,15 +4,15 @@ import { ArrowLeft, Star, Clock, Search, SlidersHorizontal, ChevronDown, Bookmar
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
-import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
+import { ShopGridSkeleton } from "@food/components/ui/loading-skeletons"
 import StickyCartCard from "@food/components/user/StickyCartCard"
 import { useProfile } from "@food/context/ProfileContext"
 import { useLocation } from "@food/hooks/useLocation"
 import { useZone } from "@food/hooks/useZone"
-import { restaurantAPI, adminAPI } from "@food/api"
+import { shopAPI, adminAPI } from "@food/api"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 import { getShopAvailabilityStatus } from "@food/utils/shopAvailability"
-import { enrichSearchRestaurantsWithOutletTimings, isPureVegRestaurant } from "@food/utils/searchAvailability"
+import { enrichSearchShopsWithOutletTimings, isPureVegShop } from "@food/utils/searchAvailability"
 import BRAND_THEME from "@/config/brandTheme"
 
 const debugLog = (...args) => {}
@@ -65,20 +65,20 @@ export default function SearchResults() {
   const [favorites, setFavorites] = useState(new Set())
   const categoryScrollRef = useRef(null)
   const menuEnrichmentRequestRef = useRef(0)
-  const [restaurantsData, setRestaurantsData] = useState([])
-  const [loadingRestaurants, setLoadingRestaurants] = useState(true)
+  const [shopsData, setShopsData] = useState([])
+  const [loadingShops, setLoadingShops] = useState(true)
   const [categories, setCategories] = useState([
     { id: 'all', name: "All", image: "" }
   ])
   const [loadingCategories, setLoadingCategories] = useState(true)
   const [categoryKeywords, setCategoryKeywords] = useState({})
-  const showRestaurantSkeleton = useDelayedLoading(loadingRestaurants)
+  const showShopSkeleton = useDelayedLoading(loadingShops)
   const deferredQuery = useDeferredValue(query)
   const slugify = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
-  const uniqueRestaurants = (list) => {
+  const uniqueShops = (list) => {
     const seen = new Set()
     return list.filter((shop) => {
-      const key = shop?.id || shop?.restaurantId || slugify(shop?.name)
+      const key = shop?.id || shop?.shopId || slugify(shop?.name)
       if (!key || seen.has(key)) return false
       seen.add(key)
       return true
@@ -207,33 +207,33 @@ export default function SearchResults() {
 
   // Fetch shops from API
   useEffect(() => {
-    const fetchRestaurants = async () => {
+    const fetchShops = async () => {
       try {
         if (!zoneId) {
-          setRestaurantsData([])
+          setShopsData([])
           return
         }
-        setLoadingRestaurants(true)
+        setLoadingShops(true)
         debugLog('?? Fetching shops from API...')
         const params = { zoneId }
-        const response = await restaurantAPI.getRestaurants(params)
+        const response = await shopAPI.getShops(params)
 
         debugLog('?? Full API Response:', response)
         debugLog('?? Response Data:', response?.data)
 
         if (response.data && response.data.success && response.data.data && response.data.data.shops) {
-          const restaurantsArray = response.data.data.shops
-          debugLog(`? Got ${restaurantsArray.length} shops from API`)
+          const shopsArray = response.data.data.shops
+          debugLog(`? Got ${shopsArray.length} shops from API`)
 
           // Check if we have actual data or just defaults
-          if (restaurantsArray.length > 0) {
+          if (shopsArray.length > 0) {
             debugLog('?? First shop sample:', {
-              id: restaurantsArray[0]._id || restaurantsArray[0].restaurantId,
-              name: restaurantsArray[0].name,
-              rating: restaurantsArray[0].rating,
-              offer: restaurantsArray[0].offer,
-              featuredDish: restaurantsArray[0].featuredDish,
-              featuredPrice: restaurantsArray[0].featuredPrice,
+              id: shopsArray[0]._id || shopsArray[0].shopId,
+              name: shopsArray[0].name,
+              rating: shopsArray[0].rating,
+              offer: shopsArray[0].offer,
+              featuredDish: shopsArray[0].featuredDish,
+              featuredPrice: shopsArray[0].featuredPrice,
             })
           }
 
@@ -269,7 +269,7 @@ export default function SearchResults() {
 
           // First transform shops without menu data - USE ONLY BACKEND DATA
           // Filter out shops with only default/mock data
-          const restaurantsWithIds = await enrichSearchRestaurantsWithOutletTimings(restaurantsArray
+          const shopsWithIds = await enrichSearchShopsWithOutletTimings(shopsArray
             .filter((shop) => {
               // Only include shops with real data (not just defaults)
               // At minimum, shop should have a name and either images or menu
@@ -318,7 +318,7 @@ export default function SearchResults() {
                   : (shop.profileImage?.url ? [shop.profileImage.url] : []))
 
               const image = allImages[0] || null // Will be handled in UI
-              const restaurantId = shop.restaurantId || shop._id
+              const shopId = shop.shopId || shop._id
 
               let featuredDish = shop.featuredDish || null
               let featuredPrice = shop.featuredPrice || null
@@ -329,7 +329,7 @@ export default function SearchResults() {
               }
 
               return {
-                id: restaurantId,
+                id: shopId,
                 name: shop.name,
                 cuisine: cuisine,
                 rating: shop.rating || null, // Use backend rating or null
@@ -342,9 +342,9 @@ export default function SearchResults() {
                 featuredPrice: featuredPrice, // Will be set from menu if available
                 offer: offer, // Use backend offer or null (defaults filtered out)
                 slug: shop.slug || shop.name?.toLowerCase().replace(/\s+/g, '-'),
-                restaurantId: restaurantId,
-                mongoId: shop._id || restaurantId,
-                pureVegRestaurant: shop.pureVegRestaurant === true,
+                shopId: shopId,
+                mongoId: shop._id || shopId,
+                pureVegShop: shop.pureVegShop === true,
                 isActive: shop.isActive !== false,
                 isAcceptingOrders: shop.isAcceptingOrders !== false,
                 availabilityStatus: shop.availabilityStatus || null,
@@ -354,7 +354,7 @@ export default function SearchResults() {
                 isOpen: shop.isOpen,
                 openNow: shop.openNow,
                 isOpenNow: shop.isOpenNow,
-                isRestaurantOpen: shop.isRestaurantOpen,
+                isShopOpen: shop.isShopOpen,
                 todayOpen: shop.todayOpen,
                 isOpenToday: shop.isOpenToday,
                 closedToday: shop.closedToday,
@@ -373,26 +373,26 @@ export default function SearchResults() {
             }))
 
           startTransition(() => {
-            setRestaurantsData(restaurantsWithIds)
+            setShopsData(shopsWithIds)
           })
 
           const enrichmentRequestId = ++menuEnrichmentRequestRef.current
 
           void (async () => {
-            const transformedRestaurants = []
+            const transformedShops = []
 
-            for (let index = 0; index < restaurantsWithIds.length; index += 4) {
-              const batchRestaurants = restaurantsWithIds.slice(index, index + 4)
+            for (let index = 0; index < shopsWithIds.length; index += 4) {
+              const batchShops = shopsWithIds.slice(index, index + 4)
               const batchResults = await Promise.all(
-                batchRestaurants.map(async (restaurant) => {
+                batchShops.map(async (rItem) => {
                   try {
-                    const menuResponse = await restaurantAPI.getMenuByRestaurantId(shop.restaurantId)
+                    const menuResponse = await shopAPI.getMenuByShopId(rItem.shopId)
                     if (menuResponse.data && menuResponse.data.success && menuResponse.data.data && menuResponse.data.data.menu) {
                       const menu = menuResponse.data.data.menu
                       const hasPaneer = checkCategoryInMenu(menu, 'paneer-tikka')
 
-                      let featuredDish = shop.featuredDish
-                      let featuredPrice = shop.featuredPrice
+                      let featuredDish = rItem.featuredDish
+                      let featuredPrice = rItem.featuredPrice
 
                       if (!featuredDish || !featuredPrice) {
                         for (const section of (menu.sections || [])) {
@@ -412,7 +412,7 @@ export default function SearchResults() {
                       }
 
                       return {
-                        ...shop,
+                        ...rItem,
                         menu: menu,
                         hasPaneer: hasPaneer,
                         featuredDish: featuredDish || null,
@@ -421,11 +421,11 @@ export default function SearchResults() {
                       }
                     }
                   } catch (error) {
-                    debugWarn(`Failed to fetch menu for shop ${shop.restaurantId}:`, error)
+                    debugWarn(`Failed to fetch menu for shop ${rItem.shopId}:`, error)
                   }
 
                   return {
-                    ...shop,
+                    ...rItem,
                     menu: null,
                     hasPaneer: false,
                     categoryMatches: {},
@@ -434,25 +434,25 @@ export default function SearchResults() {
               )
 
               if (enrichmentRequestId !== menuEnrichmentRequestRef.current) return
-              transformedRestaurants.push(...batchResults)
+              transformedShops.push(...batchResults)
             }
 
-            debugLog(`? Final transformed shops: ${transformedRestaurants.length}`)
+            debugLog(`? Final transformed shops: ${transformedShops.length}`)
             startTransition(() => {
-              setRestaurantsData(transformedRestaurants)
+              setShopsData(transformedShops)
             })
 
             const sectionStatsMap = new Map()
-            transformedRestaurants.forEach((shop) => {
+            transformedShops.forEach((shop) => {
               const sections = shop?.menu?.sections
               if (!Array.isArray(sections)) return
-              const seenInRestaurant = new Set()
+              const seenInShop = new Set()
               sections.forEach((section) => {
                 const rawName = String(section?.name || '').trim()
                 if (!rawName) return
                 const key = slugify(rawName)
-                if (!key || seenInRestaurant.has(key)) return
-                seenInRestaurant.add(key)
+                if (!key || seenInShop.has(key)) return
+                seenInShop.add(key)
 
                 const existing = sectionStatsMap.get(key) || { name: rawName, count: 0 }
                 existing.count += 1
@@ -465,7 +465,7 @@ export default function SearchResults() {
                 .map(([slug, stats]) => [slug, stats.name])
 
               const getCategoryImageFromMenus = (slug, categoryName) => {
-                for (const shop of transformedRestaurants) {
+                for (const shop of transformedShops) {
                   const menuSections = Array.isArray(shop?.menu?.sections) ? shop.menu.sections : []
                   for (const section of menuSections) {
                     const sectionSlug = slugify(section?.name || "")
@@ -521,21 +521,21 @@ export default function SearchResults() {
             hasData: !!response.data,
             hasSuccess: response.data?.success,
             hasDataField: !!response.data?.data,
-            hasRestaurants: !!response.data?.data?.shops,
+            hasShops: !!response.data?.data?.shops,
             fullResponse: response.data
           })
-          setRestaurantsData([])
+          setShopsData([])
         }
       } catch (error) {
         debugError('? Error fetching shops:', error)
         debugError('? Error response:', error.response?.data)
-        setRestaurantsData([])
+        setShopsData([])
       } finally {
-        setLoadingRestaurants(false)
+        setLoadingShops(false)
       }
     }
 
-    fetchRestaurants()
+    fetchShops()
   }, [zoneId, isOutOfService])
 
   // Update search query when URL changes
@@ -610,8 +610,8 @@ export default function SearchResults() {
   // Filter shops based on search query, selected category, and filters
   const filteredRecommended = useMemo(() => {
     // Use ONLY backend data - no hardcoded fallback
-    const sourceData = restaurantsData.length > 0
-      ? (vegMode && vegModePreference === "pure-veg" ? restaurantsData.filter(isPureVegRestaurant) : restaurantsData)
+    const sourceData = shopsData.length > 0
+      ? (vegMode && vegModePreference === "pure-veg" ? shopsData.filter(isPureVegShop) : shopsData)
       : []
     let filtered = [...sourceData]
 
@@ -694,13 +694,13 @@ export default function SearchResults() {
       filtered = filtered.filter(r => r.offer && r.offer.includes('50%'))
     }
 
-    return uniqueRestaurants(filtered)
-  }, [deferredQuery, selectedCategory, activeFilters, restaurantsData, categoryKeywords, loadingCategories, vegMode, vegModePreference])
+    return uniqueShops(filtered)
+  }, [deferredQuery, selectedCategory, activeFilters, shopsData, categoryKeywords, loadingCategories, vegMode, vegModePreference])
 
-  const filteredAllRestaurants = useMemo(() => {
+  const filteredAllShops = useMemo(() => {
     // Use ONLY backend data - no hardcoded fallback
-    const sourceData = restaurantsData.length > 0
-      ? (vegMode && vegModePreference === "pure-veg" ? restaurantsData.filter(isPureVegRestaurant) : restaurantsData)
+    const sourceData = shopsData.length > 0
+      ? (vegMode && vegModePreference === "pure-veg" ? shopsData.filter(isPureVegShop) : shopsData)
       : []
     let filtered = [...sourceData]
 
@@ -805,16 +805,16 @@ export default function SearchResults() {
       filtered = filtered.filter(r => r.offer && r.offer.includes('50%'))
     }
 
-    return uniqueRestaurants(filtered)
-  }, [deferredQuery, selectedCategory, activeFilters, restaurantsData, categoryKeywords, loadingCategories, vegMode, vegModePreference])
+    return uniqueShops(filtered)
+  }, [deferredQuery, selectedCategory, activeFilters, shopsData, categoryKeywords, loadingCategories, vegMode, vegModePreference])
 
   const recommendedIds = useMemo(
     () => new Set(filteredRecommended.slice(0, 6).map((shop) => shop.id)),
     [filteredRecommended]
   )
-  const nonRepeatedAllRestaurants = useMemo(
-    () => filteredAllRestaurants.filter((shop) => !recommendedIds.has(shop.id)),
-    [filteredAllRestaurants, recommendedIds]
+  const nonRepeatedAllShops = useMemo(
+    () => filteredAllShops.filter((shop) => !recommendedIds.has(shop.id)),
+    [filteredAllShops, recommendedIds]
   )
 
   // Check if should show grayscale (user out of service)
@@ -954,10 +954,10 @@ export default function SearchResults() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-6 md:py-8 lg:py-10 space-y-6 md:space-y-8 lg:space-y-10">
         {/* Loading State */}
-        {showRestaurantSkeleton && <RestaurantGridSkeleton count={4} compact />}
+        {showShopSkeleton && <ShopGridSkeleton count={4} compact />}
 
         {/* RECOMMENDED FOR YOU Section */}
-        {!showRestaurantSkeleton && filteredRecommended.length > 0 && (
+        {!showShopSkeleton && filteredRecommended.length > 0 && (
           <section>
             <h2 className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-4">
               RECOMMENDED FOR YOU
@@ -967,20 +967,20 @@ export default function SearchResults() {
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 lg:gap-5">
               {filteredRecommended.slice(0, 6).map((shop) => {
                 const availability = getShopAvailabilityStatus(shop, new Date())
-                const isRestaurantUnavailable = isOutOfService || !availability.isOpen
+                const isShopUnavailable = isOutOfService || !availability.isOpen
                 return (
                   <Link
-                    key={restaurant.id}
-                    to={`/user/shops/${restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    key={shop.id}
+                    to={`/user/shops/${shop.slug || shop.name.toLowerCase().replace(/\s+/g, '-')}`}
                     className="block"
                   >
-                    <div className={`group ${isRestaurantUnavailable ? 'grayscale opacity-75' : ''}`}>
+                    <div className={`group ${isShopUnavailable ? 'grayscale opacity-75' : ''}`}>
                       {/* Image Container */}
                       <div className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-200 dark:bg-gray-800">
                         {shop.image ? (
                           <img
-                            src={restaurant.image}
-                            alt={restaurant.name}
+                            src={shop.image}
+                            alt={shop.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
                               e.target.style.display = 'none'
@@ -1022,7 +1022,7 @@ export default function SearchResults() {
                           <span>{shop.deliveryTime}</span>
                         </div>
                       )}
-                      {isRestaurantUnavailable && (
+                      {isShopUnavailable && (
                         <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
                           {availability.badgeLabel || "Closed"}
                         </div>
@@ -1043,22 +1043,22 @@ export default function SearchResults() {
 
           {/* Large Shop Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6">
-            {nonRepeatedAllRestaurants.map((shop) => {
-              const restaurantSlug = shop.name.toLowerCase().replace(/\s+/g, "-")
+            {nonRepeatedAllShops.map((shop) => {
+              const shopSlug = shop.name.toLowerCase().replace(/\s+/g, "-")
               const isFavorite = favorites.has(shop.id)
               const availability = getShopAvailabilityStatus(shop, new Date())
-              const isRestaurantUnavailable = isOutOfService || !availability.isOpen
+              const isShopUnavailable = isOutOfService || !availability.isOpen
 
               return (
-                <Link key={restaurant.id} to={`/user/shops/${restaurant.slug || restaurantSlug}`} className="h-full flex">
-                  <Card className={`overflow-hidden cursor-pointer border-0 dark:border-gray-800 group bg-white dark:bg-[#1a1a1a] shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-md flex flex-col h-full w-full ${isRestaurantUnavailable ? 'grayscale opacity-75' : ''
+                <Link key={shop.id} to={`/user/shops/${shop.slug || shopSlug}`} className="h-full flex">
+                  <Card className={`overflow-hidden cursor-pointer border-0 dark:border-gray-800 group bg-white dark:bg-[#1a1a1a] shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-md flex flex-col h-full w-full ${isShopUnavailable ? 'grayscale opacity-75' : ''
                     }`}>
                     {/* Image Section */}
                     <div className="relative h-44 sm:h-52 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-md flex-shrink-0 bg-gray-200 dark:bg-gray-800">
                       {shop.image ? (
                         <img
-                          src={restaurant.image}
-                          alt={restaurant.name}
+                          src={shop.image}
+                          alt={shop.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           onError={(e) => {
                             e.target.style.display = 'none'
@@ -1089,7 +1089,7 @@ export default function SearchResults() {
 
                         return displayText ? (
                           <div className="absolute top-3 left-3">
-                            <div className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium ${BRAND_THEME.tokens.homepage.home.restaurantCard.featuredDishBadge}`}>
+                            <div className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium ${BRAND_THEME.tokens.homepage.home.shopCard.featuredDishBadge}`}>
                               {displayText}
                             </div>
                           </div>
@@ -1103,7 +1103,7 @@ export default function SearchResults() {
                         </div>
                       )}
 
-                      {isRestaurantUnavailable && (
+                      {isShopUnavailable && (
                         <div className="absolute top-3 left-3 bg-white/90 dark:bg-[#1a1a1a]/90 text-gray-700 dark:text-gray-200 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide">
                           {availability.badgeLabel || "Closed"}
                         </div>
@@ -1173,7 +1173,7 @@ export default function SearchResults() {
             })}
 
             {/* Empty State */}
-            {nonRepeatedAllRestaurants.length === 0 && (
+            {nonRepeatedAllShops.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-gray-500 dark:text-gray-400">
                   {query

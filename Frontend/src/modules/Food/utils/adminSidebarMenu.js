@@ -84,7 +84,7 @@ export const adminSidebarMenu = [
           { label: "User Unavailable", path: "/admin/food/orders/user-unavailable" },
           { label: "Delivered", path: "/admin/food/orders/delivered" },
           { label: "Cancelled", path: "/admin/food/orders/canceled" },
-          { label: "Shop cancelled", path: "/admin/food/orders/restaurant-cancelled" },
+          { label: "Shop cancelled", path: "/admin/food/orders/shop-cancelled" },
           { label: "Payment Failed", path: "/admin/food/orders/payment-failed" },
           { label: "Refunded", path: "/admin/food/orders/refunded" },
           { label: "Offline Payments", path: "/admin/food/orders/offline-payments" },

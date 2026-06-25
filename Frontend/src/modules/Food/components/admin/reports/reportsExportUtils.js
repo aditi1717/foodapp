@@ -107,16 +107,16 @@ export const exportReportsToJSON = (data, filename = "report") => {
 
 // Specific export functions for Transaction Report
 export const exportTransactionReportToCSV = (transactions, filename = "transaction_report") => {
-  const headers = ["SI", "Order ID", "Restaurant", "Customer Name", "Total Item Amount", "Coupon By Admin", "Coupon By Restaurant", "Offer By Restaurant", "VAT/Tax", "Delivery Charge", "Platform Fee", "Order Amount"]
+  const headers = ["SI", "Order ID", "Shop", "Customer Name", "Total Item Amount", "Coupon By Admin", "Coupon By Shop", "Offer By Shop", "VAT/Tax", "Delivery Charge", "Platform Fee", "Order Amount"]
   const rows = transactions.map((transaction, index) => [
     index + 1,
     transaction.orderId,
-    transaction.restaurant,
+    transaction.shop,
     transaction.customerName,
     transaction.totalItemAmount.toFixed(2),
     (transaction.couponByAdmin || 0).toFixed(2),
-    (transaction.couponByRestaurant || 0).toFixed(2),
-    (transaction.offerByRestaurant || 0).toFixed(2),
+    (transaction.couponByShop || 0).toFixed(2),
+    (transaction.offerByShop || 0).toFixed(2),
     transaction.vatTax.toFixed(2),
     transaction.deliveryCharge.toFixed(2),
     Number(transaction.platformFee || 0).toFixed(2),
@@ -140,16 +140,16 @@ export const exportTransactionReportToCSV = (transactions, filename = "transacti
 }
 
 export const exportTransactionReportToExcel = (transactions, filename = "transaction_report") => {
-  const headers = ["SI", "Order ID", "Restaurant", "Customer Name", "Total Item Amount", "Coupon By Admin", "Coupon By Restaurant", "Offer By Restaurant", "VAT/Tax", "Delivery Charge", "Platform Fee", "Order Amount"]
+  const headers = ["SI", "Order ID", "Shop", "Customer Name", "Total Item Amount", "Coupon By Admin", "Coupon By Shop", "Offer By Shop", "VAT/Tax", "Delivery Charge", "Platform Fee", "Order Amount"]
   const rows = transactions.map((transaction, index) => [
     index + 1,
     transaction.orderId,
-    transaction.restaurant,
+    transaction.shop,
     transaction.customerName,
     transaction.totalItemAmount.toFixed(2),
     (transaction.couponByAdmin || 0).toFixed(2),
-    (transaction.couponByRestaurant || 0).toFixed(2),
-    (transaction.offerByRestaurant || 0).toFixed(2),
+    (transaction.couponByShop || 0).toFixed(2),
+    (transaction.offerByShop || 0).toFixed(2),
     transaction.vatTax.toFixed(2),
     transaction.deliveryCharge.toFixed(2),
     Number(transaction.platformFee || 0).toFixed(2),
@@ -177,7 +177,7 @@ export const exportTransactionReportToPDF = async (transactions, filename = "tra
     const { default: jsPDF } = await import("jspdf");
     const { default: autoTable } = await import("jspdf-autotable");
 
-    const headers = ["SI", "Order ID", "Restaurant", "Customer Name", "Total Item Amount", "Coupon By Admin", "Coupon By Restaurant", "Offer By Restaurant", "VAT/Tax", "Delivery Charge", "Platform Fee", "Order Amount"]
+    const headers = ["SI", "Order ID", "Shop", "Customer Name", "Total Item Amount", "Coupon By Admin", "Coupon By Shop", "Offer By Shop", "VAT/Tax", "Delivery Charge", "Platform Fee", "Order Amount"]
     
     const doc = new jsPDF("landscape");
     
@@ -191,12 +191,12 @@ export const exportTransactionReportToPDF = async (transactions, filename = "tra
     const bodyRows = transactions.map((transaction, index) => [
       index + 1,
       transaction.orderId,
-      transaction.restaurant,
+      transaction.shop,
       transaction.customerName,
       transaction.totalItemAmount.toFixed(2),
       (transaction.couponByAdmin || 0).toFixed(2),
-      (transaction.couponByRestaurant || 0).toFixed(2),
-      (transaction.offerByRestaurant || 0).toFixed(2),
+      (transaction.couponByShop || 0).toFixed(2),
+      (transaction.offerByShop || 0).toFixed(2),
       transaction.vatTax.toFixed(2),
       transaction.deliveryCharge.toFixed(2),
       Number(transaction.platformFee || 0).toFixed(2),

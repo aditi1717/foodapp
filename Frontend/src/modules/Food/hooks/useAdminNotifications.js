@@ -56,17 +56,17 @@ const uniqueById = (items = []) => {
 
 const joinMeta = (...parts) => parts.filter(Boolean).join(" • ");
 
-const mapPendingRestaurants = (rows = []) =>
+const mapPendingShops = (rows = []) =>
   (Array.isArray(rows) ? rows : []).map((item) => ({
-    id: `approval-restaurant-${String(item?._id || item?.id || "")}`,
-    title: "Restaurant Approval Pending",
-    message: `${item?.restaurantName || "Restaurant"} submitted a restaurant approval request. Owner: ${item?.ownerName || "N/A"}. Contact: ${item?.ownerPhone || "N/A"}.`,
+    id: `approval-shop-${String(item?._id || item?.id || "")}`,
+    title: "Shop Approval Pending",
+    message: `${item?.shopName || "Shop"} submitted a shop approval request. Owner: ${item?.ownerName || "N/A"}. Contact: ${item?.ownerPhone || "N/A"}.`,
     type: "approval",
-    category: "restaurant_approval",
+    category: "shop_approval",
     path: "/admin/food/shops/joining-request",
     createdAt: item?.createdAt || item?.updatedAt,
     timeLabel: toDateLabel(item?.createdAt || item?.updatedAt),
-    metaLabel: joinMeta(item?.restaurantName, item?.ownerName, item?.ownerPhone),
+    metaLabel: joinMeta(item?.shopName, item?.ownerName, item?.ownerPhone),
   }));
 
 const mapDeliveryJoinRequests = (response) => {
@@ -103,13 +103,13 @@ const mapFoodApprovals = (response) => {
   return (Array.isArray(rows) ? rows : []).map((item) => ({
     id: `approval-food-${String(item?._id || item?.id || "")}`,
     title: "Food Approval Pending",
-    message: `${item?.itemName || "Food item"} from ${item?.restaurantName || "Restaurant"} is waiting for review. Category: ${item?.category || item?.type || "N/A"}.`,
+    message: `${item?.itemName || "Food item"} from ${item?.shopName || "Shop"} is waiting for review. Category: ${item?.category || item?.type || "N/A"}.`,
     type: "approval",
     category: "food_approval",
     path: "/admin/food/food-approval",
     createdAt: item?.requestedAt || item?.createdAt || item?.updatedAt,
     timeLabel: toDateLabel(item?.requestedAt || item?.createdAt || item?.updatedAt),
-    metaLabel: joinMeta(item?.restaurantName, item?.itemName, item?.category || item?.type),
+    metaLabel: joinMeta(item?.shopName, item?.itemName, item?.category || item?.type),
   }));
 };
 
@@ -125,14 +125,14 @@ const mapUserShopSupport = (response) => {
   return (Array.isArray(rows) ? rows : [])
     .filter((item) => !["resolved", "closed"].includes(String(item?.status || "").toLowerCase()))
     .map((item) => {
-      const isRestaurantTicket = item?.source === "restaurant";
-      const title = isRestaurantTicket ? "Restaurant Support Ticket" : "User Support Ticket";
-      const message = isRestaurantTicket
-        ? `${item?.restaurantName || "Restaurant"} raised a support ticket. Subject: ${item?.subject || item?.issueType || "N/A"}. Status: ${item?.status || "open"}.`
-        : `${item?.user?.name || "User"} raised a support ticket${item?.restaurantName ? ` for ${item.restaurantName}` : ""}. Issue: ${item?.issueType || item?.type || "N/A"}. Status: ${item?.status || "open"}.`;
+      const isShopTicket = item?.source === "shop";
+      const title = isShopTicket ? "Shop Support Ticket" : "User Support Ticket";
+      const message = isShopTicket
+        ? `${item?.shopName || "Shop"} raised a support ticket. Subject: ${item?.subject || item?.issueType || "N/A"}. Status: ${item?.status || "open"}.`
+        : `${item?.user?.name || "User"} raised a support ticket${item?.shopName ? ` for ${item.shopName}` : ""}. Issue: ${item?.issueType || item?.type || "N/A"}. Status: ${item?.status || "open"}.`;
 
-      const metaLabel = isRestaurantTicket
-        ? joinMeta(item?.restaurantName, item?.subject || item?.issueType, item?.status)
+      const metaLabel = isShopTicket
+        ? joinMeta(item?.shopName, item?.subject || item?.issueType, item?.status)
         : joinMeta(item?.user?.name, item?.user?.phone, item?.issueType || item?.type, item?.status);
 
       return {
@@ -178,17 +178,17 @@ const mapExpiredFssai = (response) => {
   const rows = payload?.items || payload?.data || response?.data?.items || [];
 
   return (Array.isArray(rows) ? rows : []).map((item) => ({
-    id: String(item?.id || `fssai-expired-${item?.restaurantId || ""}`),
+    id: String(item?.id || `fssai-expired-${item?.shopId || ""}`),
     title: item?.title || "FSSAI License Expired",
     message:
       item?.message ||
-      `${item?.restaurantName || "Restaurant"} FSSAI license has expired.`,
+      `${item?.shopName || "Shop"} FSSAI license has expired.`,
     type: "compliance",
     category: "fssai_expired",
     path: "/admin/food/shops",
     createdAt: item?.createdAt || item?.fssaiExpiry,
     timeLabel: toDateLabel(item?.createdAt || item?.fssaiExpiry),
-    metaLabel: joinMeta(item?.restaurantName, item?.ownerName, item?.ownerPhone, item?.fssaiNumber),
+    metaLabel: joinMeta(item?.shopName, item?.ownerName, item?.ownerPhone, item?.fssaiNumber),
   }));
 };
 
@@ -202,7 +202,7 @@ export default function useAdminNotifications(options = {}) {
       const dismissed = new Set(getDismissedIds());
 
       const settled = await Promise.allSettled([
-        adminAPI.getPendingRestaurants(),
+        adminAPI.getPendingShops(),
         adminAPI.getDeliveryPartnerJoinRequests({ page: 1, limit: 50 }),
         adminAPI.getPendingFoodApprovals({ page: 1, limit: 50 }),
         adminAPI.getSupportTicketsAdmin({ page: 1, limit: 50, source: "all" }),
@@ -212,20 +212,20 @@ export default function useAdminNotifications(options = {}) {
       const valueOrNull = (index) =>
         settled[index]?.status === "fulfilled" ? settled[index].value : null;
 
-      const restaurantsRes = valueOrNull(0);
+      const shopsRes = valueOrNull(0);
       const deliveryJoinRes = valueOrNull(1);
       const foodApprovalRes = valueOrNull(2);
       const supportRes = valueOrNull(3);
       const deliverySupportRes = valueOrNull(4);
       const fssaiExpiredRes = valueOrNull(5);
 
-      const restaurantRows =
-        restaurantsRes?.data?.data ||
-        restaurantsRes?.data?.restaurants ||
+      const shopRows =
+        shopsRes?.data?.data ||
+        shopsRes?.data?.shops ||
         [];
 
       const aggregated = uniqueById([
-        ...mapPendingRestaurants(restaurantRows),
+        ...mapPendingShops(shopRows),
         ...mapDeliveryJoinRequests(deliveryJoinRes),
         ...mapFoodApprovals(foodApprovalRes),
         ...mapUserShopSupport(supportRes),

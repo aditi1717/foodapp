@@ -91,10 +91,10 @@ const getLocFromOrderRef = (ref, keysLat, keysLng) => {
 const hydrateDeliveryOrder = (rawOrder, fallbackOrderId) => {
   if (!rawOrder) return null;
 
-  const restaurantLocation =
-    rawOrder?.restaurantLocation ||
-    getLocFromOrderRef(rawOrder?.restaurantId, ['latitude', 'lat'], ['longitude', 'lng']) ||
-    getLocFromOrderRef(rawOrder, ['restaurant_lat', 'restaurantLat', 'latitude'], ['restaurant_lng', 'restaurantLng', 'longitude']);
+  const shopLocation =
+    rawOrder?.shopLocation ||
+    getLocFromOrderRef(rawOrder?.shopId, ['latitude', 'lat'], ['longitude', 'lng']) ||
+    getLocFromOrderRef(rawOrder, ['shop_lat', 'shopLat', 'latitude'], ['shop_lng', 'shopLng', 'longitude']);
 
   const customerLocation =
     rawOrder?.customerLocation ||
@@ -104,7 +104,7 @@ const hydrateDeliveryOrder = (rawOrder, fallbackOrderId) => {
   return {
     ...rawOrder,
     orderId: rawOrder?.orderId || fallbackOrderId || rawOrder?._id || rawOrder?.id,
-    restaurantLocation,
+    shopLocation,
     customerLocation,
   };
 };
@@ -160,11 +160,11 @@ const getClosedOrderStatusMeta = (statusLike) => {
   };
 };
 
-const getRestaurantTitle = (order) =>
-  order?.restaurantName ||
-  order?.restaurantId?.restaurantName ||
-  order?.restaurantId?.name ||
-  'Restaurant order';
+const getShopTitle = (order) =>
+  order?.shopName ||
+  order?.shopId?.shopName ||
+  order?.shopId?.name ||
+  'Shop order';
 
 const getPaymentLabel = (order) => {
   const method = String(order?.payment?.method || order?.paymentMethod || '').toLowerCase();
@@ -445,7 +445,7 @@ function OrdersTabV2({
                 Order #{orderDisplayId}
               </p>
             ) : null}
-            <p className="mt-1.5 text-[14px] font-bold leading-5 text-slate-950 truncate">{getRestaurantTitle(order)}</p>
+            <p className="mt-1.5 text-[14px] font-bold leading-5 text-slate-950 truncate">{getShopTitle(order)}</p>
             {itemLine ? <p className="mt-1 text-[11px] leading-4 text-slate-600 truncate">{itemLine}</p> : null}
             <p className="mt-1 text-[11px] leading-4 text-slate-500 line-clamp-1">{subtitle}</p>
           </div>
@@ -503,7 +503,7 @@ function OrdersTabV2({
             <span className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] ${toneClass}`}>
               {statusLabel}
             </span>
-            <p className="mt-2 text-[15px] font-bold leading-5 text-slate-950 truncate">{getRestaurantTitle(order)}</p>
+            <p className="mt-2 text-[15px] font-bold leading-5 text-slate-950 truncate">{getShopTitle(order)}</p>
             <p className="mt-1 text-xs leading-5 text-slate-500">{statusLabel} today at {timeLabel}</p>
           </div>
           {amount > 0 ? <p className="text-xs font-black text-slate-950 shrink-0">₹{amount.toFixed(2)}</p> : null}
@@ -589,7 +589,7 @@ function OrdersTabV2({
                 </div>
                 {currentActiveOrder && (
                   <Card
-                    title={getRestaurantTitle(currentActiveOrder)}
+                    title={getShopTitle(currentActiveOrder)}
                     orderDisplayId={getOrderDisplayId(currentActiveOrder)}
                     itemLine={getOrderItemSummary(currentActiveOrder)}
                     subtitle="Open detail page to continue status updates."
@@ -603,7 +603,7 @@ function OrdersTabV2({
                 {liveOrders.map((order) => (
                   <Card
                     key={getOrderIdentity(order)}
-                    title={getRestaurantTitle(order)}
+                    title={getShopTitle(order)}
                     orderDisplayId={getOrderDisplayId(order)}
                     itemLine={getOrderItemSummary(order)}
                     subtitle="Open detail page to continue status updates."
@@ -1837,7 +1837,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                     toast.warning('Simulation Mode Active');
                     // Initialize position if null
                     if (!useDeliveryStore.getState().riderLocation && activeOrder) {
-                      const target = activeOrder.restaurantLocation || activeOrder.customerLocation;
+                      const target = activeOrder.shopLocation || activeOrder.customerLocation;
                       if (target) {
                         setRiderLocation({
                           lat: parseFloat(target.lat || target.latitude) + 0.001,

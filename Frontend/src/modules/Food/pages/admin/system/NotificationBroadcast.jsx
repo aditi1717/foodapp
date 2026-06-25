@@ -5,7 +5,7 @@ import { adminAPI } from "@food/api";
 const TARGET_OPTIONS = [
   { value: "ALL", label: "All" },
   { value: "USER", label: "Users" },
-  { value: "RESTAURANT", label: "Restaurants" },
+  { value: "SHOP", label: "Shops" },
   { value: "DELIVERY", label: "Delivery Partners" },
   { value: "CUSTOM", label: "Particular Persons" },
 ];
@@ -72,9 +72,9 @@ export default function NotificationBroadcast() {
   const loadRecipients = async () => {
     try {
       setRecipientLoading(true);
-      const [customersRes, restaurantsRes, deliveryRes] = await Promise.all([
+      const [customersRes, shopsRes, deliveryRes] = await Promise.all([
         adminAPI.getCustomers({ page: 1, limit: 500 }),
-        adminAPI.getRestaurants({ page: 1, limit: 500 }),
+        adminAPI.getShops({ page: 1, limit: 500 }),
         adminAPI.getDeliveryPartners({ page: 1, limit: 500 }),
       ]);
 
@@ -85,10 +85,10 @@ export default function NotificationBroadcast() {
         subLabel: [item?.phone, item?.email].filter(Boolean).join(" • "),
       }));
 
-      const shops = normalizeRecipients(restaurantsRes, "SHOP", (item, ownerType) => ({
+      const shops = normalizeRecipients(shopsRes, "SHOP", (item, ownerType) => ({
         ownerType,
         ownerId: String(item?._id || item?.id || ""),
-        label: String(item?.restaurantName || item?.ownerName || "Shop").trim(),
+        label: String(item?.shopName || item?.ownerName || "Shop").trim(),
         subLabel: [item?.ownerPhone, item?.ownerEmail].filter(Boolean).join(" • "),
       }));
 

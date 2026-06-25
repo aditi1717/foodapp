@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import BRAND_THEME from "@/config/brandTheme"
 
-const getOrdersTabs = (basePath = "/restaurant") => [
+const getOrdersTabs = (basePath = "/shop") => [
   { id: "orders", label: "Orders", icon: FileText, route: `${basePath}` },
   { id: "inventory", label: "Inventory", icon: Package, route: `${basePath}/inventory` },
   { id: "feedback", label: "Feedback", icon: MessageSquare, route: `${basePath}/feedback` },

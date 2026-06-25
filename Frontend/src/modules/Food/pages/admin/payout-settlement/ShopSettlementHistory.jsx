@@ -176,7 +176,7 @@ export default function ShopSettlementHistory() {
                       </td>
                       <td className="px-5 py-4 text-sm text-slate-700">
                         <div className="flex flex-col">
-                          <span>{Number(row.restaurantsCount || 0)}</span>
+                          <span>{Number(row.shopsCount || 0)}</span>
                           {beneficiaryNames(row) ? <span className="text-xs text-slate-500">{beneficiaryNames(row)}</span> : null}
                         </div>
                       </td>

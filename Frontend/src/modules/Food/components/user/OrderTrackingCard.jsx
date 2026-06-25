@@ -74,7 +74,7 @@ const TERMINAL_STATUSES = new Set([
   "completed",
   "failed",
   "cancelled_by_user",
-  "cancelled_by_restaurant",
+  "cancelled_by_shop",
   "cancelled_by_admin",
 ]);
 
@@ -97,12 +97,12 @@ const isDeliveredLikeOrder = (order) => {
 };
 
 const hasPendingRating = (order) => {
-  const restaurantRating = Number(order?.ratings?.shop?.rating ?? order?.restaurantRating);
-  const hasRestaurantRating = Number.isFinite(restaurantRating) && restaurantRating > 0;
+  const shopRating = Number(order?.ratings?.shop?.rating ?? order?.shopRating);
+  const hasShopRating = Number.isFinite(shopRating) && shopRating > 0;
   const hasDeliveryPartner = Boolean(order?.isDeliveryAccepted) && !!(order?.deliveryPartnerId || order?.deliveryPartnerName);
   const deliveryPartnerRating = Number(order?.ratings?.deliveryPartner?.rating ?? order?.deliveryPartnerRating);
   const hasDeliveryRating = Number.isFinite(deliveryPartnerRating) && deliveryPartnerRating > 0;
-  return !hasRestaurantRating || (hasDeliveryPartner && !hasDeliveryRating);
+  return !hasShopRating || (hasDeliveryPartner && !hasDeliveryRating);
 };
 
 const toFiniteNumber = (value) => {
@@ -439,13 +439,13 @@ function OrderTrackingCardInner({ hasBottomNav = true, otpOnly = false, showOtpB
   const otpKey = `${String(orderRouteId)}:${deliveryOtpCode}`;
   const showGlobalOtp = showOtpBanner && Boolean(deliveryOtpCode) && dismissedOtpKey !== otpKey;
 
-  const restaurantName =
-    displayOrder.restaurantName ||
+  const shopName =
+    displayOrder.shopName ||
     displayOrder.shop ||
-    displayOrder?.restaurantId?.restaurantName ||
-    displayOrder?.restaurantId?.name ||
+    displayOrder?.shopId?.shopName ||
+    displayOrder?.shopId?.name ||
     (typeof displayOrder?.shop === "object"
-      ? displayOrder?.shop?.restaurantName || displayOrder?.shop?.name
+      ? displayOrder?.shop?.shopName || displayOrder?.shop?.name
       : null) ||
     "Shop";
   const statusText = (() => {
@@ -453,7 +453,7 @@ function OrderTrackingCardInner({ hasBottomNav = true, otpOnly = false, showOtpB
     const p = String(orderPhase);
 
     if (s === "confirmed") return "Order confirmed";
-    if (s === "preparing" || s === "created" || s === "pending") return `Preparing your food at ${restaurantName}`;
+    if (s === "preparing" || s === "created" || s === "pending") return `Preparing your food at ${shopName}`;
     if (s === "ready_for_pickup" || s === "ready") {
       return displayOrder?.fulfillmentType === 'takeaway' ? "Ready for pickup at shop" : "Ready for pickup";
     }
@@ -577,7 +577,7 @@ function OrderTrackingCardInner({ hasBottomNav = true, otpOnly = false, showOtpB
             <CookingAnimation className="dark:invert" />
 
             <div className="flex-1 min-w-0 pr-3">
-              <p className="text-gray-900 dark:text-white font-bold text-base md:text-lg truncate tracking-tight">{restaurantName}</p>
+              <p className="text-gray-900 dark:text-white font-bold text-base md:text-lg truncate tracking-tight">{shopName}</p>
               <div className="flex items-center gap-1 mt-1">
                 <p className={`font-medium text-xs md:text-sm leading-tight ${isDeliveredCard ? "text-slate-600 dark:text-slate-300" : "text-gray-500 dark:text-gray-400"} truncate`}>
                   {isDeliveredCard ? "How was your order? Give your rating" : statusText}

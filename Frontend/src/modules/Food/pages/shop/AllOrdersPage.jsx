@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react"
 import { DateRangeCalendar } from "@food/components/ui/date-range-calendar"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { useShopNotifications } from "@food/hooks/useShopNotifications"
 import { formatOrderAddressWithLabels } from "@food/utils/orderAddressFormatter"
 import { getCanonicalFoodOrderStatus, getFoodOrderStatusLabel } from "@food/utils/foodOrderStatusUnified"
@@ -160,17 +160,17 @@ export default function AllOrdersPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [restaurantData, setRestaurantData] = useState(null)
+  const [shopData, setShopData] = useState(null)
   const { newOrder } = useShopNotifications()
 
   // Fetch shop data
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       try {
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
-          setRestaurantData(data)
+          setShopData(data)
         }
       } catch (err) {
         // Suppress 401 errors as they're handled by axios interceptor
@@ -179,7 +179,7 @@ export default function AllOrdersPage() {
         }
       }
     }
-    fetchRestaurantData()
+    fetchShopData()
   }, [])
 
   // Transform API order to component format
@@ -193,7 +193,7 @@ export default function AllOrdersPage() {
     const address = formatOrderAddressWithLabels(addr)
     
     // Get shop name
-    const restaurantName = restaurantData?.name || order.restaurantId?.name || 'Shop'
+    const shopName = shopData?.name || order.shopId?.name || 'Shop'
     
     // Get customer name
     const customerName = resolveCustomerName(order)
@@ -215,7 +215,7 @@ export default function AllOrdersPage() {
     const cancelledBy =
       backendStatus === "cancelled_by_admin"
         ? "admin"
-        : backendStatus === "cancelled_by_restaurant"
+        : backendStatus === "cancelled_by_shop"
           ? "shop"
           : backendStatus === "cancelled_by_user"
             ? "user"
@@ -264,7 +264,7 @@ export default function AllOrdersPage() {
       statusLabel,
       date,
       time,
-      shop: restaurantName,
+      shop: shopName,
       address,
       customer: customerName,
       items,
@@ -274,7 +274,7 @@ export default function AllOrdersPage() {
       createdAt: order.createdAt,
       mongoId: order._id?.toString()
     }
-  }, [restaurantData])
+  }, [shopData])
 
   // Fetch orders from backend
   useEffect(() => {
@@ -290,7 +290,7 @@ export default function AllOrdersPage() {
         }
         
         // Fetch all orders (we'll filter by date range on frontend)
-        const response = await restaurantAPI.getOrders(params)
+        const response = await shopAPI.getOrders(params)
         
         if (response.data?.success && response.data.data?.orders) {
           // Transform orders
@@ -526,7 +526,7 @@ export default function AllOrdersPage() {
             <p className="text-sm text-gray-600">Showing order history for</p>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-gray-900">
-                {restaurantData?.name || 'Shop'}
+                {shopData?.name || 'Shop'}
               </h1>
               <ChevronDown className="w-4 h-4 text-gray-600" />
             </div>

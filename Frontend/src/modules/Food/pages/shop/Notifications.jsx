@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Bell, RefreshCw, X } from "lucide-react"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import useNotificationInbox from "@food/hooks/useNotificationInbox"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 
-const DISMISSED_KEY = "restaurant_dismissed_notifications"
+const DISMISSED_KEY = "shop_dismissed_notifications"
 
 const getStatusLabel = (status = "") => {
   const normalized = String(status).toLowerCase()
@@ -47,7 +47,7 @@ export default function Notifications() {
   const fetchNotifications = async () => {
     try {
       setLoading(true)
-      const response = await restaurantAPI.getOrders({ page: 1, limit: 30 })
+      const response = await shopAPI.getOrders({ page: 1, limit: 30 })
       const rows = response?.data?.data?.orders || response?.data?.data?.data?.orders || []
       setOrders(rows)
     } catch (error) {

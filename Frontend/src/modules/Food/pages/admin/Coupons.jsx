@@ -12,7 +12,7 @@ export default function Coupons() {
   const isOffersOnly = location.pathname.toLowerCase().includes("/offers")
   const [searchQuery, setSearchQuery] = useState("")
   const [offers, setOffers] = useState([])
-  const [shops, setRestaurants] = useState([])
+  const [shops, setShops] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -35,8 +35,8 @@ export default function Coupons() {
     discountType: "percentage",
     discountValue: "",
     customerScope: "all",
-    restaurantScope: "all",
-    restaurantId: "",
+    shopScope: "all",
+    shopId: "",
     endDate: "",
     startDate: "",
     minOrderValue: "",
@@ -82,7 +82,7 @@ export default function Coupons() {
     try {
       setLoadingPending(true)
       setPendingError("")
-      const res = await adminAPI.getPendingRestaurantOffers({ limit: 100 })
+      const res = await adminAPI.getPendingShopOffers({ limit: 100 })
       const list = res?.data?.data?.offers || res?.data?.offers || []
       setPendingOffers(list)
     } catch (err) {
@@ -98,26 +98,26 @@ export default function Coupons() {
   }, [fetchOffers, fetchPendingOffers])
 
   useEffect(() => {
-    const fetchRestaurants = async () => {
+    const fetchShops = async () => {
       try {
-        const response = await adminAPI.getRestaurants({ page: 1, limit: 200 })
+        const response = await adminAPI.getShops({ page: 1, limit: 200 })
         if (response?.data?.success) {
           const list = response?.data?.data?.shops || []
-          // Backend returns `restaurantName`; normalize to `name` for this dropdown without affecting other pages.
+          // Backend returns `shopName`; normalize to `name` for this dropdown without affecting other pages.
           const normalized = Array.isArray(list)
             ? list.map((r) => ({
               ...r,
-              name: r?.name || r?.restaurantName || "",
+              name: r?.name || r?.shopName || "",
             }))
             : []
-          setRestaurants(normalized)
+          setShops(normalized)
         }
       } catch (err) {
         debugError("Error fetching shops:", err)
       }
     }
 
-    fetchRestaurants()
+    fetchShops()
   }, [])
 
   const todayYMD = () => {
@@ -223,8 +223,8 @@ export default function Coupons() {
       discountType: "percentage",
       discountValue: "",
       customerScope: "all",
-      restaurantScope: "all",
-      restaurantId: "",
+      shopScope: "all",
+      shopId: "",
       endDate: "",
       startDate: "",
       minOrderValue: "",
@@ -258,8 +258,8 @@ export default function Coupons() {
         discountType: offer.discountType || "percentage",
         discountValue: Number.isFinite(discountValue) ? discountValue : "",
         customerScope: offer.customerGroup === "new" ? "first-time" : (offer.customerScope || "all"),
-        restaurantScope: offer.restaurantScope || "all",
-        restaurantId: offer.restaurantId || "",
+        shopScope: offer.shopScope || "all",
+        shopId: offer.shopId || "",
         endDate: safeEnd,
         startDate: safeStart,
         minOrderValue: offer.minOrderValue ?? "",
@@ -305,8 +305,8 @@ export default function Coupons() {
       return
     }
 
-    if (formData.restaurantScope === "selected" && !formData.restaurantId) {
-      setSubmitError("Please select a restaurant")
+    if (formData.shopScope === "selected" && !formData.shopId) {
+      setSubmitError("Please select a shop")
       return
     }
 
@@ -317,8 +317,8 @@ export default function Coupons() {
         discountType: formData.discountType,
         discountValue: parsedDiscountValue,
         customerScope: formData.customerScope,
-        restaurantScope: formData.restaurantScope,
-        restaurantId: formData.restaurantScope === "selected" ? formData.restaurantId : undefined,
+        shopScope: formData.shopScope,
+        shopId: formData.shopScope === "selected" ? formData.shopId : undefined,
         endDate: formData.endDate || undefined,
         startDate: formData.startDate || undefined,
         minOrderValue: formData.minOrderValue !== "" ? Number(formData.minOrderValue) : undefined,
@@ -384,7 +384,7 @@ export default function Coupons() {
     if (!offerId || processingPending[offerId]) return
     try {
       setProcessingPending((prev) => ({ ...prev, [offerId]: true }))
-      await adminAPI.approveRestaurantOffer(offerId)
+      await adminAPI.approveShopOffer(offerId)
       setPendingOffers((prev) => prev.filter((p) => String(p._id) !== String(offerId)))
       await fetchOffers()
     } catch (err) {
@@ -398,7 +398,7 @@ export default function Coupons() {
     if (!offerId || processingPending[offerId]) return
     try {
       setProcessingPending((prev) => ({ ...prev, [offerId]: true }))
-      await adminAPI.approveRestaurantProductOffer(offerId)
+      await adminAPI.approveShopProductOffer(offerId)
       setPendingOffers((prev) => prev.filter((p) => String(p._id) !== String(offerId)))
     } catch (err) {
       setPendingError(err?.response?.data?.message || "Failed to approve offer")
@@ -412,7 +412,7 @@ export default function Coupons() {
     const reason = window.prompt("Enter rejection reason", "") || ""
     try {
       setProcessingPending((prev) => ({ ...prev, [offerId]: true }))
-      await adminAPI.rejectRestaurantProductOffer(offerId, reason)
+      await adminAPI.rejectShopProductOffer(offerId, reason)
       setPendingOffers((prev) => prev.filter((p) => String(p._id) !== String(offerId)))
     } catch (err) {
       setPendingError(err?.response?.data?.message || "Failed to reject offer")
@@ -433,8 +433,8 @@ export default function Coupons() {
         discountType: offer.discountType || "percentage",
         discountValue: offer.discountValue != null ? Number(offer.discountValue) : "",
         customerScope: offer.customerScope || "all",
-        restaurantScope: offer.restaurantScope || "selected",
-        restaurantId: offer.restaurantId || "",
+        shopScope: offer.shopScope || "selected",
+        shopId: offer.shopId || "",
         endDate: offer.endDate ? new Date(offer.endDate).toISOString().split("T")[0] : "",
         startDate: offer.startDate ? new Date(offer.startDate).toISOString().split("T")[0] : "",
         minOrderValue: offer.minOrderValue ?? "",
@@ -462,7 +462,7 @@ export default function Coupons() {
     const reason = window.prompt("Enter rejection reason", "") || ""
     try {
       setProcessingPending((prev) => ({ ...prev, [offerId]: true }))
-      await adminAPI.rejectRestaurantOffer(offerId, reason)
+      await adminAPI.rejectShopOffer(offerId, reason)
       setPendingOffers((prev) => prev.filter((p) => String(p._id) !== String(offerId)))
     } catch (err) {
       setPendingError(err?.response?.data?.message || "Failed to reject coupon")
@@ -479,7 +479,7 @@ export default function Coupons() {
     
     const query = searchQuery.toLowerCase().trim()
     return offers.filter(offer =>
-      offer.restaurantName?.toLowerCase().includes(query) ||
+      offer.shopName?.toLowerCase().includes(query) ||
       offer.dishName?.toLowerCase().includes(query) ||
       offer.couponCode?.toLowerCase().includes(query)
     )
@@ -588,8 +588,8 @@ export default function Coupons() {
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Shop Scope</label>
                   <select
-                    value={formData.restaurantScope}
-                    onChange={(e) => handleFormChange("restaurantScope", e.target.value)}
+                    value={formData.shopScope}
+                    onChange={(e) => handleFormChange("shopScope", e.target.value)}
                     className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                   >
                     <option value="all">All Shops</option>
@@ -680,12 +680,12 @@ export default function Coupons() {
                 </div>
               )}
 
-                {formData.restaurantScope === "selected" && (
+                {formData.shopScope === "selected" && (
                   <div className="md:col-span-2 lg:col-span-3">
                     <label className="block text-xs font-semibold text-slate-600 mb-1">Select Shop</label>
                     <select
-                      value={formData.restaurantId}
-                      onChange={(e) => handleFormChange("restaurantId", e.target.value)}
+                      value={formData.shopId}
+                      onChange={(e) => handleFormChange("shopId", e.target.value)}
                       className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                     >
                       <option value="">Choose a shop</option>
@@ -738,7 +738,7 @@ export default function Coupons() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
-              placeholder={isOffersOnly ? "Search by restaurant name or product..." : "Search by restaurant name, dish name, or coupon code..."}
+              placeholder={isOffersOnly ? "Search by shop name or product..." : "Search by shop name, dish name, or coupon code..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
@@ -793,7 +793,7 @@ export default function Coupons() {
                     <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">pending</span>
                   </div>
                   <div className="text-xs text-slate-600">
-                    {offer.restaurantName || "Selected shop"} • {offer.discountType === "flat-price"
+                    {offer.shopName || "Selected shop"} • {offer.discountType === "flat-price"
                       ? `₹${offer.discountValue} OFF`
                       : `${offer.discountValue}% OFF${offer.maxDiscount ? ` (up to ₹${offer.maxDiscount})` : ""}`}
                   </div>
@@ -862,7 +862,7 @@ export default function Coupons() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-slate-500">Shop</p>
-                  <p className="font-semibold text-slate-900">{viewOfferModal.restaurantName || "Selected shop"}</p>
+                  <p className="font-semibold text-slate-900">{viewOfferModal.shopName || "Selected shop"}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-slate-500">Product</p>
@@ -976,7 +976,7 @@ export default function Coupons() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-slate-900">
-                          {offer.restaurantScope === "all" || offer.restaurantName === "All Shops" ? "All Shops" : offer.restaurantName}
+                          {offer.shopScope === "all" || offer.shopName === "All Shops" ? "All Shops" : offer.shopName}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

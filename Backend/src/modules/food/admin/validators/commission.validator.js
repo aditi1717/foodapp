@@ -2,8 +2,8 @@ import { z } from 'zod';
 import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 
-const restaurantCommissionUpsertSchema = z.object({
-    restaurantId: z.string().min(1, 'Restaurant is required'),
+const shopCommissionUpsertSchema = z.object({
+    shopId: z.string().min(1, 'Shop is required'),
     defaultCommission: z.object({
         type: z.enum(['percentage', 'amount']).default('percentage'),
         value: z.number().min(0, 'Commission value must be 0 or greater')
@@ -15,9 +15,9 @@ const restaurantCommissionUpsertSchema = z.object({
     notes: z.string().optional().or(z.literal(''))
 });
 
-export const validateRestaurantCommissionUpsertDto = (body) => {
+export const validateShopCommissionUpsertDto = (body) => {
     const normalized = {
-        restaurantId: body?.restaurantId ? String(body.restaurantId) : '',
+        shopId: body?.shopId ? String(body.shopId) : '',
         defaultCommission: {
             type: body?.defaultCommission?.type,
             value: Number(body?.defaultCommission?.value)
@@ -29,12 +29,12 @@ export const validateRestaurantCommissionUpsertDto = (body) => {
         notes: body?.notes != null ? String(body.notes) : ''
     };
 
-    const result = restaurantCommissionUpsertSchema.safeParse(normalized);
+    const result = shopCommissionUpsertSchema.safeParse(normalized);
     if (!result.success) {
         throw new ValidationError(result.error.errors[0].message);
     }
-    if (!mongoose.Types.ObjectId.isValid(result.data.restaurantId)) {
-        throw new ValidationError('Invalid restaurantId');
+    if (!mongoose.Types.ObjectId.isValid(result.data.shopId)) {
+        throw new ValidationError('Invalid shopId');
     }
     if (result.data.defaultCommission.type === 'percentage' && (result.data.defaultCommission.value < 0 || result.data.defaultCommission.value > 100)) {
         throw new ValidationError('Percentage must be between 0-100');
@@ -46,7 +46,7 @@ export const validateRestaurantCommissionUpsertDto = (body) => {
         throw new ValidationError('Bulk order commission percentage must be between 0-100');
     }
     return {
-        restaurantId: result.data.restaurantId,
+        shopId: result.data.shopId,
         defaultCommission: result.data.defaultCommission,
         bulkOrderCommission: result.data.bulkOrderCommission || null,
         notes: result.data.notes ? result.data.notes.trim() : ''

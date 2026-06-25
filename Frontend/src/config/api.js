@@ -7,7 +7,7 @@ export const API_ENDPOINTS = {
     REFRESH: '/auth/refresh',
   },
   FOOD: {
-    RESTAURANTS: '/food/restaurants',
+    SHOPS: '/food/shops',
     ORDERS: '/food/orders',
     MENU: '/food/menu',
   },

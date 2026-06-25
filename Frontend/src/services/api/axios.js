@@ -43,14 +43,14 @@ function getModuleFromUrl(url = "") {
     normalized.includes("/delivery/")
   ) return "delivery";
   
-  // Restaurant/shop detection - frontend uses "shop" module name; backend routes stay /food/restaurant/
+  // Shop/shop detection - frontend uses "shop" module name; backend routes stay /food/shop/
   if (
-    normalized.includes("/food/restaurant/") || 
-    normalized.includes("/auth/restaurant") || 
-    normalized.includes("/restaurant/")
+    normalized.includes("/food/shop/") || 
+    normalized.includes("/auth/shop") || 
+    normalized.includes("/shop/")
   ) {
-    // Exception: /food/restaurants (plural) is usually a public user app route
-    if (normalized.includes("/food/restaurants") && !normalized.includes("/food/restaurant/")) {
+    // Exception: /food/shops (plural) is usually a public user app route
+    if (normalized.includes("/food/shops") && !normalized.includes("/food/shop/")) {
        return "user";
     }
     return "shop";
@@ -87,8 +87,8 @@ function tokenMatchesModule(token, module) {
   if (!role) return false;
   if (module === "user") return role === "USER";
   if (module === "admin") return role === "ADMIN";
-  // "shop" is the frontend module name; backend always issues RESTAURANT role tokens
-  if (module === "shop" || module === "restaurant") return role === "RESTAURANT";
+  // "shop" is the frontend module name; backend always issues SHOP role tokens
+  if (module === "shop" || module === "shop") return role === "SHOP";
   if (module === "delivery") return role === "DELIVERY_PARTNER";
   return true;
 }

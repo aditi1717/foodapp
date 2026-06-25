@@ -234,9 +234,9 @@ export default function AdminNewOrderPopup() {
   if (!orderAlert) return null
 
   const orderId = getDisplayOrderId(orderAlert)
-  const restaurantName =
-    orderAlert.restaurantName ||
-    orderAlert.shop?.restaurantName ||
+  const shopName =
+    orderAlert.shopName ||
+    orderAlert.shop?.shopName ||
     orderAlert.shop?.name ||
     "Shop"
   const total = orderAlert.pricing?.total ?? orderAlert.total ?? orderAlert.amount
@@ -268,7 +268,7 @@ export default function AdminNewOrderPopup() {
         <div className="space-y-2 px-4 py-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
             <Store className="h-3.5 w-3.5 text-slate-400" />
-            <span className="truncate">{restaurantName}</span>
+            <span className="truncate">{shopName}</span>
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
             <ReceiptText className="h-3.5 w-3.5 text-slate-400" />

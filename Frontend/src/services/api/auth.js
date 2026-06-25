@@ -1,5 +1,5 @@
 /**
- * Auth API – new backend (USER, ADMIN, RESTAURANT, DELIVERY).
+ * Auth API – new backend (USER, ADMIN, SHOP, DELIVERY).
  * Food-prefixed: POST /food/auth/...
  */
 
@@ -9,8 +9,8 @@ const AUTH = {
   USER_REQUEST_OTP: "/food/auth/user/request-otp",
   USER_VERIFY_OTP: "/food/auth/user/verify-otp",
   ADMIN_LOGIN: "/food/auth/admin/login",
-  RESTAURANT_REQUEST_OTP: "/food/auth/restaurant/request-otp",
-  RESTAURANT_VERIFY_OTP: "/food/auth/restaurant/verify-otp",
+  SHOP_REQUEST_OTP: "/food/auth/shop/request-otp",
+  SHOP_VERIFY_OTP: "/food/auth/shop/verify-otp",
   DELIVERY_REQUEST_OTP: "/food/auth/delivery/request-otp",
   DELIVERY_VERIFY_OTP: "/food/auth/delivery/verify-otp",
   REFRESH_TOKEN: "/food/auth/refresh-token",
@@ -158,7 +158,7 @@ export function logout(refreshToken, fcmToken = null, platform = "web") {
 
 /**
  * Get current profile (requires Bearer).
- * @param {string} [module] - "user" | "admin" | "restaurant" | "delivery" (which token to send; default "user")
+ * @param {string} [module] - "user" | "admin" | "shop" | "delivery" (which token to send; default "user")
  */
 export function getMe(module = "user") {
   const m = String(module || "user");
@@ -229,23 +229,23 @@ function getMeOnce(module) {
 }
 
 /**
- * Restaurant OTP auth (backend: same phone format as user, 4-digit OTP e.g. 1234).
+ * Shop OTP auth (backend: same phone format as user, 4-digit OTP e.g. 1234).
  */
-export function requestRestaurantOtp(phone) {
+export function requestShopOtp(phone) {
   const normalized = normalizePhone(phone);
   if (normalized.length < 8) {
     return Promise.reject(new Error("Phone must be at least 8 digits"));
   }
-  return apiClient.post(AUTH.RESTAURANT_REQUEST_OTP, { phone: normalized });
+  return apiClient.post(AUTH.SHOP_REQUEST_OTP, { phone: normalized });
 }
 
-export function verifyRestaurantOtp(phone, otp, fcmToken = null, platform = "web") {
+export function verifyShopOtp(phone, otp, fcmToken = null, platform = "web") {
   const normalized = normalizePhone(phone);
   const otpStr = String(otp).replace(/\D/g, "").slice(0, 6);
   if (!normalized || otpStr.length < 4) {
     return Promise.reject(new Error("Phone and 4-digit OTP are required"));
   }
-  return apiClient.post(AUTH.RESTAURANT_VERIFY_OTP, {
+  return apiClient.post(AUTH.SHOP_VERIFY_OTP, {
     phone: normalized,
     otp: otpStr,
     ...(fcmToken ? { fcmToken, platform } : {}),

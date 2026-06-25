@@ -1,72 +1,70 @@
-// Utility for managing restaurant data across pages
+// Utility for managing shop data across pages
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
+const SHOP_STORAGE_KEY = "appzeto_shops"
 
-const STORAGE_KEY = "appzeto_restaurants"
-
-// Get restaurants from localStorage
-export const getRestaurants = () => {
+// Get shops from localStorage
+export const getShops = () => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = localStorage.getItem(SHOP_STORAGE_KEY)
     if (stored) {
       return JSON.parse(stored)
     }
     return []
   } catch (error) {
-    debugError("Error loading restaurants:", error)
+    debugError("Error loading shops:", error)
     return []
   }
 }
 
-// Save restaurants to localStorage
-export const saveRestaurants = (restaurants) => {
+// Save shops to localStorage
+export const saveShops = (shops) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(restaurants))
+    localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify(shops))
     return true
   } catch (error) {
-    debugError("Error saving restaurants:", error)
+    debugError("Error saving shops:", error)
     return false
   }
 }
 
-// Add a new restaurant
-export const addRestaurant = (restaurantData) => {
-  const restaurants = getRestaurants()
-  const newRestaurant = {
-    id: restaurants.length > 0 ? Math.max(...restaurants.map(r => r.id)) + 1 : 1,
-    name: restaurantData.restaurantName,
-    ownerName: `${restaurantData.firstName} ${restaurantData.lastName}`,
-    ownerPhone: `${restaurantData.phoneCode} ${restaurantData.phone}`,
-    zone: restaurantData.zone,
-    cuisine: restaurantData.cuisine,
+// Add a new shop
+export const addShop = (shopData) => {
+  const shops = getShops()
+  const newShop = {
+    id: shops.length > 0 ? Math.max(...shops.map(s => s.id)) + 1 : 1,
+    name: shopData.shopName,
+    shopName: shopData.shopName,
+    ownerName: `${shopData.firstName} ${shopData.lastName}`,
+    ownerPhone: `${shopData.phoneCode} ${shopData.phone}`,
+    zone: shopData.zone,
+    cuisine: shopData.cuisine,
     status: true,
     rating: 0,
-    logo: restaurantData.logo ? URL.createObjectURL(restaurantData.logo) : null,
-    ...restaurantData
+    logo: shopData.logo ? URL.createObjectURL(shopData.logo) : null,
+    ...shopData
   }
-  const updatedRestaurants = [...restaurants, newRestaurant]
-  saveRestaurants(updatedRestaurants)
-  return newRestaurant
+  const updatedShops = [...shops, newShop]
+  saveShops(updatedShops)
+  return newShop
 }
 
-// Update a restaurant
-export const updateRestaurant = (id, updates) => {
-  const restaurants = getRestaurants()
-  const updatedRestaurants = restaurants.map(r => 
-    r.id === id ? { ...r, ...updates } : r
+// Update a shop
+export const updateShop = (id, updates) => {
+  const shops = getShops()
+  const updatedShops = shops.map(s => 
+    s.id === id ? { ...s, ...updates } : s
   )
-  saveRestaurants(updatedRestaurants)
-  return updatedRestaurants.find(r => r.id === id)
+  saveShops(updatedShops)
+  return updatedShops.find(s => s.id === id)
 }
 
-// Delete a restaurant
-export const deleteRestaurant = (id) => {
-  const restaurants = getRestaurants()
-  const updatedRestaurants = restaurants.filter(r => r.id !== id)
-  saveRestaurants(updatedRestaurants)
+// Delete a shop
+export const deleteShop = (id) => {
+  const shops = getShops()
+  const updatedShops = shops.filter(s => s.id !== id)
+  saveShops(updatedShops)
   return true
 }
-
-

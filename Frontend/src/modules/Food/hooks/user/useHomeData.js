@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { restaurantAPI } from "@food/api";
+import { shopAPI } from "@food/api";
 import { normalizeImageUrl, extractImages, calculateDistance, slugify } from "@food/utils/common";
 import BRAND_THEME from "@/config/brandTheme";
 
@@ -14,13 +14,13 @@ export const useHomeData = (location, zoneId) => {
   const [heroBannerImages, setHeroBannerImages] = useState([]);
   const [heroBannersData, setHeroBannersData] = useState([]);
 
-  const [loadingRestaurants, setLoadingRestaurants] = useState(true);
-  const [restaurantsData, setRestaurantsData] = useState([]);
-  const [recommendedRestaurants, setRecommendedRestaurants] = useState([]);
+  const [loadingShops, setLoadingShops] = useState(true);
+  const [shopsData, setShopsData] = useState([]);
+  const [recommendedShops, setRecommendedShops] = useState([]);
   
   const [menuCategories, setMenuCategories] = useState([]);
   const [loadingMenuCategories, setLoadingMenuCategories] = useState(false);
-  const [restaurantDietMeta, setRestaurantDietMeta] = useState({});
+  const [shopDietMeta, setShopDietMeta] = useState({});
 
   // Old backend endpoints (hero banners / landing config) are not used anymore.
   // Keep UI stable by setting safe defaults once.
@@ -29,7 +29,7 @@ export const useHomeData = (location, zoneId) => {
     setLandingCategories([]);
     setExploreMoreItems([]);
     setExploreMoreHeading(homepageDefaults.exploreMoreHeading);
-    setRecommendedRestaurants([]);
+    setRecommendedShops([]);
     setLoadingConfig(false);
   }, [homepageDefaults.exploreMoreHeading]);
 
@@ -40,18 +40,18 @@ export const useHomeData = (location, zoneId) => {
     setLoadingBanners(false);
   }, []);
 
-  const fetchRestaurants = useCallback(async (filters = {}) => {
+  const fetchShops = useCallback(async (filters = {}) => {
     try {
-      setLoadingRestaurants(true);
+      setLoadingShops(true);
       const params = {
         _ts: Date.now(),
         ...(filters.sortBy && { sortBy: filters.sortBy }),
         ...(filters.cuisine && { cuisine: filters.cuisine }),
         ...(zoneId && { zoneId })
       };
-      const res = await restaurantAPI.getRestaurants(params);
+      const res = await shopAPI.getShops(params);
       if (res.data?.success) {
-        const raw = res.data.data.restaurants || [];
+        const raw = res.data.data.shops || [];
         const userLat = location?.latitude;
         const userLng = location?.longitude;
 
@@ -68,7 +68,7 @@ export const useHomeData = (location, zoneId) => {
 
           return {
             ...r,
-            id: r.restaurantId || r._id,
+            id: r.shopId || r._id,
             mongoId: r._id,
             distanceInKm: distInKm,
             image: allImgs[0] || "",
@@ -77,24 +77,24 @@ export const useHomeData = (location, zoneId) => {
             cuisine: r.cuisines?.[0] || "Multi-cuisine"
           };
         });
-        setRestaurantsData(transformed);
+        setShopsData(transformed);
       }
     } finally {
-      setLoadingRestaurants(false);
+      setLoadingShops(false);
     }
   }, [location, zoneId]);
 
   const fetchMenuMeta = useCallback(async () => {
-    if (!restaurantsData.length) return;
+    if (!shopsData.length) return;
     setLoadingMenuCategories(true);
     try {
       const categoryMap = new Map();
       const dietMeta = {};
 
       const menuResponses = await Promise.all(
-        restaurantsData.slice(0, 50).map(async (r) => {
+        shopsData.slice(0, 50).map(async (r) => {
           try {
-            const res = await restaurantAPI.getMenuByRestaurantId(r.id);
+            const res = await shopAPI.getMenuByShopId(r.id);
             return { id: r.id, menu: res?.data?.data?.menu };
           } catch {
             return { id: r.id, menu: null };
@@ -124,11 +124,11 @@ export const useHomeData = (location, zoneId) => {
       });
 
       setMenuCategories(Array.from(categoryMap.values()));
-      setRestaurantDietMeta(dietMeta);
+      setShopDietMeta(dietMeta);
     } finally {
       setLoadingMenuCategories(false);
     }
-  }, [restaurantsData]);
+  }, [shopsData]);
 
   useEffect(() => {
     initLandingConfig();
@@ -136,18 +136,18 @@ export const useHomeData = (location, zoneId) => {
   }, [initLandingConfig, initBanners]);
 
   useEffect(() => {
-    fetchRestaurants();
-  }, [fetchRestaurants]);
+    fetchShops();
+  }, [fetchShops]);
 
   useEffect(() => {
     fetchMenuMeta();
   }, [fetchMenuMeta]);
 
   return {
-    loadingConfig, landingCategories, exploreMoreItems, exploreMoreHeading, recommendedRestaurants,
+    loadingConfig, landingCategories, exploreMoreItems, exploreMoreHeading, recommendedShops,
     loadingBanners, heroBannerImages, heroBannersData,
-    loadingRestaurants, restaurantsData, setRestaurantsData,
-    loadingMenuCategories, menuCategories, restaurantDietMeta,
-    fetchRestaurants
+    loadingShops, shopsData, setShopsData,
+    loadingMenuCategories, menuCategories, shopDietMeta,
+    fetchShops
   };
 };

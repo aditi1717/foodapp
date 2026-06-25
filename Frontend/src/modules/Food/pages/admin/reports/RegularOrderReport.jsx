@@ -87,7 +87,7 @@ export default function RegularOrderReport() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [zones, setZones] = useState([])
-  const [shops, setRestaurants] = useState([])
+  const [shops, setShops] = useState([])
   const [customers, setCustomers] = useState([])
   
   const [filters, setFilters] = useState({
@@ -116,9 +116,9 @@ export default function RegularOrderReport() {
         }
 
         // Fetch shops
-        const restaurantsRes = await adminAPI.getRestaurants({ limit: 100 })
-        if (restaurantsRes.data?.success) {
-          setRestaurants(restaurantsRes.data.data.shops || [])
+        const shopsRes = await adminAPI.getShops({ limit: 100 })
+        if (shopsRes.data?.success) {
+          setShops(shopsRes.data.data.shops || [])
         }
 
         // Fetch customers (users) via existing customers API
@@ -204,7 +204,7 @@ export default function RegularOrderReport() {
           limit: 10000, // Fetch all orders for report (can be optimized later)
           search: searchQuery || undefined,
           zone: filters.zone !== "All Zones" ? filters.zone : undefined,
-          restaurantId: filters.shop !== "All shops" ? filters.shop : undefined,
+          shopId: filters.shop !== "All shops" ? filters.shop : undefined,
           customer: filters.customer !== "All customers" ? filters.customer : undefined,
           startDate: hasManualDate
             ? (filters.fromDate || undefined)
@@ -240,16 +240,16 @@ export default function RegularOrderReport() {
             
             // Discount breakdown
             const couponByAdmin = Number(pricing.couponByAdmin || 0)
-            const couponByRestaurant = Number(pricing.couponByRestaurant || 0)
-            const offerByRestaurant = Number(pricing.offerByRestaurant || 0)
-            const totalDiscount = couponByAdmin + couponByRestaurant + offerByRestaurant
+            const couponByShop = Number(pricing.couponByShop || 0)
+            const offerByShop = Number(pricing.offerByShop || 0)
+            const totalDiscount = couponByAdmin + couponByShop + offerByShop
             
             // Admin commission
-            const adminCommission = Number(pricing.restaurantCommission || 0)
+            const adminCommission = Number(pricing.shopCommission || 0)
             
             // Earnings
             const packagingFee = Number(pricing.packagingFee || 0)
-            const restaurantEarning = Math.max(0, subtotal + packagingFee - adminCommission - couponByRestaurant - offerByRestaurant)
+            const shopEarning = Math.max(0, subtotal + packagingFee - adminCommission - couponByShop - offerByShop)
             const deliveryBoyEarning = Number(order.riderEarning || 0)
             
             const computedTotal =
@@ -260,9 +260,9 @@ export default function RegularOrderReport() {
                 ? Number(pricing.total)
                 : computedTotal
 
-            const restaurantName =
-              order.restaurantId?.restaurantName ||
-              order.restaurantName ||
+            const shopName =
+              order.shopId?.shopName ||
+              order.shopName ||
               ""
 
             const customerName =
@@ -283,13 +283,13 @@ export default function RegularOrderReport() {
               mongoId: order._id || order.id || "",
               orderId: order.orderId,
               orderType,
-              shop: restaurantName,
+              shop: shopName,
               customerName,
               totalItemAmount: subtotal,
               couponByAdmin,
-              couponByRestaurant,
-              offerByRestaurant,
-              restaurantEarning,
+              couponByShop,
+              offerByShop,
+              shopEarning,
               adminCommission,
               deliveryBoyEarning,
               deliveryBoyEarningDisplay,
@@ -426,9 +426,9 @@ export default function RegularOrderReport() {
       { key: "customerName", label: "Customer Name" },
       { key: "totalItemAmount", label: "Total Item Amount" },
       { key: "couponByAdmin", label: "Coupon by Admin" },
-      { key: "couponByRestaurant", label: "Coupon by Shop" },
-      { key: "offerByRestaurant", label: "Offer by Shop" },
-      { key: "restaurantEarning", label: "Shop Earning" },
+      { key: "couponByShop", label: "Coupon by Shop" },
+      { key: "offerByShop", label: "Offer by Shop" },
+      { key: "shopEarning", label: "Shop Earning" },
       { key: "adminCommission", label: "Admin Commission" },
       { key: "deliveryBoyEarningDisplay", label: "Delivery Boy Earning" },
       { key: "vatTax", label: "VAT/Tax" },
@@ -442,9 +442,9 @@ export default function RegularOrderReport() {
         (acc, order) => {
           acc.totalItemAmount += toAmountNumber(order.totalItemAmount)
           acc.couponByAdmin += toAmountNumber(order.couponByAdmin)
-          acc.couponByRestaurant += toAmountNumber(order.couponByRestaurant)
-          acc.offerByRestaurant += toAmountNumber(order.offerByRestaurant)
-          acc.restaurantEarning += toAmountNumber(order.restaurantEarning)
+          acc.couponByShop += toAmountNumber(order.couponByShop)
+          acc.offerByShop += toAmountNumber(order.offerByShop)
+          acc.shopEarning += toAmountNumber(order.shopEarning)
           acc.adminCommission += toAmountNumber(order.adminCommission)
           acc.deliveryBoyEarning += toAmountNumber(order.deliveryBoyEarning)
           acc.vatTax += toAmountNumber(order.vatTax)
@@ -456,9 +456,9 @@ export default function RegularOrderReport() {
         {
           totalItemAmount: 0,
           couponByAdmin: 0,
-          couponByRestaurant: 0,
-          offerByRestaurant: 0,
-          restaurantEarning: 0,
+          couponByShop: 0,
+          offerByShop: 0,
+          shopEarning: 0,
           adminCommission: 0,
           deliveryBoyEarning: 0,
           vatTax: 0,
@@ -478,9 +478,9 @@ export default function RegularOrderReport() {
               <td>${htmlEscape(order.customerName || "-")}</td>
               <td class="num">${htmlEscape(toAmountNumber(order.totalItemAmount).toFixed(2))}</td>
               <td class="num">${htmlEscape(toAmountNumber(order.couponByAdmin).toFixed(2))}</td>
-              <td class="num">${htmlEscape(toAmountNumber(order.couponByRestaurant).toFixed(2))}</td>
-              <td class="num">${htmlEscape(toAmountNumber(order.offerByRestaurant).toFixed(2))}</td>
-              <td class="num">${htmlEscape(toAmountNumber(order.restaurantEarning).toFixed(2))}</td>
+              <td class="num">${htmlEscape(toAmountNumber(order.couponByShop).toFixed(2))}</td>
+              <td class="num">${htmlEscape(toAmountNumber(order.offerByShop).toFixed(2))}</td>
+              <td class="num">${htmlEscape(toAmountNumber(order.shopEarning).toFixed(2))}</td>
               <td class="num">${htmlEscape(toAmountNumber(order.adminCommission).toFixed(2))}</td>
               <td class="num">${htmlEscape(
                 typeof order.deliveryBoyEarningDisplay === "string"
@@ -555,9 +555,9 @@ export default function RegularOrderReport() {
                   <td></td>
                   <td class="num">${htmlEscape(totals.totalItemAmount.toFixed(2))}</td>
                   <td class="num">${htmlEscape(totals.couponByAdmin.toFixed(2))}</td>
-                  <td class="num">${htmlEscape(totals.couponByRestaurant.toFixed(2))}</td>
-                  <td class="num">${htmlEscape(totals.offerByRestaurant.toFixed(2))}</td>
-                  <td class="num">${htmlEscape(totals.restaurantEarning.toFixed(2))}</td>
+                  <td class="num">${htmlEscape(totals.couponByShop.toFixed(2))}</td>
+                  <td class="num">${htmlEscape(totals.offerByShop.toFixed(2))}</td>
+                  <td class="num">${htmlEscape(totals.shopEarning.toFixed(2))}</td>
                   <td class="num">${htmlEscape(totals.adminCommission.toFixed(2))}</td>
                   <td class="num">${htmlEscape(totals.deliveryBoyEarning.toFixed(2))}</td>
                   <td class="num">${htmlEscape(totals.vatTax.toFixed(2))}</td>
@@ -777,7 +777,7 @@ export default function RegularOrderReport() {
                 <option value="All shops">All shops</option>
                 {shops.map((shop) => (
                   <option key={shop._id || shop.id} value={shop._id || shop.id}>
-                    {shop.restaurantName || shop.name}
+                    {shop.shopName || shop.name}
                   </option>
                 ))}
               </select>
@@ -1019,13 +1019,13 @@ export default function RegularOrderReport() {
                         <span className="text-[10px] text-green-600 font-medium">{formatAmount(order.couponByAdmin)}</span>
                       </td>
                       <td className="px-1.5 py-1">
-                        <span className="text-[10px] text-orange-600 font-medium">{formatAmount(order.couponByRestaurant)}</span>
+                        <span className="text-[10px] text-orange-600 font-medium">{formatAmount(order.couponByShop)}</span>
                       </td>
                       <td className="px-1.5 py-1">
-                        <span className="text-[10px] text-purple-600 font-medium">{formatAmount(order.offerByRestaurant)}</span>
+                        <span className="text-[10px] text-purple-600 font-medium">{formatAmount(order.offerByShop)}</span>
                       </td>
                       <td className="px-1.5 py-1">
-                        <span className="text-[10px] text-emerald-600 font-semibold">{formatAmount(order.restaurantEarning)}</span>
+                        <span className="text-[10px] text-emerald-600 font-semibold">{formatAmount(order.shopEarning)}</span>
                       </td>
                       <td className="px-1.5 py-1">
                         <span className="text-[10px] text-brand-600 font-semibold">{formatAmount(order.adminCommission)}</span>

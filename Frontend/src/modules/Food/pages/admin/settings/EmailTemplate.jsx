@@ -47,7 +47,7 @@ export default function EmailTemplate() {
     "new-shop": {
       icon: null,
       mainTitle: "New Shop Registration",
-      mailBody: "A new shop has been registered on the platform. Shop Name: {restaurantName}, Owner: {ownerName}, Email: {email}, Phone: {phone}",
+      mailBody: "A new shop has been registered on the platform. Shop Name: {shopName}, Owner: {ownerName}, Email: {email}, Phone: {phone}",
       footerText: "Please review and approve the shop registration. Contact us for any queries.",
       pageLinks: {
         privacyPolicy: true,
@@ -107,7 +107,7 @@ export default function EmailTemplate() {
     "campaign-join": {
       icon: null,
       mainTitle: "Campaign Join Request",
-      mailBody: "A new campaign join request has been received. Campaign: {campaignName}, Shop: {restaurantName}, Requested By: {requestedBy}",
+      mailBody: "A new campaign join request has been received. Campaign: {campaignName}, Shop: {shopName}, Requested By: {requestedBy}",
       footerText: "Please review and approve the campaign join request. Contact us for any queries.",
       pageLinks: {
         privacyPolicy: true,
@@ -238,7 +238,7 @@ export default function EmailTemplate() {
     // Replace placeholders with sample data
     return content
       .replace(/{userName}/g, "John Doe")
-      .replace(/{restaurantName}/g, "Caf� Monarch")
+      .replace(/{shopName}/g, "Caf� Monarch")
       .replace(/{ownerName}/g, "Jane Smith")
       .replace(/{email}/g, "owner@example.com")
       .replace(/{phone}/g, "+1234567890")

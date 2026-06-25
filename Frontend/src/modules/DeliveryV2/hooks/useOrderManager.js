@@ -34,9 +34,9 @@ export const useOrderManager = () => {
       return null;
     };
 
-    const restaurantLocation =
-      getLoc(rawOrder?.restaurantId, ['latitude', 'lat'], ['longitude', 'lng']) ||
-      getLoc(rawOrder, ['restaurant_lat', 'restaurantLat', 'latitude'], ['restaurant_lng', 'restaurantLng', 'longitude']);
+    const shopLocation =
+      getLoc(rawOrder?.shopId, ['latitude', 'lat'], ['longitude', 'lng']) ||
+      getLoc(rawOrder, ['shop_lat', 'shopLat', 'latitude'], ['shop_lng', 'shopLng', 'longitude']);
 
     const customerLocation =
       getLoc(rawOrder?.deliveryAddress, ['latitude', 'lat'], ['longitude', 'lng']) ||
@@ -45,7 +45,7 @@ export const useOrderManager = () => {
     return {
       ...rawOrder,
       orderId: rawOrder?.orderId || fallbackOrderId,
-      restaurantLocation,
+      shopLocation,
       customerLocation
     };
   };
@@ -102,7 +102,7 @@ export const useOrderManager = () => {
   };
 
   /**
-   * Mark "Reached Pickup" (Arrival at restaurant)
+   * Mark "Reached Pickup" (Arrival at shop)
    */
   const reachPickup = async () => {
     const orderId = activeOrder?.orderId;
@@ -110,7 +110,7 @@ export const useOrderManager = () => {
       const response = await deliveryAPI.confirmReachedPickup(orderId);
       if (response?.data?.success) {
         updateTripStatus('REACHED_PICKUP');
-        // toast.info('Arrived at Restaurant');
+        // toast.info('Arrived at Shop');
       } else {
         throw new Error('Confirm pickup failed');
       }

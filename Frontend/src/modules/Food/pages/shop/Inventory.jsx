@@ -20,7 +20,7 @@ import ShopNavbar from "@food/components/shop/ShopNavbar"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { Switch } from "@food/components/ui/switch"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { restaurantAPI, uploadAPI } from "@food/api"
+import { shopAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
@@ -31,12 +31,12 @@ const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 
-const INVENTORY_STORAGE_KEY = "restaurant_inventory_state"
-const INVENTORY_RECOMMENDED_KEY = "restaurant_inventory_recommended_map"
-const ADDON_FORM_STORAGE_KEY = "restaurant_addon_form_data"
-const INVENTORY_ACTIVE_TAB_KEY = "restaurant_inventory_active_tab"
-const INVENTORY_ADDON_FORM_KEY = "restaurant_inventory_addon_form"
-const INVENTORY_STOCK_RULES_KEY = "restaurant_inventory_stock_rules_v1"
+const INVENTORY_STORAGE_KEY = "shop_inventory_state"
+const INVENTORY_RECOMMENDED_KEY = "shop_inventory_recommended_map"
+const ADDON_FORM_STORAGE_KEY = "shop_addon_form_data"
+const INVENTORY_ACTIVE_TAB_KEY = "shop_inventory_active_tab"
+const INVENTORY_ADDON_FORM_KEY = "shop_inventory_addon_form"
+const INVENTORY_STOCK_RULES_KEY = "shop_inventory_stock_rules_v1"
 
 const MENU_FILTER_OPTIONS = [
   { value: "all", label: "All" },
@@ -88,7 +88,7 @@ const normalizeDayName = (value) =>
     .toLowerCase()
     .replace(/\./g, "")
 
-const parseRestaurantTimeToParts = (value) => {
+const parseShopTimeToParts = (value) => {
   const raw = String(value || "").trim()
   if (!raw) return { hours: 9, minutes: 0 }
 
@@ -140,13 +140,13 @@ const buildCustomResumeAt = (selectedDate, selectedTime) => {
   return date.toISOString()
 }
 
-const buildNextBusinessDayResumeAt = (restaurantProfile) => {
+const buildNextBusinessDayResumeAt = (shopProfile) => {
   const now = new Date()
-  const openDays = Array.isArray(restaurantProfile?.openDays)
-    ? restaurantProfile.openDays.map(normalizeDayName).filter(Boolean)
+  const openDays = Array.isArray(shopProfile?.openDays)
+    ? shopProfile.openDays.map(normalizeDayName).filter(Boolean)
     : []
-  const openingTime = parseRestaurantTimeToParts(
-    restaurantProfile?.openingTime || "09:00",
+  const openingTime = parseShopTimeToParts(
+    shopProfile?.openingTime || "09:00",
   )
 
   for (let offset = 1; offset <= 7; offset += 1) {
@@ -173,7 +173,7 @@ const buildStockRule = ({
   hours,
   selectedDate,
   selectedTime,
-  restaurantProfile,
+  shopProfile,
 }) => {
   const createdAt = new Date().toISOString()
 
@@ -185,7 +185,7 @@ const buildStockRule = ({
     return {
       mode: "next-business-day",
       createdAt,
-      resumeAt: buildNextBusinessDayResumeAt(restaurantProfile),
+      resumeAt: buildNextBusinessDayResumeAt(shopProfile),
     }
   }
 
@@ -807,7 +807,7 @@ export default function Inventory() {
   const [selectedTime, setSelectedTime] = useState({ hour: "2", minute: "30", period: "pm" })
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
-  const [restaurantProfile, setShopProfile] = useState(null)
+  const [shopProfile, setShopProfile] = useState(null)
   const [stockRules, setStockRules] = useState(() => {
     try {
       if (typeof window === "undefined") return {}
@@ -870,7 +870,7 @@ export default function Inventory() {
   useEffect(() => {
     const fetchShopProfile = async () => {
       try {
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const profile =
           response?.data?.data?.shop ||
           response?.data?.shop ||
@@ -890,7 +890,7 @@ export default function Inventory() {
       if (!silent) setLoadingInventory(true)
 
       // Fetch menu from API
-      const menuResponse = await restaurantAPI.getMenu()
+      const menuResponse = await shopAPI.getMenu()
 
       if (menuResponse.data && menuResponse.data.success && menuResponse.data.data && menuResponse.data.data.menu) {
         const menuSections = menuResponse.data.data.menu.sections || []
@@ -1086,7 +1086,7 @@ export default function Inventory() {
   const fetchAddons = useCallback(async ({ showLoading = true, silent = false } = {}) => {
     try {
       if (showLoading) setLoadingAddons(true)
-      const response = await restaurantAPI.getAddons()
+      const response = await shopAPI.getAddons()
       const data = response?.data?.data?.addons || response?.data?.addons || []
       const getAddonCreatedMs = (addon = {}) => {
         const candidates = [addon.requestedAt, addon.createdAt, addon.updatedAt]
@@ -1242,7 +1242,7 @@ export default function Inventory() {
     try {
       let imageUrl = ""
       if (addonImageFile) {
-        const uploadRes = await uploadAPI.uploadMedia(addonImageFile, { folder: "appzeto/restaurant/addons" })
+        const uploadRes = await uploadAPI.uploadMedia(addonImageFile, { folder: "appzeto/shop/addons" })
         imageUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url || ""
       }
       const payload = {
@@ -1252,7 +1252,7 @@ export default function Inventory() {
         image: imageUrl,
         images: imageUrl ? [imageUrl] : [],
       }
-      await restaurantAPI.addAddon(payload)
+      await shopAPI.addAddon(payload)
       toast.success("Add-on submitted to admin for approval")
       resetAddonForm()
       setIsAddAddonOpen(false)
@@ -1269,7 +1269,7 @@ export default function Inventory() {
   const handleAddonToggle = async (addonId, isAvailable) => {
     try {
       // Update addon availability via API
-      await restaurantAPI.updateAddon(addonId, {
+      await shopAPI.updateAddon(addonId, {
         isAvailable: isAvailable
       })
 
@@ -1603,7 +1603,7 @@ export default function Inventory() {
 
       // Backend source of truth is food_items. Update availability via /food/shop/foods/:id.
       if (itemId) {
-        await restaurantAPI.updateFood(itemId, { isAvailable: Boolean(isAvailable) })
+        await shopAPI.updateFood(itemId, { isAvailable: Boolean(isAvailable) })
         return
       }
 
@@ -1612,7 +1612,7 @@ export default function Inventory() {
       // Bulk update all items in a category.
       await Promise.all(
         items.map((it) =>
-          restaurantAPI.updateFood(it.id, { isAvailable: Boolean(isAvailable) }),
+          shopAPI.updateFood(it.id, { isAvailable: Boolean(isAvailable) }),
         ),
       )
     } catch (error) {
@@ -1713,7 +1713,7 @@ export default function Inventory() {
       hours,
       selectedDate,
       selectedTime,
-      restaurantProfile,
+      shopProfile,
     })
 
     if (selectedOption === "custom-date-time") {

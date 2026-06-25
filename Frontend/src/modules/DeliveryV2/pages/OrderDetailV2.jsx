@@ -88,10 +88,10 @@ const getLocFromOrderRef = (ref, keysLat, keysLng) => {
 const hydrateDeliveryOrder = (rawOrder, fallbackOrderId) => {
   if (!rawOrder) return null;
 
-  const restaurantLocation =
-    rawOrder?.restaurantLocation ||
-    getLocFromOrderRef(rawOrder?.restaurantId, ['latitude', 'lat'], ['longitude', 'lng']) ||
-    getLocFromOrderRef(rawOrder, ['restaurant_lat', 'restaurantLat', 'latitude'], ['restaurant_lng', 'restaurantLng', 'longitude']);
+  const shopLocation =
+    rawOrder?.shopLocation ||
+    getLocFromOrderRef(rawOrder?.shopId, ['latitude', 'lat'], ['longitude', 'lng']) ||
+    getLocFromOrderRef(rawOrder, ['shop_lat', 'shopLat', 'latitude'], ['shop_lng', 'shopLng', 'longitude']);
 
   const customerLocation =
     rawOrder?.customerLocation ||
@@ -101,7 +101,7 @@ const hydrateDeliveryOrder = (rawOrder, fallbackOrderId) => {
   return {
     ...rawOrder,
     orderId: rawOrder?.orderId || fallbackOrderId || rawOrder?._id || rawOrder?.id,
-    restaurantLocation,
+    shopLocation,
     customerLocation,
   };
 };
@@ -122,11 +122,11 @@ const deriveTripStatusFromOrder = (orderLike) => {
   return 'PICKING_UP';
 };
 
-const getRestaurantTitle = (order) =>
-  order?.restaurantName ||
-  order?.restaurantId?.restaurantName ||
-  order?.restaurantId?.name ||
-  'Restaurant order';
+const getShopTitle = (order) =>
+  order?.shopName ||
+  order?.shopId?.shopName ||
+  order?.shopId?.name ||
+  'Shop order';
 
 const getPaymentLabel = (order) => {
   const method = String(order?.payment?.method || order?.paymentMethod || '').toLowerCase();
@@ -338,7 +338,7 @@ const getRemainingEtaMinutes = (orderLike = {}) => {
   return getOrderEtaMinutes(orderLike);
 };
 
-const isRestaurantMarkedReady = (orderLike = {}) => {
+const isShopMarkedReady = (orderLike = {}) => {
   const statusValues = [
     orderLike?.orderStatus,
     orderLike?.status,
@@ -438,22 +438,22 @@ const getPaymentStatusMeta = (orderLike) => {
 };
 
 const getPickupContactMeta = (order) => {
-  const restaurantObj = order?.restaurantId || {};
+  const shopObj = order?.shopId || {};
   const name = pickFirstText(
-    order?.restaurantContactName,
-    restaurantObj?.contactPersonName,
-    restaurantObj?.ownerName,
-    restaurantObj?.name,
-    order?.restaurantName,
-    'Restaurant',
+    order?.shopContactName,
+    shopObj?.contactPersonName,
+    shopObj?.ownerName,
+    shopObj?.name,
+    order?.shopName,
+    'Shop',
   );
   const phone = pickFirstText(
-    order?.restaurantPhone,
-    restaurantObj?.phone,
-    restaurantObj?.ownerPhone,
-    restaurantObj?.primaryContactNumber,
-    restaurantObj?.contactNumber,
-    restaurantObj?.mobile,
+    order?.shopPhone,
+    shopObj?.phone,
+    shopObj?.ownerPhone,
+    shopObj?.primaryContactNumber,
+    shopObj?.contactNumber,
+    shopObj?.mobile,
   );
 
   return {
@@ -469,41 +469,41 @@ const joinAddressParts = (...values) =>
     .filter(Boolean)
     .join(', ');
 
-const getRestaurantAddressLabel = (order) => {
-  const restaurantObj = order?.restaurantId || order?.restaurant || {};
-  const location = restaurantObj?.location || {};
+const getShopAddressLabel = (order) => {
+  const shopObj = order?.shopId || order?.shop || {};
+  const location = shopObj?.location || {};
 
   const locationParts = joinAddressParts(
     location?.addressLine1,
     location?.addressLine2,
     location?.street,
-    location?.area || restaurantObj?.area,
-    location?.city || restaurantObj?.city,
-    location?.state || restaurantObj?.state,
+    location?.area || shopObj?.area,
+    location?.city || shopObj?.city,
+    location?.state || shopObj?.state,
     location?.zipCode || location?.pincode || location?.postalCode,
   );
 
-  const restaurantParts = joinAddressParts(
-    restaurantObj?.addressLine1,
-    restaurantObj?.addressLine2,
-    restaurantObj?.street,
-    restaurantObj?.area,
-    restaurantObj?.city,
-    restaurantObj?.state,
-    restaurantObj?.zipCode || restaurantObj?.pincode || restaurantObj?.postalCode,
+  const shopParts = joinAddressParts(
+    shopObj?.addressLine1,
+    shopObj?.addressLine2,
+    shopObj?.street,
+    shopObj?.area,
+    shopObj?.city,
+    shopObj?.state,
+    shopObj?.zipCode || shopObj?.pincode || shopObj?.postalCode,
   );
 
   return pickFirstText(
-    restaurantObj?.address,
+    shopObj?.address,
     location?.formattedAddress,
     location?.fullAddress,
     location?.address,
-    restaurantObj?.locationText,
+    shopObj?.locationText,
     locationParts,
-    restaurantParts,
-    order?.restaurantAddress,
-    order?.restaurant_address,
-    'Restaurant location unavailable',
+    shopParts,
+    order?.shopAddress,
+    order?.shop_address,
+    'Shop location unavailable',
   );
 };
 
@@ -932,22 +932,22 @@ const OrderDetailV2 = () => {
     if (['delivered', 'completed'].includes(rawStatus)) return { label: 'Delivered', tone: 'emerald' };
     if (phase === 'at_drop' || rawStatus === 'reached_drop') return { label: 'Reached customer', tone: 'blue' };
     if (['picked_up', 'delivering'].includes(rawStatus)) return { label: 'Picked', tone: 'blue' };
-    if (isRestaurantMarkedReady(order)) return { label: 'Ready for pickup', tone: 'emerald' };
+    if (isShopMarkedReady(order)) return { label: 'Ready for pickup', tone: 'emerald' };
     if (phase === 'at_pickup' || rawStatus === 'reached_pickup') return { label: 'Arrived at pickup', tone: 'amber' };
     if (dispatchStatus === 'accepted') return { label: 'Accepted', tone: 'brand' };
     if (dispatchStatus === 'unassigned') return { label: 'Passed Task', tone: 'amber' };
     if (dispatchStatus) return { label: dispatchStatus.toUpperCase(), tone: 'amber' };
     return { label: 'New Request', tone: 'brand' };
   }, [order]);
-  const isReadyForPickup = useMemo(() => isRestaurantMarkedReady(order), [order]);
+  const isReadyForPickup = useMemo(() => isShopMarkedReady(order), [order]);
 
   const customerMeta = useMemo(() => getCustomerMeta(order), [order]);
   const paymentMethodMeta = useMemo(() => getPaymentMethodMeta(order), [order]);
   const paymentStatusMeta = useMemo(() => getPaymentStatusMeta(order), [order]);
-  const restaurantLocation = order?.restaurantLocation;
+  const shopLocation = order?.shopLocation;
   const customerLocation = order?.customerLocation;
-  const restaurantName = getRestaurantTitle(order);
-  const restaurantAddress = getRestaurantAddressLabel(order);
+  const shopName = getShopTitle(order);
+  const shopAddress = getShopAddressLabel(order);
   const customerAddress = getAddressLabel(order?.deliveryAddress || order?.address || {});
   const customerAddressSegments = useMemo(
     () => getAddressLabeledSegments(order?.deliveryAddress || order?.address || {}),
@@ -1029,8 +1029,8 @@ const OrderDetailV2 = () => {
   const dropOtpVerified = Boolean(order?.deliveryVerification?.dropOtp?.verified);
   const canMarkDelivered = hasReachedDrop && (!dropOtpRequired || dropOtpVerified);
   const shouldNavigateToDrop = hasPickedOrder || hasReachedDrop;
-  const mapDestination = shouldNavigateToDrop ? customerLocation : restaurantLocation;
-  const mapDestinationAddress = shouldNavigateToDrop ? customerAddress : restaurantAddress;
+  const mapDestination = shouldNavigateToDrop ? customerLocation : shopLocation;
+  const mapDestinationAddress = shouldNavigateToDrop ? customerAddress : shopAddress;
   const mapDestinationLabel = shouldNavigateToDrop ? 'customer location' : 'pickup location';
   const activeMapHref = getGoogleMapsHref(mapDestination, mapDestinationAddress);
   const googleMapsDirectionsHref = useMemo(() => {
@@ -1270,7 +1270,7 @@ const OrderDetailV2 = () => {
         <section className="rounded-2xl border border-slate-200 bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="truncate text-base font-semibold text-slate-900">{getRestaurantTitle(order)}</h1>
+              <h1 className="truncate text-base font-semibold text-slate-900">{getShopTitle(order)}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <StatusPill tone={paymentMethodMeta.tone}>{paymentMethodMeta.label}</StatusPill>
                 <StatusPill tone={paymentStatusMeta.tone}>{paymentStatusMeta.label}</StatusPill>
@@ -1641,8 +1641,8 @@ const OrderDetailV2 = () => {
             >
               <div className="grid grid-cols-1 gap-1 text-xs text-slate-600">
                 <p>
-                  <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#8B9543]">Restaurant</span>
-                  <span className="font-semibold text-slate-900">{restaurantName || '--'}</span>
+                  <span className="mr-1 inline-flex items-center rounded-md bg-[#E6F4EC] px-1.5 py-0.5 text-[11px] font-bold text-[#8B9543]">Shop</span>
+                  <span className="font-semibold text-slate-900">{shopName || '--'}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <span>
@@ -1656,7 +1656,7 @@ const OrderDetailV2 = () => {
                   )}
                 </p>
               </div>
-              <p className="mt-2 text-sm leading-5 text-slate-800">{restaurantAddress}</p>
+              <p className="mt-2 text-sm leading-5 text-slate-800">{shopAddress}</p>
             </CompactSection>
 
             <CompactSection

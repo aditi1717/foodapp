@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import completedIcon from "@food/assets/Transaction-report-icons/trx1.png"
 import refundedIcon from "@food/assets/Transaction-report-icons/trx3.png"
 import adminEarningIcon from "@food/assets/Transaction-report-icons/admin-earning.png"
-import restaurantEarningIcon from "@food/assets/Transaction-report-icons/store-earning.png"
+import shopEarningIcon from "@food/assets/Transaction-report-icons/store-earning.png"
 import deliverymanEarningIcon from "@food/assets/Transaction-report-icons/deliveryman-earning.png"
 
 // Import search and export icons from Dashboard-icons
@@ -31,7 +31,7 @@ export default function TransactionReport() {
     completedTransaction: 0,
     refundedTransaction: 0,
     adminEarning: 0,
-    restaurantEarning: 0,
+    shopEarning: 0,
     deliverymanEarning: 0,
   })
   const [filters, setFilters] = useState({
@@ -41,7 +41,7 @@ export default function TransactionReport() {
   })
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [zones, setZones] = useState([])
-  const [shops, setRestaurants] = useState([])
+  const [shops, setShops] = useState([])
 
   // Fetch zones and shops for filters
   useEffect(() => {
@@ -54,9 +54,9 @@ export default function TransactionReport() {
         }
 
         // Fetch shops
-        const restaurantsResponse = await adminAPI.getRestaurants({ limit: 1000 })
-        if (restaurantsResponse?.data?.success && restaurantsResponse.data.data?.shops) {
-          setRestaurants(restaurantsResponse.data.data.shops)
+        const shopsResponse = await adminAPI.getShops({ limit: 1000 })
+        if (shopsResponse?.data?.success && shopsResponse.data.data?.shops) {
+          setShops(shopsResponse.data.data.shops)
         }
       } catch (error) {
         debugError("Error fetching filter data:", error)
@@ -106,7 +106,7 @@ export default function TransactionReport() {
             completedTransaction: 0,
             refundedTransaction: 0,
             adminEarning: 0,
-            restaurantEarning: 0,
+            shopEarning: 0,
             deliverymanEarning: 0,
           })
         } else {
@@ -192,7 +192,7 @@ export default function TransactionReport() {
         'cancelled',
         'cancelled_by_admin',
         'cancelled_by_user',
-        'cancelled_by_restaurant',
+        'cancelled_by_shop',
       ].includes(normalized)
     ) {
       return 'bg-red-100 text-red-700'
@@ -281,7 +281,7 @@ export default function TransactionReport() {
               >
                 <option value="All shops">All shops</option>
                 {shops.map(shop => (
-                  <option key={shop._id || shop.id} value={shop.restaurantName || shop.name}>{shop.restaurantName || shop.name}</option>
+                  <option key={shop._id || shop.id} value={shop.shopName || shop.name}>{shop.shopName || shop.name}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
@@ -385,7 +385,7 @@ export default function TransactionReport() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-brand-100 flex items-center justify-center">
-                    <img src={restaurantEarningIcon} alt="Restaurant Earning" className="w-6 h-6" />
+                    <img src={shopEarningIcon} alt="Shop Earning" className="w-6 h-6" />
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-slate-900">Shop Earning</p>
@@ -394,7 +394,7 @@ export default function TransactionReport() {
                     </div>
                   </div>
                 </div>
-                <p className="text-base font-bold text-green-600">{formatCurrency(summary.restaurantEarning)}</p>
+                <p className="text-base font-bold text-green-600">{formatCurrency(summary.shopEarning)}</p>
               </div>
             </div>
 
@@ -531,10 +531,10 @@ export default function TransactionReport() {
                         <span className="text-[10px] text-slate-700">{formatFullCurrency(transaction.couponByAdmin || 0)}</span>
                       </td>
                       <td className="px-1.5 py-1">
-                        <span className="text-[10px] text-slate-700">{formatFullCurrency(transaction.couponByRestaurant || 0)}</span>
+                        <span className="text-[10px] text-slate-700">{formatFullCurrency(transaction.couponByShop || 0)}</span>
                       </td>
                       <td className="px-1.5 py-1">
-                        <span className="text-[10px] text-slate-700">{formatFullCurrency(transaction.offerByRestaurant || 0)}</span>
+                        <span className="text-[10px] text-slate-700">{formatFullCurrency(transaction.offerByShop || 0)}</span>
                       </td>
                       <td className="px-1.5 py-1">
                         <span className={`text-[10px] ${getPenaltyAmount(transaction) > 0 ? 'font-semibold text-orange-700' : 'text-slate-500'}`}>

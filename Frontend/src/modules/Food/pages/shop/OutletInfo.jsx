@@ -25,7 +25,7 @@ import {
 } from "@food/components/ui/dialog"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { toast } from "sonner"
 import BRAND_THEME from "@/config/brandTheme"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
@@ -36,16 +36,16 @@ import { isFlutterBridgeAvailable, convertBase64ToFile } from "@food/utils/image
 
 
 
-const CUISINES_STORAGE_KEY = "restaurant_cuisines"
+const CUISINES_STORAGE_KEY = "shop_cuisines"
 
 export default function OutletInfo() {
   const navigate = useNavigate()
   const goBack = useShopBackNavigation()
   
   // State management
-  const [restaurantData, setRestaurantData] = useState(null)
+  const [shopData, setShopData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [restaurantName, setRestaurantName] = useState("")
+  const [shopName, setShopName] = useState("")
   const [cuisineTags, setCuisineTags] = useState("")
   const [address, setAddress] = useState("")
   const [mainImage, setMainImage] = useState("https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=400&fit=crop")
@@ -53,8 +53,8 @@ export default function OutletInfo() {
   const [coverImages, setCoverImages] = useState([]) // Array of cover images (separate from menu images)
   const [showEditNameDialog, setShowEditNameDialog] = useState(false)
   const [editNameValue, setEditNameValue] = useState("")
-  const [restaurantId, setRestaurantId] = useState("")
-  const [restaurantMongoId, setRestaurantMongoId] = useState("")
+  const [shopId, setShopId] = useState("")
+  const [shopMongoId, setShopMongoId] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imageType, setImageType] = useState(null) // 'profile' or 'menu'
   const [uploadingCount, setUploadingCount] = useState(0) // Track how many images are being uploaded
@@ -85,22 +85,22 @@ export default function OutletInfo() {
 
   // Fetch shop data on mount
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       try {
         setLoading(true)
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
-          setRestaurantData(data)
+          setShopData(data)
           
           // Set shop name
-          setRestaurantName(data.name || "")
+          setShopName(data.name || "")
           
           // Set shop ID
-          setRestaurantId(data.restaurantId || data.id || "")
+          setShopId(data.shopId || data.id || "")
           // Set MongoDB _id for last 5 digits display
           const mongoId = String(data.id || data._id || "")
-          setRestaurantMongoId(mongoId)
+          setShopMongoId(mongoId)
           
           // Format and set address
           const formattedAddress = formatAddress(data.location)
@@ -141,14 +141,14 @@ export default function OutletInfo() {
       }
     }
 
-    fetchRestaurantData()
+    fetchShopData()
 
     // Listen for updates from edit pages
     const handleCuisinesUpdate = () => {
-      fetchRestaurantData()
+      fetchShopData()
     }
     const handleAddressUpdate = () => {
-      fetchRestaurantData()
+      fetchShopData()
     }
 
     window.addEventListener("cuisinesUpdated", handleCuisinesUpdate)
@@ -189,7 +189,7 @@ export default function OutletInfo() {
       setImageType('profile')
 
       // Upload image to Cloudinary
-      const uploadResponse = await restaurantAPI.uploadProfileImage(file)
+      const uploadResponse = await shopAPI.uploadProfileImage(file)
       const uploadedImage = uploadResponse?.data?.data?.profileImage
 
       if (uploadedImage) {
@@ -198,10 +198,10 @@ export default function OutletInfo() {
         }
         
         // Refresh shop data
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
-          setRestaurantData(data)
+          setShopData(data)
           if (data.profileImage?.url) {
             setThumbnailImage(data.profileImage.url)
           }
@@ -227,7 +227,7 @@ export default function OutletInfo() {
       setUploadingCount(fileArray.length)
 
       // Get current images
-      const currentResponse = await restaurantAPI.getCurrentRestaurant()
+      const currentResponse = await shopAPI.getCurrentShop()
       const currentData = currentResponse?.data?.data?.shop || currentResponse?.data?.shop
       const existingImages = currentData?.menuImages && Array.isArray(currentData.menuImages)
         ? currentData.menuImages.map(img => ({
@@ -241,7 +241,7 @@ export default function OutletInfo() {
       
       for (let i = 0; i < fileArray.length; i++) {
         try {
-          const uploadResponse = await restaurantAPI.uploadMenuImage(fileArray[i])
+          const uploadResponse = await shopAPI.uploadMenuImage(fileArray[i])
           const uploadedImage = uploadResponse?.data?.data?.menuImage
           if (uploadedImage?.url) {
             uploadedImageData.push({
@@ -263,7 +263,7 @@ export default function OutletInfo() {
         })
 
         try {
-          await restaurantAPI.updateProfile({ menuImages: allImages })
+          await shopAPI.updateProfile({ menuImages: allImages })
           toast.success(`Successfully uploaded ${uploadedImageData.length} image(s)`)
         } catch (updateError) {
           toast.error("Images uploaded but failed to save.")
@@ -303,7 +303,7 @@ export default function OutletInfo() {
         publicId: img.publicId || null
       }))
 
-      await restaurantAPI.updateProfile({ menuImages: menuImagesForBackend })
+      await shopAPI.updateProfile({ menuImages: menuImagesForBackend })
       setCoverImages(updatedImages)
       if (indexToDelete === 0 && updatedImages.length > 0) {
         setMainImage(updatedImages[0].url)
@@ -321,7 +321,7 @@ export default function OutletInfo() {
 
   // Handle edit name dialog
   const handleOpenEditDialog = () => {
-    setEditNameValue(restaurantName)
+    setEditNameValue(shopName)
     setShowEditNameDialog(true)
   }
 
@@ -329,8 +329,8 @@ export default function OutletInfo() {
     const newName = editNameValue.trim()
     if (!newName) return
     try {
-      await restaurantAPI.updateProfile({ name: newName })
-      setRestaurantName(newName)
+      await shopAPI.updateProfile({ name: newName })
+      setShopName(newName)
       setShowEditNameDialog(false)
       toast.success("Name updated successfully")
     } catch (error) {
@@ -352,7 +352,7 @@ export default function OutletInfo() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-900 font-normal">
-                Shop id: {loading ? "Loading..." : (restaurantMongoId && restaurantMongoId.length >= 5 ? restaurantMongoId.slice(-5) : (restaurantId || "N/A"))}
+                Shop id: {loading ? "Loading..." : (shopMongoId && shopMongoId.length >= 5 ? shopMongoId.slice(-5) : (shopId || "N/A"))}
               </span>
             </div>
           </div>
@@ -360,7 +360,7 @@ export default function OutletInfo() {
 
         {/* Main Image Section */}
         <div className="relative w-full h-[200px] overflow-visible">
-          <img src={mainImage} alt="Restaurant banner" className="w-full h-full object-cover" />
+          <img src={mainImage} alt="Shop banner" className="w-full h-full object-cover" />
           
           <button
             onClick={() => handleImageClick('cover', menuImageInputRef, "Add Cover Image", true)}
@@ -420,7 +420,7 @@ export default function OutletInfo() {
           {/* Thumbnail Section */}
           <div className="absolute bottom-0 left-4 -mb-[45px] flex flex-col gap-2 shrink-0 z-10">
             <div className="relative w-[70px] h-[70px] rounded overflow-hidden">
-              <img src={thumbnailImage} alt="Restaurant thumbnail" className="w-full h-full rounded-xl object-cover" />
+              <img src={thumbnailImage} alt="Shop thumbnail" className="w-full h-full rounded-xl object-cover" />
             </div>
             <button
               onClick={() => handleImageClick('profile', profileImageInputRef, "Update Profile Photo")}
@@ -445,10 +445,10 @@ export default function OutletInfo() {
             <div className="flex flex-col gap-2">
               <button onClick={() => navigate("/shop/ratings-reviews")} className="flex items-center gap-2 text-left w-full">
                 <div className="bg-green-700 px-2.5 py-1.5 rounded flex items-center gap-1 shrink-0">
-                  <span className="text-white text-sm font-bold">{restaurantData?.rating?.toFixed(1) || "0.0"}</span>
+                  <span className="text-white text-sm font-bold">{shopData?.rating?.toFixed(1) || "0.0"}</span>
                   <Star className="w-3.5 h-3.5 text-white fill-white" />
                 </div>
-                <span className="text-gray-800 text-sm font-normal">{restaurantData?.totalRatings || 0} DELIVERY REVIEWS</span>
+                <span className="text-gray-800 text-sm font-normal">{shopData?.totalRatings || 0} DELIVERY REVIEWS</span>
                 <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 ml-auto" />
               </button>
             </div>
@@ -462,7 +462,7 @@ export default function OutletInfo() {
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-500 font-normal mb-1">Shop's name</p>
-                <p className="text-base font-semibold text-gray-900">{loading ? "Loading..." : (restaurantName || "N/A")}</p>
+                <p className="text-base font-semibold text-gray-900">{loading ? "Loading..." : (shopName || "N/A")}</p>
               </div>
               <button onClick={handleOpenEditDialog} className="text-brand-600 text-sm font-normal">Edit</button>
             </div>

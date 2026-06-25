@@ -7,11 +7,11 @@ import ScrollReveal from "@food/components/user/ScrollReveal"
 import TextReveal from "@food/components/user/TextReveal"
 import { Card, CardTitle, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
-import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
+import { ShopGridSkeleton } from "@food/components/ui/loading-skeletons"
 import { useProfile } from "@food/context/ProfileContext"
 import { useZone } from "@food/hooks/useZone"
 import { useLocation } from "@food/hooks/useLocation"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 
@@ -28,7 +28,7 @@ const normalizeImageUrl = (imageUrl) => {
     : `${BACKEND_ORIGIN}/${trimmed}`
 }
 
-const pickRestaurantImage = (shop) => {
+const pickShopImage = (shop) => {
   const candidates = [
     shop?.coverImage?.url,
     shop?.coverImage,
@@ -45,23 +45,23 @@ export default function Shops() {
   const { addFavorite, removeFavorite, isFavorite } = useProfile()
   const { location: userLocation } = useLocation()
   const { zoneId } = useZone(userLocation)
-  const [shops, setRestaurants] = useState([])
+  const [shops, setShops] = useState([])
   const [loading, setLoading] = useState(true)
-  const showRestaurantsSkeleton = useDelayedLoading(loading)
+  const showShopsSkeleton = useDelayedLoading(loading)
 
   useEffect(() => {
     let cancelled = false
 
-    const fetchRestaurants = async () => {
+    const fetchShops = async () => {
       try {
         setLoading(true)
         if (!zoneId) {
-          setRestaurants([])
+          setShops([])
           return
         }
         const params = { limit: 300, _ts: Date.now() }
         params.zoneId = zoneId
-        const response = await restaurantAPI.getRestaurants(params, { noCache: true })
+        const response = await shopAPI.getShops(params, { noCache: true })
         const list =
           response?.data?.data?.shops ||
           response?.data?.shops ||
@@ -79,7 +79,7 @@ export default function Shops() {
             ? shop.cuisines[0]
             : "Multi-cuisine"
           return {
-            id: shop?._id || shop?.restaurantId || slug,
+            id: shop?._id || shop?.shopId || slug,
             slug,
             name: shop?.name || "Unknown Shop",
             cuisine,
@@ -87,14 +87,14 @@ export default function Shops() {
             deliveryTime: shop?.estimatedDeliveryTime || (shop?.estimatedDeliveryTimeMinutes ? `${shop.estimatedDeliveryTimeMinutes} mins` : "25-30 mins"),
             distance: shop?.distance ? (typeof shop.distance === 'number' ? `${shop.distance.toFixed(1)} km` : shop.distance) : "1.2 km",
             priceRange: shop?.priceRange || "$$",
-            image: pickRestaurantImage(shop),
+            image: pickShopImage(shop),
           }
         })
 
-        setRestaurants(transformed)
+        setShops(transformed)
       } catch (error) {
         if (!cancelled) {
-          setRestaurants([])
+          setShops([])
         }
       } finally {
         if (!cancelled) {
@@ -103,13 +103,13 @@ export default function Shops() {
       }
     }
 
-    fetchRestaurants()
+    fetchShops()
     return () => {
       cancelled = true
     }
   }, [zoneId])
 
-  const hasRestaurants = useMemo(() => shops.length > 0, [shops.length])
+  const hasShops = useMemo(() => shops.length > 0, [shops.length])
 
   return (
     <AnimatedPage className="min-h-screen bg-gradient-to-b from-yellow-50/30 dark:from-[#0a0a0a] via-white dark:via-[#0a0a0a] to-orange-50/20 dark:to-[#0a0a0a]">
@@ -129,9 +129,9 @@ export default function Shops() {
           </div>
         </ScrollReveal>
 
-        {showRestaurantsSkeleton ? (
-          <RestaurantGridSkeleton count={4} />
-        ) : !hasRestaurants ? (
+        {showShopsSkeleton ? (
+          <ShopGridSkeleton count={4} />
+        ) : !hasShops ? (
           <div className="py-16 text-center text-sm text-gray-500">No shops available right now.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 xl:gap-6 pt-2 sm:pt-3 lg:pt-4">
@@ -158,8 +158,8 @@ export default function Shops() {
               }
 
               return (
-                <ScrollReveal key={restaurant.id} delay={index * 0.05}>
-                  <Link to={`/shops/${restaurant.slug}`} className="h-full flex">
+                <ScrollReveal key={shop.id} delay={index * 0.05}>
+                  <Link to={`/shops/${shop.slug}`} className="h-full flex">
                     <Card className="overflow-hidden cursor-pointer border border-gray-200 dark:border-gray-800 group bg-white dark:bg-[#1a1a1a] hover:shadow-lg dark:hover:shadow-xl dark:hover:shadow-gray-900/50 pb-1 sm:pb-2 lg:pb-3 flex flex-col h-full w-full transition-all duration-300">
                       <div className="flex flex-row min-h-[120px] sm:min-h-[140px] md:min-h-[160px] lg:min-h-[180px] flex-1">
                         <CardContent className="flex-1 flex flex-col justify-between p-3 sm:p-4 md:p-5 lg:p-6 min-w-0 overflow-hidden">
@@ -210,8 +210,8 @@ export default function Shops() {
 
                         <div className="w-36 sm:w-44 md:w-56 lg:w-64 xl:w-72 flex-shrink-0 relative overflow-hidden group/image">
                           <img
-                            src={restaurant.image || "https://via.placeholder.com/400x300?text=Restaurant"}
-                            alt={restaurant.name}
+                            src={shop.image || "https://via.placeholder.com/400x300?text=Shop"}
+                            alt={shop.name}
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-gradient-to-l from-black/20 dark:from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

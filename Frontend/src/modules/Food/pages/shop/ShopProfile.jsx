@@ -25,7 +25,7 @@ import {
   Search
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
@@ -96,7 +96,7 @@ const normalizeProfileZoneId = (value) => {
 
 const getTrimmedValue = (value) => String(value ?? "").trim()
 
-const PROFILE_DRAFT_KEY = "iggymet_restaurant_profile_draft"
+const PROFILE_DRAFT_KEY = "iggymet_shop_profile_draft"
 
 const saveProfileToLocalStorage = (data) => {
   try {
@@ -140,7 +140,7 @@ const ShopProfile = () => {
   
   const [basicInfo, setBasicInfo] = useState({
     name: "",
-    pureVegRestaurant: false,
+    pureVegShop: false,
     ownerName: "",
     ownerEmail: "",
     ownerPhone: "",
@@ -400,13 +400,13 @@ const ShopProfile = () => {
 
   const fetchInitialData = async (ignoreDraft = false) => {
     try {
-      const response = await restaurantAPI.getCurrentRestaurant()
+      const response = await shopAPI.getCurrentShop()
       const data = response?.data?.data?.shop || response?.data?.shop
       
       if (data) {
         setBasicInfo({
-          name: data.restaurantName || data.name || "",
-          pureVegRestaurant: data.pureVegRestaurant === true || data.pureVegRestaurant === "true",
+          name: data.shopName || data.name || "",
+          pureVegShop: data.pureVegShop === true || data.pureVegShop === "true",
           ownerName: data.ownerName || "",
           ownerEmail: data.ownerEmail || "",
           ownerPhone: data.ownerPhone || "",
@@ -554,8 +554,8 @@ const ShopProfile = () => {
       let requestPayload = formData
       
       if (section === 'basic') {
-        formData.append("restaurantName", basicInfo.name)
-        formData.append("pureVegRestaurant", String(basicInfo.pureVegRestaurant))
+        formData.append("shopName", basicInfo.name)
+        formData.append("pureVegShop", String(basicInfo.pureVegShop))
         formData.append("ownerName", basicInfo.ownerName)
         formData.append("ownerEmail", basicInfo.ownerEmail)
         formData.append("ownerPhone", basicInfo.ownerPhone)
@@ -636,13 +636,13 @@ const ShopProfile = () => {
         })
       }
 
-      const response = await restaurantAPI.updateProfile(requestPayload)
+      const response = await shopAPI.updateProfile(requestPayload)
       const updatedData = response?.data?.data?.shop || response?.data?.shop
 
       // Redirect if the update triggered a status change to 'pending' (requires approval)
       if (updatedData?.status === 'pending') {
-        clearModuleAuth("restaurant")
-        window.dispatchEvent(new Event("restaurantAuthChanged"))
+        clearModuleAuth("shop")
+        window.dispatchEvent(new Event("shopAuthChanged"))
         toast.success("Update submitted for approval. Please log in again.")
         navigate("/food/shop/login", { replace: true })
         return
@@ -655,8 +655,8 @@ const ShopProfile = () => {
       if (updatedData) {
         if (section === 'basic') {
           setBasicInfo({
-            name: updatedData.restaurantName || updatedData.name || "",
-            pureVegRestaurant: updatedData.pureVegRestaurant === true || updatedData.pureVegRestaurant === "true",
+            name: updatedData.shopName || updatedData.name || "",
+            pureVegShop: updatedData.pureVegShop === true || updatedData.pureVegShop === "true",
             ownerName: updatedData.ownerName || "",
             ownerEmail: updatedData.ownerEmail || "",
             ownerPhone: updatedData.ownerPhone || "",
@@ -798,7 +798,7 @@ const ShopProfile = () => {
             <div className="relative group">
               <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl bg-slate-100 transition-transform group-hover:scale-105 duration-500">
                 {imageInfo.profileImage ? (
-                  <img src={getPreviewUrl(imageInfo.profileImage)} alt="Restaurant" className="w-full h-full object-cover" />
+                  <img src={getPreviewUrl(imageInfo.profileImage)} alt="Shop" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-300">
                     <Store className="w-12 h-12" />
@@ -833,7 +833,7 @@ const ShopProfile = () => {
         {/* Quick Stats / Indicators - More Compact */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: 'Shop Type', val: basicInfo.pureVegRestaurant ? 'Pure Veg' : 'Mixed', icon: Tag, color: 'text-green-600', bg: 'bg-green-50' },
+            { label: 'Shop Type', val: basicInfo.pureVegShop ? 'Pure Veg' : 'Mixed', icon: Tag, color: 'text-green-600', bg: 'bg-green-50' },
             { label: 'Avg Delivery', val: opsInfo.estimatedDeliveryTime || '30-45 mins', icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
             { label: 'Featured Dish', val: opsInfo.featuredDish || 'Not Set', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
             { label: 'GST Status', val: kycInfo.gstRegistered ? 'Active' : 'Unregistered', icon: ShieldCheck, color: 'text-orange-600', bg: 'bg-orange-50' },

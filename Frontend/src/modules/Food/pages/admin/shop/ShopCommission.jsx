@@ -12,7 +12,7 @@ const EMPTY_BULK_COMMISSION = {
 }
 
 const getDefaultFormData = () => ({
-  restaurantId: "",
+  shopId: "",
   defaultCommission: {
     type: "percentage",
     value: "10",
@@ -32,24 +32,24 @@ const normalizeBulkCommissionForForm = (bulkOrderCommission) => {
   }
 }
 
-export default function RestaurantCommission() {
+export default function ShopCommission() {
   const [searchQuery, setSearchQuery] = useState("")
   const [commissions, setCommissions] = useState([])
-  const [approvedRestaurants, setApprovedRestaurants] = useState([])
+  const [approvedShops, setApprovedShops] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [isAddEditOpen, setIsAddEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-  const [isRestaurantSelectOpen, setIsRestaurantSelectOpen] = useState(false)
+  const [isShopSelectOpen, setIsShopSelectOpen] = useState(false)
   const [selectedCommission, setSelectedCommission] = useState(null)
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null)
+  const [selectedShop, setSelectedShop] = useState(null)
   const [formData, setFormData] = useState(getDefaultFormData)
   const [formErrors, setFormErrors] = useState({})
   const [visibleColumns] = useState({
     si: true,
     shop: true,
-    restaurantId: true,
+    shopId: true,
     defaultCommission: true,
     bulkOrderCommission: true,
     activeCommission: true,
@@ -64,24 +64,24 @@ export default function RestaurantCommission() {
 
     const query = searchQuery.toLowerCase().trim()
     return commissions.filter((commission) =>
-      commission.restaurantName?.toLowerCase().includes(query) ||
-      commission.restaurantId?.toLowerCase().includes(query) ||
+      commission.shopName?.toLowerCase().includes(query) ||
+      commission.shopId?.toLowerCase().includes(query) ||
       commission.shop?.name?.toLowerCase().includes(query)
     )
   }, [commissions, searchQuery])
 
-  const filteredRestaurants = useMemo(() => {
+  const filteredShops = useMemo(() => {
     if (!searchQuery.trim()) {
-      return approvedRestaurants
+      return approvedShops
     }
 
     const query = searchQuery.toLowerCase().trim()
-    return approvedRestaurants.filter((shop) =>
+    return approvedShops.filter((shop) =>
       shop.name?.toLowerCase().includes(query) ||
-      shop.restaurantId?.toLowerCase().includes(query) ||
+      shop.shopId?.toLowerCase().includes(query) ||
       shop.ownerName?.toLowerCase().includes(query)
     )
-  }, [approvedRestaurants, searchQuery])
+  }, [approvedShops, searchQuery])
 
   useEffect(() => {
     fetchBootstrap()
@@ -90,10 +90,10 @@ export default function RestaurantCommission() {
   const fetchBootstrap = async () => {
     try {
       setLoading(true)
-      const response = await adminAPI.getRestaurantCommissionBootstrap()
+      const response = await adminAPI.getShopCommissionBootstrap()
       const data = response?.data?.data
       setCommissions(Array.isArray(data?.commissions) ? data.commissions : [])
-      setApprovedRestaurants(Array.isArray(data?.shops) ? data.shops : [])
+      setApprovedShops(Array.isArray(data?.shops) ? data.shops : [])
     } catch (error) {
       if (error.code === "ERR_NETWORK" || error.message === "Network Error") {
         toast.error(`Cannot connect to backend server. Please ensure the backend is running on ${API_BASE_URL.replace("/api", "")}`)
@@ -101,7 +101,7 @@ export default function RestaurantCommission() {
         toast.error(error.response?.data?.message || "Failed to fetch commissions")
       }
       setCommissions([])
-      setApprovedRestaurants([])
+      setApprovedShops([])
     } finally {
       setLoading(false)
     }
@@ -110,7 +110,7 @@ export default function RestaurantCommission() {
   const fetchCommissions = async () => {
     try {
       setLoading(true)
-      const response = await adminAPI.getRestaurantCommissions({})
+      const response = await adminAPI.getShopCommissions({})
 
       let commissionsData = null
       if (response?.data?.success && response?.data?.data?.commissions) {
@@ -136,7 +136,7 @@ export default function RestaurantCommission() {
 
   const handleToggleStatus = async (commission) => {
     try {
-      await adminAPI.toggleRestaurantCommissionStatus(commission._id)
+      await adminAPI.toggleShopCommissionStatus(commission._id)
       await fetchCommissions()
       toast.success("Commission status updated successfully")
     } catch (error) {
@@ -146,26 +146,26 @@ export default function RestaurantCommission() {
 
   const handleAdd = () => {
     setSelectedCommission(null)
-    setSelectedRestaurant(null)
+    setSelectedShop(null)
     setFormData(getDefaultFormData())
     setFormErrors({})
-    setIsRestaurantSelectOpen(true)
+    setIsShopSelectOpen(true)
   }
 
-  const handleSelectRestaurant = (shop) => {
-    setSelectedRestaurant(shop)
+  const handleSelectShop = (shop) => {
+    setSelectedShop(shop)
     setFormData((prev) => ({
       ...prev,
-      restaurantId: shop._id,
+      shopId: shop._id,
     }))
-    setIsRestaurantSelectOpen(false)
+    setIsShopSelectOpen(false)
     setIsAddEditOpen(true)
   }
 
   const handleEdit = async (commission) => {
     try {
       setLoading(true)
-      const response = await adminAPI.getRestaurantCommissionById(commission._id)
+      const response = await adminAPI.getShopCommissionById(commission._id)
 
       let commissionData = null
       if (response?.data?.success && response?.data?.data?.commission) {
@@ -179,23 +179,23 @@ export default function RestaurantCommission() {
       if (!commissionData) return
 
       setSelectedCommission(commissionData)
-      setSelectedRestaurant(commissionData.shop)
+      setSelectedShop(commissionData.shop)
 
-      let restaurantId = ""
+      let shopId = ""
       if (commissionData.shop) {
         if (typeof commissionData.shop === "object" && commissionData.shop._id) {
-          restaurantId = commissionData.shop._id
+          shopId = commissionData.shop._id
         } else if (typeof commissionData.shop === "string") {
-          restaurantId = commissionData.shop
+          shopId = commissionData.shop
         } else {
-          restaurantId = commissionData.restaurantId || commissionData.shop?._id || ""
+          shopId = commissionData.shopId || commissionData.shop?._id || ""
         }
       } else {
-        restaurantId = commissionData.restaurantId || commissionData.shop || ""
+        shopId = commissionData.shopId || commissionData.shop || ""
       }
 
       setFormData({
-        restaurantId,
+        shopId,
         defaultCommission: {
           type: commissionData.defaultCommission?.type || "percentage",
           value: commissionData.defaultCommission?.value?.toString() || "10",
@@ -221,7 +221,7 @@ export default function RestaurantCommission() {
 
     try {
       setDeleting(true)
-      await adminAPI.deleteRestaurantCommission(selectedCommission._id)
+      await adminAPI.deleteShopCommission(selectedCommission._id)
       await fetchCommissions()
       toast.success("Commission deleted successfully")
       setIsDeleteOpen(false)
@@ -236,8 +236,8 @@ export default function RestaurantCommission() {
   const validateForm = () => {
     const errors = {}
 
-    if (!formData.restaurantId) {
-      errors.restaurantId = "Shop is required"
+    if (!formData.shopId) {
+      errors.shopId = "Shop is required"
     }
 
     if (!formData.defaultCommission.value || parseFloat(formData.defaultCommission.value) < 0) {
@@ -278,7 +278,7 @@ export default function RestaurantCommission() {
       setSaving(true)
 
       const payload = {
-        restaurantId: formData.restaurantId,
+        shopId: formData.shopId,
         defaultCommission: {
           type: formData.defaultCommission.type,
           value: parseFloat(formData.defaultCommission.value),
@@ -292,17 +292,17 @@ export default function RestaurantCommission() {
       }
 
       if (selectedCommission) {
-        await adminAPI.updateRestaurantCommission(selectedCommission._id, payload)
+        await adminAPI.updateShopCommission(selectedCommission._id, payload)
         toast.success("Commission updated successfully")
       } else {
-        await adminAPI.createRestaurantCommission(payload)
+        await adminAPI.createShopCommission(payload)
         toast.success("Commission created successfully")
       }
 
       await fetchCommissions()
       setIsAddEditOpen(false)
       setSelectedCommission(null)
-      setSelectedRestaurant(null)
+      setSelectedShop(null)
       setFormData(getDefaultFormData())
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to save commission")
@@ -373,7 +373,7 @@ export default function RestaurantCommission() {
                         Shop Name
                       </th>
                     )}
-                    {visibleColumns.restaurantId && (
+                    {visibleColumns.shopId && (
                       <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-700">
                         Shop ID
                       </th>
@@ -423,13 +423,13 @@ export default function RestaurantCommission() {
                         {visibleColumns.shop && (
                           <td className="whitespace-nowrap px-6 py-4">
                             <span className="text-sm font-medium text-brand-600">
-                              {commission.restaurantName || commission.shop?.name || "-"}
+                              {commission.shopName || commission.shop?.name || "-"}
                             </span>
                           </td>
                         )}
-                        {visibleColumns.restaurantId && (
+                        {visibleColumns.shopId && (
                           <td className="whitespace-nowrap px-6 py-4">
-                            <span className="text-sm text-slate-700">{commission.restaurantId || "-"}</span>
+                            <span className="text-sm text-slate-700">{commission.shopId || "-"}</span>
                           </td>
                         )}
                         {visibleColumns.defaultCommission && (
@@ -516,7 +516,7 @@ export default function RestaurantCommission() {
         </div>
       </div>
 
-      <Dialog open={isRestaurantSelectOpen} onOpenChange={setIsRestaurantSelectOpen}>
+      <Dialog open={isShopSelectOpen} onOpenChange={setIsShopSelectOpen}>
         <DialogContent className="max-w-xl bg-white p-0">
           <DialogHeader className="border-b border-slate-200 px-6 pb-4 pt-6">
             <DialogTitle className="text-lg font-semibold text-slate-900">Select Shop</DialogTitle>
@@ -533,24 +533,24 @@ export default function RestaurantCommission() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             </div>
             <div className="max-h-80 space-y-2 overflow-y-auto">
-              {filteredRestaurants
+              {filteredShops
                 .filter((shop) => !shop.hasCommissionSetup)
                 .map((shop) => (
                   <button
                     key={shop._id || shop.id}
-                    onClick={() => handleSelectRestaurant(shop)}
+                    onClick={() => handleSelectShop(shop)}
                     className="w-full rounded-lg border border-slate-200 p-3 text-left transition-all hover:border-brand-300 hover:bg-brand-50"
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-slate-900">{shop.name}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">{shop.restaurantId}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{shop.shopId}</p>
                       </div>
                       <Building2 className="h-4 w-4 text-slate-400" />
                     </div>
                   </button>
                 ))}
-              {filteredRestaurants.filter((shop) => !shop.hasCommissionSetup).length === 0 && (
+              {filteredShops.filter((shop) => !shop.hasCommissionSetup).length === 0 && (
                 <p className="py-4 text-center text-sm text-slate-500">No shops available</p>
               )}
             </div>
@@ -566,10 +566,10 @@ export default function RestaurantCommission() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 py-4">
-            {selectedRestaurant && (
+            {selectedShop && (
               <div className="rounded-lg border border-brand-100 bg-brand-50 p-3">
-                <p className="text-sm font-semibold text-slate-900">{selectedRestaurant.name}</p>
-                <p className="mt-0.5 text-xs text-slate-600">{selectedRestaurant.restaurantId}</p>
+                <p className="text-sm font-semibold text-slate-900">{selectedShop.name}</p>
+                <p className="mt-0.5 text-xs text-slate-600">{selectedShop.shopId}</p>
               </div>
             )}
 
@@ -713,7 +713,7 @@ export default function RestaurantCommission() {
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-slate-700">
-              Are you sure you want to delete commission for "{selectedCommission?.restaurantName || selectedCommission?.shop?.name}"? This action cannot be undone.
+              Are you sure you want to delete commission for "{selectedCommission?.shopName || selectedCommission?.shop?.name}"? This action cannot be undone.
             </p>
           </div>
           <DialogFooter>

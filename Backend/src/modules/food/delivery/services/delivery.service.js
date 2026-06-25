@@ -386,8 +386,8 @@ export const getDeliveryPartnerReviews = async (deliveryPartnerId, query = {}) =
             .skip(skip)
             .limit(limit)
             .populate('userId', 'name phone profileImage')
-            .populate('restaurantId', 'restaurantName profileImage area city')
-            .select('orderId userId restaurantId ratings.deliveryPartner createdAt deliveryState.deliveredAt')
+            .populate('shopId', 'shopName profileImage area city')
+            .select('orderId userId shopId ratings.deliveryPartner createdAt deliveryState.deliveredAt')
             .lean(),
         FoodOrder.countDocuments(filter),
         FoodOrder.aggregate([
@@ -408,8 +408,8 @@ export const getDeliveryPartnerReviews = async (deliveryPartnerId, query = {}) =
             sl: skip + index + 1,
             orderId: order.orderId,
             customer: order.userId?.name || 'Customer',
-            restaurant: order.restaurantId?.restaurantName || 'Restaurant',
-            restaurantArea: [order.restaurantId?.area, order.restaurantId?.city].filter(Boolean).join(', '),
+            shop: order.shopId?.shopName || 'Shop',
+            shopArea: [order.shopId?.area, order.shopId?.city].filter(Boolean).join(', '),
             rating: Number(rating.rating) || 0,
             review: rating.comment || '',
             submittedAt: rating.ratedAt || order.createdAt,
@@ -719,10 +719,10 @@ const toTripDto = (order) => {
 
     const status = isDelivered ? 'Completed' : isCancelled ? 'Cancelled' : 'Pending';
 
-    const restaurantName =
-        order?.restaurantId?.restaurantName ||
-        order?.restaurantName ||
-        order?.restaurant?.restaurantName ||
+    const shopName =
+        order?.shopId?.shopName ||
+        order?.shopName ||
+        order?.shop?.shopName ||
         '';
 
     const paymentMethod = order?.payment?.method || order?.paymentMethod || '';
@@ -749,8 +749,8 @@ const toTripDto = (order) => {
         status,
         rawOrderStatus: orderStatus,
         isCompensatedCancellation: isUserUnavailableCancelled,
-        restaurantName,
-        restaurant: restaurantName,
+        shopName,
+        shop: shopName,
         items: order?.items || order?.orderItems || [],
         orderItems: order?.orderItems || order?.items || [],
         paymentMethod,
@@ -804,7 +804,7 @@ export const getDeliveryPartnerTripHistory = async (deliveryPartnerId, query = {
     }
 
     const orders = await FoodOrder.find(match)
-        .populate({ path: 'restaurantId', select: 'restaurantName' })
+        .populate({ path: 'shopId', select: 'shopName' })
         .sort({ 'deliveryState.deliveredAt': -1, createdAt: -1 })
         .limit(limit)
         .lean();
@@ -879,7 +879,7 @@ export const getDeliveryPartnerOrderQueue = async (deliveryPartnerId) => {
         orderStatus: { $in: activeStatuses },
         'dispatch.status': { $in: ['assigned', 'accepted'] }
     })
-        .populate({ path: 'restaurantId', select: 'restaurantName name phone location addressLine1 area city state profileImage' })
+        .populate({ path: 'shopId', select: 'shopName name phone location addressLine1 area city state profileImage' })
         .populate({ path: 'userId', select: 'name phone' })
         .sort({ 'dispatch.acceptedAt': 1, 'dispatch.assignedAt': 1, createdAt: -1 })
         .lean();
@@ -958,7 +958,7 @@ export const getDeliveryPocketDetails = async (deliveryPartnerId, query = {}) =>
             { createdAt: { $gte: start, $lte: end } }
         ]
     })
-        .populate({ path: 'restaurantId', select: 'restaurantName' })
+        .populate({ path: 'shopId', select: 'shopName' })
         .sort({ 'deliveryState.deliveredAt': -1, deliveredAt: -1, completedAt: -1, updatedAt: -1, createdAt: -1 })
         .limit(limit)
         .lean();
@@ -982,7 +982,7 @@ export const getDeliveryPocketDetails = async (deliveryPartnerId, query = {}) =>
         createdAt: o?.deliveryState?.deliveredAt || o?.deliveredAt || o?.createdAt,
         orderId: o.orderId || String(o._id),
         metadata: { orderId: o.orderId || String(o._id) },
-        description: o?.restaurantId?.restaurantName ? `Order earning - ${o.restaurantId.restaurantName}` : 'Order earning'
+        description: o?.shopId?.shopName ? `Order earning - ${o.shopId.shopName}` : 'Order earning'
     }));
 
     const bonusTransactions = (bonusTxList || []).map((t) => ({

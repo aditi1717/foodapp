@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { FoodOrder } from '../models/order.model.js';
-import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodShop } from '../../shop/models/shop.model.js';
 import { FoodTransaction } from '../models/foodTransaction.model.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
 import { FoodDeliveryExclusivity } from '../../delivery/models/deliveryExclusivity.model.js';
@@ -49,7 +49,7 @@ function emitOrderUpdate(order, deliveryPartnerId) {
         'order_status_update',
         payload,
       );
-      io.to(rooms.restaurant(order.restaurantId)).emit(
+      io.to(rooms.shop(order.shopId)).emit(
         'order_status_update',
         payload,
       );
@@ -93,7 +93,7 @@ function emitOrderUpdate(order, deliveryPartnerId) {
     if (userTitle) {
       void notifyOwnersSafely(
         [
-          { ownerType: 'RESTAURANT', ownerId: order.restaurantId },
+          { ownerType: 'SHOP', ownerId: order.shopId },
           { ownerType: 'USER', ownerId: order.userId },
         ],
         {
@@ -190,8 +190,8 @@ export async function getCurrentTripDelivery(deliveryPartnerId) {
     },
   })
     .populate({
-      path: 'restaurantId',
-      select: 'restaurantName name phone location addressLine1 area city state profileImage',
+      path: 'shopId',
+      select: 'shopName name phone location addressLine1 area city state profileImage',
     })
     .populate({ path: 'userId', select: 'name phone' })
     .sort({ updatedAt: -1 })
@@ -216,18 +216,18 @@ export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
     deliveryPartnerId: new mongoose.Types.ObjectId(deliveryPartnerId),
     status: "associated",
   })
-    .select("restaurantId")
+    .select("shopId")
     .lean();
-  const exclusiveRestaurantId = activeAssociation?.restaurantId
-    ? new mongoose.Types.ObjectId(activeAssociation.restaurantId)
+  const exclusiveShopId = activeAssociation?.shopId
+    ? new mongoose.Types.ObjectId(activeAssociation.shopId)
     : null;
 
   const unassignedBranch = {
     'dispatch.status': 'unassigned',
     orderStatus: { $in: ['created', 'confirmed', 'preparing', 'ready_for_pickup'] },
   };
-  if (exclusiveRestaurantId) {
-    unassignedBranch.restaurantId = exclusiveRestaurantId;
+  if (exclusiveShopId) {
+    unassignedBranch.shopId = exclusiveShopId;
   }
 
   const filter = {
@@ -239,7 +239,7 @@ export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
           $nin: [
             'delivered',
             'cancelled_by_user',
-            'cancelled_by_restaurant',
+            'cancelled_by_shop',
             'cancelled_by_user_unavailable',
             'cancelled_by_admin',
           ],
@@ -255,8 +255,8 @@ export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
       .limit(limit)
       .populate('userId', 'name phone email')
       .populate(
-        'restaurantId',
-        'restaurantName name address phone ownerPhone location profileImage',
+        'shopId',
+        'shopName name address phone ownerPhone location profileImage',
       )
       .lean(),
     FoodOrder.countDocuments(filter),
@@ -293,16 +293,16 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
     deliveryPartnerId: partnerId,
     status: "associated",
   })
-    .select("restaurantId")
+    .select("shopId")
     .lean();
-  const exclusiveRestaurantId = activeAssociation?.restaurantId
-    ? new mongoose.Types.ObjectId(activeAssociation.restaurantId)
+  const exclusiveShopId = activeAssociation?.shopId
+    ? new mongoose.Types.ObjectId(activeAssociation.shopId)
     : null;
   const now = new Date();
   const acceptedStatuses = ['created', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up'];
   const cancellableStatuses = [
     'cancelled_by_user',
-    'cancelled_by_restaurant',
+    'cancelled_by_shop',
     'cancelled_by_user_unavailable',
     'cancelled_by_admin',
   ];
@@ -323,7 +323,7 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
       $or: [
         {
           'dispatch.status': 'unassigned',
-          ...(exclusiveRestaurantId ? { restaurantId: exclusiveRestaurantId } : {}),
+          ...(exclusiveShopId ? { shopId: exclusiveShopId } : {}),
         },
         {
           'dispatch.status': 'assigned',
@@ -343,7 +343,7 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
       },
     },
     { new: true },
-  ).populate('restaurantId userId');
+  ).populate('shopId userId');
 
   if (!order) {
     const existing = await FoodOrder.findOne(identity)
@@ -365,7 +365,7 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
       String(existing.dispatch?.deliveryPartnerId || '') === String(deliveryPartnerId)
     ) {
       const acceptedOrder = await FoodOrder.findOne(identity)
-        .populate('restaurantId userId');
+        .populate('shopId userId');
       return acceptedOrder
         ? sanitizeOrderForExternal(acceptedOrder)
         : null;
@@ -384,7 +384,7 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
 
   void (async () => {
     try {
-      const rest = order.restaurantId;
+      const rest = order.shopId;
       const userLoc = order.deliveryAddress?.location?.coordinates;
       const restLoc = rest?.location?.coordinates;
 
@@ -404,8 +404,8 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
               lng: restLoc[0],
               boy_lat: restLoc[1],
               boy_lng: restLoc[0],
-              restaurant_lat: restLoc[1],
-              restaurant_lng: restLoc[0],
+              shop_lat: restLoc[1],
+              shop_lng: restLoc[0],
               customer_lat: userLoc[1],
               customer_lng: userLoc[0],
               status: 'accepted',
@@ -442,7 +442,7 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
           dispatchStatus: order.dispatch?.status,
         };
         io.to(rooms.delivery(deliveryPartnerId)).emit('order_status_update', payload);
-        io.to(rooms.restaurant(order.restaurantId)).emit('order_status_update', payload);
+        io.to(rooms.shop(order.shopId)).emit('order_status_update', payload);
         io.to(rooms.user(order.userId)).emit('order_status_update', payload);
 
         // Notify ALL other delivery partners who were offered this order to dismiss it
@@ -464,7 +464,7 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
       await notifyOwnersSafely(
         [
           { ownerType: 'USER', ownerId: order.userId },
-          { ownerType: 'RESTAURANT', ownerId: order.restaurantId },
+          { ownerType: 'SHOP', ownerId: order.shopId },
           { ownerType: 'DELIVERY_PARTNER', ownerId: deliveryPartnerId },
         ],
         {
@@ -584,19 +584,19 @@ export async function confirmReachedPickupDelivery(orderId, deliveryPartnerId) {
   emitOrderUpdate(order, deliveryPartnerId);
 
   try {
-    const restaurant = await FoodRestaurant.findById(order.restaurantId)
-      .select('restaurantName')
+    const shop = await FoodShop.findById(order.shopId)
+      .select('shopName')
       .lean();
     const partner = await FoodDeliveryPartner.findById(deliveryPartnerId)
       .select('name')
       .lean();
 
     await notifyOwnersSafely(
-      [{ ownerType: 'RESTAURANT', ownerId: order.restaurantId }],
+      [{ ownerType: 'SHOP', ownerId: order.shopId }],
       {
         title: 'Rider arrived!',
         body: `${partner?.name || 'The delivery partner'} has arrived at ${
-          restaurant?.restaurantName || 'your restaurant'
+          shop?.shopName || 'your shop'
         } to pick up Order #${order._id.toString()}.`,
         data: {
           type: 'rider_arrived',
@@ -608,7 +608,7 @@ export async function confirmReachedPickupDelivery(orderId, deliveryPartnerId) {
     );
   } catch (error) {
     logger.error(
-      `Error notifying restaurant about rider arrival for ${order._id}: ${
+      `Error notifying shop about rider arrival for ${order._id}: ${
         error?.message || error
       }`,
     );

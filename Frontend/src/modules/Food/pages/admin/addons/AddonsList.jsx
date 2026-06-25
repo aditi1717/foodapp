@@ -49,7 +49,7 @@ export default function AddonsList() {
     const fetchAddons = async () => {
       try {
         setLoading(true)
-        const response = await adminAPI.getRestaurantAddons({
+        const response = await adminAPI.getShopAddons({
           // only approved items should be visible in this list
           approvalStatus: "approved",
           search: searchQuery?.trim() ? searchQuery.trim() : undefined,
@@ -127,7 +127,7 @@ export default function AddonsList() {
         imageUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url || imageUrl
       }
 
-      await adminAPI.updateRestaurantAddon(String(id), {
+      await adminAPI.updateShopAddon(String(id), {
         name: editForm.name.trim(),
         price: priceNum,
         description: editForm.description.trim(),
@@ -169,7 +169,7 @@ export default function AddonsList() {
     const id = pendingDelete?.id || pendingDelete?._id
     try {
       setSubmittingAction(true)
-      await adminAPI.rejectRestaurantAddon(String(id), "Deleted by admin")
+      await adminAPI.rejectShopAddon(String(id), "Deleted by admin")
       setAddons((prev) => (prev || []).filter((a) => String(a.id || a._id) !== String(id)))
       toast.success("Add-on deleted")
     } catch (error) {
@@ -284,9 +284,9 @@ export default function AddonsList() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
-                        <span className="text-sm text-slate-900">{addon?.shop?.name || addon?.restaurant?.name || "-"}</span>
-                        {addon?.shop?.ownerPhone || addon?.restaurant?.ownerPhone ? (
-                          <span className="text-xs text-slate-500">{addon?.shop?.ownerPhone || addon?.restaurant?.ownerPhone}</span>
+                        <span className="text-sm text-slate-900">{addon?.shop?.name || addon?.shop?.name || "-"}</span>
+                        {addon?.shop?.ownerPhone || addon?.shop?.ownerPhone ? (
+                          <span className="text-xs text-slate-500">{addon?.shop?.ownerPhone || addon?.shop?.ownerPhone}</span>
                         ) : null}
                       </div>
                     </td>
@@ -355,7 +355,7 @@ export default function AddonsList() {
               <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 border border-slate-200 rounded-lg p-4">
                 <p>
                   <span className="font-semibold text-slate-700">Shop:</span>{" "}
-                  <span className="text-slate-900">{selectedAddon?.shop?.name || selectedAddon?.restaurant?.name || "-"}</span>
+                  <span className="text-slate-900">{selectedAddon?.shop?.name || selectedAddon?.shop?.name || "-"}</span>
                 </p>
                 <p>
                   <span className="font-semibold text-slate-700">Price:</span>{" "}

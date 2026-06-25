@@ -23,7 +23,7 @@ import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import DocumentUploadActions from "@food/components/DocumentUploadActions"
 // Removed foodManagement - now using backend API directly
 import { useNavigate } from "react-router-dom"
-import { restaurantAPI, uploadAPI } from "@food/api"
+import { shopAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -47,7 +47,7 @@ export default function HubMenu() {
   const [loadingMenu, setLoadingMenu] = useState(true)
   const [activeTab, setActiveTab] = useState(() => {
     try {
-      const saved = localStorage.getItem("restaurant_hub_menu_active_tab")
+      const saved = localStorage.getItem("shop_hub_menu_active_tab")
       if (saved === "all" || saved === "add-ons") {
         return saved
       }
@@ -86,7 +86,7 @@ export default function HubMenu() {
   const [newCategoryName, setNewCategoryName] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [restaurantData, setRestaurantData] = useState(null)
+  const [shopData, setShopData] = useState(null)
   const [isAddAddonModalOpen, setIsAddAddonModalOpen] = useState(false)
   const [addons, setAddons] = useState([])
   const [loadingAddons, setLoadingAddons] = useState(false)
@@ -102,9 +102,9 @@ export default function HubMenu() {
   const addonFileInputRef = useRef(null)
 
   // Shop info - fetch from backend
-  const restaurantName = restaurantData?.name || ""
-  const restaurantExpertise = restaurantData?.cuisines?.length > 0 
-    ? restaurantData.cuisines.join(", ") 
+  const shopName = shopData?.name || ""
+  const shopExpertise = shopData?.cuisines?.length > 0 
+    ? shopData.cuisines.join(", ") 
     : ""
 
   // Handle scroll to change title
@@ -187,12 +187,12 @@ export default function HubMenu() {
 
   // Fetch shop data on mount
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       try {
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
-          setRestaurantData(data)
+          setShopData(data)
         }
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
@@ -203,7 +203,7 @@ export default function HubMenu() {
       }
     }
     
-    fetchRestaurantData()
+    fetchShopData()
   }, [])
 
   useEffect(() => {
@@ -226,7 +226,7 @@ export default function HubMenu() {
       if (showLoading) {
         setLoadingMenu(true)
       }
-      const response = await restaurantAPI.getMenu()
+      const response = await shopAPI.getMenu()
       
       if (response.data && response.data.success && response.data.data && response.data.data.menu) {
         const menuSections = response.data.data.menu.sections || []
@@ -417,7 +417,7 @@ export default function HubMenu() {
   const fetchAddons = async (showLoading = true) => {
     try {
       if (showLoading) setLoadingAddons(true)
-      const response = await restaurantAPI.getAddons()
+      const response = await shopAPI.getAddons()
       const data = response?.data?.data?.addons || response?.data?.addons || []
       const getAddonCreatedMs = (addon = {}) => {
         const candidates = [addon.requestedAt, addon.createdAt, addon.updatedAt]
@@ -449,7 +449,7 @@ export default function HubMenu() {
 
   useEffect(() => {
     try {
-      localStorage.setItem("restaurant_hub_menu_active_tab", activeTab)
+      localStorage.setItem("shop_hub_menu_active_tab", activeTab)
     } catch (error) {
       debugWarn("Failed to persist hub menu active tab:", error)
     }
@@ -551,7 +551,7 @@ export default function HubMenu() {
             let uploadResponse
             try {
               uploadResponse = await uploadAPI.uploadMedia(file, {
-                folder: 'appzeto/restaurant/addons'
+                folder: 'appzeto/shop/addons'
               })
             } catch (folderUploadError) {
               // Fallback: retry without folder in case provider/account rejects custom folder.
@@ -591,11 +591,11 @@ export default function HubMenu() {
 
       if (editingAddon) {
         // Update existing add-on
-        await restaurantAPI.updateAddon(editingAddon.id, { draft: addonData })
+        await shopAPI.updateAddon(editingAddon.id, { draft: addonData })
         toast.success('Add-on updated successfully! Pending admin approval.')
       } else {
         // Create new add-on
-        await restaurantAPI.addAddon(addonData)
+        await shopAPI.addAddon(addonData)
         toast.success('Add-on added successfully! Pending admin approval.')
       }
       
@@ -637,7 +637,7 @@ export default function HubMenu() {
     }
 
     try {
-      await restaurantAPI.deleteAddon(addon.id)
+      await shopAPI.deleteAddon(addon.id)
       toast.success('Add-on deleted successfully')
       fetchAddons(true)
     } catch (error) {
@@ -851,7 +851,7 @@ export default function HubMenu() {
           ...(availabilityReason === 'custom' && { customDateTime }),
         }
 
-        const response = await restaurantAPI.scheduleItemAvailability(scheduleData)
+        const response = await shopAPI.scheduleItemAvailability(scheduleData)
 
         if (response.data && response.data.success) {
           // Update local menu data with response
@@ -942,7 +942,7 @@ export default function HubMenu() {
 
     // Save updated foods
     try {
-      localStorage.setItem('restaurant_foods', JSON.stringify(updatedFoods))
+      localStorage.setItem('shop_foods', JSON.stringify(updatedFoods))
       window.dispatchEvent(new CustomEvent('foodsChanged'))
       window.dispatchEvent(new Event('storage'))
     } catch (error) {
@@ -1064,15 +1064,15 @@ export default function HubMenu() {
                   </motion.h1>
                 ) : (
                   <motion.h1
-                    key="restaurant"
+                    key="shop"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                     className="text-lg font-bold text-gray-900 absolute truncate max-w-full"
-                    title={restaurantName}
+                    title={shopName}
                   >
-                    {restaurantName.length > 25 ? `${restaurantName.substring(0, 25)}...` : restaurantName}
+                    {shopName.length > 25 ? `${shopName.substring(0, 25)}...` : shopName}
                   </motion.h1>
                 )}
               </AnimatePresence>
@@ -1113,8 +1113,8 @@ export default function HubMenu() {
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="mb-3 px-4 py-1 overflow-hidden"
               >
-                <h2 className="text-lg font-bold text-gray-900">{restaurantName}</h2>
-                <p className="text-sm text-gray-600">{restaurantExpertise}</p>
+                <h2 className="text-lg font-bold text-gray-900">{shopName}</h2>
+                <p className="text-sm text-gray-600">{shopExpertise}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1292,7 +1292,7 @@ export default function HubMenu() {
                           <button
                             onClick={async () => {
                               try {
-                                await restaurantAPI.updateAddon(addon.id, { isAvailable: addon.isAvailable === false })
+                                await shopAPI.updateAddon(addon.id, { isAvailable: addon.isAvailable === false })
                                 toast.success(addon.isAvailable === false ? "Add-on enabled" : "Add-on disabled")
                                 fetchAddons(false)
                               } catch (error) {

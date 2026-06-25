@@ -35,14 +35,14 @@ import { useCart } from "@food/context/CartContext"
 import { orderAPI } from "@food/api"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import circleIcon from "@food/assets/circleicon.png"
-import { RESTAURANT_PIN_SVG, CUSTOMER_PIN_SVG, RIDER_BIKE_SVG } from "@food/constants/mapIcons"
+import { SHOP_PIN_SVG, CUSTOMER_PIN_SVG, RIDER_BIKE_SVG } from "@food/constants/mapIcons"
 import BRAND_THEME from "@/config/brandTheme"
 
 // Fallback definitions in case imports fail at runtime or are shadowed
 const DEFAULT_CUSTOMER_PIN = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#10B981"><path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/><circle cx="12" cy="9" r="3" fill="#FFFFFF"/></svg>`;
 const SAFE_CUSTOMER_PIN = typeof CUSTOMER_PIN_SVG !== 'undefined' ? CUSTOMER_PIN_SVG : DEFAULT_CUSTOMER_PIN;
-const DEFAULT_RESTAURANT_PIN = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#FF6B35"><path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/><circle cx="12" cy="9" r="3" fill="#FFFFFF"/></svg>`;
-const SAFE_RESTAURANT_PIN = typeof RESTAURANT_PIN_SVG !== 'undefined' ? RESTAURANT_PIN_SVG : DEFAULT_RESTAURANT_PIN;
+const DEFAULT_SHOP_PIN = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#FF6B35"><path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/><circle cx="12" cy="9" r="3" fill="#FFFFFF"/></svg>`;
+const SAFE_SHOP_PIN = typeof SHOP_PIN_SVG !== 'undefined' ? SHOP_PIN_SVG : DEFAULT_SHOP_PIN;
 
 const debugLog = (...args) => console.log('[OrderTracking]', ...args)
 const debugWarn = (...args) => console.warn('[OrderTracking]', ...args)
@@ -75,16 +75,16 @@ const SectionItem = ({ icon: Icon, iconNode, title, subtitle, onClick, showArrow
   </motion.button>
 )
 
-const getRestaurantCoordsFromOrder = (apiOrder, fallback = null) => {
+const getShopCoordsFromOrder = (apiOrder, fallback = null) => {
   if (
-    apiOrder?.restaurantId?.location?.coordinates &&
-    Array.isArray(apiOrder.restaurantId.location.coordinates) &&
-    apiOrder.restaurantId.location.coordinates.length >= 2
+    apiOrder?.shopId?.location?.coordinates &&
+    Array.isArray(apiOrder.shopId.location.coordinates) &&
+    apiOrder.shopId.location.coordinates.length >= 2
   ) {
-    return apiOrder.restaurantId.location.coordinates
+    return apiOrder.shopId.location.coordinates
   }
-  if (apiOrder?.restaurantId?.location?.latitude && apiOrder?.restaurantId?.location?.longitude) {
-    return [apiOrder.restaurantId.location.longitude, apiOrder.restaurantId.location.latitude]
+  if (apiOrder?.shopId?.location?.latitude && apiOrder?.shopId?.location?.longitude) {
+    return [apiOrder.shopId.location.longitude, apiOrder.shopId.location.latitude]
   }
   if (
     apiOrder?.shop?.location?.coordinates &&
@@ -96,12 +96,12 @@ const getRestaurantCoordsFromOrder = (apiOrder, fallback = null) => {
   return fallback || null
 }
 
-const getRestaurantAddressFromOrder = (apiOrder, previousOrder = null, explicitRestaurantAddress = null) => {
-  if (explicitRestaurantAddress && String(explicitRestaurantAddress).trim()) {
-    return String(explicitRestaurantAddress).trim()
+const getShopAddressFromOrder = (apiOrder, previousOrder = null, explicitShopAddress = null) => {
+  if (explicitShopAddress && String(explicitShopAddress).trim()) {
+    return String(explicitShopAddress).trim()
   }
 
-  const location = apiOrder?.restaurantId?.location || apiOrder?.shop?.location || {}
+  const location = apiOrder?.shopId?.location || apiOrder?.shop?.location || {}
 
   if (location?.formattedAddress && String(location.formattedAddress).trim()) {
     return String(location.formattedAddress).trim()
@@ -119,7 +119,7 @@ const getRestaurantAddressFromOrder = (apiOrder, previousOrder = null, explicitR
 
   if (parts.length > 0) return parts.join(', ')
 
-  return previousOrder?.restaurantAddress || apiOrder?.restaurantAddress || apiOrder?.shop?.address || 'Shop location'
+  return previousOrder?.shopAddress || apiOrder?.shopAddress || apiOrder?.shop?.address || 'Shop location'
 }
 
 const getCustomerCoordsFromApiOrder = (apiOrder, previousOrder = null) => {
@@ -281,8 +281,8 @@ const getDistanceKm = (from, to) => {
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-const getDeliveryEtaMinutesByDistance = (restaurantCoords, customerCoords) => {
-  const distanceKm = getDistanceKm(restaurantCoords, customerCoords)
+const getDeliveryEtaMinutesByDistance = (shopCoords, customerCoords) => {
+  const distanceKm = getDistanceKm(shopCoords, customerCoords)
   if (distanceKm === null) return null
 
   const averageCitySpeedKmph = 22
@@ -294,10 +294,10 @@ const getDueLabelFromOrder = (apiOrder, previousOrder = null, dueAmount = 0) => 
   return "Previous Due"
 }
 
-const transformOrderForTracking = (apiOrder, previousOrder = null, explicitRestaurantCoords = null, explicitRestaurantAddress = null) => {
+const transformOrderForTracking = (apiOrder, previousOrder = null, explicitShopCoords = null, explicitShopAddress = null) => {
   const scheduledAt = resolveScheduledAtFromOrder(apiOrder, previousOrder)
-  const restaurantCoords = explicitRestaurantCoords || getRestaurantCoordsFromOrder(apiOrder, previousOrder?.restaurantLocation?.coordinates)
-  const restaurantAddress = getRestaurantAddressFromOrder(apiOrder, previousOrder, explicitRestaurantAddress)
+  const shopCoords = explicitShopCoords || getShopCoordsFromOrder(apiOrder, previousOrder?.shopLocation?.coordinates)
+  const shopAddress = getShopAddressFromOrder(apiOrder, previousOrder, explicitShopAddress)
   // API returns `deliveryAddress`; some paths use `address`
   const addr = apiOrder?.address || apiOrder?.deliveryAddress || {}
   const customerCoordsResolved = getCustomerCoordsFromApiOrder(apiOrder, previousOrder)
@@ -310,28 +310,28 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     mongoId: apiOrder?._id || null,
     orderId: apiOrder?.orderId || apiOrder?._id,
     shop:
-      apiOrder?.restaurantName ||
-      apiOrder?.restaurantId?.restaurantName ||
-      apiOrder?.restaurantId?.name ||
+      apiOrder?.shopName ||
+      apiOrder?.shopId?.shopName ||
+      apiOrder?.shopId?.name ||
       (typeof apiOrder?.shop === 'string' ? apiOrder.shop : null) ||
-      apiOrder?.shop?.restaurantName ||
+      apiOrder?.shop?.shopName ||
       apiOrder?.shop?.name ||
       previousOrder?.shop ||
       'Shop',
-    restaurantPhone:
-      apiOrder?.restaurantPhone ||
-      apiOrder?.restaurantId?.phone ||
-      apiOrder?.restaurantId?.primaryContactNumber ||
-      apiOrder?.restaurantId?.ownerPhone ||
-      apiOrder?.restaurantId?.contactNumber ||
-      apiOrder?.restaurantId?.mobile ||
+    shopPhone:
+      apiOrder?.shopPhone ||
+      apiOrder?.shopId?.phone ||
+      apiOrder?.shopId?.primaryContactNumber ||
+      apiOrder?.shopId?.ownerPhone ||
+      apiOrder?.shopId?.contactNumber ||
+      apiOrder?.shopId?.mobile ||
       apiOrder?.shop?.phone ||
       apiOrder?.shop?.ownerPhone ||
       apiOrder?.shop?.primaryContactNumber ||
-      previousOrder?.restaurantPhone ||
+      previousOrder?.shopPhone ||
       '',
-    restaurantAddress,
-    restaurantId: apiOrder?.restaurantId || previousOrder?.restaurantId || null,
+    shopAddress,
+    shopId: apiOrder?.shopId || previousOrder?.shopId || null,
     userId: apiOrder?.userId || previousOrder?.userId || null,
     userName:
       apiOrder?.userName ||
@@ -362,8 +362,8 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
           : previousOrder?.address?.formattedAddress || addr?.city || ''),
       coordinates: customerCoordsResolved || addr?.location?.coordinates || previousOrder?.address?.coordinates || null
     },
-    restaurantLocation: {
-      coordinates: restaurantCoords
+    shopLocation: {
+      coordinates: shopCoords
     },
     items:
       apiOrder?.items?.map((item) => {
@@ -419,10 +419,10 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     discount: apiOrder?.pricing?.discount || apiOrder?.discount || 0,
     subtotal: apiOrder?.pricing?.subtotal || apiOrder?.subtotal || 0,
     note: typeof apiOrder?.note === "string" ? apiOrder.note : (previousOrder?.note || ""),
-    restaurantNote:
-      typeof apiOrder?.restaurantNote === "string"
-        ? apiOrder.restaurantNote
-        : (previousOrder?.restaurantNote || ""),
+    shopNote:
+      typeof apiOrder?.shopNote === "string"
+        ? apiOrder.shopNote
+        : (previousOrder?.shopNote || ""),
     customerNote:
       typeof apiOrder?.customerNote === "string"
         ? apiOrder.customerNote
@@ -843,7 +843,7 @@ export default function OrderTracking() {
     }
   }, [navigate])
 
-  const handleOpenRestaurantComplaint = useCallback(() => {
+  const handleOpenShopComplaint = useCallback(() => {
     const orderMongoId = order?.mongoId || order?._id || order?.orderMongoId || order?.id || orderId
     if (!orderMongoId) {
       toast.error("Order ID not available. Please refresh the page.")
@@ -865,15 +865,15 @@ export default function OrderTracking() {
 
   const handleReorder = useCallback(() => {
     const items = Array.isArray(order?.items) ? order.items : []
-    const restaurantRef = order?.restaurantId
-    const restaurantTarget =
-      order?.restaurantSlug ||
+    const shopRef = order?.shopId
+    const shopTarget =
+      order?.shopSlug ||
       order?.shop?.slug ||
-      (restaurantRef && typeof restaurantRef === "object"
-        ? restaurantRef.slug || restaurantRef._id || restaurantRef.id
-        : restaurantRef)
+      (shopRef && typeof shopRef === "object"
+        ? shopRef.slug || shopRef._id || shopRef.id
+        : shopRef)
 
-    if (!restaurantTarget || !items.length) {
+    if (!shopTarget || !items.length) {
       toast.error("Order items or shop information not available")
       return
     }
@@ -888,8 +888,8 @@ export default function OrderTracking() {
           name: item?.name || item?.foodName || "Item",
           price: Number(item?.price) || 0,
           image: item?.image || "",
-          shop: order?.shop || order?.restaurantName || "Shop",
-          restaurantId: restaurantRef,
+          shop: order?.shop || order?.shopName || "Shop",
+          shopId: shopRef,
           description: item?.description || "",
           isVeg: isItemVeg(item),
           quantity: Math.max(1, Number(item?.quantity || item?.qty) || 1),
@@ -905,7 +905,7 @@ export default function OrderTracking() {
 
     replaceCart(reorderItems)
     toast.success("Items added to cart")
-    navigate(`/food/shops/${encodeURIComponent(String(restaurantTarget))}`)
+    navigate(`/food/shops/${encodeURIComponent(String(shopTarget))}`)
   }, [navigate, order, replaceCart])
 
   const defaultAddress = getDefaultAddress()
@@ -961,7 +961,7 @@ export default function OrderTracking() {
       Boolean(order?.deliveredAt),
     [orderStatus, normalizedBackendOrderStatus, order?.deliveredAt],
   )
-  const isRestaurantReadyForPickup = useMemo(
+  const isShopReadyForPickup = useMemo(
     () =>
       [
         "ready",
@@ -975,8 +975,8 @@ export default function OrderTracking() {
       ].includes(normalizedBackendOrderStatus),
     [normalizedBackendOrderStatus],
   )
-  const liveRestaurantEtaText =
-    !isRestaurantReadyForPickup && typeof estimatedTime === "number"
+  const liveShopEtaText =
+    !isShopReadyForPickup && typeof estimatedTime === "number"
       ? `Arriving in ${estimatedTime} mins`
       : null
 
@@ -993,22 +993,22 @@ export default function OrderTracking() {
     [isCancelledOrder, isDeliveredLikeOrder],
   )
 
-  const handleCallRestaurant = (e) => {
+  const handleCallShop = (e) => {
     // Prevent event bubbling if necessary
     if (e && e.stopPropagation) e.stopPropagation();
 
     const rawPhone =
-      order?.restaurantPhone ||
-      order?.restaurantId?.phone ||
-      order?.restaurantId?.primaryContactNumber ||
-      order?.restaurantId?.ownerPhone ||
-      order?.restaurantId?.contactNumber ||
-      order?.restaurantId?.mobile ||
-      order?.restaurantId?.contact?.phone ||
+      order?.shopPhone ||
+      order?.shopId?.phone ||
+      order?.shopId?.primaryContactNumber ||
+      order?.shopId?.ownerPhone ||
+      order?.shopId?.contactNumber ||
+      order?.shopId?.mobile ||
+      order?.shopId?.contact?.phone ||
       order?.shop?.phone ||
       order?.shop?.ownerPhone ||
       order?.shop?.primaryContactNumber ||
-      order?.restaurantId?.location?.phone ||
+      order?.shopId?.location?.phone ||
       '';
 
     const cleanPhone = String(rawPhone).replace(/[^\d+]/g, '');
@@ -1018,7 +1018,7 @@ export default function OrderTracking() {
       return;
     }
 
-    debugLog('?? Attempting to call restaurant:', cleanPhone);
+    debugLog('?? Attempting to call shop:', cleanPhone);
     
     // Most compatible way to trigger dialer on overall mobile/web environments:
     // Create a temporary hidden anchor and programmatically click it.
@@ -1319,7 +1319,7 @@ export default function OrderTracking() {
 
   // Loading state (moved after hooks)
   const trackingMapCoords = useMemo(() => {
-    const restaurantRaw = order?.restaurantLocation?.coordinates
+    const shopRaw = order?.shopLocation?.coordinates
     const customerRaw = order?.address?.coordinates
 
     const toMapLatLng = (coords) => {
@@ -1331,10 +1331,10 @@ export default function OrderTracking() {
     }
 
     return {
-      restaurant: toMapLatLng(restaurantRaw),
+      shop: toMapLatLng(shopRaw),
       customer: toMapLatLng(customerRaw),
     }
-  }, [order?.restaurantLocation?.coordinates, order?.address?.coordinates])
+  }, [order?.shopLocation?.coordinates, order?.address?.coordinates])
   const deliveryDistanceEtaMinutes = useMemo(
     () =>
       getDeliveryEtaMinutesByDistance(
@@ -1344,7 +1344,7 @@ export default function OrderTracking() {
     [trackingMapCoords.shop, trackingMapCoords.customer],
   )
   const liveDeliveryEtaText =
-    isRestaurantReadyForPickup && typeof deliveryDistanceEtaMinutes === "number"
+    isShopReadyForPickup && typeof deliveryDistanceEtaMinutes === "number"
       ? `Delivery in ${deliveryDistanceEtaMinutes} mins`
       : null
 
@@ -1450,13 +1450,13 @@ export default function OrderTracking() {
     },
     assigned: {
       title: "Rider is arriving",
-      subtitle: liveDeliveryEtaText || liveRestaurantEtaText || "A delivery partner is arriving at the shop",
+      subtitle: liveDeliveryEtaText || liveShopEtaText || "A delivery partner is arriving at the shop",
       color: BRAND_THEME.colors.brand.primary,
       iconType: 'rider'
     },
     at_pickup: {
       title: "Rider at shop",
-      subtitle: liveDeliveryEtaText || liveRestaurantEtaText || "Rider is waiting for your order",
+      subtitle: liveDeliveryEtaText || liveShopEtaText || "Rider is waiting for your order",
       color: BRAND_THEME.colors.brand.primary,
       iconType: 'rider'
     },
@@ -1608,7 +1608,7 @@ export default function OrderTracking() {
             <DeliveryTrackingMap
               orderId={resolvedLookupId || orderId}
               orderTrackingIds={trackingIds}
-              restaurantCoords={trackingMapCoords.restaurant}
+              shopCoords={trackingMapCoords.shop}
               customerCoords={trackingMapCoords.customer}
               order={order}
             />
@@ -1738,7 +1738,7 @@ export default function OrderTracking() {
               <div className="flex-1">
                 <p className="font-semibold text-gray-900">{order.deliveryPartner?.name || 'Delivery Partner'}</p>
                 <p className="text-sm text-gray-500">
-                  {liveDeliveryEtaText || liveRestaurantEtaText || "Your delivery partner is arriving"}
+                  {liveDeliveryEtaText || liveShopEtaText || "Your delivery partner is arriving"}
                 </p>
               </div>
               <motion.button
@@ -1821,12 +1821,12 @@ export default function OrderTracking() {
             <SectionItem
               iconNode={
                 <div
-                  dangerouslySetInnerHTML={{ __html: SAFE_RESTAURANT_PIN }}
+                  dangerouslySetInnerHTML={{ __html: SAFE_SHOP_PIN }}
                   className="w-6 h-6 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
                 />
               }
               title="Pickup from Shop"
-              subtitle={order?.restaurantAddress || 'Shop location'}
+              subtitle={order?.shopAddress || 'Shop location'}
               showArrow={false}
             />
           ) : (
@@ -1929,26 +1929,26 @@ export default function OrderTracking() {
         >
           <div className="flex items-center gap-3 p-4 border-b border-dashed border-gray-200">
             <div className="w-12 h-12 rounded-full bg-brand-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-              {order?.restaurantLogo || order?.restaurantId?.logo || order?.restaurantId?.profileImage ? (
+              {order?.shopLogo || order?.shopId?.logo || order?.shopId?.profileImage ? (
                 <img
-                  src={order?.restaurantLogo || order?.restaurantId?.logo || order?.restaurantId?.profileImage}
-                  alt={order.restaurant}
+                  src={order?.shopLogo || order?.shopId?.logo || order?.shopId?.profileImage}
+                  alt={order.shop}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div
-                  dangerouslySetInnerHTML={{ __html: SAFE_RESTAURANT_PIN }}
+                  dangerouslySetInnerHTML={{ __html: SAFE_SHOP_PIN }}
                   className="w-7 h-7 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
                 />
               )}
             </div>
             <div className="flex-1">
               <p className="font-semibold text-gray-900">{order.shop}</p>
-              <p className="text-sm text-gray-500">{order.restaurantAddress || 'Shop location'}</p>
+              <p className="text-sm text-gray-500">{order.shopAddress || 'Shop location'}</p>
             </div>
             <motion.button
               className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center"
-              onClick={handleCallRestaurant}
+              onClick={handleCallShop}
               whileTap={{ scale: 0.9 }}
             >
               <Phone className="w-5 h-5" style={{ color: BRAND_THEME.tokens.orders.primaryText }} />
@@ -1989,7 +1989,7 @@ export default function OrderTracking() {
               icon={MessageSquare}
               title="Shop Complaint"
               subtitle="Raise or view complaint for this order"
-              onClick={handleOpenRestaurantComplaint}
+              onClick={handleOpenShopComplaint}
             />
           )}
         </motion.div>

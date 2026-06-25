@@ -26,7 +26,7 @@ import { exportReportsToCSV, exportReportsToExcel, exportReportsToPDF, exportRep
 export default function CampaignOrderReport() {
   const [filters, setFilters] = useState({
     campaign: "All Campaignes",
-    restaurant: "All restaurants",
+    shop: "All shops",
     customer: "All customers",
     time: "All Time",
   })
@@ -146,11 +146,11 @@ export default function CampaignOrderReport() {
                   Shop
                 </label>
                 <select
-                  value={filters.restaurant}
+                  value={filters.shop}
                   onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                   className="w-full px-3 py-2 pr-8 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  <option value="All restaurants">All shops</option>
+                  <option value="All shops">All shops</option>
                   <option value="Hungry Puppets">Hungry Puppets</option>
                   <option value="Caf� Monarch">Caf� Monarch</option>
                 </select>

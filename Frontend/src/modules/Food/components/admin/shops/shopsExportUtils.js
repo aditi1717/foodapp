@@ -1,5 +1,5 @@
-// Export utility functions for restaurants
-export const exportRestaurantsToExcel = (restaurants, filename = "restaurants") => {
+// Export utility functions for shops
+export const exportShopsToExcel = (shops, filename = "shops") => {
   const headers = [
     "SI",
     "Shop ID",
@@ -14,7 +14,7 @@ export const exportRestaurantsToExcel = (restaurants, filename = "restaurants") 
   
   const rows = shops.map((shop, index) => [
     index + 1,
-    shop.originalData?.restaurantId || shop.originalData?._id || shop._id || shop.id || "N/A",
+    shop.originalData?.shopId || shop.originalData?._id || shop._id || shop.id || "N/A",
     shop.name || "N/A",
     shop.ownerName || "N/A",
     shop.ownerPhone || "N/A",
@@ -40,7 +40,7 @@ export const exportRestaurantsToExcel = (restaurants, filename = "restaurants") 
   document.body.removeChild(link)
 }
 
-export const exportRestaurantsToPDF = (shops, filename = "shops") => {
+export const exportShopsToPDF = (shops, filename = "shops") => {
   const headers = [
     "SI",
     "Shop ID",
@@ -55,7 +55,7 @@ export const exportRestaurantsToPDF = (shops, filename = "shops") => {
   
   const rows = shops.map((shop, index) => [
     index + 1,
-    shop.originalData?.restaurantId || shop.originalData?._id || shop._id || shop.id || "N/A",
+    shop.originalData?.shopId || shop.originalData?._id || shop._id || shop.id || "N/A",
     shop.name || "N/A",
     shop.ownerName || "N/A",
     shop.ownerPhone || "N/A",

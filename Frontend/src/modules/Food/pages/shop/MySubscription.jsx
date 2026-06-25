@@ -16,7 +16,7 @@ import AnimatedPage from "@food/components/user/AnimatedPage";
 import BottomNavOrders from "@food/components/shop/BottomNavOrders";
 import useShopBackNavigation from "@food/hooks/useShopBackNavigation";
 import { Button } from "@food/components/ui/button";
-import { restaurantAPI } from "@/services/api";
+import { shopAPI } from "@/services/api";
 
 const featureIconMap = {
   ShieldCheck,
@@ -63,7 +63,7 @@ export default function ShopMySubscription() {
     const loadSubscriptions = async () => {
       try {
         setIsLoading(true);
-        const response = await restaurantAPI.getSubscriptions();
+        const response = await shopAPI.getSubscriptions();
         const items = response?.data?.data?.subscriptions || [];
         if (mounted) setSubscriptions(items);
       } catch (error) {

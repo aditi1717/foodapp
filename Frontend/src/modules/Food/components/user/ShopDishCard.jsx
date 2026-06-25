@@ -5,7 +5,7 @@ import OptimizedImage from "@food/components/OptimizedImage";
 import BRAND_THEME from "@/config/brandTheme";
 
 const ShopDishCard = ({ 
-  restaurant, 
+  shop, 
   isFavorite, 
   onFavoriteClick, 
   onClick,
@@ -22,8 +22,8 @@ const ShopDishCard = ({
     >
       <div className="relative h-48 sm:h-56 overflow-hidden">
         <OptimizedImage
-          src={restaurant.image}
-          alt={restaurant.name}
+          src={shop.image}
+          alt={shop.name}
           className="w-full h-full object-cover transform scale-100 group-hover:scale-110 transition-transform duration-700"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
@@ -63,7 +63,7 @@ const ShopDishCard = ({
       </div>
 
       <div className="p-5">
-        <h3 className={`text-lg font-black ${homepage.shared.title} mb-1 line-clamp-1 transition-colors ${homepage.home.restaurantCard.nameHover}`}>
+        <h3 className={`text-lg font-black ${homepage.shared.title} mb-1 line-clamp-1 transition-colors ${homepage.home.shopCard.nameHover}`}>
           {shop.name}
         </h3>
         <p className={`text-xs ${homepage.shared.mutedText} mb-4 line-clamp-1 italic`}>

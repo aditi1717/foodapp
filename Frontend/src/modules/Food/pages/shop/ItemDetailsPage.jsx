@@ -18,7 +18,7 @@ import {
 import { Switch } from "@food/components/ui/switch"
 // Removed getAllFoods and saveFood - now using menu API
 import api from "@food/api"
-import { restaurantAPI, uploadAPI } from "@food/api"
+import { shopAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 import { openCamera, openGallery } from "@food/utils/imageUploadUtils"
 import { getFoodVariants } from "@food/utils/foodVariants"
@@ -27,7 +27,7 @@ const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
-const INVENTORY_RECOMMENDED_KEY = "restaurant_inventory_recommended_map"
+const INVENTORY_RECOMMENDED_KEY = "shop_inventory_recommended_map"
 
 
 const getUploadErrorMessage = (error, fileName = "image") => {
@@ -116,10 +116,10 @@ export default function ItemDetailsPage() {
   useEffect(() => {
     const fetchShopProfile = async () => {
       try {
-        const res = await restaurantAPI.getCurrentRestaurant()
+        const res = await shopAPI.getCurrentShop()
         const data = res?.data?.data?.shop || res?.data?.shop
         if (data) {
-          const pureVeg = data.pureVegRestaurant === true || data.pureVegRestaurant === "true"
+          const pureVeg = data.pureVegShop === true || data.pureVegShop === "true"
           setIsPureVeg(pureVeg)
         }
       } catch (err) {
@@ -219,7 +219,7 @@ export default function ItemDetailsPage() {
       if (!isNewItem && id) {
         try {
           setLoadingItem(true)
-          const menuResponse = await restaurantAPI.getMenu()
+          const menuResponse = await shopAPI.getMenu()
           const menu = menuResponse.data?.data?.menu
           const sections = menu?.sections || []
 
@@ -274,7 +274,7 @@ export default function ItemDetailsPage() {
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true)
-        const response = await restaurantAPI.getCategories()
+        const response = await shopAPI.getCategories()
         if (response.data.success && response.data.data.categories) {
           // Format categories for the UI - flat list, no subcategories
           const formattedCategories = response.data.data.categories.map(cat => ({
@@ -321,7 +321,7 @@ export default function ItemDetailsPage() {
 
       try {
         setLoadingSubcategories(true)
-        const response = await restaurantAPI.getSubcategories({ categoryId: selectedCategoryId })
+        const response = await shopAPI.getSubcategories({ categoryId: selectedCategoryId })
         const list = response?.data?.data?.subcategories || response?.data?.subcategories || []
         const formatted = Array.isArray(list)
           ? list.map((sub) => ({
@@ -646,7 +646,7 @@ export default function ItemDetailsPage() {
             let uploadResponse
             try {
               uploadResponse = await uploadAPI.uploadMedia(file, {
-                folder: 'appzeto/restaurant/menu-items'
+                folder: 'appzeto/shop/menu-items'
               })
             } catch (folderUploadError) {
               // Fallback: retry without folder in case provider/account rejects custom folder.
@@ -819,7 +819,7 @@ export default function ItemDetailsPage() {
       // Create/update FoodItem in DB (single call per explicit Save; no autosave spam)
       let itemId
       if (isNewItem) {
-        const createRes = await restaurantAPI.createFood({
+        const createRes = await shopAPI.createFood({
           name: itemName.trim(),
           description: itemDescription.trim(),
           price: hasVariants ? undefined : parsedBasePrice,
@@ -844,7 +844,7 @@ export default function ItemDetailsPage() {
         if (!itemId) {
           throw new Error("Invalid item id")
         }
-        await restaurantAPI.updateFood(itemId, {
+        await shopAPI.updateFood(itemId, {
           name: itemName.trim(),
           description: itemDescription.trim(),
           price: hasVariants ? undefined : parsedBasePrice,

@@ -31,9 +31,9 @@ const businessSettingsSchema = new mongoose.Schema(
                 heading: { type: String, default: 'Delivery is Temporarily Closed' },
                 paragraph: { type: String, default: 'Please check again shortly.' }
             },
-            restaurantApp: {
+            shopApp: {
                 enabled: { type: Boolean, default: false },
-                heading: { type: String, default: 'Restaurant Panel is Temporarily Closed' },
+                heading: { type: String, default: 'Shop Panel is Temporarily Closed' },
                 paragraph: { type: String, default: 'Maintenance is in progress. Please come back soon.' }
             }
         }

@@ -16,13 +16,13 @@ import AddToCartAnimation from "@food/components/user/AddToCartAnimation"
 import OptimizedImage from "@food/components/OptimizedImage"
 import FoodHeroHeaderShell from "@food/components/user/home/FoodHeroHeaderShell"
 import api from "@food/api"
-import { restaurantAPI, adminAPI } from "@food/api"
+import { shopAPI, adminAPI } from "@food/api"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
 import { calculateDistance, formatDistance } from "@food/utils/common"
 import { hasFoodVariants, getFoodVariants, buildCartLineId } from "@food/utils/foodVariants"
 import { getShopAvailabilityStatus } from "@food/utils/shopAvailability"
-import { isPureVegRestaurant, isVegCompatibleCategory } from "@food/utils/searchAvailability"
+import { isPureVegShop, isVegCompatibleCategory } from "@food/utils/searchAvailability"
 import BRAND_THEME from "@/config/brandTheme"
 import { foodImages } from "@food/constants/images"
 const debugLog = (...args) => {}
@@ -54,7 +54,7 @@ const isItemVeg = (item = {}) => {
 const isGlobalCategory = (category = {}) =>
   category?.isGlobal === true ||
   Boolean(category?.globalizedAt) ||
-  (!category?.restaurantId && !category?.createdByRestaurantId)
+  (!category?.shopId && !category?.createdByShopId)
 
 const getCategoryMatchTokens = (category = {}) =>
   [
@@ -178,8 +178,8 @@ export default function Under250() {
   const [bannerImages, setBannerImages] = useState([])
   const [loadingBanner, setLoadingBanner] = useState(true)
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
-  const [under250Restaurants, setUnder250Restaurants] = useState([])
-  const [loadingRestaurants, setLoadingRestaurants] = useState(true)
+  const [under250Shops, setUnder250Shops] = useState([])
+  const [loadingShops, setLoadingShops] = useState(true)
   const [hasScrolledPastBanner, setHasScrolledPastBanner] = useState(false)
   const bannerShellRef = useRef(null)
   const stickyHeaderRef = useRef(null)
@@ -361,8 +361,8 @@ export default function Under250() {
   }
 
   // Sort and filter shops based on selected sort and filters
-  const sortedAndFilteredRestaurants = useMemo(() => {
-    let filtered = under250Restaurants.map(r => ({ ...r, menuItems: [...(r.menuItems || [])] }))
+  const sortedAndFilteredShops = useMemo(() => {
+    let filtered = under250Shops.map(r => ({ ...r, menuItems: [...(r.menuItems || [])] }))
 
     const effectiveVegMode = vegMode || profileVegMode || storedUserVegMode
     const effectiveVegModePreference =
@@ -374,7 +374,7 @@ export default function Under250() {
 
     if (effectiveVegMode) {
       filtered = filtered
-        .filter((shop) => effectiveVegModePreference !== "pure-veg" || isPureVegRestaurant(shop))
+        .filter((shop) => effectiveVegModePreference !== "pure-veg" || isPureVegShop(shop))
         .map((shop) => {
           const vegItems = (shop.menuItems || []).filter((item) => {
             // Must be a veg item
@@ -455,7 +455,7 @@ export default function Under250() {
     }
 
     return filtered
-  }, [under250Restaurants, selectedSort, under30MinsFilter, activeCategory, categories, vegMode, profileVegMode, storedUserVegMode, profileVegModePreference, storedUserVegModePreference, vegModeOption])
+  }, [under250Shops, selectedSort, under30MinsFilter, activeCategory, categories, vegMode, profileVegMode, storedUserVegMode, profileVegModePreference, storedUserVegModePreference, vegModeOption])
 
   const visibleCategories = useMemo(() => {
     const effectiveVegMode = vegMode || profileVegMode || storedUserVegMode
@@ -592,30 +592,30 @@ export default function Under250() {
 
   // Fetch shops with dishes under selected price from backend
   useEffect(() => {
-    const fetchRestaurantsUnder250 = async () => {
+    const fetchShopsUnder250 = async () => {
       try {
         if (!zoneId) {
-          setUnder250Restaurants([])
+          setUnder250Shops([])
           return
         }
-        setLoadingRestaurants(true)
-        const response = await restaurantAPI.getRestaurants(
+        setLoadingShops(true)
+        const response = await shopAPI.getShops(
           { zoneId, _ts: Date.now() },
           { noCache: true },
         )
-        const restaurantsRaw = Array.isArray(response?.data?.data?.shops)
+        const shopsRaw = Array.isArray(response?.data?.data?.shops)
           ? response.data.data.shops
           : []
         const userLat = Number(location?.latitude)
         const userLng = Number(location?.longitude)
 
-        const restaurantsWithUnder250Dishes = await Promise.all(
-          restaurantsRaw.map(async (shop, index) => {
-            const restaurantId = shop?.restaurantId || shop?._id
-            if (!restaurantId) return null
+        const shopsWithUnder250Dishes = await Promise.all(
+          shopsRaw.map(async (shop, index) => {
+            const shopId = shop?.shopId || shop?._id
+            if (!shopId) return null
 
             try {
-              const menuResponse = await restaurantAPI.getMenuByRestaurantId(restaurantId)
+              const menuResponse = await shopAPI.getMenuByShopId(shopId)
               const menu = getMenuFromResponse(menuResponse)
               // Build section name -> foodTypeScope map so each item knows its section diet scope
               const sectionScopeMap = new Map()
@@ -633,7 +633,7 @@ export default function Under250() {
                   const isVeg = foodType.includes("veg") && !foodType.includes("non")
                   return {
                     ...item,
-                    id: String(item?.id || item?._id || `${restaurantId}-${item?.name || "dish"}`),
+                    id: String(item?.id || item?._id || `${shopId}-${item?.name || "dish"}`),
                     price: Number(item?.price || 0),
                     isVeg,
                     sectionFoodTypeScope: sectionScopeMap.get(String(item?.sectionName || item?.category || "").trim().toLowerCase()) || "Both",
@@ -654,22 +654,22 @@ export default function Under250() {
                 Number(shop?.estimatedDeliveryTimeMinutes) ||
                 Number(shop?.estimatedDeliveryTime) ||
                 null
-              const restaurantLocation = shop?.location
-              const restaurantLat = Number(
-                restaurantLocation?.latitude ??
-                (Array.isArray(restaurantLocation?.coordinates) ? restaurantLocation.coordinates[1] : null)
+              const shopLocation = shop?.location
+              const shopLat = Number(
+                shopLocation?.latitude ??
+                (Array.isArray(shopLocation?.coordinates) ? shopLocation.coordinates[1] : null)
               )
-              const restaurantLng = Number(
-                restaurantLocation?.longitude ??
-                (Array.isArray(restaurantLocation?.coordinates) ? restaurantLocation.coordinates[0] : null)
+              const shopLng = Number(
+                shopLocation?.longitude ??
+                (Array.isArray(shopLocation?.coordinates) ? shopLocation.coordinates[0] : null)
               )
               const distanceInKm = (
                 Number.isFinite(userLat) &&
                 Number.isFinite(userLng) &&
-                Number.isFinite(restaurantLat) &&
-                Number.isFinite(restaurantLng)
+                Number.isFinite(shopLat) &&
+                Number.isFinite(shopLng)
               )
-                ? calculateDistance(userLat, userLng, restaurantLat, restaurantLng)
+                ? calculateDistance(userLat, userLng, shopLat, shopLng)
                 : null
               const fallbackDistance =
                 typeof shop?.distance === "number"
@@ -677,15 +677,15 @@ export default function Under250() {
                   : (shop?.distance || "")
 
               return {
-                id: String(restaurantId),
-                restaurantId: String(restaurantId),
-                mongoId: shop?._id || restaurantId,
+                id: String(shopId),
+                shopId: String(shopId),
+                mongoId: shop?._id || shopId,
                 slug:
                   shop?.slug ||
-                  String(shop?.restaurantName || shop?.name || "")
+                  String(shop?.shopName || shop?.name || "")
                     .toLowerCase()
                     .replace(/\s+/g, "-"),
-                name: shop?.restaurantName || shop?.name || "Shop",
+                name: shop?.shopName || shop?.name || "Shop",
                 rating: Number(shop?.rating || 0),
                 totalRatings: Number(shop?.totalRatings || shop?.ratingCount || 0),
                 deliveryTime:
@@ -694,7 +694,7 @@ export default function Under250() {
                 distance: distanceInKm !== null ? formatDistance(distanceInKm) : fallbackDistance,
                 distanceInKm,
                 originalIndex: index,
-                pureVegRestaurant: shop?.pureVegRestaurant === true,
+                pureVegShop: shop?.pureVegShop === true,
                 isActive: shop?.isActive !== false,
                 isAcceptingOrders: shop?.isAcceptingOrders !== false,
                 availabilityStatus: shop?.availabilityStatus || null,
@@ -704,7 +704,7 @@ export default function Under250() {
                 isOpen: shop?.isOpen,
                 openNow: shop?.openNow,
                 isOpenNow: shop?.isOpenNow,
-                isRestaurantOpen: shop?.isRestaurantOpen,
+                isShopOpen: shop?.isShopOpen,
                 todayOpen: shop?.todayOpen,
                 isOpenToday: shop?.isOpenToday,
                 closedToday: shop?.closedToday,
@@ -725,19 +725,19 @@ export default function Under250() {
           })
         )
 
-        const mappedRestaurants = restaurantsWithUnder250Dishes.filter(Boolean)
-        setUnder250Restaurants(mappedRestaurants)
+        const mappedShops = shopsWithUnder250Dishes.filter(Boolean)
+        setUnder250Shops(mappedShops)
 
-        const restaurantsNeedingOutletTimings = mappedRestaurants.filter(
+        const shopsNeedingOutletTimings = mappedShops.filter(
           (shop) => shop.mongoId && !shop.outletTimings,
         )
 
-        if (restaurantsNeedingOutletTimings.length > 0) {
+        if (shopsNeedingOutletTimings.length > 0) {
           const resolvedOutletTimings = new Map()
 
-          for (const shop of restaurantsNeedingOutletTimings) {
+          for (const shop of shopsNeedingOutletTimings) {
             try {
-              const outletResponse = await restaurantAPI.getOutletTimingsByRestaurantId(
+              const outletResponse = await shopAPI.getOutletTimingsByShopId(
                 shop.mongoId,
                 { noCache: true },
               )
@@ -755,8 +755,8 @@ export default function Under250() {
           }
 
           if (resolvedOutletTimings.size > 0) {
-            setUnder250Restaurants((currentRestaurants) =>
-              currentRestaurants.map((shop) => {
+            setUnder250Shops((currentShops) =>
+              currentShops.map((shop) => {
                 if (!shop.mongoId) return shop
                 const outletTimings = resolvedOutletTimings.get(shop.mongoId)
                 return outletTimings ? { ...shop, outletTimings } : shop
@@ -766,13 +766,13 @@ export default function Under250() {
         }
       } catch (error) {
         debugError(`Error fetching shops under ${maxPrice}:`, error)
-        setUnder250Restaurants([])
+        setUnder250Shops([])
       } finally {
-        setLoadingRestaurants(false)
+        setLoadingShops(false)
       }
     }
 
-    fetchRestaurantsUnder250()
+    fetchShopsUnder250()
   }, [zoneId, isOutOfService, location?.latitude, location?.longitude, maxPrice])
 
   // Fetch categories from backend (no static fallback list)
@@ -797,13 +797,13 @@ export default function Under250() {
               slug: String(cat?.slug || name.toLowerCase().replace(/\s+/g, "-")),
               foodTypeScope: cat?.foodTypeScope || cat?.foodType || cat?.dietType || null,
               type: cat?.type || null,
-              restaurantId: cat?.restaurantId || null,
-              createdByRestaurantId: cat?.createdByRestaurantId || null,
+              shopId: cat?.shopId || null,
+              createdByShopId: cat?.createdByShopId || null,
               globalizedAt: cat?.globalizedAt || null,
               isGlobal:
                 cat?.isGlobal === true ||
                 Boolean(cat?.globalizedAt) ||
-                (!cat?.restaurantId && !cat?.createdByRestaurantId),
+                (!cat?.shopId && !cat?.createdByShopId),
               image:
                 (cat?.imageUrl || cat?.image || cat?.icon)
                   ? (cat?.imageUrl || cat?.image || cat?.icon)
@@ -935,7 +935,7 @@ export default function Under250() {
   }, [])
 
   // Helper function to update item quantity in bothlocal state and cart
-  const updateItemQuantity = (item, newQuantity, event = null, variant = null, restaurantName = null) => {
+  const updateItemQuantity = (item, newQuantity, event = null, variant = null, shopName = null) => {
     // Check authentication
     if (!isModuleAuthenticated('user')) {
       toast.error("Please login to add items to cart")
@@ -949,8 +949,8 @@ export default function Under250() {
       return
     }
 
-    if (item?.restaurantIsOpen === false) {
-      toast.error(item?.restaurantStatusLabel || "Shop is currently closed.")
+    if (item?.shopIsOpen === false) {
+      toast.error(item?.shopStatusLabel || "Shop is currently closed.")
       return
     }
 
@@ -961,7 +961,7 @@ export default function Under250() {
     }))
 
     // Find shop name from the item or use provided parameter
-    const shop = restaurantName || item.shop || underPriceDisplay
+    const shop = shopName || item.shop || underPriceDisplay
 
     // Prepare cart item with all required properties
     const cartItem = {
@@ -1037,7 +1037,7 @@ export default function Under250() {
       } else {
         const result = addToCart(cartItem, sourcePosition)
         if (result?.ok === false) {
-          toast.error(result.error || 'Cannot add item from different restaurant. Please clear cart first.')
+          toast.error(result.error || 'Cannot add item from different shop. Please clear cart first.')
           return
         }
         if (newQuantity > 1) {
@@ -1060,12 +1060,12 @@ export default function Under250() {
     }
 
     // Add shop info to item for display
-    const itemWithRestaurant = {
+    const itemWithShop = {
       ...item,
       shop: shop.name,
-      restaurantSlug: shop.slug || shop.restaurantId || "",
-      restaurantIsOpen: availability.isOpen,
-      restaurantStatusLabel: availability.badgeLabel || "Shop is currently closed.",
+      shopSlug: shop.slug || shop.shopId || "",
+      shopIsOpen: availability.isOpen,
+      shopStatusLabel: availability.badgeLabel || "Shop is currently closed.",
       description: item.description || `${item.name} from ${shop.name}`,
       customisable: item.customisable || hasFoodVariants(item),
       notEligibleForCoupons: item.notEligibleForCoupons || false,
@@ -1078,7 +1078,7 @@ export default function Under250() {
     const qty = getDishQuantity(item, initialVariantId)
     setItemDetailQuantity(qty > 0 ? qty : 1)
     
-    setSelectedItem(itemWithRestaurant)
+    setSelectedItem(itemWithShop)
     setShowShareOptions(false)
     setShowItemDetail(true)
   }
@@ -1099,9 +1099,9 @@ export default function Under250() {
     if (!item) return
 
     const itemId = item.id || item._id
-    const restaurantSlug = item.restaurantSlug || item.slug || ""
-    const shareUrl = restaurantSlug
-      ? `${window.location.origin}/food/user/shops/${restaurantSlug}${itemId ? `?dish=${encodeURIComponent(itemId)}` : ""}`
+    const shopSlug = item.shopSlug || item.slug || ""
+    const shareUrl = shopSlug
+      ? `${window.location.origin}/food/user/shops/${shopSlug}${itemId ? `?dish=${encodeURIComponent(itemId)}` : ""}`
       : window.location.href
 
     try {
@@ -1124,9 +1124,9 @@ export default function Under250() {
     if (!selectedItem) return
 
     const itemId = selectedItem.id || selectedItem._id
-    const restaurantSlug = selectedItem.restaurantSlug || selectedItem.slug || ""
-    const shareUrl = restaurantSlug
-      ? `${window.location.origin}/food/user/shops/${restaurantSlug}${itemId ? `?dish=${encodeURIComponent(itemId)}` : ""}`
+    const shopSlug = selectedItem.shopSlug || selectedItem.slug || ""
+    const shareUrl = shopSlug
+      ? `${window.location.origin}/food/user/shops/${shopSlug}${itemId ? `?dish=${encodeURIComponent(itemId)}` : ""}`
       : window.location.href
     const shareText = `Check out ${selectedItem.name || "this dish"} from ${selectedItem.shop || underPriceDisplay}`
     const encodedUrl = encodeURIComponent(shareUrl)
@@ -1349,25 +1349,25 @@ export default function Under250() {
 
 
         {/* Shop Menu Sections */}
-        {loadingRestaurants ? (
+        {loadingShops ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-gray-500 dark:text-gray-400">Loading shops...</div>
           </div>
-        ) : sortedAndFilteredRestaurants.length === 0 ? (
+        ) : sortedAndFilteredShops.length === 0 ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-gray-500 dark:text-gray-400">
-              {under250Restaurants.length === 0
+              {under250Shops.length === 0
                 ? `No shops with dishes under ${RUPEE_SYMBOL}${maxPrice} found.`
                 : "No shops match the selected filters."}
             </div>
           </div>
         ) : (
-          sortedAndFilteredRestaurants.map((shop) => {
-            const restaurantSlug = shop.slug || shop.name.toLowerCase().replace(/\s+/g, "-")
+          sortedAndFilteredShops.map((shop) => {
+            const shopSlug = shop.slug || shop.name.toLowerCase().replace(/\s+/g, "-")
             const availability = getShopAvailabilityStatus(shop, new Date())
-            const isRestaurantUnavailable = isOutOfService || !availability.isOpen
+            const isShopUnavailable = isOutOfService || !availability.isOpen
             return (
-              <section key={restaurant.id} className={`pt-4 sm:pt-6 md:pt-8 lg:pt-10 ${isRestaurantUnavailable ? 'grayscale opacity-75' : ''}`}>
+              <section key={shop.id} className={`pt-4 sm:pt-6 md:pt-8 lg:pt-10 ${isShopUnavailable ? 'grayscale opacity-75' : ''}`}>
                 {/* Shop Header */}
                 <div className="flex items-start justify-between mb-3 md:mb-4 lg:mb-6">
                   <div className="flex-1">
@@ -1378,7 +1378,7 @@ export default function Under250() {
                       <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
                       <span className="font-medium">{shop.deliveryTime}</span>
                     </div>
-                    {isRestaurantUnavailable && (
+                    {isShopUnavailable && (
                       <div className="mt-2 inline-flex rounded-full bg-gray-700 px-3 py-1 text-xs font-semibold text-white">
                         {availability.badgeLabel || "Closed"}
                       </div>
@@ -1419,7 +1419,7 @@ export default function Under250() {
                             key={item.id}
                             className="flex-shrink-0 w-[200px] sm:w-[220px] md:w-full bg-white dark:bg-[#1a1a1a] rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden cursor-pointer"
                             onClick={() => {
-                              if (!isRestaurantUnavailable) {
+                              if (!isShopUnavailable) {
                                 handleItemClick(item, shop)
                               }
                             }}
@@ -1512,19 +1512,19 @@ export default function Under250() {
                                   <Button
                                     variant={"outline"}
                                     size="sm"
-                                    disabled={shouldShowGrayscale || isRestaurantUnavailable}
-                                    className={`h-7 md:h-8 lg:h-9 px-3 md:px-4 lg:px-5 text-xs md:text-sm lg:text-base ${(shouldShowGrayscale || isRestaurantUnavailable)
+                                    disabled={shouldShowGrayscale || isShopUnavailable}
+                                    className={`h-7 md:h-8 lg:h-9 px-3 md:px-4 lg:px-5 text-xs md:text-sm lg:text-base ${(shouldShowGrayscale || isShopUnavailable)
                                       ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border-gray-300 dark:border-gray-700 cursor-not-allowed opacity-50'
                                       : ''
                                       }`}
-                                    style={(shouldShowGrayscale || isRestaurantUnavailable) ? undefined : {
+                                    style={(shouldShowGrayscale || isShopUnavailable) ? undefined : {
                                       backgroundColor: `${BRAND_THEME.colors.brand.primary}14`,
                                       color: BRAND_THEME.colors.brand.primary,
                                       border: `1px solid ${BRAND_THEME.colors.brand.primary}`,
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      if (!shouldShowGrayscale && !isRestaurantUnavailable) {
+                                      if (!shouldShowGrayscale && !isShopUnavailable) {
                                         handleItemClick(item, shop)
                                       }
                                     }}
@@ -1540,7 +1540,7 @@ export default function Under250() {
                     </div>
 
                     {/* View Full Menu Button */}
-                    <Link className="flex justify-center mt-2 md:mt-3 lg:mt-4" to={`/food/user/shops/${restaurantSlug}?under=${encodeURIComponent(maxPrice)}`}>
+                    <Link className="flex justify-center mt-2 md:mt-3 lg:mt-4" to={`/food/user/shops/${shopSlug}?under=${encodeURIComponent(maxPrice)}`}>
                       <Button
                         variant="outline"
                         className="w-min align-center text-center rounded-lg md:rounded-xl mx-auto bg-gray-50 dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-white text-gray-700 border-gray-200 dark:border-gray-800 h-9 md:h-10 lg:h-11 px-4 md:px-6 lg:px-8 text-sm md:text-base lg:text-lg"
@@ -1822,26 +1822,26 @@ export default function Under250() {
               <div className="border-t dark:border-gray-800 border-gray-200 px-4 md:px-6 lg:px-8 xl:px-10 py-4 md:py-5 lg:py-6 bg-white dark:bg-[#1a1a1a]">
                 <div className="flex items-center gap-4 md:gap-5 lg:gap-6">
                   {/* Quantity Selector */}
-                  <div className={`flex items-center gap-3 md:gap-4 lg:gap-5 border-2 rounded-lg md:rounded-xl px-3 md:px-4 lg:px-5 h-[44px] md:h-[50px] lg:h-[56px] ${(shouldShowGrayscale || selectedItem?.restaurantIsOpen === false)
+                  <div className={`flex items-center gap-3 md:gap-4 lg:gap-5 border-2 rounded-lg md:rounded-xl px-3 md:px-4 lg:px-5 h-[44px] md:h-[50px] lg:h-[56px] ${(shouldShowGrayscale || selectedItem?.shopIsOpen === false)
                     ? 'border-gray-300 dark:border-gray-700 opacity-50'
                     : 'border-gray-300 dark:border-gray-700'
                     }`}>
                     <button
                       onClick={(e) => {
-                        if (!shouldShowGrayscale && selectedItem?.restaurantIsOpen !== false) {
+                        if (!shouldShowGrayscale && selectedItem?.shopIsOpen !== false) {
                           e.stopPropagation()
                           setItemDetailQuantity((prev) => Math.max(1, prev - 1))
                         }
                       }}
-                      disabled={itemDetailQuantity <= 1 || shouldShowGrayscale || selectedItem?.restaurantIsOpen === false}
-                      className={`${(shouldShowGrayscale || selectedItem?.restaurantIsOpen === false)
+                      disabled={itemDetailQuantity <= 1 || shouldShowGrayscale || selectedItem?.shopIsOpen === false}
+                      className={`${(shouldShowGrayscale || selectedItem?.shopIsOpen === false)
                         ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed'
                         }`}
                     >
                       <Minus className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7" />
                     </button>
-                    <span className={`text-lg md:text-xl lg:text-2xl font-semibold min-w-[2rem] md:min-w-[2.5rem] lg:min-w-[3rem] text-center ${(shouldShowGrayscale || selectedItem?.restaurantIsOpen === false)
+                    <span className={`text-lg md:text-xl lg:text-2xl font-semibold min-w-[2rem] md:min-w-[2.5rem] lg:min-w-[3rem] text-center ${(shouldShowGrayscale || selectedItem?.shopIsOpen === false)
                       ? 'text-gray-400 dark:text-gray-600'
                       : 'text-gray-900 dark:text-white'
                       }`}>
@@ -1849,13 +1849,13 @@ export default function Under250() {
                     </span>
                     <button
                       onClick={(e) => {
-                        if (!shouldShowGrayscale && selectedItem?.restaurantIsOpen !== false) {
+                        if (!shouldShowGrayscale && selectedItem?.shopIsOpen !== false) {
                           e.stopPropagation()
                           setItemDetailQuantity((prev) => prev + 1)
                         }
                       }}
-                      disabled={shouldShowGrayscale || selectedItem?.restaurantIsOpen === false}
-                      className={(shouldShowGrayscale || selectedItem?.restaurantIsOpen === false)
+                      disabled={shouldShowGrayscale || selectedItem?.shopIsOpen === false}
+                      className={(shouldShowGrayscale || selectedItem?.shopIsOpen === false)
                         ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                       }
@@ -1866,23 +1866,23 @@ export default function Under250() {
 
                   {/* Add Item Button */}
                   <Button
-                    className={`flex-1 h-[44px] md:h-[50px] lg:h-[56px] rounded-lg md:rounded-xl font-semibold flex items-center justify-center gap-2 text-sm md:text-base lg:text-lg transition-all ${(shouldShowGrayscale || selectedItem?.restaurantIsOpen === false)
+                    className={`flex-1 h-[44px] md:h-[50px] lg:h-[56px] rounded-lg md:rounded-xl font-semibold flex items-center justify-center gap-2 text-sm md:text-base lg:text-lg transition-all ${(shouldShowGrayscale || selectedItem?.shopIsOpen === false)
                       ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-600 cursor-not-allowed opacity-50'
                       : 'text-white shadow-lg active:scale-[0.98]'
                       }`}
                     style={
-                      (shouldShowGrayscale || selectedItem?.restaurantIsOpen === false)
+                      (shouldShowGrayscale || selectedItem?.shopIsOpen === false)
                         ? undefined
                         : { background: BRAND_THEME.gradients.primary }
                     }
                     onClick={(e) => {
-                      if (!shouldShowGrayscale && selectedItem?.restaurantIsOpen !== false) {
+                      if (!shouldShowGrayscale && selectedItem?.shopIsOpen !== false) {
                         const variant = getVariantForDish(selectedItem, selectedVariantId)
                         updateItemQuantity(selectedItem, itemDetailQuantity, e, variant)
                         closeItemDetail()
                       }
                     }}
-                    disabled={shouldShowGrayscale || selectedItem?.restaurantIsOpen === false}
+                    disabled={shouldShowGrayscale || selectedItem?.shopIsOpen === false}
                   >
                     <span>Add item</span>
                     <div className="flex items-center gap-1 md:gap-2">

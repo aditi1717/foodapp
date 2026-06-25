@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 import { FoodOrder } from '../models/order.model.js';
-import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodShop } from '../../shop/models/shop.model.js';
 import { FoodFeeSettings } from '../../admin/models/feeSettings.model.js';
 import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodOfferUsage } from '../../admin/models/offerUsage.model.js';
-import { RestaurantOffer } from '../../restaurant/models/restaurantOffer.model.js';
-import { RestaurantOfferUsage } from '../../restaurant/models/restaurantOfferUsage.model.js';
+import { ShopOffer } from '../../shop/models/shopOffer.model.js';
+import { ShopOfferUsage } from '../../shop/models/shopOfferUsage.model.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { fetchRouteDistanceKm } from '../utils/googleMaps.js';
 
@@ -68,7 +68,7 @@ function resolveDeliveryFeeByDistance(distanceKm, feeSettings = {}) {
   return Number(feeSettings.deliveryFee || 0);
 }
 
-const calculateRestaurantOfferDiscount = (offer, eligibleSubtotal) => {
+const calculateShopOfferDiscount = (offer, eligibleSubtotal) => {
   if (!Number.isFinite(eligibleSubtotal) || eligibleSubtotal <= 0) return 0;
 
   if (offer?.discountType === 'flat-price') {
@@ -86,18 +86,18 @@ const calculateRestaurantOfferDiscount = (offer, eligibleSubtotal) => {
   return Math.max(0, Math.min(eligibleSubtotal, Math.floor(capped)));
 };
 
-const findApplicableRestaurantAutoOffer = async (restaurantId, items = [], userId = null) => {
-  console.log('🔍 Finding restaurant offer:', {
-    restaurantId,
+const findApplicableShopAutoOffer = async (shopId, items = [], userId = null) => {
+  console.log('🔍 Finding shop offer:', {
+    shopId,
     itemCount: items.length,
     userId: userId || 'NOT PROVIDED',
     userIdType: typeof userId
   });
   
-  const normalizedRestaurantId = String(restaurantId || '').trim();
+  const normalizedShopId = String(shopId || '').trim();
   if (
-    !normalizedRestaurantId ||
-    !mongoose.Types.ObjectId.isValid(normalizedRestaurantId) ||
+    !normalizedShopId ||
+    !mongoose.Types.ObjectId.isValid(normalizedShopId) ||
     !Array.isArray(items) ||
     items.length === 0
   ) {
@@ -114,8 +114,8 @@ const findApplicableRestaurantAutoOffer = async (restaurantId, items = [], userI
 
   const uniqueCartProductIds = [...new Set(cartProductIds)];
   const now = new Date();
-  const offers = await RestaurantOffer.find({
-    restaurantId: new mongoose.Types.ObjectId(normalizedRestaurantId),
+  const offers = await ShopOffer.find({
+    shopId: new mongoose.Types.ObjectId(normalizedShopId),
   }).lean();
 
   let bestMatch = null;
@@ -148,7 +148,7 @@ const findApplicableRestaurantAutoOffer = async (restaurantId, items = [], userI
     }
 
     if (userId && Number(offer?.perUserLimit) > 0) {
-      const usage = await RestaurantOfferUsage.findOne({
+      const usage = await ShopOfferUsage.findOne({
         offerId: offer._id,
         userId,
       }).lean();
@@ -200,7 +200,7 @@ const findApplicableRestaurantAutoOffer = async (restaurantId, items = [], userI
 
     if (eligibleSubtotal <= 0) continue;
 
-    const discount = calculateRestaurantOfferDiscount(offer, eligibleSubtotal);
+    const discount = calculateShopOfferDiscount(offer, eligibleSubtotal);
     if (discount <= 0) continue;
 
     if (!bestMatch || discount > bestMatch.discount) {
@@ -212,12 +212,12 @@ const findApplicableRestaurantAutoOffer = async (restaurantId, items = [], userI
 };
 
 export async function calculateOrderPricing(userId, dto) {
-  const restaurant = await FoodRestaurant.findById(dto.restaurantId)
+  const shop = await FoodShop.findById(dto.shopId)
     .select("status location")
     .lean();
-  if (!restaurant) throw new ValidationError("Restaurant not found");
-  if (restaurant.status !== "approved")
-    throw new ValidationError("Restaurant not available");
+  if (!shop) throw new ValidationError("Shop not found");
+  if (shop.status !== "approved")
+    throw new ValidationError("Shop not available");
 
   const items = Array.isArray(dto.items) ? dto.items : [];
   const subtotal = items.reduce(
@@ -239,20 +239,20 @@ export async function calculateOrderPricing(userId, dto) {
   const packagingFee = 0;
   const platformFee = Number(feeSettings.platformFee || 0);
 
-  const restaurantLatLng = extractLatLngFromLocation(restaurant?.location || {});
+  const shopLatLng = extractLatLngFromLocation(shop?.location || {});
   const customerLatLng = extractLatLngFromLocation(dto?.address?.location || dto?.address || dto?.deliveryAddress?.location || dto?.deliveryAddress || {});
   const straightLineDistanceKm =
-    restaurantLatLng && customerLatLng
+    shopLatLng && customerLatLng
       ? haversineKm(
-        restaurantLatLng.lat,
-        restaurantLatLng.lng,
+        shopLatLng.lat,
+        shopLatLng.lng,
         customerLatLng.lat,
         customerLatLng.lng,
       )
       : null;
   const distanceKm =
-    restaurantLatLng && customerLatLng
-      ? (await fetchRouteDistanceKm(restaurantLatLng, customerLatLng)) ?? straightLineDistanceKm
+    shopLatLng && customerLatLng
+      ? (await fetchRouteDistanceKm(shopLatLng, customerLatLng)) ?? straightLineDistanceKm
       : null;
   const deliveryFee = resolveDeliveryFeeByDistance(distanceKm, feeSettings);
 
@@ -290,8 +290,8 @@ export async function calculateOrderPricing(userId, dto) {
                 return now <= offerExpiry;
             })();
             const scopeOk =
-                offer.restaurantScope !== "selected" ||
-                String(offer.restaurantId || "") === String(dto.restaurantId || "");
+                offer.shopScope !== "selected" ||
+                String(offer.shopId || "") === String(dto.shopId || "");
             const minOk = subtotal >= (Number(offer.minOrderValue) || 0);
             let usageOk = true;
             if (
@@ -355,7 +355,7 @@ export async function calculateOrderPricing(userId, dto) {
     }
   }
 
-  const autoOfferMatch = await findApplicableRestaurantAutoOffer(dto.restaurantId, items, userId);
+  const autoOfferMatch = await findApplicableShopAutoOffer(dto.shopId, items, userId);
   let autoOfferFeedback = null;
   
   // If user has applied a coupon, don't apply auto-offer (one discount at a time)
@@ -365,9 +365,9 @@ export async function calculateOrderPricing(userId, dto) {
     autoOfferDiscount = autoOfferMatch.discount;
     autoAppliedOffer = {
       code: null,
-      title: autoOfferMatch.offer.title || 'Restaurant offer',
+      title: autoOfferMatch.offer.title || 'Shop offer',
       discount: autoOfferDiscount,
-      type: 'restaurant-auto-offer',
+      type: 'shop-auto-offer',
       autoApplied: true,
       offerId: String(autoOfferMatch.offer._id),
       eligibleSubtotal: autoOfferMatch.eligibleSubtotal,
@@ -375,25 +375,25 @@ export async function calculateOrderPricing(userId, dto) {
     };
   } else if (autoOfferMatch?.invalidReason === 'max_items_exceeded') {
     autoOfferFeedback = {
-      type: 'restaurant-auto-offer',
+      type: 'shop-auto-offer',
       reason: autoOfferMatch.invalidReason,
-      title: autoOfferMatch.offer?.title || 'Restaurant offer',
+      title: autoOfferMatch.offer?.title || 'Shop offer',
       offerId: String(autoOfferMatch.offer?._id || ''),
       eligibleItemCount: Number(autoOfferMatch.eligibleItemCount) || 0,
       maxOfferQuantityPerOrder: Number(autoOfferMatch.maxOfferQuantityPerOrder) || null,
       message: Number(autoOfferMatch.maxOfferQuantityPerOrder) > 0
         ? `Only ${Number(autoOfferMatch.maxOfferQuantityPerOrder)} item${Number(autoOfferMatch.maxOfferQuantityPerOrder) > 1 ? 's are' : ' is'} allowed for this offer in one order.`
-        : 'This restaurant offer is no longer applicable.',
+        : 'This shop offer is no longer applicable.',
     };
   } else if (hasCouponApplied && autoOfferMatch?.offer) {
     // Coupon applied, so offer is suppressed
     autoOfferFeedback = {
-      type: 'restaurant-auto-offer',
+      type: 'shop-auto-offer',
       reason: 'coupon_applied',
-      title: autoOfferMatch.offer?.title || 'Restaurant offer',
+      title: autoOfferMatch.offer?.title || 'Shop offer',
       offerId: String(autoOfferMatch.offer?._id || ''),
       discount: autoOfferMatch.discount || 0,
-      message: 'Remove coupon to use restaurant offer',
+      message: 'Remove coupon to use shop offer',
     };
   }
 
@@ -401,12 +401,12 @@ export async function calculateOrderPricing(userId, dto) {
 
   // Calculate discount breakdown for reporting
   let couponByAdmin = 0;
-  let couponByRestaurant = 0;
-  let offerByRestaurant = autoOfferDiscount;
+  let couponByShop = 0;
+  let offerByShop = autoOfferDiscount;
 
   if (appliedCoupon) {
-    if (appliedCoupon.fundedBy === 'restaurant') {
-      couponByRestaurant = couponDiscount;
+    if (appliedCoupon.fundedBy === 'shop') {
+      couponByShop = couponDiscount;
     } else {
       couponByAdmin = couponDiscount;
     }
@@ -428,8 +428,8 @@ export async function calculateOrderPricing(userId, dto) {
       autoOfferDiscount,
       discount,
       couponByAdmin,
-      couponByRestaurant,
-      offerByRestaurant,
+      couponByShop,
+      offerByShop,
       total,
       currency: "INR",
       couponCode: appliedCoupon?.code || codeRaw || null,

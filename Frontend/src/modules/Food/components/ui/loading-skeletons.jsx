@@ -140,11 +140,11 @@ function ShopCardSkeleton({ className, compact = false }) {
   )
 }
 
-function RestaurantGridSkeleton({ count = DEFAULT_CARD_COUNT, className, compact = false }) {
+function ShopGridSkeleton({ count = DEFAULT_CARD_COUNT, className, compact = false }) {
   return (
     <div className={cn("grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", className)}>
       {Array.from({ length: count }, (_, index) => (
-        <ShopCardSkeleton key={`restaurant-card-${index}`} compact={compact} />
+        <ShopCardSkeleton key={`shop-card-${index}`} compact={compact} />
       ))}
     </div>
   )
@@ -280,7 +280,7 @@ function ContentPageSkeleton({ className, hero = true }) {
   )
 }
 
-function RestaurantDetailSkeleton({ className }) {
+function ShopDetailSkeleton({ className }) {
   return (
     <LoadingSkeletonRegion label="Loading shop details" className={cn("min-h-screen bg-white dark:bg-[#0a0a0a]", className)}>
       <div className="mx-auto max-w-6xl px-4 pb-10 pt-3">
@@ -347,7 +347,7 @@ function AppShellSkeleton({ className }) {
             <Skeleton className="h-7 w-52 rounded-full" />
             <CategoryChipRowSkeleton count={5} />
           </div>
-          <RestaurantGridSkeleton count={3} />
+          <ShopGridSkeleton count={3} />
         </div>
       </div>
     </LoadingSkeletonRegion>
@@ -363,8 +363,8 @@ export {
   LoadingSkeletonRegion,
   OrdersDashboardSkeleton,
   ShopCardSkeleton,
-  RestaurantDetailSkeleton,
-  RestaurantGridSkeleton,
+  ShopDetailSkeleton,
+  ShopGridSkeleton,
   SkeletonLines,
   TableSkeleton,
   WalletSkeleton,

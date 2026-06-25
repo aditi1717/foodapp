@@ -5,9 +5,9 @@ import { Button } from "@food/components/ui/button"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import BRAND_THEME from "@/config/brandTheme"
 
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 
-export default function RestaurantLogin() {
+export default function ShopLogin() {
   const navigate = useNavigate()
   const [phone, setPhone] = useState("")
   const [error, setError] = useState("")
@@ -55,14 +55,14 @@ export default function RestaurantLogin() {
 
     try {
       const formattedPhone = `+91${phone}`
-      await restaurantAPI.sendOTP(formattedPhone, "login")
+      await shopAPI.sendOTP(formattedPhone, "login")
 
-      sessionStorage.setItem("restaurantAuthData", JSON.stringify({
+      sessionStorage.setItem("shopAuthData", JSON.stringify({
         method: "phone",
         phone: formattedPhone,
         isSignUp: false
       }))
-      sessionStorage.setItem("restaurantLoginPhone", formattedPhone)
+      sessionStorage.setItem("shopLoginPhone", formattedPhone)
 
       navigate("/food/shop/otp")
     } catch (err) {

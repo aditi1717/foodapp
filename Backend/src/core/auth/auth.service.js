@@ -4,7 +4,7 @@ import ms from "ms";
 import { FoodUser } from "../users/user.model.js";
 import { FoodAdmin } from "../admin/admin.model.js";
 import { AdminResetOtp } from "../admin/adminResetOtp.model.js";
-import { FoodRestaurant } from "../../modules/food/restaurant/models/restaurant.model.js";
+import { FoodShop } from "../../modules/food/shop/models/shop.model.js";
 import { FoodDeliveryPartner } from "../../modules/food/delivery/models/deliveryPartner.model.js";
 import { FoodReferralSettings } from "../../modules/food/admin/models/referralSettings.model.js";
 import { FoodReferralLog } from "../../modules/food/admin/models/referralLog.model.js";
@@ -20,7 +20,7 @@ import { creditReferralReward } from "../../modules/food/user/services/userWalle
 
 const ROLES = {
   USER: "USER",
-  RESTAURANT: "RESTAURANT",
+  SHOP: "SHOP",
   DELIVERY_PARTNER: "DELIVERY_PARTNER",
   ADMIN: "ADMIN",
 };
@@ -257,7 +257,7 @@ export const adminLogin = async (email, password) => {
   return { accessToken, refreshToken, user: userObj };
 };
 
-export const requestRestaurantOtp = async (phone) => {
+export const requestShopOtp = async (phone) => {
   if (!phone) {
     throw new ValidationError("Phone is required");
   }
@@ -267,13 +267,13 @@ export const requestRestaurantOtp = async (phone) => {
   return shouldExposeOtp ? { otp } : {};
 };
 
-export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform) => {
+export const verifyShopOtpAndLogin = async (phone, otp, fcmToken, platform) => {
   const result = await verifyOtp(phone, otp);
   if (!result.valid) {
     throw new AuthError(result.reason || "OTP verification failed");
   }
 
-  // Restaurants may store ownerPhone with country code or formatting.
+  // Shops may store ownerPhone with country code or formatting.
   // Match by exact phone, last-10 digits, or suffix match to avoid false "needsRegistration".
   const digits = String(phone || "").replace(/\D/g, "");
   const last10 = digits.slice(-10);
@@ -283,14 +283,14 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     ...(last10 ? [{ [field]: { $regex: new RegExp(last10 + "$") } }] : []),
   ];
 
-  const restaurant = await FoodRestaurant.findOne({
+  const shop = await FoodShop.findOne({
     $or: [
       ...phoneOrFields("ownerPhone"),
       ...phoneOrFields("primaryContactNumber"),
     ],
   });
-  if (!restaurant) {
-    // Phone has been successfully verified, but no restaurant exists yet.
+  if (!shop) {
+    // Phone has been successfully verified, but no shop exists yet.
     // Frontend will use this to redirect into registration/onboarding.
     return {
       needsRegistration: true,
@@ -302,40 +302,40 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
   if (fcmToken) {
     let isModified = false;
     if (platform === "mobile") {
-      if (!restaurant.fcmTokenMobile) restaurant.fcmTokenMobile = [];
-      if (!restaurant.fcmTokenMobile.includes(fcmToken)) {
-        restaurant.fcmTokenMobile.push(fcmToken);
+      if (!shop.fcmTokenMobile) shop.fcmTokenMobile = [];
+      if (!shop.fcmTokenMobile.includes(fcmToken)) {
+        shop.fcmTokenMobile.push(fcmToken);
         isModified = true;
       }
     } else {
-      if (!restaurant.fcmTokens) restaurant.fcmTokens = [];
-      if (!restaurant.fcmTokens.includes(fcmToken)) {
-        restaurant.fcmTokens.push(fcmToken);
+      if (!shop.fcmTokens) shop.fcmTokens = [];
+      if (!shop.fcmTokens.includes(fcmToken)) {
+        shop.fcmTokens.push(fcmToken);
         isModified = true;
       }
     }
     if (isModified) {
-      await restaurant.save();
+      await shop.save();
     }
   }
 
-  // If restaurant approval status is used, only allow login for approved restaurants.
-  if (restaurant.status && restaurant.status !== "approved") {
+  // If shop approval status is used, only allow login for approved shops.
+  if (shop.status && shop.status !== "approved") {
     throw new AuthError(
-      restaurant.status === "pending"
-        ? "Your restaurant registration is pending approval."
-        : "Your restaurant registration has been rejected. Please contact support.",
+      shop.status === "pending"
+        ? "Your shop registration is pending approval."
+        : "Your shop registration has been rejected. Please contact support.",
     );
   }
 
-  const payload = { userId: restaurant._id.toString(), role: ROLES.RESTAURANT };
+  const payload = { userId: shop._id.toString(), role: ROLES.SHOP };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
   const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
   const expiresAt = new Date(Date.now() + ttlMs);
 
   await FoodRefreshToken.create({
-    userId: restaurant._id,
+    userId: shop._id,
     token: refreshToken,
     expiresAt,
   });
@@ -343,7 +343,7 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
   return {
     accessToken,
     refreshToken,
-    user: restaurant,
+    user: shop,
     needsRegistration: false,
   };
 };
@@ -468,7 +468,7 @@ export const logout = async (refreshToken, fcmToken, platform) => {
 
   if (userId) {
     console.log(`[FCM-Logout] Clearing ALL FCM tokens for userId=${userId} upon logout`);
-    const models = [FoodUser, FoodRestaurant, FoodDeliveryPartner, FoodAdmin];
+    const models = [FoodUser, FoodShop, FoodDeliveryPartner, FoodAdmin];
     try {
       await Promise.all(
         models.map((model) =>
@@ -488,7 +488,7 @@ export const logout = async (refreshToken, fcmToken, platform) => {
   if (fcmToken) {
     console.log(`[FCM-Logout] Specific fcmToken provided, removing from all collections...`);
     const field = platform === "mobile" ? "fcmTokenMobile" : "fcmTokens";
-    const models = [FoodUser, FoodRestaurant, FoodDeliveryPartner, FoodAdmin];
+    const models = [FoodUser, FoodShop, FoodDeliveryPartner, FoodAdmin];
     try {
       await Promise.all(
         models.map((model) =>
@@ -523,9 +523,9 @@ export const getProfile = async (userId, role) => {
     case ROLES.ADMIN:
       profile = await FoodAdmin.findById(id).select("-password").lean();
       break;
-    case ROLES.RESTAURANT:
+    case ROLES.SHOP:
       {
-        const doc = await FoodRestaurant.findById(id).lean();
+        const doc = await FoodShop.findById(id).lean();
         if (!doc) break;
 
         const location =
@@ -557,9 +557,9 @@ export const getProfile = async (userId, role) => {
         profile = {
           id: doc._id,
           _id: doc._id,
-          // Frontend expects "name" and "location" for restaurant screens.
-          name: doc.restaurantName || "",
-          restaurantName: doc.restaurantName || "",
+          // Frontend expects "name" and "location" for shop screens.
+          name: doc.shopName || "",
+          shopName: doc.shopName || "",
           cuisines: Array.isArray(doc.cuisines) ? doc.cuisines : [],
           location,
           ownerName: doc.ownerName || "",

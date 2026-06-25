@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Loader2, Volume2 } from "lucide-react";
 import { toast } from "sonner";
-import { restaurantAPI } from "@food/api";
+import { shopAPI } from "@food/api";
 
 const debugError = (...args) => {};
 
@@ -19,7 +19,7 @@ export default function ResendNotificationButton({ orderId, mongoId, onSuccess }
     try {
       setLoading(true);
       const id = mongoId || orderId;
-      const response = await restaurantAPI.resendDeliveryNotification(id);
+      const response = await shopAPI.resendDeliveryNotification(id);
 
       if (response.data?.success) {
         toast.success(

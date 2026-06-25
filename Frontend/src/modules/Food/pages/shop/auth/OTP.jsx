@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom"
 import { ArrowLeft, ShieldCheck, Timer, RefreshCw } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Card, CardContent } from "@food/components/ui/card"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import {
-  setAuthData as setRestaurantAuthData,
-  setRestaurantPendingPhone,
+  setAuthData as setShopAuthData,
+  setShopPendingPhone,
 } from "@food/utils/auth"
 import { checkOnboardingStatus, isShopOnboardingComplete } from "@food/utils/onboardingUtils"
 import { useCompanyName } from "@food/hooks/useCompanyName"
@@ -17,7 +17,7 @@ const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
-export default function RestaurantOTP() {
+export default function ShopOTP() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
   const [otp, setOtp] = useState(["", "", "", ""])
@@ -34,7 +34,7 @@ export default function RestaurantOTP() {
   const otpSectionRef = useRef(null)
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("restaurantAuthData")
+    const stored = sessionStorage.getItem("shopAuthData")
     if (stored) {
       const data = JSON.parse(stored)
       setAuthData(data)
@@ -235,16 +235,16 @@ export default function RestaurantOTP() {
       const email = authData.method === "email" ? authData.email : null
       const purpose = authData.isSignUp ? "register" : "login"
 
-      const response = await restaurantAPI.verifyOTP(phone, code, purpose, null, email)
+      const response = await shopAPI.verifyOTP(phone, code, purpose, null, email)
       const data = response?.data?.data || response?.data
 
       const needsRegistration = data?.needsRegistration === true
       const normalizedPhone = data?.phone || phone
 
       if (needsRegistration) {
-        setRestaurantPendingPhone(normalizedPhone)
-        sessionStorage.removeItem("restaurantAuthData")
-        sessionStorage.removeItem("restaurantLoginPhone")
+        setShopPendingPhone(normalizedPhone)
+        sessionStorage.removeItem("shopAuthData")
+        sessionStorage.removeItem("shopLoginPhone")
         navigate("/food/shop/onboarding", { replace: true })
         return
       }
@@ -254,10 +254,10 @@ export default function RestaurantOTP() {
       const shop = data?.user ?? data?.shop
 
       if (accessToken && shop) {
-        setRestaurantAuthData("shop", accessToken, shop, refreshToken)
-        window.dispatchEvent(new Event("restaurantAuthChanged"))
-        sessionStorage.removeItem("restaurantAuthData")
-        sessionStorage.removeItem("restaurantLoginPhone")
+        setShopAuthData("shop", accessToken, shop, refreshToken)
+        window.dispatchEvent(new Event("shopAuthChanged"))
+        sessionStorage.removeItem("shopAuthData")
+        sessionStorage.removeItem("shopLoginPhone")
 
         setTimeout(async () => {
           if (authData?.isSignUp) {
@@ -289,10 +289,10 @@ export default function RestaurantOTP() {
       if (/pending approval/i.test(message)) {
         const pendingPhone = authData?.phone || authData?.email || contactInfo
         if (pendingPhone) {
-          setRestaurantPendingPhone(pendingPhone)
+          setShopPendingPhone(pendingPhone)
         }
-        sessionStorage.removeItem("restaurantAuthData")
-        sessionStorage.removeItem("restaurantLoginPhone")
+        sessionStorage.removeItem("shopAuthData")
+        sessionStorage.removeItem("shopLoginPhone")
         navigate("/food/shop/pending-verification", {
           replace: true,
           state: { phone: pendingPhone || "" },
@@ -324,7 +324,7 @@ export default function RestaurantOTP() {
       const phone = authData.method === "phone" ? authData.phone : null
       const email = authData.method === "email" ? authData.email : null
 
-      await restaurantAPI.sendOTP(phone, purpose, email)
+      await shopAPI.sendOTP(phone, purpose, email)
     } catch (err) {
       const message =
         err?.response?.data?.message ||

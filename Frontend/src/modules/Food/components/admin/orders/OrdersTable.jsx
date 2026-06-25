@@ -64,7 +64,7 @@ export default function OrdersTable({
   const loadingOrderId = actionLoading?.orderId || null
   const loadingActionType = actionLoading?.type || null
 
-  const formatRestaurantName = (name) => {
+  const formatShopName = (name) => {
     if (name === "Cafe Monarch") return "Café Monarch"
     return name
   }
@@ -213,7 +213,7 @@ export default function OrdersTable({
                 )}
                 {visibleColumns.shop && (
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-slate-700">{formatRestaurantName(order.shop)}</span>
+                    <span className="text-sm font-medium text-slate-700">{formatShopName(order.shop)}</span>
                   </td>
                 )}
                 {visibleColumns.foodItems && (

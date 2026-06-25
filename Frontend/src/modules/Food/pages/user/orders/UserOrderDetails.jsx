@@ -15,7 +15,7 @@ import {
   RefreshCw,
   FileText,
 } from "lucide-react"
-import { orderAPI, restaurantAPI } from "@food/api"
+import { orderAPI, shopAPI } from "@food/api"
 import { useCart } from "@food/context/CartContext"
 import { toast } from "sonner"
 import jsPDF from "jspdf"
@@ -87,7 +87,7 @@ export default function UserOrderDetails() {
   const { replaceCart } = useCart()
   const { orderId } = useParams()
   const [order, setOrder] = useState(null)
-  const [shop, setRestaurant] = useState(null)
+  const [shop, setShop] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -110,18 +110,18 @@ export default function UserOrderDetails() {
 
         setOrder(orderData)
 
-        // If restaurantId is just a string (not populated), fetch shop details separately
-        const restaurantId = orderData.restaurantId
-        if (restaurantId && typeof restaurantId === 'string' && !orderData.shop) {
+        // If shopId/shopId is just a string (not populated), fetch shop details separately
+        const shopId = orderData.shopId || orderData.shopId
+        if (shopId && typeof shopId === 'string' && !orderData.shop) {
           try {
-            const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantId)
-            if (restaurantResponse?.data?.success && (restaurantResponse.data.data?.shop || restaurantResponse.data.data?.restaurant)) {
-              setRestaurant(restaurantResponse.data.data.shop || restaurantResponse.data.data?.restaurant)
-            } else if (restaurantResponse?.data?.shop || restaurantResponse?.data?.restaurant) {
-              setRestaurant(restaurantResponse.data.shop || restaurantResponse.data.restaurant)
+            const shopResponse = await shopAPI.getShopById(shopId)
+            if (shopResponse?.data?.success && (shopResponse.data.data?.shop || shopResponse.data.data?.shop)) {
+              setShop(shopResponse.data.data.shop || shopResponse.data.data?.shop)
+            } else if (shopResponse?.data?.shop || shopResponse?.data?.shop) {
+              setShop(shopResponse.data.shop || shopResponse.data.shop)
             }
-          } catch (restaurantError) {
-            debugWarn("Failed to fetch shop details:", restaurantError)
+          } catch (shopError) {
+            debugWarn("Failed to fetch shop details:", shopError)
             // Don't show error toast, just log it - order details can still be shown
           }
         }
@@ -176,17 +176,17 @@ export default function UserOrderDetails() {
 
   const orderIdDisplay = order.orderId || order._id || orderId
   const refundInfo = getRefundDisplayInfo(order)
-  // Use fetched shop data if available, otherwise use order.restaurantId or order.shop
-  const restaurantObj = shop || order.restaurantId || order.shop || {}
-  const restaurantName =
-    order.restaurantName || restaurantObj.name || "Shop"
+  // Use fetched shop data if available, otherwise use order.shopId || order.shopId or order.shop || {}
+  const shopObj = shop || order.shopId || order.shopId || order.shop || {}
+  const shopName =
+    order.shopName || order.shopName || shopObj.name || "Shop"
 
   // Build shop address (try shop fields first, then fall back)
-  const restaurantLocation = (() => {
-    const loc = restaurantObj.location || {}
+  const shopLocation = (() => {
+    const loc = shopObj.location || {}
 
     // Priority 1: direct address on shop object
-    if (restaurantObj.address) return restaurantObj.address
+    if (shopObj.address) return shopObj.address
 
     // Priority 2: formattedAddress from location
     if (loc.formattedAddress) return loc.formattedAddress
@@ -216,8 +216,8 @@ export default function UserOrderDetails() {
       if (parts.length) return parts.join(", ")
     }
 
-    // Priority 5: order-level restaurantAddress if present
-    if (order.restaurantAddress) return order.restaurantAddress
+    // Priority 5: order-level shopAddress/shopAddress if present
+    if (order.shopAddress || order.shopAddress) return order.shopAddress || order.shopAddress
 
     // Don't fallback to user delivery address - show empty or "Address not available"
     return "Address not available"
@@ -252,19 +252,20 @@ export default function UserOrderDetails() {
     (pricing.subtotal || 0)
 
   // Shop phone (multiple fallbacks) - use fetched shop data first
-  const restaurantPhone =
-    restaurantObj.primaryContactNumber ||
-    restaurantObj.phone ||
-    restaurantObj.contactNumber ||
-    order.restaurantPhone ||
+  const shopPhone =
+    shopObj.primaryContactNumber ||
+    shopObj.phone ||
+    shopObj.contactNumber ||
+    order.shopPhone ||
+    order.shopPhone ||
     ""
 
-  const handleCallRestaurant = () => {
-    if (!restaurantPhone) {
+  const handleCallShop = () => {
+    if (!shopPhone) {
       toast.error("Shop phone number not available")
       return
     }
-    window.location.href = `tel:${restaurantPhone}`
+    window.location.href = `tel:${shopPhone}`
   }
 
   const handleDownloadSummary = async () => {
@@ -325,16 +326,16 @@ export default function UserOrderDetails() {
       doc.setFont('helvetica', 'bold')
       doc.text('Shop Name:', 20, yPos)
       doc.setFont('helvetica', 'normal')
-      doc.text(restaurantName, 60, yPos)
+      doc.text(shopName, 60, yPos)
       yPos += 7
 
       // Shop Address
       doc.setFont('helvetica', 'bold')
       doc.text('Shop Address:', 20, yPos)
       doc.setFont('helvetica', 'normal')
-      const restaurantAddressLines = doc.splitTextToSize(restaurantLocation || 'N/A', 130)
-      doc.text(restaurantAddressLines, 60, yPos)
-      yPos += restaurantAddressLines.length * 7 + 5
+      const shopAddressLines = doc.splitTextToSize(shopLocation || 'N/A', 130)
+      doc.text(shopAddressLines, 60, yPos)
+      yPos += shopAddressLines.length * 7 + 5
 
       // Items table
       const tableData = items.map(item => [
@@ -380,13 +381,14 @@ export default function UserOrderDetails() {
   }
 
   const handleReorder = (currentOrder) => {
-    const restaurantTarget =
-      restaurantObj.slug ||
-      restaurantObj._id ||
-      restaurantObj.restaurantId ||
-      (typeof currentOrder?.restaurantId === "string" ? currentOrder.restaurantId : currentOrder?.restaurantId?._id)
+    const shopTarget =
+      shopObj.slug ||
+      shopObj._id ||
+      shopObj.shopId ||
+      shopObj.shopId ||
+      (typeof currentOrder?.shopId === "string" ? currentOrder.shopId : currentOrder?.shopId?._id)
 
-    if (!restaurantTarget || !items.length) {
+    if (!shopTarget || !items.length) {
       toast.error("Order items or shop information not available")
       return
     }
@@ -401,8 +403,9 @@ export default function UserOrderDetails() {
           name: item.name || item.foodName || "Item",
           price: Number(item.price) || 0,
           image: item.image || "",
-          shop: restaurantName,
-          restaurantId: restaurantObj._id || restaurantObj.restaurantId || currentOrder?.restaurantId,
+          shop: shopName,
+          shopId: shopObj._id || shopObj.shopId || shopObj.shopId || currentOrder?.shopId,
+          shopId: shopObj._id || shopObj.shopId || shopObj.shopId || currentOrder?.shopId,
           description: item.description || "",
           isVeg: isItemVeg(item),
           quantity: Math.max(1, Number(item.quantity || item.qty) || 1),
@@ -418,7 +421,7 @@ export default function UserOrderDetails() {
 
     replaceCart(reorderItems)
     toast.success("Items added to cart")
-    navigate(`/food/user/shops/${restaurantTarget}`)
+    navigate(`/food/user/shops/${shopTarget}`)
   }
 
   return (
@@ -482,23 +485,24 @@ export default function UserOrderDetails() {
                 src={
                   // Prefer the food image from the first ordered item
                   (Array.isArray(items) && items[0]?.image) ||
-                  restaurantObj.profileImage?.url ||
-                  restaurantObj.profileImage ||
-                  order.restaurantImage ||
+                  shopObj.profileImage?.url ||
+                  shopObj.profileImage ||
+                  order.shopImage ||
+                  order.shopImage ||
                   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=80"
                 }
-                alt={restaurantName}
+                alt={shopName}
                 className="w-10 h-10 rounded-lg object-cover"
               />
               <div>
-                <h3 className="font-semibold text-gray-800">{restaurantName}</h3>
-                <p className="text-xs text-gray-500">{restaurantLocation}</p>
+                <h3 className="font-semibold text-gray-800">{shopName}</h3>
+                <p className="text-xs text-gray-500">{shopLocation}</p>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={handleCallRestaurant}
+              onClick={handleCallShop}
               className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:bg-brand-50"
               style={{ color: BRAND_THEME.tokens.orders.primaryText }}
             >
@@ -704,7 +708,7 @@ export default function UserOrderDetails() {
                 {order?.fulfillmentType === 'takeaway' ? "Pickup address" : "Delivery address"}
               </h4>
               <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">
-                {order?.fulfillmentType === 'takeaway' ? restaurantLocation : (addressText || "Address not available")}
+                {order?.fulfillmentType === 'takeaway' ? shopLocation : (addressText || "Address not available")}
               </p>
             </div>
           </div>

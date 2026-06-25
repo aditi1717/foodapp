@@ -19,9 +19,9 @@ const foodHeroBannerSchema = new mongoose.Schema(
         ctaLink: {
             type: String
         },
-        linkedRestaurantIds: {
+        linkedShopIds: {
             type: [mongoose.Schema.Types.ObjectId],
-            ref: 'FoodRestaurant',
+            ref: 'FoodShop',
             default: []
         },
         sortOrder: {

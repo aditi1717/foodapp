@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/unified', searchController);
 
 /**
- * Admin Categories Only Endpoint (to avoid restaurant-created ones as requested)
+ * Admin Categories Only Endpoint (to avoid shop-created ones as requested)
  * GET /api/v1/food/search/categories/admin
  */
 router.get('/categories/admin', listAdminCategoriesController);

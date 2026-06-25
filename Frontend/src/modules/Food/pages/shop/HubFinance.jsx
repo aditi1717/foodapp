@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Bell, Menu, ChevronDown, Calendar, Download, ArrowRight, FileText } from "lucide-react"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -103,8 +103,8 @@ export default function HubFinance() {
   const [loading, setLoading] = useState(true)
   const [pastCyclesData, setPastCyclesData] = useState(null)
   const [loadingPastCycles, setLoadingPastCycles] = useState(false)
-  const [restaurantData, setRestaurantData] = useState(null)
-  const [loadingRestaurant, setLoadingRestaurant] = useState(true)
+  const [shopData, setShopData] = useState(null)
+  const [loadingShop, setLoadingShop] = useState(true)
   const ORDERS_PER_PAGE = 20
   const [payoutTablePage, setPayoutTablePage] = useState(1)
   const [invoiceTablePage, setInvoiceTablePage] = useState(1)
@@ -114,7 +114,7 @@ export default function HubFinance() {
     const fetchFinanceData = async () => {
       try {
         setLoading(true)
-        const response = await restaurantAPI.getFinance()
+        const response = await shopAPI.getFinance()
         if (response.data?.success && response.data?.data) {
           const data = response.data.data
           setFinanceData(data)
@@ -138,16 +138,16 @@ export default function HubFinance() {
   useEffect(() => {
     // Use shop data from financeData if available, otherwise fetch separately
     if (financeData?.shop) {
-      setRestaurantData(financeData.shop)
+      setShopData(financeData.shop)
     } else {
-      const fetchRestaurantData = async () => {
+      const fetchShopData = async () => {
         try {
-          const response = await restaurantAPI.getRestaurantByOwner()
+          const response = await shopAPI.getShopByOwner()
           const data = response?.data?.data?.shop || response?.data?.shop || response?.data?.data
           if (data) {
-            setRestaurantData({
+            setShopData({
               name: data.name,
-              restaurantId: data.restaurantId || data._id,
+              shopId: data.shopId || data._id,
               address: data.location?.address || data.location?.formattedAddress || data.address || ''
             })
           }
@@ -158,16 +158,16 @@ export default function HubFinance() {
           }
         }
       }
-      fetchRestaurantData()
+      fetchShopData()
     }
   }, [financeData])
 
   // Format shop ID to REST###### format (e.g., REST005678)
-  const formatRestaurantId = (restaurantId) => {
-    if (!restaurantId) return ''
+  const formatShopId = (shopId) => {
+    if (!shopId) return ''
     
     // Extract numeric part from the end (e.g., "REST-1768762345335-5678" -> "5678")
-    const strId = String(restaurantId)
+    const strId = String(shopId)
     const numericMatch = strId.match(/(\d+)$/)
     
     if (numericMatch) {
@@ -224,7 +224,7 @@ export default function HubFinance() {
   }, [financeData, pastCyclesData])
 
   const invoiceSummary = useMemo(() => {
-    const earnings = invoiceOrders.reduce((sum, order) => sum + (order.payout || order.restaurantEarning || 0), 0)
+    const earnings = invoiceOrders.reduce((sum, order) => sum + (order.payout || order.shopEarning || 0), 0)
     const commission = invoiceOrders.reduce((sum, order) => sum + (order.commission || 0), 0)
     const gross = invoiceOrders.reduce((sum, order) => sum + (order.totalAmount || order.orderTotal || 0), 0)
     return { earnings, commission, gross, count: invoiceOrders.length }
@@ -251,7 +251,7 @@ export default function HubFinance() {
     const orders = payoutSourceOrders
     const unpaidOrders = orders.filter((order) => !Boolean(order?.isSettled === true))
     const unpaidAmount = unpaidOrders.reduce(
-      (sum, order) => sum + Number(order?.payout || order?.restaurantEarning || 0),
+      (sum, order) => sum + Number(order?.payout || order?.shopEarning || 0),
       0
     )
     return { amount: unpaidAmount, count: unpaidOrders.length }
@@ -304,7 +304,7 @@ export default function HubFinance() {
   )
 
   const handleViewDetails = () => {
-    navigate("/shop/finance-details", { state: { financeData, restaurantData } })
+    navigate("/shop/finance-details", { state: { financeData, shopData } })
   }
 
   const formatMoney = (amount = 0) =>
@@ -537,7 +537,7 @@ export default function HubFinance() {
       const startDateISO = startDateObj.toISOString().split('T')[0]
       const endDateISO = endDateObj.toISOString().split('T')[0]
       
-      const response = await restaurantAPI.getFinance({
+      const response = await shopAPI.getFinance({
         startDate: startDateISO,
         endDate: endDateISO
       })
@@ -574,8 +574,8 @@ export default function HubFinance() {
 
   // Prepare report data from real finance data
   const getReportData = () => {
-    const restaurantName = financeData?.shop?.name || "Shop"
-    const restaurantId = financeData?.shop?.restaurantId || "N/A"
+    const shopName = financeData?.shop?.name || "Shop"
+    const shopId = financeData?.shop?.shopId || "N/A"
     const currentCycle = financeData?.currentCycle || {}
     
     // Get all orders (current cycle + past cycles) - DEDUPLICATED
@@ -608,8 +608,8 @@ export default function HubFinance() {
     const allOrders = Array.from(allOrdersMap.values())
     
     return {
-      restaurantName,
-      restaurantId,
+      shopName,
+      shopId,
       dateRange: selectedDateRange,
       currentCycle: {
         start: currentCycleDates.start,
@@ -732,8 +732,8 @@ export default function HubFinance() {
       <body>
         <div class="header">
           <h1>Finance Report</h1>
-          <p>${reportData.restaurantName}</p>
-          <p>ID: ${reportData.restaurantId}</p>
+          <p>${reportData.shopName}</p>
+          <p>ID: ${reportData.shopId}</p>
           <p>Generated on: ${new Date().toLocaleString('en-IN')}</p>
         </div>
 
@@ -779,7 +779,7 @@ export default function HubFinance() {
                   const foodItems = order.foodNames || (order.items && order.items.map(item => item.name).join(', ')) || 'N/A'
                   const itemQuantities = order.items ? order.items.map(item => (item.quantity || 1).toString()).join(', ') : 'N/A'
                   const orderAmount = order.totalAmount || order.orderTotal || order.amount || 0
-                  const earning = order.payout || order.restaurantEarning || 0
+                  const earning = order.payout || order.shopEarning || 0
                   
                   return `
                     <tr>
@@ -797,7 +797,7 @@ export default function HubFinance() {
               <tfoot>
                 <tr style="background-color: #e8f5e9; font-weight: bold;">
                   <td colspan="5" style="text-align: right;">Total Earnings:</td>
-                  <td colspan="2">₹${reportData.allOrders.reduce((sum, order) => sum + (order.payout || order.restaurantEarning || 0), 0).toFixed(2)}</td>
+                  <td colspan="2">₹${reportData.allOrders.reduce((sum, order) => sum + (order.payout || order.shopEarning || 0), 0).toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -811,7 +811,7 @@ export default function HubFinance() {
 
         <div class="footer">
           <p>This is an auto-generated report. For detailed information, please visit the Finance section.</p>
-          <p>Total Orders: ${reportData.allOrders?.length || 0} | Total Earnings: ₹${reportData.allOrders?.reduce((sum, order) => sum + (order.payout || order.restaurantEarning || 0), 0).toFixed(2) || '0.00'}</p>
+          <p>Total Orders: ${reportData.allOrders?.length || 0} | Total Earnings: ₹${reportData.allOrders?.reduce((sum, order) => sum + (order.payout || order.shopEarning || 0), 0).toFixed(2) || '0.00'}</p>
         </div>
       </body>
       </html>
@@ -932,7 +932,7 @@ export default function HubFinance() {
       const totals = orders.reduce(
         (acc, order) => {
           acc.orderAmount += Number(order?.totalAmount || order?.orderTotal || order?.amount || 0)
-          acc.earning += Number(order?.payout || order?.restaurantEarning || 0)
+          acc.earning += Number(order?.payout || order?.shopEarning || 0)
           return acc
         },
         { orderAmount: 0, earning: 0 },
@@ -947,7 +947,7 @@ export default function HubFinance() {
             ? formatOrderTime(order.createdAt)
             : (order?.deliveredAt ? formatOrderTime(order.deliveredAt) : "N/A")
           const orderAmount = Number(order?.totalAmount || order?.orderTotal || order?.amount || 0)
-          const earning = Number(order?.payout || order?.restaurantEarning || 0)
+          const earning = Number(order?.payout || order?.shopEarning || 0)
           const isSettled = Boolean(order?.isSettled === true)
           const orderType = resolveOrderTypeLabel(order)
           const scheduleMode = resolveScheduleMode(order)
@@ -990,8 +990,8 @@ export default function HubFinance() {
           </head>
           <body>
             <div class="meta">
-              <p><strong>Shop:</strong> ${htmlEscape(reportData?.restaurantName || "Shop")}</p>
-              <p><strong>ID:</strong> ${htmlEscape(reportData?.restaurantId || "N/A")}</p>
+              <p><strong>Shop:</strong> ${htmlEscape(reportData?.shopName || "Shop")}</p>
+              <p><strong>ID:</strong> ${htmlEscape(reportData?.shopId || "N/A")}</p>
               <p><strong>Date Range:</strong> ${htmlEscape(reportData?.dateRange || "N/A")}</p>
             </div>
             <table>
@@ -1076,17 +1076,17 @@ export default function HubFinance() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1">
                 <p className="text-lg font-bold text-gray-900 truncate">
-                  {restaurantData?.name || financeData?.shop?.name || "Shop"}
+                  {shopData?.name || financeData?.shop?.name || "Shop"}
                 </p>
                 <ChevronDown className="w-4 h-4 text-gray-600 flex-shrink-0" />
               </div>
               <p className="text-xs text-gray-600 mt-0.5">
                 {(() => {
-                  const restaurantId = restaurantData?.restaurantId || financeData?.shop?.restaurantId
-                  const address = restaurantData?.address || financeData?.shop?.address || ''
+                  const shopId = shopData?.shopId || financeData?.shop?.shopId
+                  const address = shopData?.address || financeData?.shop?.address || ''
                   const parts = []
-                  if (restaurantId) {
-                    const formattedId = formatRestaurantId(restaurantId)
+                  if (shopId) {
+                    const formattedId = formatShopId(shopId)
                     parts.push(`ID: ${formattedId}`)
                   }
                   if (address) {
@@ -1192,7 +1192,7 @@ export default function HubFinance() {
                     <span className="text-sm font-semibold text-orange-600">
                       -₹{(() => {
                         const total = (payoutSourceOrders || []).reduce((sum, order) => {
-                          return sum + (order.pricing?.couponByRestaurant || 0)
+                          return sum + (order.pricing?.couponByShop || 0)
                         }, 0)
                         return total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                       })()}
@@ -1204,7 +1204,7 @@ export default function HubFinance() {
                     <span className="text-sm font-semibold text-purple-600">
                       -₹{(() => {
                         const total = (payoutSourceOrders || []).reduce((sum, order) => {
-                          return sum + (order.pricing?.offerByRestaurant || 0)
+                          return sum + (order.pricing?.offerByShop || 0)
                         }, 0)
                         return total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                       })()}
@@ -1216,7 +1216,7 @@ export default function HubFinance() {
                     <span className="text-sm font-semibold text-brand-600">
                       -₹{(() => {
                         const total = (payoutSourceOrders || []).reduce((sum, order) => {
-                          return sum + (order.commission || order.pricing?.restaurantCommission || 0)
+                          return sum + (order.commission || order.pricing?.shopCommission || 0)
                         }, 0)
                         return total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                       })()}
@@ -1480,7 +1480,7 @@ export default function HubFinance() {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                               {paginatedPayoutOrders.map((order, index) => {
-                                const payout = Number(order?.payout || order?.restaurantEarning || 0)
+                                const payout = Number(order?.payout || order?.shopEarning || 0)
                                 const isSettled = Boolean(order?.isSettled === true)
                                 const orderType = resolveOrderTypeLabel(order)
                                 const scheduleMode = resolveScheduleMode(order)
@@ -1565,7 +1565,7 @@ export default function HubFinance() {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                               {paginatedPayoutOrders.map((order, index) => {
-                                const payout = Number(order?.payout || order?.restaurantEarning || 0)
+                                const payout = Number(order?.payout || order?.shopEarning || 0)
                                 const isSettled = Boolean(order?.isSettled === true)
                                 const orderType = resolveOrderTypeLabel(order)
                                 const scheduleMode = resolveScheduleMode(order)

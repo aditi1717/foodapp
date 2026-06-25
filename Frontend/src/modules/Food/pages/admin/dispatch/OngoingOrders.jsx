@@ -182,7 +182,7 @@ export default function OngoingOrders() {
           order: "Order",
           date: "Date",
           customer: "Customer",
-          restaurant: "Restaurant",
+          shop: "Shop",
           total: "Total Amount",
           status: "Order Status",
           actions: "Actions",

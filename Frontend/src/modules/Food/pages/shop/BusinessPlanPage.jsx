@@ -9,7 +9,7 @@ import { Card, CardContent } from "@food/components/ui/card";
 import { Button } from "@food/components/ui/button";
 import BottomNavOrders from "@food/components/shop/BottomNavOrders";
 import { toast } from "sonner";
-import { restaurantAPI } from "@/services/api";
+import { shopAPI } from "@/services/api";
 
 const defaultActivePlan = {
   id: "default-commission",
@@ -20,7 +20,7 @@ const defaultActivePlan = {
   restoBenefitType: "commission_reduction",
   commissionRate: "10.0",
   description:
-    "Restaurant will pay 10.0% commission to StackFood from each order. You will get access of all the features and options in restaurant panel, app and interaction with user.",
+    "Shop will pay 10.0% commission to StackFood from each order. You will get access of all the features and options in shop panel, app and interaction with user.",
 };
 
 export default function BusinessPlanPage() {
@@ -59,8 +59,8 @@ export default function BusinessPlanPage() {
       try {
         setIsLoading(true);
         const [plansResponse, currentResponse] = await Promise.all([
-          restaurantAPI.getSubscriptionPackages(),
-          restaurantAPI.getCurrentSubscription(),
+          shopAPI.getSubscriptionPackages(),
+          shopAPI.getCurrentSubscription(),
         ]);
 
         const restoPlans = plansResponse?.data?.data?.packages || [];
@@ -140,7 +140,7 @@ export default function BusinessPlanPage() {
   const handleShiftPlan = async (newPlan) => {
     try {
       setIsSubmitting(true);
-      const response = await restaurantAPI.activateSubscription({
+      const response = await shopAPI.activateSubscription({
         packageId: newPlan.id,
         paymentMethod: "manual",
       });

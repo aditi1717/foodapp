@@ -4,13 +4,13 @@ import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import Lenis from "lenis"
 import { ArrowLeft, ChevronDown } from "lucide-react"
 import BottomPopup from "@delivery/components/BottomPopup"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 
-const ADDRESS_STORAGE_KEY = "restaurant_address"
+const ADDRESS_STORAGE_KEY = "shop_address"
 
 // Default coordinates for Indore (can be updated based on actual location)
 const DEFAULT_LAT = 22.7196
@@ -20,7 +20,7 @@ export default function EditShopAddress() {
   const navigate = useNavigate()
   const goBack = useShopBackNavigation()
   const [address, setAddress] = useState("")
-  const [restaurantName, setRestaurantName] = useState("")
+  const [shopName, setShopName] = useState("")
   const [location, setLocation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showSelectOptionDialog, setShowSelectOptionDialog] = useState(false)
@@ -47,13 +47,13 @@ export default function EditShopAddress() {
 
   // Fetch shop data from backend
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       try {
         setLoading(true)
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
-          setRestaurantName(data.name || "")
+          setShopName(data.name || "")
           if (data.location) {
             setLocation(data.location)
             const formatted = formatAddress(data.location)
@@ -87,10 +87,10 @@ export default function EditShopAddress() {
             setAddress(savedAddress)
           }
           // Try to get shop name from localStorage, but prefer empty string over hardcoded value
-          const savedName = localStorage.getItem("restaurant_name") || 
-                           localStorage.getItem("restaurantName") ||
+          const savedName = localStorage.getItem("shop_name") || 
+                           localStorage.getItem("shopName") ||
                            ""
-          setRestaurantName(savedName)
+          setShopName(savedName)
         } catch (e) {
           debugError("Error loading from localStorage:", e)
         }
@@ -99,11 +99,11 @@ export default function EditShopAddress() {
       }
     }
 
-    fetchRestaurantData()
+    fetchShopData()
 
     // Listen for address updates
     const handleAddressUpdate = () => {
-      fetchRestaurantData()
+      fetchShopData()
     }
 
     window.addEventListener("addressUpdated", handleAddressUpdate)
@@ -174,7 +174,7 @@ export default function EditShopAddress() {
             formattedAddress: formattedAddress || location?.formattedAddress || ""
           }
           
-          const response = await restaurantAPI.updateProfile({ location: updatedLocation })
+          const response = await shopAPI.updateProfile({ location: updatedLocation })
           
           if (response?.data?.data?.shop) {
             // Update local state
@@ -222,7 +222,7 @@ export default function EditShopAddress() {
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
-            <h1 className="text-base font-bold text-gray-900 truncate">{restaurantName}</h1>
+            <h1 className="text-base font-bold text-gray-900 truncate">{shopName}</h1>
             <ChevronDown className="w-4 h-4 text-gray-900 shrink-0" />
           </div>
           <p className="text-xs text-gray-600 truncate">{simplifiedAddress}</p>
@@ -315,7 +315,7 @@ export default function EditShopAddress() {
                     ? "border-black"
                     : "border-gray-300"
                 }`}
-                style={preferredType === "restaurant" ? { background: `${BRAND_THEME.colors.brand.primary}0D` } : undefined}
+                style={preferredType === "shop" ? { background: `${BRAND_THEME.colors.brand.primary}0D` } : undefined}
               >
                 {selectedOption === "update_address" && (
                   <div className="w-2 h-2 rounded-full bg-white"></div>

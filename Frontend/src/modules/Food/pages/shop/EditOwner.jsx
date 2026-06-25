@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@food/components/ui/dialog"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import OptimizedImage from "@food/components/OptimizedImage"
 import { clearModuleAuth } from "@food/utils/auth"
 import { firebaseAuth, ensureFirebaseInitialized } from "@food/firebase"
@@ -31,7 +31,7 @@ const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 
-const STORAGE_KEY = "restaurant_owner_contact"
+const STORAGE_KEY = "shop_owner_contact"
 
 export default function EditOwner() {
   const navigate = useNavigate()
@@ -80,10 +80,10 @@ export default function EditOwner() {
 
   // Fetch shop data from backend on mount
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       try {
         setLoading(true)
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
           const ownerDataFromBackend = {
@@ -116,7 +116,7 @@ export default function EditOwner() {
       }
     }
 
-    fetchRestaurantData()
+    fetchShopData()
   }, [])
 
   // Check for changes
@@ -174,7 +174,7 @@ export default function EditOwner() {
       // First, upload profile image if changed
       if (profileImageFile) {
         try {
-          const imageResponse = await restaurantAPI.uploadProfileImage(profileImageFile)
+          const imageResponse = await shopAPI.uploadProfileImage(profileImageFile)
           const imageData = imageResponse?.data?.data?.image || imageResponse?.data?.image
           if (imageData?.url) {
             formData.photo = imageData.url
@@ -201,7 +201,7 @@ export default function EditOwner() {
         // The uploadProfileImage already updates it, so we might not need to send it again
       }
 
-      const response = await restaurantAPI.updateProfile(updatePayload)
+      const response = await shopAPI.updateProfile(updatePayload)
       
       if (response?.data?.success) {
         // Save to localStorage as backup
@@ -239,7 +239,7 @@ export default function EditOwner() {
     
     try {
       // Call backend API to delete the account
-      await restaurantAPI.deleteAccount()
+      await shopAPI.deleteAccount()
       
       // Sign out from Firebase if shop logged in via Google
       try {
@@ -256,21 +256,21 @@ export default function EditOwner() {
       }
 
       // Clear shop module authentication data
-      clearModuleAuth("restaurant")
+      clearModuleAuth("shop")
       
       // Clear all shop-related localStorage data
       localStorage.removeItem(STORAGE_KEY)
-      localStorage.removeItem("restaurant_onboarding")
-      localStorage.removeItem("restaurant_accessToken")
-      localStorage.removeItem("restaurant_authenticated")
-      localStorage.removeItem("restaurant_user")
-      localStorage.removeItem("restaurant_invited_users")
+      localStorage.removeItem("shop_onboarding")
+      localStorage.removeItem("shop_accessToken")
+      localStorage.removeItem("shop_authenticated")
+      localStorage.removeItem("shop_user")
+      localStorage.removeItem("shop_invited_users")
       
       // Clear sessionStorage
-      sessionStorage.removeItem("restaurantAuthData")
+      sessionStorage.removeItem("shopAuthData")
       
       // Dispatch auth change event to notify other components
-      window.dispatchEvent(new Event("restaurantAuthChanged"))
+      window.dispatchEvent(new Event("shopAuthChanged"))
       
       setShowDeleteDialog(false)
       

@@ -7,34 +7,34 @@ const debugError = (...args) => {}
 
 
 export default function PointOfSale() {
-  const [shops, setRestaurants] = useState([])
-  const [selectedRestaurant, setSelectedRestaurant] = useState('')
+  const [shops, setShops] = useState([])
+  const [selectedShop, setSelectedShop] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
-  const [restaurantData, setRestaurantData] = useState(null)
+  const [shopData, setShopData] = useState(null)
   const [paymentSummary, setPaymentSummary] = useState(null)
   const [showSearchResults, setShowSearchResults] = useState(false)
 
-  const getRestaurantName = (shop) => {
+  const getShopName = (shop) => {
     return String(
       shop?.name ||
-      shop?.restaurantName ||
+      shop?.shopName ||
       shop?.shop?.name ||
       '',
     ).trim()
   }
 
-  const getRestaurantCode = (shop) => {
+  const getShopCode = (shop) => {
     return String(
-      shop?.restaurantId ||
-      shop?.restaurantCode ||
-      shop?.shop?.restaurantId ||
+      shop?.shopId ||
+      shop?.shopCode ||
+      shop?.shop?.shopId ||
       shop?._id ||
       '',
     ).trim()
   }
 
-  const normalizeRestaurants = (rawList) => {
+  const normalizeShops = (rawList) => {
     if (!Array.isArray(rawList)) return []
 
     return rawList
@@ -43,19 +43,19 @@ export default function PointOfSale() {
           shop?._id ||
           shop?.id ||
           shop?.shop?._id ||
-          shop?.restaurantId ||
+          shop?.shopId ||
           '',
         ).trim()
         if (!id) return null
 
-        const resolvedName = getRestaurantName(shop) || `Shop ${id.slice(-6)}`
-        const resolvedCode = getRestaurantCode(shop)
+        const resolvedName = getShopName(shop) || `Shop ${id.slice(-6)}`
+        const resolvedCode = getShopCode(shop)
 
         return {
           ...shop,
           _id: id,
           name: resolvedName,
-          restaurantId: resolvedCode,
+          shopId: resolvedCode,
         }
       })
       .filter(Boolean)
@@ -74,8 +74,8 @@ export default function PointOfSale() {
     averageOrderValue: 0,
     totalRevenue: 0,
     totalCommission: 0,
-    restaurantEarning: 0,
-    restaurantProfit: 0,
+    shopEarning: 0,
+    shopProfit: 0,
     monthlyOrders: 0,
     yearlyOrders: 0,
     averageMonthlyProfit: 0,
@@ -90,15 +90,15 @@ export default function PointOfSale() {
 
   // Fetch shops list
   useEffect(() => {
-    fetchRestaurants()
+    fetchShops()
   }, [])
 
   // Fetch shop analytics when shop is selected
   useEffect(() => {
-    if (selectedRestaurant) {
-      fetchRestaurantAnalytics(selectedRestaurant)
+    if (selectedShop) {
+      fetchShopAnalytics(selectedShop)
     } else {
-      setRestaurantData(null)
+      setShopData(null)
       setPaymentSummary(null)
       setAnalyticsData({
         totalOrders: 0,
@@ -112,8 +112,8 @@ export default function PointOfSale() {
         averageOrderValue: 0,
         totalRevenue: 0,
         totalCommission: 0,
-        restaurantEarning: 0,
-        restaurantProfit: 0,
+        shopEarning: 0,
+        shopProfit: 0,
         monthlyOrders: 0,
         yearlyOrders: 0,
         averageMonthlyProfit: 0,
@@ -126,15 +126,15 @@ export default function PointOfSale() {
         completionRate: 0
       })
     }
-  }, [selectedRestaurant])
+  }, [selectedShop])
 
-  const fetchRestaurants = async () => {
+  const fetchShops = async () => {
     try {
       setLoading(true)
-      const response = await adminAPI.getRestaurants({ limit: 1000, isActive: true })
+      const response = await adminAPI.getShops({ limit: 1000, isActive: true })
       if (response?.data?.success) {
-        const rawRestaurants = response.data.data?.shops || response.data.data || []
-        setRestaurants(normalizeRestaurants(rawRestaurants))
+        const rawShops = response.data.data?.shops || response.data.data || []
+        setShops(normalizeShops(rawShops))
       }
     } catch (error) {
       debugError('Error fetching shops:', error)
@@ -143,20 +143,20 @@ export default function PointOfSale() {
     }
   }
 
-  const fetchRestaurantAnalytics = async (restaurantId) => {
+  const fetchShopAnalytics = async (shopId) => {
     try {
       setLoading(true)
       
-      // Validate restaurantId
-      if (!restaurantId) {
+      // Validate shopId
+      if (!shopId) {
         debugError('Shop ID is required')
         return
       }
       
-      debugLog('Fetching analytics for shop:', restaurantId)
+      debugLog('Fetching analytics for shop:', shopId)
       
       // Fetch comprehensive shop analytics from backend
-      const analyticsResponse = await adminAPI.getRestaurantAnalytics(restaurantId)
+      const analyticsResponse = await adminAPI.getShopAnalytics(shopId)
       
       debugLog('Analytics response:', analyticsResponse)
       
@@ -168,7 +168,7 @@ export default function PointOfSale() {
         debugLog('Commission percentage type:', typeof analytics.commissionPercentage)
         
         // Set shop data
-        setRestaurantData(shop)
+        setShopData(shop)
         setPaymentSummary(apiPaymentSummary || null)
         
         // Parse commission percentage - handle both number and string
@@ -191,8 +191,8 @@ export default function PointOfSale() {
           averageOrderValue: analytics.averageOrderValue || 0,
           totalRevenue: analytics.totalRevenue || 0,
           totalCommission: analytics.totalCommission || 0,
-          restaurantEarning: analytics.restaurantEarning || 0,
-          restaurantProfit: analytics.restaurantProfit || 0,
+          shopEarning: analytics.shopEarning || 0,
+          shopProfit: analytics.shopProfit || 0,
           monthlyOrders: analytics.monthlyOrders || 0,
           yearlyOrders: analytics.yearlyOrders || 0,
           averageMonthlyProfit: analytics.averageMonthlyProfit || 0,
@@ -219,8 +219,8 @@ export default function PointOfSale() {
           averageOrderValue: 0,
           totalRevenue: 0,
           totalCommission: 0,
-          restaurantEarning: 0,
-          restaurantProfit: 0,
+          shopEarning: 0,
+          shopProfit: 0,
           monthlyOrders: 0,
           yearlyOrders: 0,
           averageMonthlyProfit: 0,
@@ -239,7 +239,7 @@ export default function PointOfSale() {
         message: error?.message,
         response: error?.response?.data,
         status: error?.response?.status,
-        restaurantId: selectedRestaurant
+        shopId: selectedShop
       })
       
       // Show user-friendly error message
@@ -265,8 +265,8 @@ export default function PointOfSale() {
         averageOrderValue: 0,
         totalRevenue: 0,
         totalCommission: 0,
-        restaurantEarning: 0,
-        restaurantProfit: 0,
+        shopEarning: 0,
+        shopProfit: 0,
         monthlyOrders: 0,
         yearlyOrders: 0,
         averageMonthlyProfit: 0,
@@ -283,20 +283,20 @@ export default function PointOfSale() {
     }
   }
 
-  const filteredRestaurants = shops.filter(shop => {
+  const filteredShops = shops.filter(shop => {
     if (!searchQuery.trim()) return true
     const query = searchQuery.toLowerCase()
     return (
       shop.name?.toLowerCase().includes(query) ||
-      shop.restaurantId?.toLowerCase().includes(query) ||
+      shop.shopId?.toLowerCase().includes(query) ||
       shop._id?.toLowerCase().includes(query)
     )
   })
 
   // Handle shop selection from search
-  const handleRestaurantSelect = (restaurantId) => {
-    setSelectedRestaurant(restaurantId)
-    const selected = shops.find(r => r._id === restaurantId)
+  const handleShopSelect = (shopId) => {
+    setSelectedShop(shopId)
+    const selected = shops.find(r => r._id === shopId)
     if (selected) {
       setSearchQuery(selected.name)
     }
@@ -311,7 +311,7 @@ export default function PointOfSale() {
     
     // If search is cleared, clear selection
     if (!value.trim()) {
-      setSelectedRestaurant('')
+      setSelectedShop('')
       setShowSearchResults(false)
     }
   }
@@ -324,8 +324,8 @@ export default function PointOfSale() {
     return num?.toLocaleString('en-IN') || '0'
   }
 
-  const getSelectedRestaurantName = () => {
-    const shop = shops.find(r => r._id === selectedRestaurant)
+  const getSelectedShopName = () => {
+    const shop = shops.find(r => r._id === selectedShop)
     return shop?.name || 'Select Shop'
   }
 
@@ -366,24 +366,24 @@ export default function PointOfSale() {
                 />
                 
                 {/* Search Results Dropdown */}
-                {showSearchResults && filteredRestaurants.length > 0 && (
+                {showSearchResults && filteredShops.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-[#e3e6ef] rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    {filteredRestaurants.map(shop => (
+                    {filteredShops.map(shop => (
                       <button
                         key={shop._id}
                         type="button"
                         onMouseDown={(e) => {
                           e.preventDefault()
-                          handleRestaurantSelect(shop._id)
+                          handleShopSelect(shop._id)
                         }}
                         className="w-full px-4 py-3 text-left hover:bg-[#f9fafc] cursor-pointer border-b border-[#e3e6ef] last:border-b-0 transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium text-[#334257]">{shop.name}</p>
-                            <p className="text-xs text-[#8a94aa]">ID: {shop.restaurantId || shop._id}</p>
+                            <p className="text-xs text-[#8a94aa]">ID: {shop.shopId || shop._id}</p>
                           </div>
-                          {selectedRestaurant === shop._id && (
+                          {selectedShop === shop._id && (
                             <div className="w-2 h-2 bg-[#006fbd] rounded-full"></div>
                           )}
                         </div>
@@ -393,15 +393,15 @@ export default function PointOfSale() {
                 )}
                 
                 {/* No Results Message */}
-                {showSearchResults && searchQuery.trim() && filteredRestaurants.length === 0 && (
+                {showSearchResults && searchQuery.trim() && filteredShops.length === 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-[#e3e6ef] rounded-md shadow-lg p-4">
                     <p className="text-sm text-[#8a94aa] text-center">No shops found matching "{searchQuery}"</p>
                   </div>
                 )}
                   </div>
-              {selectedRestaurant && (
+              {selectedShop && (
                 <p className="text-xs text-green-600 mt-2">
-                  Selected: {getSelectedRestaurantName()}
+                  Selected: {getSelectedShopName()}
                 </p>
               )}
         </div>
@@ -413,9 +413,9 @@ export default function PointOfSale() {
                     </label>
                     <div className="relative">
                       <select 
-                  value={selectedRestaurant}
+                  value={selectedShop}
                   onChange={(e) => {
-                    setSelectedRestaurant(e.target.value)
+                    setSelectedShop(e.target.value)
                     const selected = shops.find(r => r._id === e.target.value)
                     if (selected) {
                       setSearchQuery(selected.name)
@@ -436,15 +436,15 @@ export default function PointOfSale() {
                 </div>
 
         {/* Analytics Dashboard */}
-        {selectedRestaurant && !loading ? (
+        {selectedShop && !loading ? (
           <div className="space-y-6">
             {/* Shop Header Info */}
             <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-[#334257] mb-1">{getSelectedRestaurantName()}</h2>
+                  <h2 className="text-xl font-bold text-[#334257] mb-1">{getSelectedShopName()}</h2>
                   <p className="text-sm text-[#8a94aa]">
-                    Shop ID: {shops.find(r => r._id === selectedRestaurant)?.restaurantId || selectedRestaurant}
+                    Shop ID: {shops.find(r => r._id === selectedShop)?.shopId || selectedShop}
                   </p>
                 </div>
                 <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
@@ -592,11 +592,11 @@ export default function PointOfSale() {
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-[#e3e6ef]">
                     <span className="text-sm text-[#8a94aa]">Shop Share</span>
-                    <span className="text-base font-semibold text-green-600">{formatCurrency(analyticsData.restaurantEarning)}</span>
+                    <span className="text-base font-semibold text-green-600">{formatCurrency(analyticsData.shopEarning)}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-[#e3e6ef]">
                     <span className="text-sm text-[#8a94aa]">Shop Profit</span>
-                    <span className="text-base font-semibold text-emerald-700">{formatCurrency(analyticsData.restaurantProfit)}</span>
+                    <span className="text-base font-semibold text-emerald-700">{formatCurrency(analyticsData.shopProfit)}</span>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -657,11 +657,11 @@ export default function PointOfSale() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-2 border-b border-[#e3e6ef]">
                     <span className="text-sm text-[#8a94aa]">Shop Share</span>
-                    <span className="text-sm font-semibold text-green-700">{formatCurrency(paymentSummary?.restaurantShare || 0)}</span>
+                    <span className="text-sm font-semibold text-green-700">{formatCurrency(paymentSummary?.shopShare || 0)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-[#e3e6ef]">
                     <span className="text-sm text-[#8a94aa]">Shop Commission (Admin)</span>
-                    <span className="text-sm font-semibold text-[#334257]">{formatCurrency(paymentSummary?.restaurantCommission || 0)}</span>
+                    <span className="text-sm font-semibold text-[#334257]">{formatCurrency(paymentSummary?.shopCommission || 0)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-[#e3e6ef]">
                     <span className="text-sm text-[#8a94aa]">Rider Share</span>
@@ -765,7 +765,7 @@ export default function PointOfSale() {
               </div>
             </div>
           </div>
-        ) : selectedRestaurant && loading ? (
+        ) : selectedShop && loading ? (
           <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006fbd] mx-auto mb-4"></div>
             <p className="text-sm text-[#8a94aa]">Loading shop analytics...</p>

@@ -40,11 +40,11 @@ export default function StickyCartCard() {
   }, [])
 
   // Get shop info from first cart item or use default
-  const restaurantName = cart[0]?.shop || "Shop"
-  const restaurantImage = cart[0]?.image || "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&h=200&fit=crop"
+  const shopName = cart[0]?.shop || "Shop"
+  const shopImage = cart[0]?.image || "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&h=200&fit=crop"
 
   // Create shop slug from shop name
-  const restaurantSlug = restaurantName.toLowerCase().replace(/\s+/g, "-")
+  const shopSlug = shopName.toLowerCase().replace(/\s+/g, "-")
 
   // Calculate total price
   const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity * 83), 0)
@@ -100,16 +100,16 @@ export default function StickyCartCard() {
                 {/* Shop Image */}
                 <div className="flex-shrink-0">
                   <img
-                    src={restaurantImage}
-                    alt={restaurantName}
+                    src={shopImage}
+                    alt={shopName}
                     className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-cover"
                   />
                 </div>
 
                 {/* Shop Info */}
-                <Link to={`/food/user/shops/${restaurantSlug}`} className="flex-1 min-w-0">
+                <Link to={`/food/user/shops/${shopSlug}`} className="flex-1 min-w-0">
                   <h3 className="font-bold text-gray-900 dark:text-gray-200 text-base md:text-lg mb-0.5 line-clamp-1">
-                    {restaurantName}
+                    {shopName}
                   </h3>
                   <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400 text-sm md:text-base">
                     <span>View Menu</span>

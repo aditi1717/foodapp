@@ -51,14 +51,14 @@ const pricingSchema = new mongoose.Schema(
         deliveryFee: { type: Number, default: 0, min: 0 },
         originalDeliveryFee: { type: Number, default: 0, min: 0 },
         platformFee: { type: Number, default: 0, min: 0 },
-        restaurantCommission: { type: Number, default: 0, min: 0 },
+        shopCommission: { type: Number, default: 0, min: 0 },
         discount: { type: Number, default: 0, min: 0 },
         previousDue: { type: Number, default: 0, min: 0 },
         totalPayable: { type: Number, default: 0, min: 0 },
         // Discount breakdown for reporting
         couponByAdmin: { type: Number, default: 0, min: 0 },
-        couponByRestaurant: { type: Number, default: 0, min: 0 },
-        offerByRestaurant: { type: Number, default: 0, min: 0 },
+        couponByShop: { type: Number, default: 0, min: 0 },
+        offerByShop: { type: Number, default: 0, min: 0 },
         subscriptionBenefit: {
             applied: { type: Boolean, default: false },
             subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodSubscription', default: null },
@@ -175,7 +175,7 @@ const deliveryStateSchema = new mongoose.Schema(
 const statusHistorySchema = new mongoose.Schema(
     {
         at: { type: Date, default: Date.now },
-        byRole: { type: String, enum: ['USER', 'RESTAURANT', 'DELIVERY_PARTNER', 'ADMIN', 'SYSTEM'] },
+        byRole: { type: String, enum: ['USER', 'SHOP', 'DELIVERY_PARTNER', 'ADMIN', 'SYSTEM'] },
         byId: { type: mongoose.Schema.Types.ObjectId },
         from: { type: String },
         to: { type: String },
@@ -195,7 +195,7 @@ const orderEntityRatingSchema = new mongoose.Schema(
 
 const orderRatingsSchema = new mongoose.Schema(
     {
-        restaurant: { type: orderEntityRatingSchema, default: undefined },
+        shop: { type: orderEntityRatingSchema, default: undefined },
         deliveryPartner: { type: orderEntityRatingSchema, default: undefined }
     },
     { _id: false }
@@ -213,17 +213,17 @@ const deliveryVerificationSchema = new mongoose.Schema(
 
 const etaSchema = new mongoose.Schema(
     {
-        restaurantBaseMinutes: { type: Number, default: null, min: 0 },
-        restaurantPrepMinutes: { type: Number, default: null, min: 0 },
-        restaurantExtraMinutes: { type: Number, default: 0, min: 0 },
+        shopBaseMinutes: { type: Number, default: null, min: 0 },
+        shopPrepMinutes: { type: Number, default: null, min: 0 },
+        shopExtraMinutes: { type: Number, default: 0, min: 0 },
         totalBeforeReadyMinutes: { type: Number, default: null, min: 0 },
         deliveryTravelMinutes: { type: Number, default: null, min: 0 },
         currentEstimatedMinutes: { type: Number, default: null, min: 0 },
         estimatedArrivalAt: { type: Date, default: null },
         source: {
             type: String,
-            enum: ['restaurant_default', 'restaurant_accept', 'restaurant_accept_scheduled', 'delivery_distance', 'manual'],
-            default: 'restaurant_default'
+            enum: ['shop_default', 'shop_accept', 'shop_accept_scheduled', 'delivery_distance', 'manual'],
+            default: 'shop_default'
         },
         updatedAt: { type: Date, default: null }
     },
@@ -275,9 +275,9 @@ const orderSchema = new mongoose.Schema(
             ref: 'FoodUser',
             default: null
         },
-        restaurantId: {
+        shopId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'FoodRestaurant',
+            ref: 'FoodShop',
             required() {
                 return this.orderType === 'food';
             },
@@ -336,7 +336,7 @@ const orderSchema = new mongoose.Schema(
                 'delivered',
                 'cancelled_by_user_unavailable',
                 'cancelled_by_user',
-                'cancelled_by_restaurant',
+                'cancelled_by_shop',
                 'cancelled_by_admin'
             ],
             default: 'created'
@@ -358,7 +358,7 @@ const orderSchema = new mongoose.Schema(
             default: () => ({})
         },
         note: { type: String, default: '', trim: true },
-        restaurantNote: { type: String, default: '', trim: true },
+        shopNote: { type: String, default: '', trim: true },
         cancellationReason: { type: String, default: '', trim: true },
         sendCutlery: { type: Boolean, default: true },
         deliveryFleet: { type: String, default: 'standard', trim: true },
@@ -369,8 +369,8 @@ const orderSchema = new mongoose.Schema(
         isPreparationNotified: { type: Boolean, default: false },
         isPreparationNotified2Min: { type: Boolean, default: false },
         isPreparationNotified10Min: { type: Boolean, default: false },
-        /** Stores the restaurant auto-offer ID applied at order creation so usage can be reversed on cancellation */
-        appliedRestaurantOfferId: { type: mongoose.Schema.Types.ObjectId, ref: 'RestaurantOffer', default: null },
+        /** Stores the shop auto-offer ID applied at order creation so usage can be reversed on cancellation */
+        appliedShopOfferId: { type: mongoose.Schema.Types.ObjectId, ref: 'ShopOffer', default: null },
         /** Stores the coupon (FoodOffer) ID applied at order creation so usage can be reversed on cancellation */
         appliedCouponOfferId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodOffer', default: null },
         riderEarning: { type: Number, default: 0, min: 0 },
@@ -405,7 +405,7 @@ orderSchema.index({ 'deliveryAddress.location': '2dsphere' });
 orderSchema.index({ lastRiderLocation: '2dsphere' });
 orderSchema.index({ orderType: 1, sessionId: 1, createdAt: -1 });
 orderSchema.index({ userId: 1, createdAt: -1 });
-orderSchema.index({ restaurantId: 1, orderStatus: 1, createdAt: -1 });
+orderSchema.index({ shopId: 1, orderStatus: 1, createdAt: -1 });
 orderSchema.index({ 'dispatch.deliveryPartnerId': 1, orderStatus: 1 });
 orderSchema.index({ 'dispatch.status': 1, orderStatus: 1 });
 orderSchema.index({ 'payment.status': 1, createdAt: -1 });

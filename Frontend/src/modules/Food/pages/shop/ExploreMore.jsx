@@ -38,7 +38,7 @@ import {
 import { Card, CardContent } from "@food/components/ui/card"
 import { DateRangeCalendar } from "@food/components/ui/date-range-calendar"
 import { clearModuleAuth, clearAuthData, getCurrentUser } from "@food/utils/auth"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { firebaseAuth, ensureFirebaseInitialized } from "@food/firebase"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import BRAND_THEME from "@/config/brandTheme"
@@ -362,15 +362,15 @@ export default function ExploreMore() {
   const [showCalendar, setShowCalendar] = useState(false)
   const [existingSchedule, setExistingSchedule] = useState(null)
 
-  const STORAGE_KEY = "restaurant_schedule_off"
-  const restaurantBasePath = pathname.startsWith("/food/shop")
+  const STORAGE_KEY = "shop_schedule_off"
+  const shopBasePath = pathname.startsWith("/food/shop")
     ? "/food/shop"
     : "/shop"
-  const EXPLORE_ROUTE = `${restaurantBasePath}/explore`
+  const EXPLORE_ROUTE = `${shopBasePath}/explore`
 
-  const toRestaurantRoute = (route) => {
+  const toShopRoute = (route) => {
     if (typeof route !== "string" || !route.trim()) return null
-    if (restaurantBasePath === "/food/shop") {
+    if (shopBasePath === "/food/shop") {
       if (route.startsWith("/food/shop")) return route
       if (route === "/shop") return "/food/shop"
       if (route.startsWith("/shop/")) return `/food${route}`
@@ -382,7 +382,7 @@ export default function ExploreMore() {
   }
 
   const navigateFromExplore = (route) => {
-    const target = toRestaurantRoute(route)
+    const target = toShopRoute(route)
     if (!target) return
     navigate(target, {
       state: {
@@ -393,18 +393,18 @@ export default function ExploreMore() {
   }
 
   // Shop data state
-  const [restaurantData, setRestaurantData] = useState(null)
-  const [loadingRestaurant, setLoadingRestaurant] = useState(true)
+  const [shopData, setShopData] = useState(null)
+  const [loadingShop, setLoadingShop] = useState(true)
 
   // Fetch shop data on mount
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       try {
-        setLoadingRestaurant(true)
-        const response = await restaurantAPI.getCurrentRestaurant()
+        setLoadingShop(true)
+        const response = await shopAPI.getCurrentShop()
         const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
-          setRestaurantData(data)
+          setShopData(data)
         }
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
@@ -413,11 +413,11 @@ export default function ExploreMore() {
         }
         // Continue with default values if fetch fails
       } finally {
-        setLoadingRestaurant(false)
+        setLoadingShop(false)
       }
     }
 
-    fetchRestaurantData()
+    fetchShopData()
   }, [])
 
   // Format address from location object
@@ -475,42 +475,42 @@ export default function ExploreMore() {
 
   // Get user data from logged in session and shop data
   const userData = useMemo(() => {
-    const sessionUser = getCurrentUser("restaurant")
+    const sessionUser = getCurrentUser("shop")
     
     // Priority 1: Data from the currently logged in session user
     if (sessionUser && sessionUser.name && sessionUser.role) {
       return {
         name: sessionUser.name,
-        phone: sessionUser.phone || restaurantData?.ownerPhone || restaurantData?.phone || "N/A",
-        email: sessionUser.email || restaurantData?.ownerEmail || restaurantData?.email || "N/A",
+        phone: sessionUser.phone || shopData?.ownerPhone || shopData?.phone || "N/A",
+        email: sessionUser.email || shopData?.ownerEmail || shopData?.email || "N/A",
         role: sessionUser.role.toUpperCase(),
-        profileImage: sessionUser.profileImage || restaurantData?.profileImage
+        profileImage: sessionUser.profileImage || shopData?.profileImage
       }
     }
     
     // Priority 2: Data from the shop document owner fields
-    if (restaurantData) {
+    if (shopData) {
       return {
-        name: restaurantData.ownerName || restaurantData.name || "Shop Owner",
-        phone: restaurantData.ownerPhone || restaurantData.phone || "N/A",
-        email: restaurantData.ownerEmail || restaurantData.email || "N/A",
+        name: shopData.ownerName || shopData.name || "Shop Owner",
+        phone: shopData.ownerPhone || shopData.phone || "N/A",
+        email: shopData.ownerEmail || shopData.email || "N/A",
         role: "OWNER",
-        profileImage: restaurantData.profileImage
+        profileImage: shopData.profileImage
       }
     }
     
     // Priority 3: Loading / Initial state
     return {
-      name: loadingRestaurant ? "Loading..." : "Shop Owner",
+      name: loadingShop ? "Loading..." : "Shop Owner",
       phone: "",
       email: "",
       role: "OWNER"
     }
-  }, [restaurantData, loadingRestaurant])
+  }, [shopData, loadingShop])
 
   // Get shop display data
-  const restaurantDisplayName = restaurantData?.name || "Loading..."
-  const restaurantDisplayAddress = restaurantData?.location ? formatAddress(restaurantData.location) : ""
+  const shopDisplayName = shopData?.name || "Loading..."
+  const shopDisplayAddress = shopData?.location ? formatAddress(shopData.location) : ""
 
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
@@ -524,7 +524,7 @@ export default function ExploreMore() {
     try {
       // Call backend logout API to invalidate refresh token
       try {
-        await restaurantAPI.logout()
+        await shopAPI.logout()
       } catch (apiError) {
         // Continue with logout even if API call fails (network issues, etc.)
         debugWarn("Logout API call failed, continuing with local cleanup:", apiError)
@@ -545,19 +545,19 @@ export default function ExploreMore() {
       }
 
       // Clear shop module authentication data
-      clearModuleAuth("restaurant")
+      clearModuleAuth("shop")
 
       // Clear any onboarding data from localStorage
-      localStorage.removeItem("restaurant_onboarding")
-      localStorage.removeItem("restaurant_accessToken")
-      localStorage.removeItem("restaurant_authenticated")
-      localStorage.removeItem("restaurant_user")
+      localStorage.removeItem("shop_onboarding")
+      localStorage.removeItem("shop_accessToken")
+      localStorage.removeItem("shop_authenticated")
+      localStorage.removeItem("shop_user")
 
       // Clear sessionStorage
-      sessionStorage.removeItem("restaurantAuthData")
+      sessionStorage.removeItem("shopAuthData")
 
       // Dispatch auth change event to notify other components
-      window.dispatchEvent(new Event("restaurantAuthChanged"))
+      window.dispatchEvent(new Event("shopAuthChanged"))
 
       // Small delay for UX, then navigate to welcome page
       setTimeout(() => {
@@ -566,13 +566,13 @@ export default function ExploreMore() {
     } catch (error) {
       // Even if there's an error, we should still clear local data and logout
       debugError("Error during logout:", error)
-      clearModuleAuth("restaurant")
-      localStorage.removeItem("restaurant_onboarding")
-      localStorage.removeItem("restaurant_accessToken")
-      localStorage.removeItem("restaurant_authenticated")
-      localStorage.removeItem("restaurant_user")
-      sessionStorage.removeItem("restaurantAuthData")
-      window.dispatchEvent(new Event("restaurantAuthChanged"))
+      clearModuleAuth("shop")
+      localStorage.removeItem("shop_onboarding")
+      localStorage.removeItem("shop_accessToken")
+      localStorage.removeItem("shop_authenticated")
+      localStorage.removeItem("shop_user")
+      sessionStorage.removeItem("shopAuthData")
+      window.dispatchEvent(new Event("shopAuthChanged"))
       navigate("/shop/welcome", { replace: true })
     } finally {
       setIsLoggingOut(false)
@@ -588,7 +588,7 @@ export default function ExploreMore() {
     try {
       // Call backend logout API to invalidate refresh token
       try {
-        await restaurantAPI.logout()
+        await shopAPI.logout()
       } catch (apiError) {
         // Continue with logout even if API call fails (network issues, etc.)
         debugWarn("Logout API call failed, continuing with local cleanup:", apiError)
@@ -612,16 +612,16 @@ export default function ExploreMore() {
       clearAuthData()
 
       // Clear any onboarding data from localStorage
-      localStorage.removeItem("restaurant_onboarding")
+      localStorage.removeItem("shop_onboarding")
 
       // Clear sessionStorage for all modules
-      sessionStorage.removeItem("restaurantAuthData")
+      sessionStorage.removeItem("shopAuthData")
       sessionStorage.removeItem("adminAuthData")
       sessionStorage.removeItem("deliveryAuthData")
       sessionStorage.removeItem("userAuthData")
 
       // Dispatch auth change events to notify other components
-      window.dispatchEvent(new Event("restaurantAuthChanged"))
+      window.dispatchEvent(new Event("shopAuthChanged"))
       window.dispatchEvent(new Event("adminAuthChanged"))
       window.dispatchEvent(new Event("deliveryAuthChanged"))
       window.dispatchEvent(new Event("userAuthChanged"))
@@ -634,12 +634,12 @@ export default function ExploreMore() {
       // Even if there's an error, we should still clear local data and logout
       debugError("Error during logout from all devices:", error)
       clearAuthData()
-      localStorage.removeItem("restaurant_onboarding")
-      sessionStorage.removeItem("restaurantAuthData")
+      localStorage.removeItem("shop_onboarding")
+      sessionStorage.removeItem("shopAuthData")
       sessionStorage.removeItem("adminAuthData")
       sessionStorage.removeItem("deliveryAuthData")
       sessionStorage.removeItem("userAuthData")
-      window.dispatchEvent(new Event("restaurantAuthChanged"))
+      window.dispatchEvent(new Event("shopAuthChanged"))
       navigate("/shop/welcome", { replace: true })
     } finally {
       setIsLoggingOut(false)
@@ -932,7 +932,7 @@ export default function ExploreMore() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <button
-              onClick={() => navigate(restaurantBasePath)}
+              onClick={() => navigate(shopBasePath)}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Go back"
             >
@@ -949,7 +949,7 @@ export default function ExploreMore() {
               <Search className="w-5 h-5 text-gray-900" />
             </button>
             <button
-              onClick={() => navigate(`${restaurantBasePath}/profile`)}
+              onClick={() => navigate(`${shopBasePath}/profile`)}
               className="p-2 hover:bg-gray-100 bg-gray-200 rounded-full transition-colors"
               aria-label="Profile"
             >
@@ -980,11 +980,11 @@ export default function ExploreMore() {
                   </div>
                   <div className="flex-1 min-w-0 text-left">
                     <h2 className="text-base font-semibold text-gray-900 mb-0.5">
-                      {restaurantDisplayName}
+                      {shopDisplayName}
                     </h2>
-                    {restaurantDisplayAddress && (
+                    {shopDisplayAddress && (
                       <p className="text-sm text-gray-500 break-words text-wrap">
-                        {restaurantDisplayAddress}
+                        {shopDisplayAddress}
                       </p>
                     )}
                   </div>
@@ -1277,7 +1277,7 @@ export default function ExploreMore() {
                 <button 
                   onClick={() => {
                     setProfileOpen(false)
-                    navigate(`${restaurantBasePath}/profile`)
+                    navigate(`${shopBasePath}/profile`)
                   }}
                   className="w-full flex items-start gap-4 text-left p-2 -m-2 hover:bg-gray-50 rounded-xl transition-colors group"
                 >
@@ -1298,7 +1298,7 @@ export default function ExploreMore() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="text-base font-bold text-gray-900 truncate">
-                        {loadingRestaurant ? "Loading..." : userData.name}
+                        {loadingShop ? "Loading..." : userData.name}
                       </h3>
                       <Edit className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>

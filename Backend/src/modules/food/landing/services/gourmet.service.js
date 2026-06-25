@@ -1,33 +1,33 @@
-import { FoodGourmetRestaurant } from '../models/gourmetRestaurant.model.js';
-import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodGourmetShop } from '../models/gourmetShop.model.js';
+import { FoodShop } from '../../shop/models/shop.model.js';
 
-export const getPublicGourmetRestaurants = async () => {
-    const docs = await FoodGourmetRestaurant.find({ isActive: true })
+export const getPublicGourmetShops = async () => {
+    const docs = await FoodGourmetShop.find({ isActive: true })
         .sort({ priority: 1, createdAt: -1 })
         .lean();
 
-    const restaurantIds = docs.map((d) => d.restaurantId);
-    const restaurants = await FoodRestaurant.find({ _id: { $in: restaurantIds } })
-        .select('restaurantName area city profileImage rating cuisines slug pureVegRestaurant location estimatedDeliveryTime')
+    const shopIds = docs.map((d) => d.shopId);
+    const shops = await FoodShop.find({ _id: { $in: shopIds } })
+        .select('shopName area city profileImage rating cuisines slug pureVegShop location estimatedDeliveryTime')
         .lean();
 
-    const restaurantMap = new Map(restaurants.map((r) => [r._id.toString(), r]));
+    const shopMap = new Map(shops.map((r) => [r._id.toString(), r]));
 
     return docs.map((item) => {
-        const r = restaurantMap.get(item.restaurantId.toString());
+        const r = shopMap.get(item.shopId.toString());
         return {
             ...item,
-            restaurant: r ? {
+            shop: r ? {
                 _id: r._id,
-                name: r.restaurantName,
-                restaurantName: r.restaurantName,
+                name: r.shopName,
+                shopName: r.shopName,
                 rating: r.rating || 0,
                 profileImage: r.profileImage ? { url: r.profileImage } : null,
                 area: r.area,
                 city: r.city,
                 cuisines: r.cuisines || [],
                 slug: r.slug,
-                pureVegRestaurant: r.pureVegRestaurant,
+                pureVegShop: r.pureVegShop,
                 location: r.location,
                 estimatedDeliveryTime: r.estimatedDeliveryTime
             } : null

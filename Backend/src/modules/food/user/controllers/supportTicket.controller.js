@@ -7,9 +7,9 @@ export async function createSupportTicketController(req, res, next) {
         const userId = req.user?.userId;
         const body = req.body || {};
         const type = String(body.type || '').trim();
-        const issueType = String(body.issueType || '').trim() || (type === 'order' ? 'Order issue' : type === 'restaurant' ? 'Restaurant issue' : 'Other issue');
+        const issueType = String(body.issueType || '').trim() || (type === 'order' ? 'Order issue' : type === 'shop' ? 'Shop issue' : 'Other issue');
         const description = String(body.description || '').trim();
-        if (!['order', 'restaurant', 'other'].includes(type)) {
+        if (!['order', 'shop', 'other'].includes(type)) {
             return sendError(res, 400, 'Invalid ticket type');
         }
         if (!description) {
@@ -32,13 +32,13 @@ export async function createSupportTicketController(req, res, next) {
                     _id: new mongoose.Types.ObjectId(rawOrderId),
                     userId: new mongoose.Types.ObjectId(userId)
                 })
-                    .select('_id restaurantId')
+                    .select('_id shopId')
                     .lean()
                 : await FoodOrder.findOne({
                     orderId: rawOrderId,
                     userId: new mongoose.Types.ObjectId(userId)
                 })
-                    .select('_id restaurantId')
+                    .select('_id shopId')
                     .lean();
 
             if (!order?._id) {
@@ -46,15 +46,15 @@ export async function createSupportTicketController(req, res, next) {
             }
             const orderMongoId = order._id;
             doc.orderId = orderMongoId;
-            if (order?.restaurantId) {
-                doc.restaurantId = order.restaurantId;
+            if (order?.shopId) {
+                doc.shopId = order.shopId;
             }
         }
-        if (type === 'restaurant') {
-            if (!body.restaurantId || !mongoose.Types.ObjectId.isValid(body.restaurantId)) {
-                return sendError(res, 400, 'restaurantId required');
+        if (type === 'shop') {
+            if (!body.shopId || !mongoose.Types.ObjectId.isValid(body.shopId)) {
+                return sendError(res, 400, 'shopId required');
             }
-            doc.restaurantId = new mongoose.Types.ObjectId(body.restaurantId);
+            doc.shopId = new mongoose.Types.ObjectId(body.shopId);
         }
         const created = await FoodSupportTicket.create(doc);
         return sendResponse(res, 201, 'Ticket created', { ticket: created.toObject() });
@@ -76,13 +76,13 @@ export async function listMySupportTicketsController(req, res, next) {
                 .limit(limit)
                 .populate({
                     path: 'orderId',
-                    select: 'orderId displayOrderId pricing totalAmount restaurantId',
+                    select: 'orderId displayOrderId pricing totalAmount shopId',
                     populate: {
-                        path: 'restaurantId',
-                        select: 'restaurantName name area city'
+                        path: 'shopId',
+                        select: 'shopName name area city'
                     }
                 })
-                .populate('restaurantId', 'restaurantName name area city')
+                .populate('shopId', 'shopName name area city')
                 .lean(),
             FoodSupportTicket.countDocuments({ userId: new mongoose.Types.ObjectId(userId) })
         ]);

@@ -17,7 +17,7 @@ const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 // Using placeholder for shop review banner
-const restaurantReviewBanner = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=400&fit=crop"
+const shopReviewBanner = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=400&fit=crop"
 
 const accordionItems = [
   {
@@ -129,7 +129,7 @@ export default function RatingsReviews() {
       {/* Top Banner Section */}
       <div className="relative w-full">
         <img 
-          src={restaurantReviewBanner}
+          src={shopReviewBanner}
           alt="Ratings and reviews banner"
           className="w-full h-auto object-cover"
         />

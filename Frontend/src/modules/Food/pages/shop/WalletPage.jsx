@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { formatCurrency } from "@food/utils/currency"
 import { initRazorpayPayment } from "@food/utils/razorpay"
 import BRAND_THEME from "@/config/brandTheme"
@@ -35,7 +35,7 @@ export default function WalletPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const walletRes = await restaurantAPI.getWallet()
+      const walletRes = await shopAPI.getWallet()
       if (walletRes.data?.success) {
         const wData = walletRes.data.data
         setWalletData(wData)
@@ -62,7 +62,7 @@ export default function WalletPage() {
     setSubmitting(true)
     try {
       // 1. Create Order on Backend
-      const orderResponse = await restaurantAPI.createWalletTopupOrder(amt)
+      const orderResponse = await shopAPI.createWalletTopupOrder(amt)
       const { razorpay } = orderResponse.data.data
 
       if (!razorpay || !razorpay.orderId || !razorpay.key) {
@@ -72,16 +72,16 @@ export default function WalletPage() {
       // Close input modal
       setShowDepositModal(false)
 
-      // Fetch restaurant profile details for prefilling checkout
+      // Fetch shop profile details for prefilling checkout
       let restoInfo = {}
       try {
-        const profileRes = await restaurantAPI.getCurrentRestaurant()
-        restoInfo = profileRes?.data?.data?.restaurant || profileRes?.data?.restaurant || {}
+        const profileRes = await shopAPI.getCurrentShop()
+        restoInfo = profileRes?.data?.data?.shop || profileRes?.data?.shop || {}
       } catch (profileErr) {
-        console.warn("Could not load restaurant profile for prefill", profileErr)
+        console.warn("Could not load shop profile for prefill", profileErr)
       }
 
-      const restoName = restoInfo.name || restoInfo.restaurantName || "Restaurant Owner"
+      const restoName = restoInfo.name || restoInfo.shopName || "Shop Owner"
       const restoEmail = restoInfo.ownerEmail || restoInfo.email || ""
       const restoPhone = restoInfo.ownerPhone || restoInfo.phone || ""
 
@@ -99,13 +99,13 @@ export default function WalletPage() {
           contact: restoPhone,
         },
         notes: {
-          type: "restaurant_wallet_topup",
+          type: "shop_wallet_topup",
           amount: amt.toString(),
         },
         handler: async (response) => {
           try {
             setLoading(true)
-            await restaurantAPI.verifyWalletTopupPayment({
+            await shopAPI.verifyWalletTopupPayment({
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
@@ -147,7 +147,7 @@ export default function WalletPage() {
     }
     setSubmitting(true)
     try {
-      const res = await restaurantAPI.withdrawFromWallet(amt)
+      const res = await shopAPI.withdrawFromWallet(amt)
       if (res.data?.success) {
         setShowWithdrawModal(false)
         setWithdrawAmount("")

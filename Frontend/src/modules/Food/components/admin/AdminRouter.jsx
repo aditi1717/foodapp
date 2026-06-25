@@ -178,7 +178,7 @@ export default function AdminRouter() {
             <Route path="orders/user-unavailable" element={<OrdersPage statusKey="user-unavailable" key="user-unavailable" />} />
             <Route path="orders/delivered" element={<OrdersPage statusKey="delivered" key="delivered" />} />
             <Route path="orders/canceled" element={<OrdersPage statusKey="canceled" key="canceled" />} />
-            <Route path="orders/restaurant-cancelled" element={<OrdersPage statusKey="restaurant-cancelled" key="restaurant-cancelled" />} />
+            <Route path="orders/shop-cancelled" element={<OrdersPage statusKey="shop-cancelled" key="shop-cancelled" />} />
             <Route path="orders/payment-failed" element={<OrdersPage statusKey="payment-failed" key="payment-failed" />} />
             <Route path="orders/refunded" element={<OrdersPage statusKey="refunded" key="refunded" />} />
             <Route path="orders/offline-payments" element={<OrdersPage statusKey="offline-payments" key="offline-payments" />} />

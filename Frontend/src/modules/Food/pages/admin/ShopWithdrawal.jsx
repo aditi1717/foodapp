@@ -69,8 +69,8 @@ export default function ShopWithdrawal() {
     const q = searchQuery.toLowerCase().trim()
     return requests.filter(
       (r) =>
-        r.restaurantName?.toLowerCase().includes(q) ||
-        r.restaurantIdString?.toLowerCase().includes(q) ||
+        r.shopName?.toLowerCase().includes(q) ||
+        r.shopIdString?.toLowerCase().includes(q) ||
         r.amount?.toString().includes(q)
     )
   }, [requests, searchQuery])
@@ -238,8 +238,8 @@ export default function ShopWithdrawal() {
                       <tr key={req.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{index + 1}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">{formatCurrency(req.amount)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{req.restaurantName || "N/A"}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{req.restaurantIdString || "N/A"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{req.shopName || "N/A"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{req.shopIdString || "N/A"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{formatDate(req.requestedAt || req.createdAt)}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(req.status)}`}>
@@ -307,24 +307,24 @@ export default function ShopWithdrawal() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase">Shop</label>
-                  <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.restaurantName || "N/A"}</p>
+                  <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.shopName || "N/A"}</p>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase">Shop ID</label>
-                  <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.restaurantIdString || "N/A"}</p>
+                  <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.shopIdString || "N/A"}</p>
                 </div>
 
-                {selectedRequest.restaurantBankDetails?.upiId && (
+                {selectedRequest.shopBankDetails?.upiId && (
                   <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
                     <div className="flex items-center gap-2 mb-1">
                       <QrCode className="w-4 h-4 text-emerald-600" />
                       <label className="text-xs font-bold text-emerald-800 uppercase">UPI Information</label>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-900">{selectedRequest.restaurantBankDetails.upiId}</p>
-                      {selectedRequest.restaurantBankDetails.upiQrImage && (
+                      <p className="text-sm font-semibold text-slate-900">{selectedRequest.shopBankDetails.upiId}</p>
+                      {selectedRequest.shopBankDetails.upiQrImage && (
                         <button 
-                          onClick={() => window.open(selectedRequest.restaurantBankDetails.upiQrImage, '_blank')}
+                          onClick={() => window.open(selectedRequest.shopBankDetails.upiQrImage, '_blank')}
                           className="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 transition-colors flex items-center gap-1"
                         >
                           <Eye className="w-3 h-3" />
@@ -338,22 +338,22 @@ export default function ShopWithdrawal() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase">Holder Name</label>
-                    <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.restaurantBankDetails?.accountHolderName || "N/A"}</p>
+                    <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.shopBankDetails?.accountHolderName || "N/A"}</p>
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase">Account Type</label>
-                    <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.restaurantBankDetails?.accountType || "N/A"}</p>
+                    <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.shopBankDetails?.accountType || "N/A"}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase">Account Number</label>
-                    <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.restaurantBankDetails?.accountNumber || "N/A"}</p>
+                    <p className="text-sm font-medium text-slate-900 mt-1">{selectedRequest.shopBankDetails?.accountNumber || "N/A"}</p>
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase">IFSC Code</label>
-                    <p className="text-sm font-medium text-slate-900 mt-1 uppercase text-indigo-600">{selectedRequest.restaurantBankDetails?.ifscCode || "N/A"}</p>
+                    <p className="text-sm font-medium text-slate-900 mt-1 uppercase text-indigo-600">{selectedRequest.shopBankDetails?.ifscCode || "N/A"}</p>
                   </div>
                 </div>
 

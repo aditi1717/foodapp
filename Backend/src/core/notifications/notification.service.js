@@ -15,7 +15,7 @@ const normalizePagination = ({ page = 1, limit = 20 } = {}) => {
 const normalizeOwnerType = (role) => {
     const normalized = String(role || '').trim().toUpperCase();
     if (normalized === 'USER') return 'USER';
-    if (normalized === 'RESTAURANT') return 'RESTAURANT';
+    if (normalized === 'SHOP') return 'SHOP';
     if (normalized === 'DELIVERY_PARTNER' || normalized === 'DELIVERY' || normalized === 'PARTNER') return 'DELIVERY_PARTNER';
     return null;
 };

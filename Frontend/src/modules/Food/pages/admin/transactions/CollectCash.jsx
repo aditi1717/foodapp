@@ -9,7 +9,7 @@ export default function CollectCash() {
   const [formData, setFormData] = useState({
     type: "Deliveryman",
     method: "",
-    restaurant: "",
+    shop: "",
     deliveryman: "",
     amount: "",
     reference: "",
@@ -57,7 +57,7 @@ export default function CollectCash() {
     const errors = {}
     if (!formData.method) errors.method = "Payment method is required."
     if (!formData.amount || parseFloat(formData.amount) <= 0) errors.amount = "Amount is required and must be greater than 0."
-    if (formData.type === "Restaurant" && !formData.restaurant) errors.restaurant = "Restaurant is required."
+    if (formData.type === "Shop" && !formData.shop) errors.shop = "Shop is required."
     if (formData.type === "Deliveryman" && !formData.deliveryman) errors.deliveryman = "Deliveryman is required."
     return errors
   }
@@ -168,7 +168,7 @@ export default function CollectCash() {
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
                 >
                   <option value="Deliveryman">Deliveryman</option>
-                  <option value="Restaurant">Shop</option>
+                  <option value="Shop">Shop</option>
                 </select>
               </div>
 
@@ -194,7 +194,7 @@ export default function CollectCash() {
                     Shop <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={formData.restaurant}
+                    value={formData.shop}
                     onChange={(e) => handleInputChange("shop", e.target.value)}
                     className={`w-full px-4 py-2.5 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm ${
                       formErrors.shop ? "border-red-500" : "border-slate-300"

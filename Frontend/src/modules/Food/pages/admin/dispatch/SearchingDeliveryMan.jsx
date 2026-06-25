@@ -197,7 +197,7 @@ export default function SearchingDeliveryMan() {
           order: "Order",
           date: "Date",
           customer: "Customer",
-          restaurant: "Restaurant",
+          shop: "Shop",
           total: "Total Amount",
           status: "Order Status",
           actions: "Actions",

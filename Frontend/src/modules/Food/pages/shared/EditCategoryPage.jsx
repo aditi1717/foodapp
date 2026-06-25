@@ -9,7 +9,7 @@ import {
   Image as ImageIcon,
   X,
 } from "lucide-react"
-import { restaurantAPI, adminAPI, uploadAPI } from "@food/api"
+import { shopAPI, adminAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 import DocumentUploadActions from "@food/components/DocumentUploadActions"
 import BRAND_THEME from "@/config/brandTheme"
@@ -28,7 +28,7 @@ export default function EditCategoryPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const goBackRestaurant = useShopBackNavigation()
+  const goBackShop = useShopBackNavigation()
   
   const isAdmin = location.pathname.startsWith("/admin")
   const isEditing = !!id
@@ -46,17 +46,17 @@ export default function EditCategoryPage() {
     if (!isAdmin) {
       const fetchShopProfile = async () => {
         try {
-          const res = await restaurantAPI.getCurrentRestaurant()
-          const data = res?.data?.data?.restaurant || res?.data?.restaurant
+          const res = await shopAPI.getCurrentShop()
+          const data = res?.data?.data?.shop || res?.data?.shop
           if (data) {
-            const pureVeg = data.pureVegRestaurant === true || data.pureVegRestaurant === "true"
+            const pureVeg = data.pureVegShop === true || data.pureVegShop === "true"
             setIsPureVeg(pureVeg)
             if (pureVeg) {
               setFormData((prev) => ({ ...prev, foodTypeScope: "Veg" }))
             }
           }
         } catch (err) {
-          console.error("Error fetching restaurant profile:", err)
+          console.error("Error fetching shop profile:", err)
         }
       }
       fetchShopProfile()
@@ -73,7 +73,7 @@ export default function EditCategoryPage() {
     if (isAdmin) {
       navigate("/admin/food/categories")
     } else {
-      goBackRestaurant()
+      goBackShop()
     }
   }
 
@@ -98,7 +98,7 @@ export default function EditCategoryPage() {
         const list = res?.data?.data?.categories || res?.data?.categories || []
         category = list.find(c => String(c.id || c._id) === id)
       } else {
-        const res = await restaurantAPI.getAllCategories()
+        const res = await shopAPI.getAllCategories()
         const list = res?.data?.data?.categories || res?.data?.categories || []
         category = list.find(c => String(c.id || c._id) === id)
       }
@@ -189,10 +189,10 @@ export default function EditCategoryPage() {
         }
       } else {
         if (isEditing) {
-          await restaurantAPI.updateCategory(id, payload)
+          await shopAPI.updateCategory(id, payload)
           toast.success("Category updated successfully")
         } else {
-          await restaurantAPI.createCategory(payload)
+          await shopAPI.createCategory(payload)
           toast.success("Category created successfully. Pending admin approval.")
         }
       }
@@ -230,7 +230,7 @@ export default function EditCategoryPage() {
               {isEditing ? "Edit Category" : "Add New Category"}
             </h1>
             <p className="text-sm text-slate-500">
-              {isAdmin ? "Manage global category" : "Manage your restaurant category"}
+              {isAdmin ? "Manage global category" : "Manage your shop category"}
             </p>
           </div>
         </div>

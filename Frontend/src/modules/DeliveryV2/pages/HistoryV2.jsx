@@ -266,7 +266,7 @@ export const HistoryV2 = () => {
       return [
         id,
         formatTripTime(trip),
-        trip?.restaurant || trip?.restaurantName || '-',
+        trip?.shop || trip?.shopName || '-',
         status,
         payment,
         cod,
@@ -318,7 +318,7 @@ export const HistoryV2 = () => {
               <tr>
                 <th>Order ID</th>
                 <th>Date Time</th>
-                <th>Restaurant</th>
+                <th>Shop</th>
                 <th>Status</th>
                 <th>Payment</th>
                 <th>COD</th>
@@ -522,7 +522,7 @@ export const HistoryV2 = () => {
                   <tr>
                     <th className="text-left px-4 py-3 text-xs font-bold text-gray-600">Order ID</th>
                     <th className="text-left px-4 py-3 text-xs font-bold text-gray-600">Date/Time</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-gray-600">Restaurant</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-gray-600">Shop</th>
                     <th className="text-left px-4 py-3 text-xs font-bold text-gray-600">Status</th>
                     <th className="text-left px-4 py-3 text-xs font-bold text-gray-600">Payment</th>
                     <th className="text-right px-4 py-3 text-xs font-bold text-gray-600">COD</th>
@@ -544,7 +544,7 @@ export const HistoryV2 = () => {
                       >
                         <td className="px-4 py-3 font-semibold text-gray-900">#{displayId}</td>
                         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatTripTime(trip)}</td>
-                        <td className="px-4 py-3 text-gray-700">{trip?.restaurant || trip?.restaurantName || '-'}</td>
+                        <td className="px-4 py-3 text-gray-700">{trip?.shop || trip?.shopName || '-'}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusStyle.bg} ${statusStyle.text}`}>
                             {statusStyle.label}

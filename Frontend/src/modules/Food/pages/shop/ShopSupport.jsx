@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { ChevronLeft, Loader2, Send } from "lucide-react"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import BRAND_THEME from "@/config/brandTheme"
 import { toast } from "sonner"
@@ -11,7 +11,7 @@ const CATEGORY_OPTIONS = [
   { value: "orders", label: "Orders" },
   { value: "payments", label: "Payments" },
   { value: "menu", label: "Menu" },
-  { value: "restaurant", label: "Restaurant Profile" },
+  { value: "shop", label: "Shop Profile" },
   { value: "technical", label: "Technical" },
   { value: "other", label: "Other" },
 ]
@@ -21,7 +21,7 @@ const ISSUE_TYPE_OPTIONS = [
   { value: "new_order_issue", label: "New order issue" },
   { value: "payment_settlement_issue", label: "Payment / settlement issue" },
   { value: "menu_item_issue", label: "Menu / item issue" },
-  { value: "restaurant_profile_issue", label: "Restaurant profile issue" },
+  { value: "shop_profile_issue", label: "Shop profile issue" },
   { value: "app_technical_issue", label: "App / technical issue" },
   { value: "other", label: "Other" },
 ]
@@ -72,7 +72,7 @@ export default function ShopSupport() {
   const loadTickets = async () => {
     try {
       setLoading(true)
-      const response = await restaurantAPI.getSupportTickets({
+      const response = await shopAPI.getSupportTickets({
         status: statusFilter || undefined,
         limit: 100,
         page: 1,
@@ -107,7 +107,7 @@ export default function ShopSupport() {
   const loadOrders = async () => {
     try {
       setLoadingOrders(true)
-      const response = await restaurantAPI.getOrders({ page: 1, limit: 100 })
+      const response = await shopAPI.getOrders({ page: 1, limit: 100 })
       const list = response?.data?.data?.orders || response?.data?.orders || []
       setOrders(Array.isArray(list) ? list : [])
     } catch (error) {
@@ -160,7 +160,7 @@ export default function ShopSupport() {
     }
     try {
       setSubmitting(true)
-      await restaurantAPI.createSupportTicket({
+      await shopAPI.createSupportTicket({
         category: form.category,
         issueType: form.issueType.trim(),
         description: form.description.trim(),

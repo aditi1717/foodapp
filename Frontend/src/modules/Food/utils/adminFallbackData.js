@@ -34,7 +34,7 @@ export const emptyCampaignOrderStats = {
 };
 
 
-export const emptyRestaurantVATStats = {
+export const emptyShopVATStats = {
   totalOrders: 0,
   totalOrderAmount: 0,
   totalTaxAmount: 0,

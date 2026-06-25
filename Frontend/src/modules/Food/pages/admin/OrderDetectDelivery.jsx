@@ -34,7 +34,7 @@ const isAssignmentEligibleStatus = (status) =>
 const isCancelledOrder = (status, cancelledAt) =>
   status === "cancelled" ||
   status === "cancelled_by_user" ||
-  status === "cancelled_by_restaurant" ||
+  status === "cancelled_by_shop" ||
   status === "cancelled_by_admin" ||
   Boolean(cancelledAt)
 
@@ -299,9 +299,9 @@ const buildStatusHistory = (order) => {
 // Transform backend order to frontend format
 const transformOrder = (order, index) => {
   const user = order?.userId && typeof order.userId === "object" ? order.userId : null
-  const shop = order?.restaurantId && typeof order.restaurantId === "object" ? order.restaurantId : null
+  const shop = order?.shopId && typeof order.shopId === "object" ? order.shopId : null
   const orderZone = order?.zoneId && typeof order.zoneId === "object" ? order.zoneId : null
-  const restaurantZone = shop?.zoneId && typeof shop.zoneId === "object" ? shop.zoneId : null
+  const shopZone = shop?.zoneId && typeof shop.zoneId === "object" ? shop.zoneId : null
   const deliveryFromDispatch =
     order?.dispatch?.deliveryPartnerId && typeof order.dispatch.deliveryPartnerId === "object"
       ? order.dispatch.deliveryPartnerId
@@ -376,13 +376,13 @@ const transformOrder = (order, index) => {
       orderZone?.name ||
       orderZone?.zoneName ||
       orderZone?.serviceLocation ||
-      restaurantZone?.name ||
-      restaurantZone?.zoneName ||
-      restaurantZone?.serviceLocation ||
+      shopZone?.name ||
+      shopZone?.zoneName ||
+      shopZone?.serviceLocation ||
       "N/A",
     userName: order.customerName || order.userName || user?.name || 'Unknown',
     userNumber: order.customerPhone || order.userNumber || user?.phone || order.deliveryAddress?.phone || 'N/A',
-    restaurantName: order.restaurantName || order.shop || shop?.restaurantName || 'Unknown Shop',
+    shopName: order.shopName || order.shop || shop?.shopName || 'Unknown Shop',
     deliveryBoyName,
     deliveryBoyNumber,
     requestedDeliveryBoyName,
@@ -408,7 +408,7 @@ export default function OrderDetectDelivery() {
     orderId: true,
     zone: true,
     userInfo: true,
-    restaurantName: true,
+    shopName: true,
     deliveryBoy: true,
     status: true,
     actions: true,
@@ -584,14 +584,14 @@ export default function OrderDetectDelivery() {
   } = useGenericTableManagement(
     orders,
     "Order Detect Delivery",
-    ["orderId", "zoneName", "userName", "userNumber", "restaurantName", "deliveryBoyName", "status"]
+    ["orderId", "zoneName", "userName", "userNumber", "shopName", "deliveryBoyName", "status"]
   )
 
   // Statistics
   const stats = useMemo(() => {
     const total = orders.length
     const ordered = filteredData.filter(o => o.status === "Ordered").length
-    const restaurantAccepted = filteredData.filter(o => o.status === "Shop Accepted" || o.status === "Accepted").length
+    const shopAccepted = filteredData.filter(o => o.status === "Shop Accepted" || o.status === "Accepted").length
     const rejected = filteredData.filter(o => o.status === "Rejected").length
     const userUnavailable = filteredData.filter(
       (o) => o.status === "User Unavailable Review" || o.status === "User Unavailable"
@@ -604,7 +604,7 @@ export default function OrderDetectDelivery() {
     const reachedDrop = filteredData.filter(o => o.status === "Reached Drop").length
     const delivered = filteredData.filter(o => o.status === "Ordered Delivered").length
     
-    return { total, ordered, restaurantAccepted, rejected, userUnavailable, readyForAssignment, deliveryBoyAssigned, assignmentAccepted, reachedPickup, orderIdAccepted, reachedDrop, delivered }
+    return { total, ordered, shopAccepted, rejected, userUnavailable, readyForAssignment, deliveryBoyAssigned, assignmentAccepted, reachedPickup, orderIdAccepted, reachedDrop, delivered }
   }, [filteredData, orders.length])
 
   const zoneNameById = useMemo(() => {
@@ -710,7 +710,7 @@ export default function OrderDetectDelivery() {
       orderId: true,
       zone: true,
       userInfo: true,
-      restaurantName: true,
+      shopName: true,
       deliveryBoy: true,
       status: true,
       actions: true,
@@ -825,7 +825,7 @@ export default function OrderDetectDelivery() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-500 mb-1">Shop Accepted</p>
-              <p className="text-2xl font-bold text-emerald-600">{stats.restaurantAccepted}</p>
+              <p className="text-2xl font-bold text-emerald-600">{stats.shopAccepted}</p>
             </div>
             <div className="p-3 bg-emerald-50 rounded-lg">
               <CheckCircle className="w-6 h-6 text-emerald-600" />
@@ -944,7 +944,7 @@ export default function OrderDetectDelivery() {
           orderId: "Order ID",
           zone: "Zone",
           userInfo: "User Name & Number",
-          restaurantName: "Restaurant Name",
+          shopName: "Shop Name",
           deliveryBoy: "Delivery Boy Name & Number",
           status: "Status",
           actions: "Actions",

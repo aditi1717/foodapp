@@ -12,9 +12,9 @@ import BRAND_THEME from "@/config/brandTheme"
 
 export default function Favorites() {
   const { getFavorites, removeFavorite, getDishFavorites, removeDishFavorite } = useProfile()
-  const restaurantFavorites = getFavorites()
+  const shopFavorites = getFavorites()
   const dishFavorites = getDishFavorites()
-  const [activeTab, setActiveTab] = useState("restaurants")
+  const [activeTab, setActiveTab] = useState("shops")
 
   const handleRemoveFavorite = (e, slug) => {
     e.preventDefault()
@@ -25,16 +25,16 @@ export default function Favorites() {
     }
   }
 
-  const handleRemoveDishFavorite = (e, dishId, restaurantId) => {
+  const handleRemoveDishFavorite = (e, dishId, shopId) => {
     e.preventDefault()
     e.stopPropagation()
     if (window.confirm("Remove this dish from favorites?")) {
-      removeDishFavorite(dishId, restaurantId)
+      removeDishFavorite(dishId, shopId)
       toast.success("Dish removed from favorites")
     }
   }
 
-  const totalFavorites = restaurantFavorites.length + dishFavorites.length
+  const totalFavorites = shopFavorites.length + dishFavorites.length
 
   if (totalFavorites === 0) {
     return (
@@ -80,7 +80,7 @@ export default function Favorites() {
               <div>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold">My Favorites</h1>
                 <p className="text-gray-700 dark:text-gray-300 mt-1 text-sm font-semibold">
-                  {dishFavorites.length || 0} {dishFavorites.length === 1 ? "dish" : "dishes"} • {restaurantFavorites.length || 0} {restaurantFavorites.length === 1 ? "shop" : "shops"}
+                  {dishFavorites.length || 0} {dishFavorites.length === 1 ? "dish" : "dishes"} • {shopFavorites.length || 0} {shopFavorites.length === 1 ? "shop" : "shops"}
                 </p>
               </div>
             </div>
@@ -98,7 +98,7 @@ export default function Favorites() {
             }`}
             style={activeTab === "shops" ? { borderColor: BRAND_THEME.colors.brand.primary, color: BRAND_THEME.colors.brand.primary } : undefined}
           >
-            Shops ({restaurantFavorites.length})
+            Shops ({shopFavorites.length})
           </button>
           <button
             onClick={() => setActiveTab("dishes")}
@@ -116,7 +116,7 @@ export default function Favorites() {
         {/* Shops Tab */}
         {activeTab === "shops" && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {restaurantFavorites.length === 0 ? (
+            {shopFavorites.length === 0 ? (
               <div className="col-span-full text-center py-12">
                 <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground text-lg mb-4">No shops saved yet</p>
@@ -127,14 +127,14 @@ export default function Favorites() {
                 </Link>
               </div>
             ) : (
-              restaurantFavorites.map((shop, index) => (
-                <ScrollReveal key={restaurant.slug} delay={index * 0.1}>
-                  <Link to={`/food/user/shops/${restaurant.slug}`}>
+              shopFavorites.map((shop, index) => (
+                <ScrollReveal key={shop.slug} delay={index * 0.1}>
+                  <Link to={`/food/user/shops/${shop.slug}`}>
                     <Card className="overflow-hidden h-full">
                       <div className="h-32 w-full relative overflow-hidden">
                         <img
-                          src={restaurant.image}
-                          alt={restaurant.name}
+                          src={shop.image}
+                          alt={shop.name}
                           className="w-full h-full object-cover"
                           loading="lazy"
                           onError={(e) => {
@@ -206,10 +206,10 @@ export default function Favorites() {
               </div>
             ) : (
               dishFavorites.map((dish, index) => {
-                const restaurantSlug = dish.restaurantSlug || ""
+                const shopSlug = dish.shopSlug || ""
                 return (
-                  <ScrollReveal key={`${dish.id}-${dish.restaurantId}`} delay={index * 0.1}>
-                    <Link to={`/food/user/shops/${restaurantSlug}?dish=${dish.id}`}>
+                  <ScrollReveal key={`${dish.id}-${dish.shopId}`} delay={index * 0.1}>
+                    <Link to={`/food/user/shops/${shopSlug}?dish=${dish.id}`}>
                       <Card className="overflow-hidden h-full cursor-pointer hover:shadow-lg transition-shadow">
                         <div className="h-32 w-full relative overflow-hidden">
                           <img
@@ -227,7 +227,7 @@ export default function Favorites() {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white text-red-500"
-                              onClick={(e) => handleRemoveDishFavorite(e, dish.id, dish.restaurantId)}
+                              onClick={(e) => handleRemoveDishFavorite(e, dish.id, dish.shopId)}
                             >
                               <Bookmark className="h-4 w-4 fill-red-500" />
                             </Button>
@@ -239,7 +239,7 @@ export default function Favorites() {
                               {dish.name}
                             </CardTitle>
                             <p className="text-xs text-muted-foreground line-clamp-1">
-                              {dish.restaurantName || "Shop"}
+                              {dish.shopName || "Shop"}
                             </p>
                           </div>
                           <div className="flex items-center justify-between text-xs pt-2 border-t">

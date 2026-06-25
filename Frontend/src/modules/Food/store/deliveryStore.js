@@ -29,7 +29,8 @@ const DEFAULT_STATE = {
   
   // Cache data
   cache: {
-    restaurants: [],
+    shops: [],
+    shops: [],
     orders: [],
     lastUpdated: null
   },
@@ -158,14 +159,17 @@ export const useDeliveryStore = create(
 
       /**
        * Update cache data
-       * @param {string} key - Cache key ('restaurants' | 'orders')
+       * @param {string} key - Cache key ('shops' | 'orders')
        * @param {any} data - Data to cache
        */
       updateCache: (key, data) => {
+        const normalizedKey = key === 'shops' || key === 'shops' ? 'shops' : key;
         set(state => ({
           cache: {
             ...state.cache,
             [key]: data,
+            ...(key === 'shops' ? { shops: data } : {}),
+            ...(key === 'shops' ? { shops: data } : {}),
             lastUpdated: new Date().toISOString()
           }
         }))
@@ -179,19 +183,27 @@ export const useDeliveryStore = create(
         if (key === 'all') {
           set({
             cache: {
-              restaurants: [],
+              shops: [],
+              shops: [],
               orders: [],
               lastUpdated: null
             }
           })
         } else {
-          set(state => ({
-            cache: {
-              ...state.cache,
-              [key]: key === 'restaurants' ? [] : [],
-              lastUpdated: new Date().toISOString()
-            }
-          }))
+          const targetKeys = key === 'shops' || key === 'shops' ? ['shops', 'shops'] : [key];
+          set(state => {
+            const cacheUpdates = {};
+            targetKeys.forEach(k => {
+              cacheUpdates[k] = [];
+            });
+            return {
+              cache: {
+                ...state.cache,
+                ...cacheUpdates,
+                lastUpdated: new Date().toISOString()
+              }
+            };
+          });
         }
       },
 

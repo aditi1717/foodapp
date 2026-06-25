@@ -25,8 +25,8 @@ export default function ShopWithdraws() {
     si: true,
     amount: true,
     shop: true,
-    restaurantId: true,
-    restaurantAddress: false,
+    shopId: true,
+    shopAddress: false,
     requestTime: true,
     status: true,
     actions: true,
@@ -72,8 +72,8 @@ export default function ShopWithdraws() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(w =>
-        w.restaurantName?.toLowerCase().includes(query) ||
-        w.restaurantIdString?.toLowerCase().includes(query) ||
+        w.shopName?.toLowerCase().includes(query) ||
+        w.shopIdString?.toLowerCase().includes(query) ||
         w.amount?.toString().includes(query)
       )
     }
@@ -186,8 +186,8 @@ export default function ShopWithdraws() {
     const headers = [
       { key: "sl", label: "SI" },
       { key: "amount", label: "Amount" },
-      { key: "restaurantName", label: "Shop Name" },
-      { key: "restaurantIdString", label: "Shop ID" },
+      { key: "shopName", label: "Shop Name" },
+      { key: "shopIdString", label: "Shop ID" },
       { key: "requestTime", label: "Request Time" },
       { key: "processedTime", label: "Approved/Rejected Time" },
       { key: "processedBy", label: "Processed By" },
@@ -197,8 +197,8 @@ export default function ShopWithdraws() {
     const exportData = filteredWithdraws.map((w, index) => ({
       sl: index + 1,
       amount: formatCurrency(w.amount),
-      restaurantName: w.restaurantName || 'N/A',
-      restaurantIdString: w.restaurantIdString || 'N/A',
+      shopName: w.shopName || 'N/A',
+      shopIdString: w.shopIdString || 'N/A',
       requestTime: formatDate(w.requestedAt || w.createdAt),
       processedTime: w.processedAt ? formatDate(w.processedAt) : '',
       processedBy: w.processedBy?.name ? `${w.processedBy.name}${w.processedBy.email ? ` (${w.processedBy.email})` : ''}` : '',
@@ -207,10 +207,10 @@ export default function ShopWithdraws() {
     }))
     switch (format) {
       case "excel":
-        exportTransactionsToExcel(exportData, headers, "restaurant_withdraws_full_details")
+        exportTransactionsToExcel(exportData, headers, "shop_withdraws_full_details")
         break
       case "pdf":
-        await exportTransactionsToPDF(exportData, headers, "restaurant_withdraws_full_details", "Shop Withdraws Report")
+        await exportTransactionsToPDF(exportData, headers, "shop_withdraws_full_details", "Shop Withdraws Report")
         break
       default: break
     }
@@ -225,8 +225,8 @@ export default function ShopWithdraws() {
       si: true,
       amount: true,
       shop: true,
-      restaurantId: true,
-      restaurantAddress: false,
+      shopId: true,
+      shopAddress: false,
       requestTime: true,
       status: true,
       actions: true,
@@ -331,7 +331,7 @@ export default function ShopWithdraws() {
                     </th>}
                     {visibleColumns.amount && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Amount</th>}
                     {visibleColumns.shop && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop Name</th>}
-                    {visibleColumns.restaurantId && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop ID</th>}
+                    {visibleColumns.shopId && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop ID</th>}
                     {visibleColumns.requestTime && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Request Time</th>}
                     {visibleColumns.status && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Status</th>}
                     {visibleColumns.actions && <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Action</th>}
@@ -360,10 +360,10 @@ export default function ShopWithdraws() {
                           </span>
                         </td>}
                         {visibleColumns.shop && <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-slate-700">{withdraw.restaurantName || 'N/A'}</span>
+                          <span className="text-sm font-medium text-slate-700">{withdraw.shopName || 'N/A'}</span>
                         </td>}
-                        {visibleColumns.restaurantId && <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-slate-700">{withdraw.restaurantIdString || 'N/A'}</span>
+                        {visibleColumns.shopId && <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-medium text-slate-700">{withdraw.shopIdString || 'N/A'}</span>
                         </td>}
                         {visibleColumns.requestTime && <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-slate-700">{formatDate(withdraw.requestedAt || withdraw.createdAt)}</span>
@@ -436,11 +436,11 @@ export default function ShopWithdraws() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase">Shop Name</label>
-                  <p className="text-sm font-medium text-slate-900 mt-1">{selectedWithdraw.restaurantName || 'N/A'}</p>
+                  <p className="text-sm font-medium text-slate-900 mt-1">{selectedWithdraw.shopName || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase">Shop ID</label>
-                  <p className="text-sm font-medium text-slate-900 mt-1">{selectedWithdraw.restaurantIdString || 'N/A'}</p>
+                  <p className="text-sm font-medium text-slate-900 mt-1">{selectedWithdraw.shopIdString || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase">Request Time</label>
@@ -471,30 +471,30 @@ export default function ShopWithdraws() {
                   <div className="mt-2 space-y-2">
                     <p className="text-sm text-slate-800">
                       <span className="font-semibold">Account Holder:</span>{' '}
-                      {selectedWithdraw.restaurantBankDetails?.accountHolderName || selectedWithdraw.restaurantId?.accountHolderName || 'N/A'}
+                      {selectedWithdraw.shopBankDetails?.accountHolderName || selectedWithdraw.shopId?.accountHolderName || 'N/A'}
                     </p>
                     <p className="text-sm text-slate-800">
                       <span className="font-semibold">Account Number:</span>{' '}
-                      {selectedWithdraw.restaurantBankDetails?.accountNumber || selectedWithdraw.restaurantId?.accountNumber || 'N/A'}
+                      {selectedWithdraw.shopBankDetails?.accountNumber || selectedWithdraw.shopId?.accountNumber || 'N/A'}
                     </p>
                     <p className="text-sm text-slate-800">
                       <span className="font-semibold">IFSC:</span>{' '}
-                      {selectedWithdraw.restaurantBankDetails?.ifscCode || selectedWithdraw.restaurantId?.ifscCode || 'N/A'}
+                      {selectedWithdraw.shopBankDetails?.ifscCode || selectedWithdraw.shopId?.ifscCode || 'N/A'}
                     </p>
                     <p className="text-sm text-slate-800">
                       <span className="font-semibold">Account Type:</span>{' '}
-                      {selectedWithdraw.restaurantBankDetails?.accountType || selectedWithdraw.restaurantId?.accountType || 'N/A'}
+                      {selectedWithdraw.shopBankDetails?.accountType || selectedWithdraw.shopId?.accountType || 'N/A'}
                     </p>
                     <p className="text-sm text-slate-800">
                       <span className="font-semibold">UPI ID:</span>{' '}
-                      {selectedWithdraw.restaurantBankDetails?.upiId || selectedWithdraw.restaurantId?.upiId || 'N/A'}
+                      {selectedWithdraw.shopBankDetails?.upiId || selectedWithdraw.shopId?.upiId || 'N/A'}
                     </p>
-                    {getSafeQrUrl(selectedWithdraw.restaurantBankDetails?.upiQrImage || selectedWithdraw.restaurantId?.upiQrImage) ? (
+                    {getSafeQrUrl(selectedWithdraw.shopBankDetails?.upiQrImage || selectedWithdraw.shopId?.upiQrImage) ? (
                       <div>
                         <p className="text-sm text-slate-800 font-semibold mb-2">UPI QR</p>
                         <img
-                          src={getSafeQrUrl(selectedWithdraw.restaurantBankDetails?.upiQrImage || selectedWithdraw.restaurantId?.upiQrImage)}
-                          alt="Restaurant UPI QR"
+                          src={getSafeQrUrl(selectedWithdraw.shopBankDetails?.upiQrImage || selectedWithdraw.shopId?.upiQrImage)}
+                          alt="Shop UPI QR"
                           className="w-32 h-32 object-contain border border-slate-200 rounded-md bg-white"
                         />
                       </div>

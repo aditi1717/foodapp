@@ -129,16 +129,16 @@ export function useGenericTableManagement(data, title, searchFields = []) {
         startY += 5
       }
       
-      // Restaurant Information
-      if (order.restaurant) {
+      // Shop Information
+      if (order.shop) {
         doc.setFontSize(12)
         doc.setTextColor(30, 30, 30)
-        doc.text('Restaurant', 14, startY)
+        doc.text('Shop', 14, startY)
         startY += 8
         
         doc.setFontSize(10)
         doc.setTextColor(60, 60, 60)
-        doc.text(order.restaurant, 14, startY)
+        doc.text(order.shop, 14, startY)
         startY += 10
       }
       

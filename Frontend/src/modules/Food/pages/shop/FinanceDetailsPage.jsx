@@ -10,7 +10,7 @@ export default function FinanceDetailsPage() {
   const goBack = useShopBackNavigation()
   const location = useLocation()
   const financeData = location.state?.financeData || null
-  const restaurantData = location.state?.restaurantData || null
+  const shopData = location.state?.shopData || null
   
   const [activeTab, setActiveTab] = useState("summary")
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -83,8 +83,8 @@ export default function FinanceDetailsPage() {
       netOrderValue: {
         itemSubtotal: summary.subtotal || 0,
         totalGSTCollected: summary.taxes || 0,
-        restaurantDiscountPromos: 0,
-        restaurantDiscountOthers: 0,
+        shopDiscountPromos: 0,
+        shopDiscountOthers: 0,
         total: summary.subtotal || 0
       },
       additions: {
@@ -133,10 +133,10 @@ export default function FinanceDetailsPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold text-gray-900 truncate">
-              {restaurantData?.name || "Your Shop"}
+              {shopData?.name || "Your Shop"}
             </h1>
             <p className="text-xs text-gray-600 mt-0.5">
-              ID: {restaurantData?.restaurantId || "N/A"} • {restaurantData?.address || "Location"}
+              ID: {shopData?.shopId || "N/A"} • {shopData?.address || "Location"}
             </p>
           </div>
         </div>
@@ -315,7 +315,7 @@ export default function FinanceDetailsPage() {
                                   <Info className="w-3.5 h-3.5 text-gray-400" />
                                 </div>
                                 <span className="text-sm font-medium text-gray-900">
-                                  ₹{settlementData.netOrderValue.restaurantDiscountPromos.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                  ₹{settlementData.netOrderValue.shopDiscountPromos.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between py-2 border-t border-dashed border-gray-200">
@@ -324,7 +324,7 @@ export default function FinanceDetailsPage() {
                                   <Info className="w-3.5 h-3.5 text-gray-400" />
                                 </div>
                                 <span className="text-sm font-medium text-gray-900">
-                                  ₹{(settlementData.netOrderValue?.restaurantDiscountOthers || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                  ₹{(settlementData.netOrderValue?.shopDiscountOthers || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </span>
                               </div>
                             </div>

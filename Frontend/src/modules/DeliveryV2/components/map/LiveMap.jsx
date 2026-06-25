@@ -72,10 +72,10 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
     setDirections(null);
   }, [tripStatus, activeOrder?._id]);
 
-  const restaurantLocation = useMemo(() => {
-    if (!activeOrder?.restaurantLocation) return null;
-    const lat = parseFloat(activeOrder.restaurantLocation.lat || activeOrder.restaurantLocation.latitude);
-    const lng = parseFloat(activeOrder.restaurantLocation.lng || activeOrder.restaurantLocation.longitude);
+  const shopLocation = useMemo(() => {
+    if (!activeOrder?.shopLocation) return null;
+    const lat = parseFloat(activeOrder.shopLocation.lat || activeOrder.shopLocation.latitude);
+    const lng = parseFloat(activeOrder.shopLocation.lng || activeOrder.shopLocation.longitude);
     return (Number.isFinite(lat) && Number.isFinite(lng)) ? { lat, lng } : null;
   }, [activeOrder]);
 
@@ -90,11 +90,11 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
     if (!activeOrder) return null;
     let rawLoc = null;
     if (tripStatus === 'PICKING_UP' || tripStatus === 'REACHED_PICKUP') {
-      rawLoc = activeOrder.restaurantLocation;
+      rawLoc = activeOrder.shopLocation;
     } else if (tripStatus === 'PICKED_UP' || tripStatus === 'REACHED_DROP') {
       rawLoc = activeOrder.customerLocation;
     } else {
-      rawLoc = activeOrder.customerLocation || activeOrder.restaurantLocation;
+      rawLoc = activeOrder.customerLocation || activeOrder.shopLocation;
     }
     if (!rawLoc) return null;
     const lat = parseFloat(rawLoc.lat || rawLoc.latitude);
@@ -165,9 +165,9 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
     })();
   }, []);
 
-  const restaurantMarkerUrl = useMemo(() => {
+  const shopMarkerUrl = useMemo(() => {
     if (!activeOrder) return 'https://cdn-icons-png.flaticon.com/512/3170/3170733.png';
-    return activeOrder.restaurantImage || activeOrder.restaurant?.logo || activeOrder.restaurant?.profileImage || 'https://cdn-icons-png.flaticon.com/512/3170/3170733.png';
+    return activeOrder.shopImage || activeOrder.shop?.logo || activeOrder.shop?.profileImage || 'https://cdn-icons-png.flaticon.com/512/3170/3170733.png';
   }, [activeOrder]);
 
   const customerMarkerUrl = useMemo(() => {
@@ -245,8 +245,8 @@ export const LiveMap = ({ onMapClick, onMapLoad, onPathReceived, onPolylineRecei
           </OverlayView>
         )}
 
-        {restaurantLocation && (
-          <Marker position={restaurantLocation} icon={{ url: restaurantMarkerUrl, scaledSize: new window.google.maps.Size(42, 42), anchor: new window.google.maps.Point(21, 21) }} />
+        {shopLocation && (
+          <Marker position={shopLocation} icon={{ url: shopMarkerUrl, scaledSize: new window.google.maps.Size(42, 42), anchor: new window.google.maps.Point(21, 21) }} />
         )}
 
         {customerLocation && (

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { ValidationError, NotFoundError } from '../../../../core/auth/errors.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
-import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodShop } from '../../shop/models/shop.model.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
 import { BroadcastNotification } from '../../../../core/notifications/models/notificationBroadcast.model.js';
 import { FoodNotification } from '../../../../core/notifications/models/notification.model.js';
@@ -12,14 +12,14 @@ import { getIO, rooms } from '../../../../config/socket.js';
 const TARGET_TYPE_MAP = {
     ALL: 'ALL',
     USER: 'USER',
-    RESTAURANT: 'RESTAURANT',
+    SHOP: 'SHOP',
     DELIVERY: 'DELIVERY',
     CUSTOM: 'CUSTOM'
 };
 
 const OWNER_LABEL_MAP = {
     USER: 'Users',
-    RESTAURANT: 'Restaurants',
+    SHOP: 'Shops',
     DELIVERY_PARTNER: 'Delivery Partners'
 };
 
@@ -49,7 +49,7 @@ const normalizeTargetType = (value) => {
 
 const ownerModelMap = {
     USER: FoodUser,
-    RESTAURANT: FoodRestaurant,
+    SHOP: FoodShop,
     DELIVERY_PARTNER: FoodDeliveryPartner
 };
 
@@ -58,8 +58,8 @@ const buildUserLabel = (doc) => ({
     subLabel: [doc?.phone, doc?.email].filter(Boolean).join(' • ')
 });
 
-const buildRestaurantLabel = (doc) => ({
-    label: String(doc?.restaurantName || doc?.ownerName || 'Restaurant').trim(),
+const buildShopLabel = (doc) => ({
+    label: String(doc?.shopName || doc?.ownerName || 'Shop').trim(),
     subLabel: [doc?.ownerPhone, doc?.ownerEmail].filter(Boolean).join(' • ')
 });
 
@@ -75,11 +75,11 @@ const modelConfigMap = {
         select: '_id name phone email',
         buildLabel: buildUserLabel
     },
-    RESTAURANT: {
-        model: FoodRestaurant,
+    SHOP: {
+        model: FoodShop,
         query: { status: 'approved' },
-        select: '_id restaurantName ownerName ownerPhone ownerEmail',
-        buildLabel: buildRestaurantLabel
+        select: '_id shopName ownerName ownerPhone ownerEmail',
+        buildLabel: buildShopLabel
     },
     DELIVERY_PARTNER: {
         model: FoodDeliveryPartner,
@@ -136,16 +136,16 @@ const resolveCustomTargets = async ({ targets = [], targetIds = [] } = {}) => {
 
 const resolveTargets = async ({ targetType, targetIds = [], targets = [] } = {}) => {
     if (targetType === 'ALL') {
-        const [users, restaurants, deliveryPartners] = await Promise.all([
+        const [users, shops, deliveryPartners] = await Promise.all([
             loadTargetsByOwnerType('USER'),
-            loadTargetsByOwnerType('RESTAURANT'),
+            loadTargetsByOwnerType('SHOP'),
             loadTargetsByOwnerType('DELIVERY_PARTNER')
         ]);
-        return [...users, ...restaurants, ...deliveryPartners];
+        return [...users, ...shops, ...deliveryPartners];
     }
 
     if (targetType === 'USER') return loadTargetsByOwnerType('USER');
-    if (targetType === 'RESTAURANT') return loadTargetsByOwnerType('RESTAURANT');
+    if (targetType === 'SHOP') return loadTargetsByOwnerType('SHOP');
     if (targetType === 'DELIVERY') return loadTargetsByOwnerType('DELIVERY_PARTNER');
     if (targetType === 'CUSTOM') return resolveCustomTargets({ targets, targetIds });
 
@@ -187,8 +187,8 @@ const emitRealtimeNotifications = (targets = [], broadcast) => {
         if (target.ownerType === 'USER') {
             io.to(rooms.user(ownerId)).emit('admin_notification', payload);
         }
-        if (target.ownerType === 'RESTAURANT') {
-            io.to(rooms.restaurant(ownerId)).emit('admin_notification', payload);
+        if (target.ownerType === 'SHOP') {
+            io.to(rooms.shop(ownerId)).emit('admin_notification', payload);
         }
         if (target.ownerType === 'DELIVERY_PARTNER') {
             io.to(rooms.delivery(ownerId)).emit('admin_notification', payload);

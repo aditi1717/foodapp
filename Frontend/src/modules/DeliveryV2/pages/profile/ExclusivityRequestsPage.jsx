@@ -52,14 +52,14 @@ export default function ExclusivityRequestsPage() {
 
   const handleAccept = async (req) => {
     if (currentAssociation) {
-      toast.error("You are already exclusive to another restaurant. Please leave that partnership first.")
+      toast.error("You are already exclusive to another shop. Please leave that partnership first.")
       return
     }
 
     try {
       const res = await deliveryAPI.acceptExclusivityRequest(req.id)
       if (res.data?.success) {
-        toast.success(res.data.message || `Exclusivity request from ${req.restaurantName} accepted!`)
+        toast.success(res.data.message || `Exclusivity request from ${req.shopName} accepted!`)
         fetchExclusivityData()
       }
     } catch (err) {
@@ -73,7 +73,7 @@ export default function ExclusivityRequestsPage() {
     try {
       const res = await deliveryAPI.rejectExclusivityRequest(req.id)
       if (res.data?.success) {
-        toast.error(res.data.message || `Exclusivity request from ${req.restaurantName} declined.`)
+        toast.error(res.data.message || `Exclusivity request from ${req.shopName} declined.`)
         fetchExclusivityData()
       }
     } catch (err) {
@@ -85,12 +85,12 @@ export default function ExclusivityRequestsPage() {
 
   const handleLeavePartnership = async () => {
     if (!currentAssociation) return
-    const restaurantName = currentAssociation.restaurantName
+    const shopName = currentAssociation.shopName
     
     try {
       const res = await deliveryAPI.leaveExclusivityPartnership()
       if (res.data?.success) {
-        toast.info(res.data.message || `You have left your partnership with ${restaurantName}. You are now a global rider.`)
+        toast.info(res.data.message || `You have left your partnership with ${shopName}. You are now a global rider.`)
         fetchExclusivityData()
       }
     } catch (err) {
@@ -138,7 +138,7 @@ export default function ExclusivityRequestsPage() {
               <div>
                 <h3 className="text-xs font-bold text-orange-850 dark:text-amber-300">Exclusivity Partnership Info</h3>
                 <p className="text-[11px] text-orange-700/90 dark:text-amber-400/80 mt-1 leading-relaxed">
-                  Accepting an invitation binds you exclusively to that restaurant. You can only work for **one restaurant at a time** and won't receive orders from any other vendor. Both you or the restaurant can end this partnership at any time.
+                  Accepting an invitation binds you exclusively to that shop. You can only work for **one shop at a time** and won't receive orders from any other vendor. Both you or the shop can end this partnership at any time.
                 </p>
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function ExclusivityRequestsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                        {currentAssociation.restaurantName}
+                        {currentAssociation.shopName}
                       </h3>
                       <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-emerald-650 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/45 px-2 py-0.5 rounded mt-1.5 border border-emerald-100 dark:border-emerald-800/20">
                         Exclusive Rider • Active
@@ -200,7 +200,7 @@ export default function ExclusivityRequestsPage() {
                   </div>
                   <h3 className="text-sm font-bold text-gray-700 dark:text-slate-300">No Active Partnership</h3>
                   <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
-                    You are currently a Global Rider and can accept orders from any restaurant.
+                    You are currently a Global Rider and can accept orders from any shop.
                   </p>
                 </div>
               )}
@@ -237,7 +237,7 @@ export default function ExclusivityRequestsPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                              {req.restaurantName}
+                              {req.shopName}
                             </h3>
                             <p className="text-[11px] text-gray-450 dark:text-slate-400 mt-0.5 truncate flex items-center gap-1.5">
                               <MapPin className="w-3.5 h-3.5 text-gray-300 dark:text-slate-600" />
@@ -293,7 +293,7 @@ export default function ExclusivityRequestsPage() {
                       className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm dark:shadow-md border border-gray-100 dark:border-slate-800/60 flex items-center justify-between gap-4"
                     >
                       <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 truncate">{req.restaurantName}</h4>
+                        <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 truncate">{req.shopName}</h4>
                         <p className="text-[10px] text-gray-450 dark:text-slate-500 mt-0.5 truncate">+91 {req.phone}</p>
                       </div>
                       <span className="text-[9px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/20 px-2.5 py-1 rounded-full border border-red-100 dark:border-red-900/30 shrink-0">

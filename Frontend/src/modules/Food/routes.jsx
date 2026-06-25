@@ -33,7 +33,7 @@ function ScrollToTop() {
 
 function NavigateToShop() {
   const location = useLocation();
-  const nextPath = location.pathname.replace(/\/restaurant/g, '/shop');
+  const nextPath = location.pathname.replace(/\/shop/g, '/shop');
   return <Navigate to={`${nextPath}${location.search || ''}`} replace />;
 }
 
@@ -56,9 +56,9 @@ export default function App() {
             path="shop/*"
             element={<ShopRouter />}
           />
-          {/* Redirect legacy restaurant routes */}
+          {/* Redirect legacy shop routes */}
           <Route
-            path="restaurant/*"
+            path="shop/*"
             element={<NavigateToShop />}
           />
 

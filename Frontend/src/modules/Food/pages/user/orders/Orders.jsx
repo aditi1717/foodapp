@@ -51,9 +51,9 @@ export default function Orders() {
   const [activeMenuOrderId, setActiveMenuOrderId] = useState(null)
   const [showShareModal, setShowShareModal] = useState(false)
   const [sharePayload, setSharePayload] = useState(null)
-  const [selectedRestaurantRating, setSelectedRestaurantRating] = useState(null)
+  const [selectedShopRating, setSelectedShopRating] = useState(null)
   const [selectedDeliveryRating, setSelectedDeliveryRating] = useState(null)
-  const [restaurantFeedbackText, setRestaurantFeedbackText] = useState("")
+  const [shopFeedbackText, setShopFeedbackText] = useState("")
   const [deliveryFeedbackText, setDeliveryFeedbackText] = useState("")
   const [submittingRating, setSubmittingRating] = useState(false)
   const [countdowns, setCountdowns] = useState({})
@@ -172,12 +172,12 @@ export default function Orders() {
         transformedStatus.toLowerCase() === 'delivered' ||
         transformedStatus.toLowerCase() === 'completed'
 
-      const hasRestaurantRating = Number.isFinite(Number(order.restaurantRating))
+      const hasShopRating = Number.isFinite(Number(order.shopRating))
       const hasDeliveryPartner =
         Boolean(order.isDeliveryAccepted) &&
         !!(order.deliveryPartnerId || order.deliveryPartnerName)
       const hasDeliveryRating = Number.isFinite(Number(order.deliveryPartnerRating))
-      const hasRating = hasRestaurantRating && (!hasDeliveryPartner || hasDeliveryRating)
+      const hasRating = hasShopRating && (!hasDeliveryPartner || hasDeliveryRating)
 
       const orderId = order.id || order._id || order.mongoId
       const hasShownPopup = shownRatingForOrders.has(orderId)
@@ -193,7 +193,7 @@ export default function Orders() {
         isDelivered,
         hasDeliveredAt,
         hasRating,
-        restaurantRating: order.restaurantRating,
+        shopRating: order.shopRating,
         deliveryPartnerRating: order.deliveryPartnerRating,
         hasShownPopup,
         shouldShow
@@ -227,9 +227,9 @@ export default function Orders() {
           originalStatus: orderToRate.originalStatus
         })
         setRatingModal({ open: true, order: orderToRate })
-        setSelectedRestaurantRating(null)
+        setSelectedShopRating(null)
         setSelectedDeliveryRating(null)
-        setRestaurantFeedbackText("")
+        setShopFeedbackText("")
         setDeliveryFeedbackText("")
       }, 800) // Show after 0.8 seconds
     }
@@ -300,10 +300,10 @@ export default function Orders() {
           debugLog('?? Raw orders from API:', ordersData.slice(0, 3).map(o => ({
             id: o.orderId || o._id,
             status: o.orderStatus || o.status,
-            restaurantRating: o.ratings?.shop?.rating || null,
+            shopRating: o.ratings?.shop?.rating || null,
             deliveryPartnerRating: o.ratings?.deliveryPartner?.rating || null,
             deliveredAt: o.deliveredAt,
-            shop: o.restaurantId?.restaurantName || o.restaurantId?.name || o.restaurantName
+            shop: o.shopId?.shopName || o.shopId?.name || o.shopName
           })))
 
           // Transform API orders to match UI structure
@@ -315,11 +315,11 @@ export default function Orders() {
             const isCancelled =
               backendStatus === 'cancelled' ||
               backendStatus === 'cancelled_by_user' ||
-              backendStatus === 'cancelled_by_restaurant' ||
+              backendStatus === 'cancelled_by_shop' ||
               backendStatus === 'cancelled_by_admin'
             const cancellationReason = order.cancellationReason || ''
             // Check cancelledBy field first, then fallback to cancellation reason pattern
-            const isRestaurantCancelled = isCancelled && (
+            const isShopCancelled = isCancelled && (
               order.cancelledBy === 'shop' ||
               /rejected by shop|shop rejected|shop cancelled|shop is too busy|item not available|outside delivery area|kitchen closing|technical issue|order not accepted within time limit|shop did not respond/i.test(cancellationReason)
             )
@@ -327,7 +327,7 @@ export default function Orders() {
 
             // Get original status from backend before transformation
             const originalStatus = backendStatus
-            const restaurantRating = order.ratings?.shop?.rating || null
+            const shopRating = order.ratings?.shop?.rating || null
             const deliveryPartnerRating = order.ratings?.deliveryPartner?.rating || null
 
             const deliveryAccepted = isDispatchAccepted(order)
@@ -335,7 +335,7 @@ export default function Orders() {
               id: order._id?.toString() || order.orderId || `ORD-${order._id}`,
               mongoId: order._id,
               orderId: order.orderId || order._id?.toString(), // Keep orderId for display
-              status: isRestaurantCancelled ? 'restaurant_cancelled' : getOrderStatus({ ...order, status: backendStatus }),
+              status: isShopCancelled ? 'shop_cancelled' : getOrderStatus({ ...order, status: backendStatus }),
               originalStatus: originalStatus, // Keep original status for reference
               createdAt: createdAt.toISOString(),
               address: order.address || order.deliveryAddress || {},
@@ -358,19 +358,19 @@ export default function Orders() {
               pricing: order.pricing || {}, // Keep full pricing object for discounts, coupons
               payment: order.payment || {},
               paymentMethod: order.payment?.method || order.paymentMethod,
-              shop: order.restaurantId?.restaurantName || order.restaurantId?.name || order.restaurantName || 'Shop',
-              restaurantId: order.restaurantId?._id || order.restaurantId,
-              restaurantSlug: order.restaurantId?.slug || null,
-              restaurantImage: order.restaurantId?.profileImage?.url || order.restaurantId?.profileImage || null,
-              restaurantLocation: order.restaurantId?.location?.area || order.restaurantId?.location?.city || order.address?.city || order.deliveryAddress?.city || '',
-              restaurantRating,
+              shop: order.shopId?.shopName || order.shopId?.name || order.shopName || 'Shop',
+              shopId: order.shopId?._id || order.shopId,
+              shopSlug: order.shopId?.slug || null,
+              shopImage: order.shopId?.profileImage?.url || order.shopId?.profileImage || null,
+              shopLocation: order.shopId?.location?.area || order.shopId?.location?.city || order.address?.city || order.deliveryAddress?.city || '',
+              shopRating,
               deliveryPartnerRating,
               ratings: order.ratings || {},
-              rating: restaurantRating || null,
+              rating: shopRating || null,
               review: order.review || null,
               tracking: order.tracking || {},
               cancellationReason: cancellationReason,
-              isRestaurantCancelled: isRestaurantCancelled,
+              isShopCancelled: isShopCancelled,
               isUserCancelled: isUserCancelled,
               cancelledBy: order.cancelledBy,
               eta: order.eta || { min: order.estimatedDeliveryTime || 30, max: order.estimatedDeliveryTime || 30 },
@@ -414,12 +414,12 @@ export default function Orders() {
           debugLog('? Orders fetched and transformed:', {
             total: visibleOrders.length,
             delivered: visibleOrders.filter(o => o.status === 'delivered' || o.originalStatus === 'delivered').length,
-            withRating: visibleOrders.filter(o => o.restaurantRating && (!o.deliveryPartnerId || o.deliveryPartnerRating)).length,
+            withRating: visibleOrders.filter(o => o.shopRating && (!o.deliveryPartnerId || o.deliveryPartnerRating)).length,
             sample: visibleOrders.slice(0, 2).map(o => ({
               id: o.id,
               status: o.status,
               originalStatus: o.originalStatus,
-              restaurantRating: o.restaurantRating,
+              shopRating: o.shopRating,
               deliveryPartnerRating: o.deliveryPartnerRating,
               deliveredAt: o.deliveredAt
             }))
@@ -478,26 +478,26 @@ export default function Orders() {
     if (!searchQuery.trim()) return true
 
     const query = searchQuery.toLowerCase()
-    const restaurantMatch = order.shop?.toLowerCase().includes(query)
+    const shopMatch = order.shop?.toLowerCase().includes(query)
     const itemsMatch = order.items.some(item =>
       (item.name || item.foodName || '').toLowerCase().includes(query)
     )
 
-    return restaurantMatch || itemsMatch
+    return shopMatch || itemsMatch
   })
 
   const ratingModalHasDeliveryPartner =
     Boolean(ratingModal.order?.isDeliveryAccepted) &&
     !!(ratingModal.order?.deliveryPartnerId || ratingModal.order?.deliveryPartnerName)
   const ratingSubmitDisabled = submittingRating ||
-    selectedRestaurantRating === null ||
+    selectedShopRating === null ||
     (ratingModalHasDeliveryPartner && selectedDeliveryRating === null)
 
   // Handle reorder
   const handleReorder = (order) => {
-    const restaurantTarget = order.restaurantSlug || order.restaurantId
+    const shopTarget = order.shopSlug || order.shopId
 
-    if (!restaurantTarget || !order.items?.length) {
+    if (!shopTarget || !order.items?.length) {
       toast.info('Order items or shop information not available')
       return
     }
@@ -513,7 +513,7 @@ export default function Orders() {
           price: Number(item.price) || 0,
           image: item.image || "",
           shop: order.shop || "Shop",
-          restaurantId: order.restaurantId,
+          shopId: order.shopId,
           description: item.description || "",
           isVeg: isItemVeg(item),
           quantity: Math.max(1, Number(item.quantity) || 1),
@@ -529,7 +529,7 @@ export default function Orders() {
 
     replaceCart(reorderItems)
     toast.success("Items added to cart")
-    navigate(`/food/user/shops/${restaurantTarget}`)
+    navigate(`/food/user/shops/${shopTarget}`)
   }
 
   // Three-dots menu handlers
@@ -633,15 +633,15 @@ export default function Orders() {
     }
   }
 
-  const handleShareRestaurant = async (order) => {
+  const handleShareShop = async (order) => {
     const companyName = await getCompanyNameAsync()
     const location =
-      order.restaurantLocation ||
+      order.shopLocation ||
       `${order.address?.city || ""}, ${order.address?.state || ""}`.trim()
-    const restaurantPath = order.restaurantSlug || order.restaurantId
+    const shopPath = order.shopSlug || order.shopId
     const orderRouteId = getOrderRouteId(order)
-    const shareUrl = restaurantPath
-      ? `${window.location.origin}/food/user/shops/${restaurantPath}`
+    const shareUrl = shopPath
+      ? `${window.location.origin}/food/user/shops/${shopPath}`
       : `${window.location.origin}/food/orders/${orderRouteId}`
 
     const shareText = `Check out ${order.shop} on ${companyName}.
@@ -685,9 +685,9 @@ Order again from this shop in the ${companyName} app.`
   // Open rating modal for an order
   const handleOpenRating = (order) => {
     setRatingModal({ open: true, order })
-    setSelectedRestaurantRating(order.restaurantRating || null)
+    setSelectedShopRating(order.shopRating || null)
     setSelectedDeliveryRating(order.deliveryPartnerRating || null)
-    setRestaurantFeedbackText(order.ratings?.shop?.comment || "")
+    setShopFeedbackText(order.ratings?.shop?.comment || "")
     setDeliveryFeedbackText(order.ratings?.deliveryPartner?.comment || "")
   }
 
@@ -714,9 +714,9 @@ Order again from this shop in the ${companyName} app.`
 
   const handleCloseRating = () => {
     setRatingModal({ open: false, order: null })
-    setSelectedRestaurantRating(null)
+    setSelectedShopRating(null)
     setSelectedDeliveryRating(null)
-    setRestaurantFeedbackText("")
+    setShopFeedbackText("")
     setDeliveryFeedbackText("")
   }
 
@@ -726,7 +726,7 @@ Order again from this shop in the ${companyName} app.`
       Boolean(ratingModal.order?.isDeliveryAccepted) &&
       !!(ratingModal.order?.deliveryPartnerId || ratingModal.order?.deliveryPartnerName)
     const isMissingDeliveryRating = hasDeliveryPartner && selectedDeliveryRating === null
-    if (!ratingModal.order || selectedRestaurantRating === null || isMissingDeliveryRating) {
+    if (!ratingModal.order || selectedShopRating === null || isMissingDeliveryRating) {
       toast.error("Please select all required ratings first")
       return
     }
@@ -737,9 +737,9 @@ Order again from this shop in the ${companyName} app.`
       const order = ratingModal.order
 
       const response = await orderAPI.submitOrderRatings(order.id, {
-        restaurantRating: selectedRestaurantRating,
+        shopRating: selectedShopRating,
         deliveryPartnerRating: hasDeliveryPartner ? selectedDeliveryRating : undefined,
-        restaurantComment: restaurantFeedbackText || undefined,
+        shopComment: shopFeedbackText || undefined,
         deliveryPartnerComment: hasDeliveryPartner ? (deliveryFeedbackText || undefined) : undefined,
       })
       const updatedOrder = response?.data?.data?.order || response?.data?.order || null
@@ -749,13 +749,13 @@ Order again from this shop in the ${companyName} app.`
         prev.map(o =>
           o.id === order.id ? {
             ...o,
-            restaurantRating: updatedOrder?.ratings?.shop?.rating ?? selectedRestaurantRating,
+            shopRating: updatedOrder?.ratings?.shop?.rating ?? selectedShopRating,
             deliveryPartnerRating: updatedOrder?.ratings?.deliveryPartner?.rating ?? (hasDeliveryPartner ? selectedDeliveryRating : null),
             ratings: updatedOrder?.ratings || {
-              shop: { rating: selectedRestaurantRating, comment: restaurantFeedbackText || "" },
+              shop: { rating: selectedShopRating, comment: shopFeedbackText || "" },
               deliveryPartner: hasDeliveryPartner ? { rating: selectedDeliveryRating, comment: deliveryFeedbackText || "" } : undefined
             },
-            rating: updatedOrder?.ratings?.shop?.rating ?? selectedRestaurantRating
+            rating: updatedOrder?.ratings?.shop?.rating ?? selectedShopRating
           } : o
         )
       )
@@ -856,20 +856,20 @@ Order again from this shop in the ${companyName} app.`
 
             // Payment failed only for online payments (razorpay) that actually failed
             // Don't show payment failed for COD/wallet or cancelled orders
-            const isCancelled = order.status === 'cancelled' || order.status === 'restaurant_cancelled'
+            const isCancelled = order.status === 'cancelled' || order.status === 'shop_cancelled'
             const paymentFailed = !isCodOrWallet &&
               !isCancelled &&
               (order.payment?.status === 'failed')
 
             const isDelivered = order.status === 'delivered'
-            const isRestaurantCancelled = order.isRestaurantCancelled || order.status === 'restaurant_cancelled'
+            const isShopCancelled = order.isShopCancelled || order.status === 'shop_cancelled'
             const isUserCancelled = order.isUserCancelled || (isCancelled && order.cancelledBy === 'user')
             // Prefer food image from first item; fallback to shop image, then generic food photo
             const firstItemImage = order.items?.[0]?.image
-            const restaurantImage = firstItemImage
-              || order.restaurantImage
+            const shopImage = firstItemImage
+              || order.shopImage
               || "https://images.unsplash.com/photo-1604908176997-125188eb3c52?auto=format&fit=crop&w=200&q=80"
-            const location = order.restaurantLocation || `${order.address?.city || ''}, ${order.address?.state || ''}`.trim() || 'Location not available'
+            const location = order.shopLocation || `${order.address?.city || ''}, ${order.address?.state || ''}`.trim() || 'Location not available'
 
             return (
               <div key={order.id} className="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -879,8 +879,8 @@ Order again from this shop in the ${companyName} app.`
                     {/* Shop Image */}
                     <div className="w-14 h-14 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden flex-shrink-0">
                       <img
-                        src={restaurantImage}
-                        alt={order.restaurant}
+                        src={shopImage}
+                        alt={order.shop}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.src = "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?auto=format&fit=crop&w=100&q=80"
@@ -900,8 +900,8 @@ Order again from this shop in the ${companyName} app.`
                           {order.deliveryPartnerPhone && ` | ${order.deliveryPartnerPhone}`}
                         </p>
                       )}
-                      {order.restaurantId && (
-                        <Link to={`/food/user/shops/${order.restaurantId}`}>
+                      {order.shopId && (
+                        <Link to={`/food/user/shops/${order.shopId}`}>
                           <button className="text-xs font-medium flex items-center mt-1 hover:text-brand-700 dark:hover:text-brand-400" style={{ color: BRAND_THEME.tokens.orders.primaryText }}>
                             View menu <span className="ml-0.5">&gt;</span>
                           </button>
@@ -934,7 +934,7 @@ Order again from this shop in the ${companyName} app.`
                   <div className="absolute right-3 top-10 z-20 w-40 rounded-xl bg-white dark:bg-gray-700 shadow-lg border border-gray-100 dark:border-gray-600 py-1 text-xs">
                     <button
                       type="button"
-                      onClick={() => handleShareRestaurant(order)}
+                      onClick={() => handleShareShop(order)}
                       className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
                     >
                       Share shop
@@ -1091,13 +1091,13 @@ Order again from this shop in the ${companyName} app.`
                     {isDelivered && !paymentFailed && (
                       <p className="text-xs font-medium text-green-600 mt-1">Delivered</p>
                     )}
-                    {isRestaurantCancelled && (
+                    {isShopCancelled && (
                       <p className="text-xs font-medium text-red-500 mt-1">Shop Cancelled</p>
                     )}
                     {isUserCancelled && (
                       <p className="text-xs font-medium text-gray-500 mt-1">Cancelled by you</p>
                     )}
-                    {isCancelled && !isRestaurantCancelled && !isUserCancelled && (
+                    {isCancelled && !isShopCancelled && !isUserCancelled && (
                       <p className="text-xs font-medium text-gray-500 mt-1">Cancelled</p>
                     )}
                   </div>
@@ -1117,7 +1117,7 @@ Order again from this shop in the ${companyName} app.`
                 {/* Card Footer: Actions */}
                 <div className="px-4 py-3 flex items-center justify-between">
                   {/* Left Side: Rating or Error */}
-                  {isRestaurantCancelled ? (
+                  {isShopCancelled ? (
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <div className="bg-red-100 p-1 rounded-full">
@@ -1134,12 +1134,12 @@ Order again from this shop in the ${companyName} app.`
                       </div>
                       <span className="text-xs font-semibold text-red-500">Payment failed</span>
                     </div>
-                  ) : isDelivered && order.restaurantRating && (!order.deliveryPartnerId || order.deliveryPartnerRating) ? (
+                  ) : isDelivered && order.shopRating && (!order.deliveryPartnerId || order.deliveryPartnerRating) ? (
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm text-gray-800">You rated</span>
                         <div className="flex px-1 rounded text-[10px] items-center gap-0.5 h-4 text-white" style={{ backgroundImage: BRAND_THEME.tokens.orders.primaryGradient }}>
-                          R {order.restaurantRating}<Star className="w-2 h-2 fill-current" />
+                          R {order.shopRating}<Star className="w-2 h-2 fill-current" />
                         </div>
                         {order.deliveryPartnerId && (
                           <div className="flex bg-green-500 text-white px-1 rounded text-[10px] items-center gap-0.5 h-4">
@@ -1221,12 +1221,12 @@ Order again from this shop in the ${companyName} app.`
                 </p>
                 <div className="flex items-center justify-center gap-2 mb-3">
                   {Array.from({ length: 5 }, (_, i) => i + 1).map((num) => {
-                    const isActive = (selectedRestaurantRating || 0) >= num
+                    const isActive = (selectedShopRating || 0) >= num
                     return (
                       <button
-                        key={`restaurant-${num}`}
+                        key={`shop-${num}`}
                         type="button"
-                        onClick={() => setSelectedRestaurantRating(num)}
+                        onClick={() => setSelectedShopRating(num)}
                         className="p-2 transition-transform hover:scale-125 active:scale-95"
                       >
                           <Star
@@ -1242,8 +1242,8 @@ Order again from this shop in the ${companyName} app.`
                 </div>
                 <textarea
                   rows={2}
-                  value={restaurantFeedbackText}
-                  onChange={(e) => setRestaurantFeedbackText(e.target.value)}
+                  value={shopFeedbackText}
+                  onChange={(e) => setShopFeedbackText(e.target.value)}
                   className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2 text-sm text-gray-800 placeholder-gray-400 caret-gray-800 focus:outline-none focus:ring-2 resize-none transition-all dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-400 dark:caret-slate-100"
                   style={{ '--tw-ring-color': BRAND_THEME.tokens.orders.focusRing, borderColor: undefined }}
                   placeholder="Shop feedback (optional)"

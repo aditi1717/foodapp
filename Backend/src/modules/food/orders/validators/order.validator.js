@@ -50,8 +50,8 @@ const pricingSchema = z.object({
     currency: z.string().optional(),
     couponCode: z.string().nullable().optional(),
     couponByAdmin: z.number().min(0).optional(),
-    couponByRestaurant: z.number().min(0).optional(),
-    offerByRestaurant: z.number().min(0).optional(),
+    couponByShop: z.number().min(0).optional(),
+    offerByShop: z.number().min(0).optional(),
     autoAppliedOffer: z.object({
         offerId: z.string().optional(),
         title: z.string().optional(),
@@ -68,7 +68,7 @@ export function validateCalculateOrderDto(body) {
         orderType: z.enum(['food', 'quick']).optional().default('food'),
         fulfillmentType: z.enum(['delivery', 'takeaway']).optional().default('delivery'),
         items: z.array(orderItemSchema).min(1, 'At least one item required'),
-        restaurantId: z.string().optional(),
+        shopId: z.string().optional(),
         address: addressSchema.nullable().optional(),
         deliveryAddress: addressSchema.nullable().optional(),
         deliveryAddressId: z.string().optional(),
@@ -78,11 +78,11 @@ export function validateCalculateOrderDto(body) {
         address: z.any().optional(),
         deliveryAddress: z.any().optional()
     }).superRefine((data, ctx) => {
-        if (data.orderType !== 'quick' && !data.restaurantId) {
+        if (data.orderType !== 'quick' && !data.shopId) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: ['restaurantId'],
-                message: 'Restaurant id required'
+                path: ['shopId'],
+                message: 'Shop id required'
             });
         }
     });
@@ -106,14 +106,14 @@ export function validateCreateOrderDto(body) {
         fulfillmentType: z.enum(['delivery', 'takeaway']).optional().default('delivery'),
         items: z.array(orderItemSchema).min(1, 'At least one item required'),
         address: addressSchema.nullable().optional(),
-        restaurantId: z.string().optional(),
-        restaurantName: z.string().optional(),
+        shopId: z.string().optional(),
+        shopName: z.string().optional(),
         customerName: z.string().optional(),
         customerPhone: z.string().optional(),
         pricing: pricingSchema,
         deliveryFleet: z.string().optional(),
         note: z.string().optional(),
-        restaurantNote: z.string().optional(),
+        shopNote: z.string().optional(),
         sendCutlery: z.boolean().optional(),
         isBulkOrder: z.boolean().optional(),
         isScheduled: z.boolean().optional(),
@@ -122,11 +122,11 @@ export function validateCreateOrderDto(body) {
         paymentMethod: z.enum(['cash', 'razorpay', 'razorpay_qr', 'card', 'wallet']),
         zoneId: z.string().nullable().optional()
     }).superRefine((data, ctx) => {
-        if (data.orderType !== 'quick' && !data.restaurantId) {
+        if (data.orderType !== 'quick' && !data.shopId) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: ['restaurantId'],
-                message: 'Restaurant id required'
+                path: ['shopId'],
+                message: 'Shop id required'
             });
         }
         if (
@@ -192,7 +192,7 @@ export function validateOrderStatusDto(body) {
             'user_unavailable_review',
             'delivered',
             'cancelled_by_user_unavailable',
-            'cancelled_by_restaurant',
+            'cancelled_by_shop',
             'cancelled_by_admin'
         ]),
         reason: z.string().optional(),
@@ -237,9 +237,9 @@ export function validateDispatchSettingsDto(body) {
 
 export function validateOrderRatingsDto(body) {
     const schema = z.object({
-        restaurantRating: z.number().min(1).max(5),
+        shopRating: z.number().min(1).max(5),
         deliveryPartnerRating: z.number().min(1).max(5).optional(),
-        restaurantComment: z.string().max(500).optional(),
+        shopComment: z.string().max(500).optional(),
         deliveryPartnerComment: z.string().max(500).optional()
     });
     const result = schema.safeParse(body || {});

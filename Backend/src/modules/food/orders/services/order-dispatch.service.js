@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { FoodOrder, FoodSettings } from '../models/order.model.js';
-import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodShop } from '../../shop/models/shop.model.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
 import { FoodDeliveryExclusivity } from '../../delivery/models/deliveryExclusivity.model.js';
 import { FoodBusinessSettings } from '../../admin/models/businessSettings.model.js';
@@ -21,7 +21,7 @@ import {
 async function filterEligibleDeliveryPartners(partnerIds, order = null) {
   if (!partnerIds || !partnerIds.length) return [];
 
-  // 1. Exclude exclusive/associated riders (from ANY restaurant)
+  // 1. Exclude exclusive/associated riders (from ANY shop)
   const exclusiveRows = await FoodDeliveryExclusivity.find({
     status: "associated",
   })
@@ -75,17 +75,17 @@ async function filterEligibleDeliveryPartners(partnerIds, order = null) {
 }
 
 async function listNearbyOnlineDeliveryPartners(
-  restaurantId,
+  shopId,
   { maxKm = 15, limit = 25, order = null } = {},
 ) {
-  const rId = (restaurantId?._id || restaurantId).toString();
-  const restaurant = await FoodRestaurant.findById(rId)
+  const rId = (shopId?._id || shopId).toString();
+  const shop = await FoodShop.findById(rId)
     .select("location")
     .lean();
 
   const allowedStatuses = process.env.NODE_ENV === 'production' ? ['approved'] : ['approved', 'pending'];
 
-  if (!restaurant?.location?.coordinates?.length) {
+  if (!shop?.location?.coordinates?.length) {
     const partners = await FoodDeliveryPartner.find({
       status: { $in: allowedStatuses },
       availabilityStatus: "online",
@@ -98,12 +98,12 @@ async function listNearbyOnlineDeliveryPartners(
     const filteredPartners = partners.filter(p => eligibleSet.has(String(p._id)));
 
     return {
-      restaurant: null,
+      shop: null,
       partners: filteredPartners.slice(0, Math.max(1, limit)).map((p) => ({ partnerId: p._id, distanceKm: null })),
     };
   }
 
-  const [rLng, rLat] = restaurant.location.coordinates;
+  const [rLng, rLat] = shop.location.coordinates;
   const allOnline = await FoodDeliveryPartner.find({
     availabilityStatus: "online",
   })
@@ -217,7 +217,7 @@ export async function tryAutoAssign(orderId, options = {}) {
       $set: { 'dispatch.dispatchingAt': new Date() }
     },
     { new: true }
-  ).populate(['restaurantId', 'userId']);
+  ).populate(['shopId', 'userId']);
 
   if (!order) {
     logger.info(`tryAutoAssign: Skip for ${orderId} (already dispatching, accepted, or multi-attempt lock active).`);
@@ -235,7 +235,7 @@ export async function tryAutoAssign(orderId, options = {}) {
     if (attempt >= 4) maxKm = 60;
 
     const searchOptions = { maxKm, limit: 15 };
-    const { partners } = await listNearbyOnlineDeliveryPartners(order.restaurantId, { ...searchOptions, order });
+    const { partners } = await listNearbyOnlineDeliveryPartners(order.shopId, { ...searchOptions, order });
     
     // TIERED ALERT LOGIC
     // Phase 2: Broadcast to all (Attempt 3+)
@@ -268,7 +268,7 @@ export async function tryAutoAssign(orderId, options = {}) {
       // If we ran out of new eligible partners, we might want to re-offer to everyone (Phase 2 style)
       const io = getIO();
       if (io && partners.length > 0) {
-        const payload = buildDeliverySocketPayload(order, order.restaurantId);
+        const payload = buildDeliverySocketPayload(order, order.shopId);
         for (const p of partners) {
           const roomName = rooms.delivery(p.partnerId);
           io.to(roomName).emit('new_order_available', { ...payload, pickupDistanceKm: p.distanceKm });
@@ -287,7 +287,7 @@ export async function tryAutoAssign(orderId, options = {}) {
     }
 
     const io = getIO();
-    const payload = buildDeliverySocketPayload(order, order.restaurantId);
+    const payload = buildDeliverySocketPayload(order, order.shopId);
 
     if (isPhase2) {
       // PHASE 2 BROADCAST: Notify everyone remaining
@@ -374,11 +374,11 @@ export async function processDispatchTimeout(orderId, partnerId) {
 }
 
 
-export async function resendDeliveryNotificationRestaurant(orderId, restaurantId) {
+export async function resendDeliveryNotificationShop(orderId, shopId) {
   const identity = buildOrderIdentityFilter(orderId);
   const order = await FoodOrder.findOne({
     ...identity,
-    restaurantId: new mongoose.Types.ObjectId(restaurantId),
+    shopId: new mongoose.Types.ObjectId(shopId),
   });
 
   if (!order) throw new NotFoundError('Order not found');

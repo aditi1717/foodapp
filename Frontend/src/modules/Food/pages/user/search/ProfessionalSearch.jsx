@@ -13,7 +13,7 @@ import { useLocation as useGeoLocation } from "@food/hooks/useLocation"
 import { useZone } from "@food/hooks/useZone"
 import { searchAPI } from "@/services/api"
 import { getShopAvailabilityStatus } from "@food/utils/shopAvailability"
-import { enrichSearchRestaurantsWithOutletTimings, isPureVegRestaurant } from "@food/utils/searchAvailability"
+import { enrichSearchShopsWithOutletTimings, isPureVegShop } from "@food/utils/searchAvailability"
 import { motion, AnimatePresence } from "framer-motion"
 
 const getNormalizedFoodType = (item = {}) =>
@@ -135,11 +135,11 @@ export default function ProfessionalSearch() {
       
       if (res.data?.success) {
         // Grouping results into Shops and potential Dishes
-        const all = (await enrichSearchRestaurantsWithOutletTimings(res.data.data.shops || []))
+        const all = (await enrichSearchShopsWithOutletTimings(res.data.data.shops || []))
           .filter((shop) => {
             if (!vegMode) return true
             if (!isVegSearchResult(shop)) return false
-            return vegModePreference !== "pure-veg" || isPureVegRestaurant(shop)
+            return vegModePreference !== "pure-veg" || isPureVegShop(shop)
           })
         setResults({
           shops: all.filter(r => r.matchType === 'shop' || !r.matchType),
@@ -320,7 +320,7 @@ export default function ProfessionalSearch() {
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                             onError={(e) => (e.target.src = "/placeholder-dish.jpg")}
                           />
-                          {r.pureVegRestaurant && (
+                          {r.pureVegShop && (
                             <div className="absolute top-1 left-1 w-4 h-4 border border-green-600 p-[1px] bg-white rounded-sm">
                                <div className="w-full h-full bg-green-600 rounded-full" />
                             </div>
@@ -330,7 +330,7 @@ export default function ProfessionalSearch() {
                           <div className="text-rose-500 text-[10px] font-bold uppercase tracking-wider mb-1">
                              Matched: {r.matchedDish || query}
                           </div>
-                          <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1">{r.restaurantName}</h3>
+                          <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1">{r.shopName}</h3>
                           {isUnavailable && (
                             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500 mt-1">
                               {availability.badgeLabel || "Closed"}
@@ -375,7 +375,7 @@ export default function ProfessionalSearch() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
                            <div>
-                              <h3 className="text-xl font-bold text-white mb-1">{r.restaurantName}</h3>
+                              <h3 className="text-xl font-bold text-white mb-1">{r.shopName}</h3>
                               <p className="text-white/80 text-xs line-clamp-1">{r.cuisines?.join(", ")}</p>
                            </div>
                            <div className="bg-white/20 backdrop-blur-md border border-white/30 px-2 py-1 rounded-lg flex items-center gap-1">

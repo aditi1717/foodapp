@@ -5,7 +5,7 @@ import Lenis from "lenis"
 import { ArrowLeft, Settings, ChevronRight } from "lucide-react"
 import { Switch } from "@food/components/ui/switch"
 import { Card, CardContent } from "@food/components/ui/card"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import {
   Dialog,
   DialogContent,
@@ -20,11 +20,11 @@ const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
-const RESTAURANT_ONLINE_STATUS_KEY = "restaurant_online_status"
+const SHOP_ONLINE_STATUS_KEY = "shop_online_status"
 
-const persistRestaurantOnlineStatus = (isOnline) => {
+const persistShopOnlineStatus = (isOnline) => {
   try {
-    localStorage.setItem(RESTAURANT_ONLINE_STATUS_KEY, JSON.stringify(Boolean(isOnline)))
+    localStorage.setItem(SHOP_ONLINE_STATUS_KEY, JSON.stringify(Boolean(isOnline)))
   } catch (error) {
     debugError("Error persisting shop online status:", error)
   }
@@ -77,7 +77,7 @@ export default function ShopStatus() {
   const navigate = useNavigate()
   const goBack = useShopBackNavigation()
   const [deliveryStatus, setDeliveryStatus] = useState(false)
-  const [restaurantData, setRestaurantData] = useState(null)
+  const [shopData, setShopData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [currentDateTime, setCurrentDateTime] = useState(new Date())
   const [isWithinTimings, setIsWithinTimings] = useState(null) // null = not calculated yet
@@ -97,13 +97,13 @@ export default function ShopStatus() {
 
   // Fetch shop data from backend
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       try {
         setLoading(true)
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const data = response?.data?.data?.shop || response?.data?.shop
         if (data) {
-          setRestaurantData(data)
+          setShopData(data)
         }
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
@@ -116,13 +116,13 @@ export default function ShopStatus() {
       }
     }
 
-    fetchRestaurantData()
+    fetchShopData()
   }, [])
 
   // Load outlet timings from backend (DB)
   useEffect(() => {
     const loadOutletTimings = () => {
-      restaurantAPI
+      shopAPI
         .getOutletTimings()
         .then((res) => {
           const data = res?.data?.data?.outletTimings || res?.data?.outletTimings
@@ -206,25 +206,25 @@ export default function ShopStatus() {
   useEffect(() => {
     const loadDeliveryStatus = async () => {
       try {
-        const response = await restaurantAPI.getCurrentRestaurant()
+        const response = await shopAPI.getCurrentShop()
         const shop = response?.data?.data?.shop || response?.data?.shop
         if (shop?.isAcceptingOrders !== undefined) {
           setDeliveryStatus(shop.isAcceptingOrders)
           try {
-            localStorage.setItem('restaurant_online_status', JSON.stringify(Boolean(shop.isAcceptingOrders)))
+            localStorage.setItem('shop_online_status', JSON.stringify(Boolean(shop.isAcceptingOrders)))
           } catch {}
-          persistRestaurantOnlineStatus(shop.isAcceptingOrders)
+          persistShopOnlineStatus(shop.isAcceptingOrders)
           // Dispatch event to update navbar
-          window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
+          window.dispatchEvent(new CustomEvent('shopStatusChanged', { 
             detail: { isOnline: shop.isAcceptingOrders } 
           }))
         } else {
           setDeliveryStatus(false)
           try {
-            localStorage.setItem('restaurant_online_status', JSON.stringify(false))
+            localStorage.setItem('shop_online_status', JSON.stringify(false))
           } catch {}
-          persistRestaurantOnlineStatus(false)
-          window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
+          persistShopOnlineStatus(false)
+          window.dispatchEvent(new CustomEvent('shopStatusChanged', { 
             detail: { isOnline: false } 
           }))
         }
@@ -235,10 +235,10 @@ export default function ShopStatus() {
         }
         setDeliveryStatus(false)
         try {
-          localStorage.setItem('restaurant_online_status', JSON.stringify(false))
+          localStorage.setItem('shop_online_status', JSON.stringify(false))
         } catch {}
-        persistRestaurantOnlineStatus(false)
-        window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
+        persistShopOnlineStatus(false)
+        window.dispatchEvent(new CustomEvent('shopStatusChanged', { 
           detail: { isOnline: false } 
         }))
       }
@@ -265,23 +265,23 @@ export default function ShopStatus() {
     try {
       // Update backend
       try {
-        await restaurantAPI.updateAcceptingOrders(checked)
+        await shopAPI.updateAcceptingOrders(checked)
         debugLog('? Delivery status updated in backend:', checked)
-        persistRestaurantOnlineStatus(checked)
+        persistShopOnlineStatus(checked)
       } catch (apiError) {
         debugError('Error updating delivery status in backend:', apiError)
         // Revert local toggle if backend fails.
         setDeliveryStatus((prev) => !prev)
-        persistRestaurantOnlineStatus(!checked)
+        persistShopOnlineStatus(!checked)
         return
       }
       
       try {
-        localStorage.setItem('restaurant_online_status', JSON.stringify(Boolean(checked)))
+        localStorage.setItem('shop_online_status', JSON.stringify(Boolean(checked)))
       } catch {}
 
       // Dispatch custom event for navbar to listen
-      window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
+      window.dispatchEvent(new CustomEvent('shopStatusChanged', { 
         detail: { isOnline: checked } 
       }))
     } catch (error) {
@@ -397,14 +397,14 @@ export default function ShopStatus() {
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <h2 className="text-base font-bold text-gray-900 mb-1">
-                  {loading ? "Loading..." : (restaurantData?.name || "Shop")}
+                  {loading ? "Loading..." : (shopData?.name || "Shop")}
                 </h2>
                 <p className="text-sm text-gray-500">
                   {loading ? "Loading..." : (
                     <>
-                      {restaurantData?.id ? `ID: ${String(restaurantData.id).slice(-5)}` : ""}
-                      {restaurantData?.location && formatAddress(restaurantData.location) ? (
-                        <> | {formatAddress(restaurantData.location)}</>
+                      {shopData?.id ? `ID: ${String(shopData.id).slice(-5)}` : ""}
+                      {shopData?.location && formatAddress(shopData.location) ? (
+                        <> | {formatAddress(shopData.location)}</>
                       ) : ""}
                     </>
                   )}
@@ -472,7 +472,7 @@ export default function ShopStatus() {
         </Card>
 
   {/* Warning Message - Only show if outside timings AND day is not closed */}
-  {!isWithinTimings && restaurantData && !isDayClosed && (
+  {!isWithinTimings && shopData && !isDayClosed && (
         <div className="bg-pink-50 rounded-b-lg rounded-t-none p-4 flex items-start gap-3">
           <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0 mt-0.5">
             <span className="text-white text-xs font-bold">!</span>

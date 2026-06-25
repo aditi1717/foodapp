@@ -1,6 +1,6 @@
 import { X } from "lucide-react"
 
-export default function SubscriptionFilterPanel({ isOpen, onClose, filters, setFilters, onApply, onReset, restaurants = [] }) {
+export default function SubscriptionFilterPanel({ isOpen, onClose, filters, setFilters, onApply, onReset, shops = [] }) {
   if (!isOpen) return null
 
   return (
@@ -68,7 +68,7 @@ export default function SubscriptionFilterPanel({ isOpen, onClose, filters, setF
                 Shop
               </label>
               <select
-                value={filters.restaurant || ""}
+                value={filters.shop || ""}
                 onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >

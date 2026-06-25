@@ -29,23 +29,23 @@ export const updateAdminLandingSettingsController = async (req, res, next) => {
             }
             payload.defaultUnderPriceLimit = Math.round(parsed);
         }
-        if (payload.zoneRestaurantVisibility !== undefined) {
-            if (!Array.isArray(payload.zoneRestaurantVisibility)) {
-                throw new ValidationError('zoneRestaurantVisibility must be an array');
+        if (payload.zoneShopVisibility !== undefined) {
+            if (!Array.isArray(payload.zoneShopVisibility)) {
+                throw new ValidationError('zoneShopVisibility must be an array');
             }
-            payload.zoneRestaurantVisibility = payload.zoneRestaurantVisibility
+            payload.zoneShopVisibility = payload.zoneShopVisibility
                 .map((entry) => ({
                     zoneId: String(entry?.zoneId || '').trim(),
                     mode: String(entry?.mode || 'automatic').trim().toLowerCase(),
-                    manualRestaurantIds: Array.isArray(entry?.manualRestaurantIds)
-                        ? entry.manualRestaurantIds.map((id) => String(id || '').trim()).filter(Boolean)
+                    manualShopIds: Array.isArray(entry?.manualShopIds)
+                        ? entry.manualShopIds.map((id) => String(id || '').trim()).filter(Boolean)
                         : []
                 }))
                 .filter((entry) => entry.zoneId)
                 .map((entry) => ({
                     zoneId: entry.zoneId,
                     mode: entry.mode === 'manual' ? 'manual' : 'automatic',
-                    manualRestaurantIds: entry.mode === 'manual' ? entry.manualRestaurantIds : []
+                    manualShopIds: entry.mode === 'manual' ? entry.manualShopIds : []
                 }));
         }
         const updated = await updateLandingSettings(payload);

@@ -15,7 +15,7 @@ import MixedSharedCart from "@food/pages/user/cart/MixedSharedCart"
 import { useLocation as useUserLocation } from "@food/hooks/useLocation"
 import { useZone } from "@food/hooks/useZone"
 import { useLocationSelector } from "@food/components/user/UserLayout"
-import { orderAPI, restaurantAPI, adminAPI, userAPI, API_ENDPOINTS } from "@food/api"
+import { orderAPI, shopAPI, adminAPI, userAPI, API_ENDPOINTS } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { initRazorpayPayment } from "@food/utils/razorpay"
 import { toast } from "sonner"
@@ -185,7 +185,7 @@ export default function Cart() {
     addToCart,
     getCartCount,
     clearCart,
-    cleanCartForRestaurant,
+    cleanCartForShop,
     bulkOrderMode,
     activateBulkOrderMode,
     deactivateBulkOrderMode,
@@ -193,8 +193,8 @@ export default function Cart() {
   const hasQuickItems = cart.some((item) => (item?.orderType || "food") === "quick")
   const hasFoodItems = cart.some((item) => (item?.orderType || "food") === "food")
 
-  const resolveRestaurantMongoId = (data = null, fallback = null) =>
-    data?._id || data?.restaurantId || fallback || null
+  const resolveShopMongoId = (data = null, fallback = null) =>
+    data?._id || data?.shopId || fallback || null
   const isMongoObjectId = (value) => /^[a-f\d]{24}$/i.test(String(value || "").trim())
   if (hasQuickItems && hasFoodItems) {
     return <MixedSharedCart />
@@ -217,7 +217,7 @@ export default function Cart() {
   const [showPaymentSheet, setShowPaymentSheet] = useState(false)
   const [walletBalance, setWalletBalance] = useState(0)
   const [isLoadingWallet, setIsLoadingWallet] = useState(false)
-  const [restaurantNote, setRestaurantNote] = useState("")
+  const [shopNote, setShopNote] = useState("")
   const [showNoteInput, setShowNoteInput] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [sharePayload, setSharePayload] = useState(null)
@@ -269,8 +269,8 @@ export default function Cart() {
   }, [showOrderSuccess])
 
   // Shop and pricing state
-  const [restaurantData, setRestaurantData] = useState(null)
-  const [loadingRestaurant, setLoadingRestaurant] = useState(false)
+  const [shopData, setShopData] = useState(null)
+  const [loadingShop, setLoadingShop] = useState(false)
   const [pricing, setPricing] = useState(null)
   const [loadingPricing, setLoadingPricing] = useState(false)
   const [takeawayCashOption, setTakeawayCashOption] = useState({
@@ -283,10 +283,10 @@ export default function Cart() {
   const [isScheduled, setIsScheduled] = useState(false)
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("")
-  const [restaurantTimings, setRestaurantTimings] = useState(null)
+  const [shopTimings, setShopTimings] = useState(null)
   const [loadingTimings, setLoadingTimings] = useState(false)
   const isTakeaway = fulfillmentType === "takeaway"
-  const takeawayEnabled = restaurantData?.takeawayEnabled !== false
+  const takeawayEnabled = shopData?.takeawayEnabled !== false
   const isTakeawayCashBlocked = isTakeaway && takeawayCashOption.available === false
 
   const syncTakeawayCashAvailability = (payload = null) => {
@@ -326,13 +326,13 @@ export default function Cart() {
 
   useEffect(() => {
     const fetchTimings = async () => {
-      const rId = restaurantData?._id || restaurantData?.restaurantId || cart[0]?.restaurantId || null;
+      const rId = shopData?._id || shopData?.shopId || cart[0]?.shopId || null;
       if (!rId) return;
       try {
         setLoadingTimings(true);
-        const res = await restaurantAPI.getOutletTimingsByRestaurantId(rId);
+        const res = await shopAPI.getOutletTimingsByShopId(rId);
         if (res?.data?.success && res?.data?.data?.outletTimings) {
-          setRestaurantTimings(res.data.data.outletTimings);
+          setShopTimings(res.data.data.outletTimings);
         }
       } catch (err) {
         debugError("Error fetching shop timings:", err);
@@ -341,7 +341,7 @@ export default function Cart() {
       }
     };
     fetchTimings();
-  }, [restaurantData, cart]);
+  }, [shopData, cart]);
 
   const dateOptions = useMemo(() => {
     const dates = [];
@@ -374,12 +374,12 @@ export default function Cart() {
   }, [dateOptions, selectedDate]);
 
   const timeSlots = useMemo(() => {
-    if (!restaurantTimings || !selectedDate) return [];
+    if (!shopTimings || !selectedDate) return [];
     
     const dateObj = dateOptions.find(d => d.dateStr === selectedDate);
     if (!dateObj) return [];
     
-    const dayTimings = restaurantTimings[dateObj.dayName];
+    const dayTimings = shopTimings[dateObj.dayName];
     if (!dayTimings || !dayTimings.isOpen) return [];
     
     const slots = [];
@@ -430,7 +430,7 @@ export default function Cart() {
     }
     
     return slots;
-  }, [restaurantTimings, selectedDate, dateOptions]);
+  }, [shopTimings, selectedDate, dateOptions]);
 
   useEffect(() => {
     if (timeSlots.length > 0) {
@@ -656,22 +656,22 @@ export default function Cart() {
   }, [savedAddress, selectedAddressId, deliveryAddressMode])
 
   // Get shop ID from cart or shop data
-  // Priority: restaurantData > cart[0].restaurantId
+  // Priority: shopData > cart[0].shopId
   // DO NOT use cart[0].shop as slug fallback - it creates wrong slugs
-  const restaurantId = cart.length > 0
-    ? (restaurantData?._id || restaurantData?.restaurantId || cart[0]?.restaurantId || null)
+  const shopId = cart.length > 0
+    ? (shopData?._id || shopData?.shopId || cart[0]?.shopId || null)
     : null
 
   // Stable shop ID for addons fetch (memoized to prevent dependency array issues)
-  // Prefer restaurantData IDs (more reliable) over slug from cart
-  const restaurantIdForAddons = useMemo(() => {
-    // Only use restaurantData if it's loaded, otherwise wait
-    if (restaurantData) {
-      return restaurantData._id || restaurantData.restaurantId || null
+  // Prefer shopData IDs (more reliable) over slug from cart
+  const shopIdForAddons = useMemo(() => {
+    // Only use shopData if it's loaded, otherwise wait
+    if (shopData) {
+      return shopData._id || shopData.shopId || null
     }
-    // If restaurantData is not loaded yet, return null to wait
+    // If shopData is not loaded yet, return null to wait
     return null
-  }, [restaurantData])
+  }, [shopData])
 
 
 
@@ -709,131 +709,131 @@ export default function Cart() {
 
   // Fetch shop data when cart has items
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchShopData = async () => {
       if (cart.length === 0) {
-        setRestaurantData(null)
+        setShopData(null)
         return
       }
 
-      // If we already have restaurantData, don't fetch again
-      if (restaurantData) {
+      // If we already have shopData, don't fetch again
+      if (shopData) {
         return
       }
 
-      setLoadingRestaurant(true)
+      setLoadingShop(true)
 
-      // Strategy 1: Try using restaurantId from cart if available
-      if (cart[0]?.restaurantId) {
+      // Strategy 1: Try using shopId from cart if available
+      if (cart[0]?.shopId) {
         try {
-          const cartRestaurantId = cart[0].restaurantId;
-          const cartRestaurantName = cart[0].shop;
+          const cartShopId = cart[0].shopId;
+          const cartShopName = cart[0].shop;
 
-          debugLog("?? Fetching shop data by restaurantId from cart:", cartRestaurantId)
-          const response = await restaurantAPI.getRestaurantById(cartRestaurantId)
-          const data = response?.data?.data?.shop || response?.data?.data?.restaurant || response?.data?.shop || response?.data?.restaurant
+          debugLog("?? Fetching shop data by shopId from cart:", cartShopId)
+          const response = await shopAPI.getShopById(cartShopId)
+          const data = response?.data?.data?.shop || response?.data?.data?.shop || response?.data?.shop || response?.data?.shop
 
           if (data) {
             // CRITICAL: Validate that fetched shop matches cart items
-            const fetchedRestaurantId = data.restaurantId || data._id?.toString();
-            const fetchedRestaurantName = data.name;
+            const fetchedShopId = data.shopId || data._id?.toString();
+            const fetchedShopName = data.name;
 
-            // Check if restaurantId matches
-            const restaurantIdMatches =
-              fetchedRestaurantId === cartRestaurantId ||
-              data._id?.toString() === cartRestaurantId ||
-              data.restaurantId === cartRestaurantId;
+            // Check if shopId matches
+            const shopIdMatches =
+              fetchedShopId === cartShopId ||
+              data._id?.toString() === cartShopId ||
+              data.shopId === cartShopId;
 
             // Check if shop name matches (if available in cart)
-            const restaurantNameMatches =
-              !cartRestaurantName ||
-              fetchedRestaurantName?.toLowerCase().trim() === cartRestaurantName.toLowerCase().trim();
+            const shopNameMatches =
+              !cartShopName ||
+              fetchedShopName?.toLowerCase().trim() === cartShopName.toLowerCase().trim();
 
-            if (!restaurantIdMatches) {
-              debugError('? CRITICAL: Fetched shop ID does not match cart restaurantId!', {
-                cartRestaurantId: cartRestaurantId,
-                fetchedRestaurantId: fetchedRestaurantId,
+            if (!shopIdMatches) {
+              debugError('? CRITICAL: Fetched shop ID does not match cart shopId!', {
+                cartShopId: cartShopId,
+                fetchedShopId: fetchedShopId,
                 fetched_id: data._id?.toString(),
-                fetched_restaurantId: data.restaurantId,
-                cartRestaurantName: cartRestaurantName,
-                fetchedRestaurantName: fetchedRestaurantName
+                fetched_shopId: data.shopId,
+                cartShopName: cartShopName,
+                fetchedShopName: fetchedShopName
               });
-              // Don't set restaurantData if IDs don't match - this prevents wrong shop assignment
-              setLoadingRestaurant(false);
+              // Don't set shopData if IDs don't match - this prevents wrong shop assignment
+              setLoadingShop(false);
               return;
             }
 
-            if (!restaurantNameMatches) {
+            if (!shopNameMatches) {
               debugWarn('?? WARNING: Shop name mismatch:', {
-                cartRestaurantName: cartRestaurantName,
-                fetchedRestaurantName: fetchedRestaurantName
+                cartShopName: cartShopName,
+                fetchedShopName: fetchedShopName
               });
               // Still proceed but log warning
             }
 
-            debugLog("? Shop data loaded from cart restaurantId:", {
+            debugLog("? Shop data loaded from cart shopId:", {
               _id: data._id,
-              restaurantId: data.restaurantId,
+              shopId: data.shopId,
               name: data.name,
-              cartRestaurantId: cartRestaurantId,
-              cartRestaurantName: cartRestaurantName
+              cartShopId: cartShopId,
+              cartShopName: cartShopName
             })
-            setRestaurantData(data)
-            setLoadingRestaurant(false)
+            setShopData(data)
+            setLoadingShop(false)
             return
           }
         } catch (error) {
-          debugWarn("?? Failed to fetch by cart restaurantId, trying fallback...", error)
+          debugWarn("?? Failed to fetch by cart shopId, trying fallback...", error)
         }
       }
 
-      // Strategy 2: If no restaurantId in cart, search by shop name
-      if (cart[0]?.shop && !restaurantData) {
+      // Strategy 2: If no shopId in cart, search by shop name
+      if (cart[0]?.shop && !shopData) {
         try {
           debugLog("?? Searching shop by name:", cart[0].shop)
-          const searchResponse = await restaurantAPI.getRestaurants({ limit: 100 })
+          const searchResponse = await shopAPI.getShops({ limit: 100 })
           const shops = searchResponse?.data?.data?.shops || searchResponse?.data?.data || []
           debugLog("?? Fetched", shops.length, "shops for name search")
 
           // Try exact match first
-          let matchingRestaurant = shops.find(r =>
+          let matchingShop = shops.find(r =>
             r.name?.toLowerCase().trim() === cart[0].shop?.toLowerCase().trim()
           )
 
           // If no exact match, try partial match
-          if (!matchingRestaurant) {
+          if (!matchingShop) {
             debugLog("?? No exact match, trying partial match...")
-            matchingRestaurant = shops.find(r =>
+            matchingShop = shops.find(r =>
               r.name?.toLowerCase().includes(cart[0].shop?.toLowerCase().trim()) ||
               cart[0].shop?.toLowerCase().trim().includes(r.name?.toLowerCase())
             )
           }
 
-          if (matchingRestaurant) {
+          if (matchingShop) {
             // CRITICAL: Validate that the found shop matches cart items
-            const cartRestaurantName = cart[0]?.shop?.toLowerCase().trim();
-            const foundRestaurantName = matchingRestaurant.name?.toLowerCase().trim();
+            const cartShopName = cart[0]?.shop?.toLowerCase().trim();
+            const foundShopName = matchingShop.name?.toLowerCase().trim();
 
-            if (cartRestaurantName && foundRestaurantName && cartRestaurantName !== foundRestaurantName) {
+            if (cartShopName && foundShopName && cartShopName !== foundShopName) {
               debugError("? CRITICAL: Shop name mismatch!", {
-                cartRestaurantName: cart[0]?.shop,
-                foundRestaurantName: matchingRestaurant.name,
-                cartRestaurantId: cart[0]?.restaurantId,
-                foundRestaurantId: matchingRestaurant.restaurantId || matchingRestaurant._id
+                cartShopName: cart[0]?.shop,
+                foundShopName: matchingShop.name,
+                cartShopId: cart[0]?.shopId,
+                foundShopId: matchingShop.shopId || matchingShop._id
               });
-              // Don't set restaurantData if names don't match - this prevents wrong shop assignment
-              setLoadingRestaurant(false);
+              // Don't set shopData if names don't match - this prevents wrong shop assignment
+              setLoadingShop(false);
               return;
             }
 
             debugLog("? Found shop by name:", {
-              name: matchingRestaurant.name,
-              _id: matchingRestaurant._id,
-              restaurantId: matchingRestaurant.restaurantId,
-              slug: matchingRestaurant.slug,
-              cartRestaurantName: cart[0]?.shop
+              name: matchingShop.name,
+              _id: matchingShop._id,
+              shopId: matchingShop.shopId,
+              slug: matchingShop.slug,
+              cartShopName: cart[0]?.shop
             })
-            setRestaurantData(matchingRestaurant)
-            setLoadingRestaurant(false)
+            setShopData(matchingShop)
+            setLoadingShop(false)
             return
           } else {
             debugWarn("?? Shop not found even by name search. Searched in", shops.length, "shops")
@@ -847,24 +847,24 @@ export default function Cart() {
       }
 
       // If all strategies fail, set to null
-      setRestaurantData(null)
-      setLoadingRestaurant(false)
+      setShopData(null)
+      setLoadingShop(false)
     }
 
-    fetchRestaurantData()
-  }, [cart.length, cart[0]?.restaurantId, cart[0]?.shop])
+    fetchShopData()
+  }, [cart.length, cart[0]?.shopId, cart[0]?.shop])
 
   // Fetch approved addons for the shop
   useEffect(() => {
     const fetchAddonsWithId = async (idToUse) => {
 
       debugLog("?? Addons fetch - Using ID:", {
-        restaurantData: restaurantData ? {
-          _id: restaurantData._id,
-          restaurantId: restaurantData.restaurantId,
-          name: restaurantData.name
+        shopData: shopData ? {
+          _id: shopData._id,
+          shopId: shopData.shopId,
+          name: shopData.name
         } : 'Not loaded',
-        cartRestaurantId: restaurantId,
+        cartShopId: shopId,
         idToUse: idToUse
       })
 
@@ -872,7 +872,7 @@ export default function Cart() {
       const idString = String(idToUse)
       debugLog("?? Shop ID string:", idString, "Type:", typeof idString, "Length:", idString.length)
 
-      // Validate ID format (should be ObjectId or restaurantId format)
+      // Validate ID format (should be ObjectId or shopId format)
       const isValidIdFormat = /^[a-zA-Z0-9\-_]+$/.test(idString) && idString.length >= 3
 
       if (!isValidIdFormat) {
@@ -884,7 +884,7 @@ export default function Cart() {
       try {
         setLoadingAddons(true)
         debugLog("?? Fetching addons for shop ID:", idString)
-        const response = await restaurantAPI.getAddonsByRestaurantId(idString)
+        const response = await shopAPI.getAddonsByShopId(idString)
         debugLog("? Addons API response received:", response?.data)
         debugLog("?? Response structure:", {
           success: response?.data?.success,
@@ -932,38 +932,38 @@ export default function Cart() {
         return
       }
 
-      // Wait for restaurantData to be loaded (including fallback search)
-      if (loadingRestaurant) {
-        debugLog("? Waiting for restaurantData to load (including fallback search)...")
+      // Wait for shopData to be loaded (including fallback search)
+      if (loadingShop) {
+        debugLog("? Waiting for shopData to load (including fallback search)...")
         return
       }
 
-      // Must have restaurantData to fetch addons
-      if (!restaurantData) {
-        debugWarn("?? No restaurantData available for addons fetch")
+      // Must have shopData to fetch addons
+      if (!shopData) {
+        debugWarn("?? No shopData available for addons fetch")
         setAddons([])
         return
       }
 
-      // Use restaurantData ID (most reliable)
-      const idToUse = restaurantData._id || restaurantData.restaurantId
+      // Use shopData ID (most reliable)
+      const idToUse = shopData._id || shopData.shopId
       if (!idToUse) {
-        debugWarn("?? No valid shop ID in restaurantData")
+        debugWarn("?? No valid shop ID in shopData")
         setAddons([])
         return
       }
 
-      debugLog("? Using restaurantData ID for addons:", idToUse)
+      debugLog("? Using shopData ID for addons:", idToUse)
       fetchAddonsWithId(idToUse)
     }
 
     fetchAddons()
-  }, [restaurantData, cart.length, loadingRestaurant])
+  }, [shopData, cart.length, loadingShop])
 
   // Fetch coupons for items in cart
   useEffect(() => {
     const fetchCouponsForCartItems = async () => {
-      if (cart.length === 0 || !restaurantId) {
+      if (cart.length === 0 || !shopId) {
         setAvailableCoupons([])
         return
       }
@@ -984,7 +984,7 @@ export default function Cart() {
 
         try {
           debugLog(`[CART-COUPONS] Fetching coupons for itemId: ${couponItemId}, name: ${cartItem.name}`)
-          const response = await restaurantAPI.getCouponsByItemIdPublic(restaurantId, couponItemId)
+          const response = await shopAPI.getCouponsByItemIdPublic(shopId, couponItemId)
 
           if (response?.data?.success && response?.data?.data?.coupons) {
             const coupons = response.data.data.coupons
@@ -1051,7 +1051,7 @@ export default function Cart() {
     }
 
     fetchCouponsForCartItems()
-  }, [cart, restaurantId])
+  }, [cart, shopId])
 
   // Calculate pricing from backend whenever cart, address, or coupon changes
   useEffect(() => {
@@ -1080,8 +1080,8 @@ export default function Cart() {
           isVeg: isItemVeg(item)
         }))
 
-        const resolvedRestaurantId = resolveRestaurantMongoId(restaurantData, restaurantId) || undefined
-        if (hasFoodItems && !isMongoObjectId(resolvedRestaurantId)) {
+        const resolvedShopId = resolveShopMongoId(shopData, shopId) || undefined
+        if (hasFoodItems && !isMongoObjectId(resolvedShopId)) {
           if (requestId === pricingRequestIdRef.current) {
             setPricing(null)
           }
@@ -1094,7 +1094,7 @@ export default function Cart() {
 
         const response = await orderAPI.calculateOrder({
           items,
-          restaurantId: resolvedRestaurantId,
+          shopId: resolvedShopId,
           fulfillmentType,
           isBulkOrder: bulkOrderMode,
           deliveryAddress: isTakeaway ? null : defaultAddress,
@@ -1174,7 +1174,7 @@ export default function Cart() {
     }
 
     calculatePricing()
-  }, [cart, defaultAddress, appliedCoupon, couponCode, restaurantId, restaurantData, hasFoodItems, hasSavedAddress, fulfillmentType, isTakeaway, bulkOrderMode])
+  }, [cart, defaultAddress, appliedCoupon, couponCode, shopId, shopData, hasFoodItems, hasSavedAddress, fulfillmentType, isTakeaway, bulkOrderMode])
 
   // Fetch wallet balance
   useEffect(() => {
@@ -1324,7 +1324,7 @@ export default function Cart() {
           ? appliedCoupon.discount || 0
           : 0
   ))
-  const autoAppliedRestaurantOffer =
+  const autoAppliedShopOffer =
     pricing?.autoAppliedOffer?.type === "shop-auto-offer"
       ? pricing.autoAppliedOffer
       : pricing?.appliedCoupon?.type === "shop-auto-offer"
@@ -1335,13 +1335,13 @@ export default function Cart() {
   
   // Hide offer if it's already been used (check feedback from backend)
   // If backend returns null for autoAppliedOffer, it means the offer was filtered out (e.g., already used)
-  const shouldShowRestaurantOffer = !displayedAppliedCoupon &&
-    autoAppliedRestaurantOffer && 
+  const shouldShowShopOffer = !displayedAppliedCoupon &&
+    autoAppliedShopOffer && 
     !pricing?.autoOfferFeedback?.reason?.includes('used') &&
     !pricing?.autoOfferFeedback?.reason?.includes('limit') &&
     !pricing?.autoOfferFeedback?.reason?.includes('per_user')
   
-  const displayedRestaurantOffer = shouldShowRestaurantOffer ? autoAppliedRestaurantOffer : null
+  const displayedShopOffer = shouldShowShopOffer ? autoAppliedShopOffer : null
   const totalBeforeDiscount = subtotal + deliveryFee + platformFee + gstCharges
   
   // Calculate effective discount based on mutual exclusivity
@@ -1366,7 +1366,7 @@ export default function Cart() {
         : "Cash on Delivery"
 
   // Shop name from data or cart
-  const restaurantName = restaurantData?.name || cart[0]?.shop || "Shop"
+  const shopName = shopData?.name || cart[0]?.shop || "Shop"
   const cartBulkOrderSummary = useMemo(() => {
     return cart.map((item) => {
       const bulkOrderPricing = normalizeBulkOrderPricing(item?.bulkOrderPricing)
@@ -1530,12 +1530,12 @@ export default function Cart() {
   }
 
   const handleShare = async () => {
-    const restaurantNameStr = restaurantName || companyName || "this shop"
+    const shopNameStr = shopName || companyName || "this shop"
     const shareUrl = window.location.href
-    const shareText = `Check out what I'm ordering from ${restaurantNameStr}! ${shareUrl}`
+    const shareText = `Check out what I'm ordering from ${shopNameStr}! ${shareUrl}`
 
     const payload = {
-      title: `My Cart at ${restaurantNameStr}`,
+      title: `My Cart at ${shopNameStr}`,
       text: shareText,
       url: shareUrl,
     }
@@ -1639,8 +1639,8 @@ export default function Cart() {
   }
 
   const handleBack = () => {
-    // Priority: slug > restaurantId (both work for the shop details route)
-    const idOrSlug = restaurantData?.slug || restaurantId
+    // Priority: slug > shopId (both work for the shop details route)
+    const idOrSlug = shopData?.slug || shopId
     if (idOrSlug) {
       navigate(`/food/user/shops/${idOrSlug}`)
     } else {
@@ -1761,7 +1761,7 @@ export default function Cart() {
 
         const response = await orderAPI.calculateOrder({
           items,
-          restaurantId: resolveRestaurantMongoId(restaurantData, restaurantId),
+          shopId: resolveShopMongoId(shopData, shopId),
           fulfillmentType,
           isBulkOrder: bulkOrderMode,
           deliveryAddress: isTakeaway ? null : defaultAddress,
@@ -1826,7 +1826,7 @@ export default function Cart() {
 
       const response = await orderAPI.calculateOrder({
         items,
-        restaurantId: resolveRestaurantMongoId(restaurantData, restaurantId),
+        shopId: resolveShopMongoId(shopData, shopId),
         fulfillmentType,
         isBulkOrder: bulkOrderMode,
         deliveryAddress: isTakeaway ? null : defaultAddress,
@@ -1889,7 +1889,7 @@ export default function Cart() {
 
         const response = await orderAPI.calculateOrder({
           items,
-          restaurantId: resolveRestaurantMongoId(restaurantData, restaurantId),
+          shopId: resolveShopMongoId(shopData, shopId),
           fulfillmentType,
           isBulkOrder: bulkOrderMode,
           deliveryAddress: isTakeaway ? null : defaultAddress,
@@ -1959,22 +1959,22 @@ export default function Cart() {
 
       // Ensure couponCode is included in pricing.
       // If `pricing` state (from calculateOrder API) is available, use it directly — it has the full
-      // discount breakdown (offerByRestaurant, couponByRestaurant, couponByAdmin).
+      // discount breakdown (offerByShop, couponByShop, couponByAdmin).
       // If `pricing` is null (calculateOrder failed / not called), build a fallback that still sends
       // the correct breakdown fields so backend records them in FoodOrder.pricing.
       const _isAutoOffer = displayedAppliedCoupon?.type === "shop-auto-offer" || appliedCoupon?.type === "shop-auto-offer";
       const _autoOfferAmt = _isAutoOffer ? Number(appliedCoupon?.discount || displayedAppliedCoupon?.discount || 0) : 0;
       const _couponAmt = !_isAutoOffer ? Number(appliedCoupon?.discount || 0) : 0;
-      const _isCouponByRestaurant = !_isAutoOffer && appliedCoupon?.fundedBy === "shop";
+      const _isCouponByShop = !_isAutoOffer && appliedCoupon?.fundedBy === "shop";
       const orderPricing = pricing || {
         subtotal,
         deliveryFee: isTakeaway ? 0 : deliveryFee,
         tax: gstCharges,
         platformFee,
         discount,
-        offerByRestaurant: _autoOfferAmt,                              // Scenario 3: item-level auto offer
-        couponByRestaurant: _isCouponByRestaurant ? _couponAmt : 0,   // Scenario 1: shop-funded coupon
-        couponByAdmin: !_isCouponByRestaurant ? _couponAmt : 0,       // Scenario 2: platform-funded coupon
+        offerByShop: _autoOfferAmt,                              // Scenario 3: item-level auto offer
+        couponByShop: _isCouponByShop ? _couponAmt : 0,   // Scenario 1: shop-funded coupon
+        couponByAdmin: !_isCouponByShop ? _couponAmt : 0,       // Scenario 2: platform-funded coupon
         total,
         couponCode: _isAutoOffer ? null : appliedCoupon?.code || null
       };
@@ -2009,25 +2009,25 @@ export default function Cart() {
       debugLog("?? Authentication token present:", !!localStorage.getItem('accessToken') || !!localStorage.getItem('user_accessToken'))
 
       // CRITICAL: Validate shop ID before placing order
-      // Ensure we're using the correct shop from restaurantData (most reliable)
-      const finalRestaurantId = resolveRestaurantMongoId(restaurantData);
-      const finalRestaurantName = restaurantData?.name || null;
+      // Ensure we're using the correct shop from shopData (most reliable)
+      const finalShopId = resolveShopMongoId(shopData);
+      const finalShopName = shopData?.name || null;
 
-      if (!finalRestaurantId) {
+      if (!finalShopId) {
         debugError('? CRITICAL: Cannot place order - Shop ID is missing!');
         debugError('?? Debug info:', {
-          restaurantData: restaurantData ? {
-            _id: restaurantData._id,
-            restaurantId: restaurantData.restaurantId,
-            name: restaurantData.name
+          shopData: shopData ? {
+            _id: shopData._id,
+            shopId: shopData.shopId,
+            name: shopData.name
           } : 'Not loaded',
-          cartRestaurantId: restaurantId,
-          cartRestaurantName: cart[0]?.shop,
+          cartShopId: shopId,
+          cartShopName: cart[0]?.shop,
           cartItems: cart.map(item => ({
             id: item.id,
             name: item.name,
             shop: item.shop,
-            restaurantId: item.restaurantId
+            shopId: item.shopId
           }))
         });
         alert('Error: Shop information is missing. Please refresh the page and try again.');
@@ -2036,47 +2036,47 @@ export default function Cart() {
       }
 
       // CRITICAL: Validate that ALL cart items belong to the SAME shop
-      const cartRestaurantIds = cart
-        .map(item => item.restaurantId)
+      const cartShopIds = cart
+        .map(item => item.shopId)
         .filter(Boolean)
         .map(id => String(id).trim()); // Normalize to string and trim
 
-      const cartRestaurantNames = cart
+      const cartShopNames = cart
         .map(item => item.shop)
         .filter(Boolean)
         .map(name => name.trim().toLowerCase()); // Normalize names
 
       // Get unique values (after normalization)
-      const uniqueRestaurantIds = [...new Set(cartRestaurantIds)];
-      const uniqueRestaurantNames = [...new Set(cartRestaurantNames)];
+      const uniqueShopIds = [...new Set(cartShopIds)];
+      const uniqueShopNames = [...new Set(cartShopNames)];
 
       // Check if cart has items from multiple shops
       // Note: If shop names match, allow even if IDs differ (same shop, different ID format)
-      if (uniqueRestaurantNames.length > 1) {
+      if (uniqueShopNames.length > 1) {
         // Different shop names = definitely different shops
         debugError('? CRITICAL ERROR: Cart contains items from multiple shops!', {
-          restaurantIds: uniqueRestaurantIds,
-          restaurantNames: uniqueRestaurantNames,
+          shopIds: uniqueShopIds,
+          shopNames: uniqueShopNames,
           cartItems: cart.map(item => ({
             id: item.id,
             name: item.name,
             shop: item.shop,
-            restaurantId: item.restaurantId
+            shopId: item.shopId
           }))
         });
 
-        // Automatically clean cart to keep items from the shop matching restaurantData
-        if (finalRestaurantId && finalRestaurantName) {
-          debugLog('?? Auto-cleaning cart to keep items from:', finalRestaurantName);
-          cleanCartForRestaurant(finalRestaurantId, finalRestaurantName);
+        // Automatically clean cart to keep items from the shop matching shopData
+        if (finalShopId && finalShopName) {
+          debugLog('?? Auto-cleaning cart to keep items from:', finalShopName);
+          cleanCartForShop(finalShopId, finalShopName);
           toast.error('Cart contained items from different shops. Items from other shops have been removed.');
         } else {
-          // If restaurantData is not available, keep items from first shop in cart
-          const firstRestaurantId = cart[0]?.restaurantId;
-          const firstRestaurantName = cart[0]?.shop;
-          if (firstRestaurantId && firstRestaurantName) {
-            debugLog('?? Auto-cleaning cart to keep items from first shop:', firstRestaurantName);
-            cleanCartForRestaurant(firstRestaurantId, firstRestaurantName);
+          // If shopData is not available, keep items from first shop in cart
+          const firstShopId = cart[0]?.shopId;
+          const firstShopName = cart[0]?.shop;
+          if (firstShopId && firstShopName) {
+            debugLog('?? Auto-cleaning cart to keep items from first shop:', firstShopName);
+            cleanCartForShop(firstShopId, firstShopName);
             toast.error('Cart contained items from different shops. Items from other shops have been removed.');
           } else {
             toast.error('Cart contains items from different shops. Please clear cart and try again.');
@@ -2089,49 +2089,49 @@ export default function Cart() {
 
       // If shop names match but IDs differ, that's OK (same shop, different ID format)
       // But log a warning in development
-      if (uniqueRestaurantIds.length > 1 && uniqueRestaurantNames.length === 1) {
+      if (uniqueShopIds.length > 1 && uniqueShopNames.length === 1) {
         if (process.env.NODE_ENV === 'development') {
           debugWarn('?? Cart items have different shop IDs but same name. This is OK if IDs are in different formats.', {
-            restaurantIds: uniqueRestaurantIds,
-            restaurantName: uniqueRestaurantNames[0]
+            shopIds: uniqueShopIds,
+            shopName: uniqueShopNames[0]
           });
         }
       }
 
-      // Validate that cart items' restaurantId matches the restaurantData
-      if (cartRestaurantIds.length > 0) {
-        const cartRestaurantId = cartRestaurantIds[0];
+      // Validate that cart items' shopId matches the shopData
+      if (cartShopIds.length > 0) {
+        const cartShopId = cartShopIds[0];
 
-        // Check if cart restaurantId matches restaurantData
-        const restaurantIdMatches =
-          cartRestaurantId === finalRestaurantId ||
-          cartRestaurantId === restaurantData?._id?.toString() ||
-          cartRestaurantId === restaurantData?.restaurantId;
+        // Check if cart shopId matches shopData
+        const shopIdMatches =
+          cartShopId === finalShopId ||
+          cartShopId === shopData?._id?.toString() ||
+          cartShopId === shopData?.shopId;
 
-        if (!restaurantIdMatches) {
-          debugError('? CRITICAL ERROR: Cart restaurantId does not match restaurantData!', {
-            cartRestaurantId: cartRestaurantId,
-            finalRestaurantId: finalRestaurantId,
-            restaurantDataId: restaurantData?._id?.toString(),
-            restaurantDataRestaurantId: restaurantData?.restaurantId,
-            restaurantDataName: restaurantData?.name,
-            cartRestaurantName: cartRestaurantNames[0]
+        if (!shopIdMatches) {
+          debugError('? CRITICAL ERROR: Cart shopId does not match shopData!', {
+            cartShopId: cartShopId,
+            finalShopId: finalShopId,
+            shopDataId: shopData?._id?.toString(),
+            shopDataShopId: shopData?.shopId,
+            shopDataName: shopData?.name,
+            cartShopName: cartShopNames[0]
           });
-          alert(`Error: Cart items belong to "${cartRestaurantNames[0] || 'Unknown Shop'}" but shop data doesn't match. Please refresh the page and try again.`);
+          alert(`Error: Cart items belong to "${cartShopNames[0] || 'Unknown Shop'}" but shop data doesn't match. Please refresh the page and try again.`);
           setIsPlacingOrder(false);
           return;
         }
       }
 
       // Validate shop name matches
-      if (cartRestaurantNames.length > 0 && finalRestaurantName) {
-        const cartRestaurantName = cartRestaurantNames[0];
-        if (cartRestaurantName.toLowerCase().trim() !== finalRestaurantName.toLowerCase().trim()) {
+      if (cartShopNames.length > 0 && finalShopName) {
+        const cartShopName = cartShopNames[0];
+        if (cartShopName.toLowerCase().trim() !== finalShopName.toLowerCase().trim()) {
           debugError('? CRITICAL ERROR: Shop name mismatch!', {
-            cartRestaurantName: cartRestaurantName,
-            finalRestaurantName: finalRestaurantName
+            cartShopName: cartShopName,
+            finalShopName: finalShopName
           });
-          alert(`Error: Cart items belong to "${cartRestaurantName}" but shop data shows "${finalRestaurantName}". Please refresh the page and try again.`);
+          alert(`Error: Cart items belong to "${cartShopName}" but shop data shows "${finalShopName}". Please refresh the page and try again.`);
           setIsPlacingOrder(false);
           return;
         }
@@ -2139,27 +2139,27 @@ export default function Cart() {
 
       // Log order details for debugging
       debugLog('? Order validation passed - Placing order with shop:', {
-        restaurantId: finalRestaurantId,
-        restaurantName: finalRestaurantName,
-        restaurantDataId: restaurantData?._id,
-        restaurantDataRestaurantId: restaurantData?.restaurantId,
-        cartRestaurantId: cartRestaurantIds[0],
-        cartRestaurantName: cartRestaurantNames[0],
+        shopId: finalShopId,
+        shopName: finalShopName,
+        shopDataId: shopData?._id,
+        shopDataShopId: shopData?.shopId,
+        cartShopId: cartShopIds[0],
+        cartShopName: cartShopNames[0],
         cartItemCount: cart.length
       });
 
-      // FINAL VALIDATION: Double-check restaurantId before sending to backend
-      const cartRestaurantId = cart[0]?.restaurantId;
-      if (cartRestaurantId && cartRestaurantId !== finalRestaurantId &&
-        cartRestaurantId !== restaurantData?._id?.toString() &&
-        cartRestaurantId !== restaurantData?.restaurantId) {
-        debugError('? CRITICAL: Final validation failed - restaurantId mismatch!', {
-          cartRestaurantId: cartRestaurantId,
-          finalRestaurantId: finalRestaurantId,
-          restaurantDataId: restaurantData?._id?.toString(),
-          restaurantDataRestaurantId: restaurantData?.restaurantId,
-          cartRestaurantName: cart[0]?.shop,
-          finalRestaurantName: finalRestaurantName
+      // FINAL VALIDATION: Double-check shopId before sending to backend
+      const cartShopId = cart[0]?.shopId;
+      if (cartShopId && cartShopId !== finalShopId &&
+        cartShopId !== shopData?._id?.toString() &&
+        cartShopId !== shopData?.shopId) {
+        debugError('? CRITICAL: Final validation failed - shopId mismatch!', {
+          cartShopId: cartShopId,
+          finalShopId: finalShopId,
+          shopDataId: shopData?._id?.toString(),
+          shopDataShopId: shopData?.shopId,
+          cartShopName: cart[0]?.shop,
+          finalShopName: finalShopName
         });
         alert('Error: Shop information mismatch detected. Please refresh the page and try again.');
         setIsPlacingOrder(false);
@@ -2179,11 +2179,11 @@ export default function Cart() {
             },
         customerName: recipientName,
         customerPhone: recipientPhone || defaultAddress?.phone || "",
-        restaurantId: finalRestaurantId,
-        restaurantName: finalRestaurantName || undefined,
+        shopId: finalShopId,
+        shopName: finalShopName || undefined,
         pricing: orderPricing,
         note: "",
-        restaurantNote: restaurantNote || "",
+        shopNote: shopNote || "",
         sendCutlery: sendCutlery !== false,
         paymentMethod: selectedPaymentMethod,
         // `useZone()` can return `null`. Zod expects string/undefined, not null.
@@ -2194,8 +2194,8 @@ export default function Cart() {
       };
       // Log final order details (including paymentMethod for COD debugging)
       debugLog('?? FINAL: Sending order to backend with:', {
-        restaurantId: finalRestaurantId,
-        restaurantName: finalRestaurantName,
+        shopId: finalShopId,
+        shopName: finalShopName,
         itemCount: orderItems.length,
         totalAmount: orderPricing.total,
         paymentMethod: orderPayload.paymentMethod
@@ -2222,7 +2222,7 @@ export default function Cart() {
         setShowOrderSuccess(true)
         window.dispatchEvent(new CustomEvent('order-placed', { detail: { order } }))
         clearCart()
-        setRestaurantNote("")
+        setShopNote("")
         setShowNoteInput(false)
         try {
           window.localStorage.removeItem(CART_ORDER_NOTE_STORAGE_KEY)
@@ -2240,7 +2240,7 @@ export default function Cart() {
         setShowOrderSuccess(true)
         window.dispatchEvent(new CustomEvent('order-placed', { detail: { order } }))
         clearCart()
-        setRestaurantNote("")
+        setShopNote("")
         setShowNoteInput(false)
         try {
           window.localStorage.removeItem(CART_ORDER_NOTE_STORAGE_KEY)
@@ -2306,7 +2306,7 @@ export default function Cart() {
         notes: {
           orderId: order._id || order.orderId,
           userId: userInfo.id || "",
-          restaurantId: restaurantId || "unknown"
+          shopId: shopId || "unknown"
         },
         handler: async (response) => {
           try {
@@ -2339,7 +2339,7 @@ export default function Cart() {
               setShowOrderSuccess(true)
               window.dispatchEvent(new CustomEvent('order-placed', { detail: { order } }))
               clearCart()
-              setRestaurantNote("")
+              setShopNote("")
               setShowNoteInput(false)
               try {
                 window.localStorage.removeItem(CART_ORDER_NOTE_STORAGE_KEY)
@@ -2479,9 +2479,9 @@ export default function Cart() {
                 <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
               <div className="min-w-0">
-                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">{restaurantName}</p>
+                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">{shopName}</p>
                 <p className="text-sm md:text-base font-medium text-gray-800 dark:text-white truncate">
-                  {restaurantData?.estimatedDeliveryTime || "10-15 mins"} to <span className="font-semibold">Location</span>
+                  {shopData?.estimatedDeliveryTime || "10-15 mins"} to <span className="font-semibold">Location</span>
                   <span className="text-gray-400 dark:text-gray-500 ml-1 text-xs md:text-sm">{defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || defaultAddress?.city || "Select address") : "Select address"}</span>
                 </p>
               </div>
@@ -2661,7 +2661,7 @@ export default function Cart() {
                 >
                   <FileText className="h-4 w-4 md:h-5 md:w-5" />
                   <span className="truncate">
-                    {restaurantNote || "Add shop note"}
+                    {shopNote || "Add shop note"}
                   </span>
                 </button>
                 <button
@@ -2691,8 +2691,8 @@ export default function Cart() {
                     Note for shop
                   </p>
                   <textarea
-                    value={restaurantNote}
-                    onChange={(e) => setRestaurantNote(e.target.value)}
+                    value={shopNote}
+                    onChange={(e) => setShopNote(e.target.value)}
                     placeholder="Eg. Less spicy, no onion, pack gravy separately"
                     className="w-full border border-gray-200 dark:border-gray-700 rounded-lg md:rounded-xl p-3 md:p-4 text-sm md:text-base resize-none h-20 md:h-24 focus:outline-none bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100"
                     style={{ borderColor: `${BRAND_THEME.colors.brand.primary}33`, outlineColor: BRAND_THEME.colors.brand.primary }}
@@ -2703,7 +2703,7 @@ export default function Cart() {
                       Ye note shop ko order receive hote hi first popup me dikhaya jayega.
                     </p>
                     <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
-                      {restaurantNote.length}/240
+                      {shopNote.length}/240
                     </span>
                   </div>
                 </div>
@@ -2753,15 +2753,15 @@ export default function Cart() {
                             <button
                               onClick={() => {
                                 // Use shop info from existing cart items to ensure format consistency
-                                const cartRestaurantId = cart[0]?.restaurantId || restaurantId;
-                                const cartRestaurantName = cart[0]?.shop || restaurantName;
+                                const cartShopId = cart[0]?.shopId || shopId;
+                                const cartShopName = cart[0]?.shop || shopName;
 
-                                if (!cartRestaurantId || !cartRestaurantName) {
+                                if (!cartShopId || !cartShopName) {
                                   debugError('? Cannot add addon: Missing shop information', {
-                                    cartRestaurantId,
-                                    cartRestaurantName,
-                                    restaurantId,
-                                    restaurantName,
+                                    cartShopId,
+                                    cartShopName,
+                                    shopId,
+                                    shopName,
                                     cartItem: cart[0]
                                   });
                                   toast.error('Shop information is missing. Please refresh the page.');
@@ -2775,8 +2775,8 @@ export default function Cart() {
                                   image: addon.image || (addon.images && addon.images[0]) || "",
                                   description: addon.description || "",
                                   isVeg: true,
-                                  shop: cartRestaurantName,
-                                  restaurantId: cartRestaurantId
+                                  shop: cartShopName,
+                                  shopId: cartShopId
                                 });
                                 if (!result?.ok && result?.error) {
                                   toast.error(result.error);
@@ -2812,19 +2812,19 @@ export default function Cart() {
                   </div>
                 )}
 
-                {displayedRestaurantOffer ? (
+                {displayedShopOffer ? (
                   <div className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-800">
                     <div className="flex items-start gap-3 flex-1">
                       <Percent className="h-5 w-5 mt-0.5" style={{ color: BRAND_THEME.colors.brand.primary }} />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                           {displayedAppliedCoupon 
-                            ? `'${displayedRestaurantOffer.title || "Offer"}' available`
-                            : `'${displayedRestaurantOffer.title || "Offer"}' auto-applied`}
+                            ? `'${displayedShopOffer.title || "Offer"}' available`
+                            : `'${displayedShopOffer.title || "Offer"}' auto-applied`}
                         </p>
                         <p className="text-xs font-medium mt-0.5" style={{ color: BRAND_THEME.colors.brand.primary }}>
                           {displayedAppliedCoupon 
-                            ? `Apply to save ${RUPEE_SYMBOL}${displayedRestaurantOffer.discount || displayedRestaurantOffer.amount || 0}`
+                            ? `Apply to save ${RUPEE_SYMBOL}${displayedShopOffer.discount || displayedShopOffer.amount || 0}`
                             : `You saved ${RUPEE_SYMBOL}${autoOfferDiscount}`}
                         </p>
                       </div>
@@ -2989,7 +2989,7 @@ export default function Cart() {
                             <Zap className="h-4 w-4 mb-1" />
                             <span className="text-xs">Immediate</span>
                             <span className="text-[10px] opacity-80 mt-0.5">
-                              {isTakeaway ? "Pickup soon" : (restaurantData?.estimatedDeliveryTime || "15-20 mins")}
+                              {isTakeaway ? "Pickup soon" : (shopData?.estimatedDeliveryTime || "15-20 mins")}
                             </span>
                           </button>
                         )}
@@ -3065,7 +3065,7 @@ export default function Cart() {
                     <div className="mt-2 space-y-3 pt-3 border-t border-slate-100 dark:border-gray-800">
                       {loadingTimings ? (
                         <div className="text-center py-2 text-xs text-gray-500 animate-pulse">Loading timings...</div>
-                      ) : !restaurantTimings ? (
+                      ) : !shopTimings ? (
                         <div className="text-center py-2 text-xs text-red-500">Could not load shop timings</div>
                       ) : (
                         <>
@@ -3144,12 +3144,12 @@ export default function Cart() {
                         <div className="flex flex-col">
                           <p className="text-sm md:text-base text-gray-800 dark:text-gray-200">
                             Pickup from{" "}
-                            <span className="font-semibold">{restaurantName}</span>
+                            <span className="font-semibold">{shopName}</span>
                           </p>
                           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 pr-4">
-                            {restaurantData?.address ||
-                              restaurantData?.location?.formattedAddress ||
-                              restaurantData?.area ||
+                            {shopData?.address ||
+                              shopData?.location?.formattedAddress ||
+                              shopData?.area ||
                               "Collect your order directly from the shop"}
                           </p>
                         </div>

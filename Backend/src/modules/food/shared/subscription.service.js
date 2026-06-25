@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { ValidationError, NotFoundError, ForbiddenError } from '../../../core/auth/errors.js';
 import { FoodSubscriptionPackage } from '../admin/models/subscriptionPackage.model.js';
 import { FoodSubscription } from './subscription.model.js';
-import { FoodRestaurant } from '../restaurant/models/restaurant.model.js';
+import { FoodShop } from '../shop/models/shop.model.js';
 import { FoodUser } from '../../../core/users/user.model.js';
 import { FoodZone } from '../admin/models/zone.model.js';
 import { createInboxNotifications } from '../../../core/notifications/notification.service.js';
@@ -25,7 +25,7 @@ const formatCurrency = (value, currency = 'INR') => {
 
 const canonicalizePackageType = (value) => {
     const normalized = String(value || '').trim().toLowerCase();
-    if (normalized === 'resto' || normalized === 'restaurant') return 'Resto';
+    if (normalized === 'resto' || normalized === 'shop') return 'Resto';
     if (normalized === 'customer' || normalized === 'user') return 'Customer';
     throw new ValidationError('Invalid package type');
 };
@@ -215,8 +215,8 @@ const mapSubscriptionDoc = (subscription, livePackageMap = new Map()) => {
     };
 };
 
-const maybeSendRestaurantExpiryReminder = async (subscription) => {
-    if (!subscription || subscription.ownerType !== 'RESTAURANT' || subscription.status !== 'active') return;
+const maybeSendShopExpiryReminder = async (subscription) => {
+    if (!subscription || subscription.ownerType !== 'SHOP' || subscription.status !== 'active') return;
 
     const daysLeft = getDaysLeft(subscription.expiryDate);
     const reminderField =
@@ -228,7 +228,7 @@ const maybeSendRestaurantExpiryReminder = async (subscription) => {
     const updated = await FoodSubscription.findOneAndUpdate(
         {
             _id: subscription._id,
-            ownerType: 'RESTAURANT',
+            ownerType: 'SHOP',
             status: 'active',
             [reminderField]: null,
         },
@@ -243,24 +243,24 @@ const maybeSendRestaurantExpiryReminder = async (subscription) => {
     const title = `Subscription expires in ${daysLeft} days`;
     const message =
         daysLeft === 2
-            ? 'Your restaurant subscription will expire in 2 days. Renew soon to avoid losing benefits.'
-            : 'Your restaurant subscription will expire in 10 days. Renew in time to keep your benefits active.';
+            ? 'Your shop subscription will expire in 2 days. Renew soon to avoid losing benefits.'
+            : 'Your shop subscription will expire in 10 days. Renew in time to keep your benefits active.';
 
     const metadata = {
         subscriptionId: String(subscription._id),
         packageId: String(subscription.packageId),
         daysLeft: String(daysLeft),
-        type: 'restaurant_subscription_expiry_reminder',
+        type: 'shop_subscription_expiry_reminder',
     };
 
     await createInboxNotifications({
         notifications: [
             {
-                ownerType: 'RESTAURANT',
+                ownerType: 'SHOP',
                 ownerId: subscription.ownerId,
                 title,
                 message,
-                link: '/food/restaurant/my-subscription',
+                link: '/food/shop/my-subscription',
                 category: 'subscription',
                 source: 'SUBSCRIPTION_EXPIRY_REMINDER',
                 metadata,
@@ -269,13 +269,13 @@ const maybeSendRestaurantExpiryReminder = async (subscription) => {
     });
 
     await notifyOwnerSafely(
-        { ownerType: 'RESTAURANT', ownerId: subscription.ownerId },
+        { ownerType: 'SHOP', ownerId: subscription.ownerId },
         {
             title,
             body: message,
             data: {
                 type: 'subscription_expiry_reminder',
-                link: '/food/restaurant/my-subscription',
+                link: '/food/shop/my-subscription',
                 subscriptionId: String(subscription._id),
                 daysLeft: String(daysLeft),
             },
@@ -438,9 +438,9 @@ const normalizePackagePayload = (body, { partial = false } = {}) => {
 
     if (effectiveType === 'Resto') {
         const benefitType = String(body.restoBenefitType || '').trim();
-        if (!benefitType) throw new ValidationError('Restaurant benefit type is required');
+        if (!benefitType) throw new ValidationError('Shop benefit type is required');
         if (!['commission_reduction', 'priority_listing'].includes(benefitType)) {
-            throw new ValidationError('Invalid restaurant benefit type');
+            throw new ValidationError('Invalid shop benefit type');
         }
         payload.restoBenefitType = benefitType;
         payload.freeDeliveryType = null;
@@ -582,7 +582,7 @@ export const deleteSubscriptionPackage = async (packageId) => {
 
 export const listAdminSubscriptionSubscribers = async ({ type, search = '', zoneId = '', status = '' } = {}) => {
     const normalizedType = canonicalizePackageType(type);
-    const ownerType = normalizedType === 'Customer' ? 'USER' : 'RESTAURANT';
+    const ownerType = normalizedType === 'Customer' ? 'USER' : 'SHOP';
 
     await FoodSubscription.updateMany(
         {
@@ -597,10 +597,10 @@ export const listAdminSubscriptionSubscribers = async ({ type, search = '', zone
     const livePackageMap = await getLivePackageMap(subscriptions);
 
     const ownerIds = [...new Set(subscriptions.map((subscription) => String(subscription.ownerId)).filter(Boolean))];
-    const [restaurants, users] = await Promise.all([
-        ownerType === 'RESTAURANT'
-            ? FoodRestaurant.find({ _id: { $in: ownerIds } })
-                .select('restaurantName ownerName ownerPhone profileImage zoneId')
+    const [shops, users] = await Promise.all([
+        ownerType === 'SHOP'
+            ? FoodShop.find({ _id: { $in: ownerIds } })
+                .select('shopName ownerName ownerPhone profileImage zoneId')
                 .lean()
             : Promise.resolve([]),
         ownerType === 'USER'
@@ -609,12 +609,12 @@ export const listAdminSubscriptionSubscribers = async ({ type, search = '', zone
                 .lean()
             : Promise.resolve([]),
     ]);
-    const zoneIds = [...new Set(restaurants.map((doc) => String(doc?.zoneId || '')).filter(Boolean))];
+    const zoneIds = [...new Set(shops.map((doc) => String(doc?.zoneId || '')).filter(Boolean))];
     const zones = zoneIds.length
         ? await FoodZone.find({ _id: { $in: zoneIds } }).select('name zoneName serviceLocation').lean()
         : [];
 
-    const restaurantMap = new Map(restaurants.map((doc) => [String(doc._id), doc]));
+    const shopMap = new Map(shops.map((doc) => [String(doc._id), doc]));
     const userMap = new Map(users.map((doc) => [String(doc._id), doc]));
     const zoneMap = new Map(
         zones.map((doc) => [
@@ -626,19 +626,19 @@ export const listAdminSubscriptionSubscribers = async ({ type, search = '', zone
     const rows = subscriptions.map((subscription) => {
         const mapped = mapSubscriptionDoc(subscription, livePackageMap);
         const ownerId = String(subscription.ownerId);
-        const isRestaurant = ownerType === 'RESTAURANT';
-        const owner = isRestaurant ? restaurantMap.get(ownerId) : userMap.get(ownerId);
+        const isShop = ownerType === 'SHOP';
+        const owner = isShop ? shopMap.get(ownerId) : userMap.get(ownerId);
 
         return {
             id: mapped.id,
             transactionId: mapped.razorpayPaymentId || mapped.razorpayOrderId || mapped.id,
             ownerId,
             ownerType,
-            name: isRestaurant
-                ? owner?.restaurantName || owner?.ownerName || 'Unknown Restaurant'
+            name: isShop
+                ? owner?.shopName || owner?.ownerName || 'Unknown Shop'
                 : owner?.name || 'Unknown User',
-            phone: isRestaurant ? owner?.ownerPhone || '' : owner?.phone || '',
-            image: isRestaurant ? owner?.profileImage || '' : owner?.profileImage || '',
+            phone: isShop ? owner?.ownerPhone || '' : owner?.phone || '',
+            image: isShop ? owner?.profileImage || '' : owner?.profileImage || '',
             packageName: mapped.name,
             price: mapped.price,
             priceValue: mapped.priceValue,
@@ -653,8 +653,8 @@ export const listAdminSubscriptionSubscribers = async ({ type, search = '', zone
             usageLabel: mapped.usageLabel || '',
             restoBenefitType: mapped.restoBenefitType || '',
             commissionRate: mapped.commissionRate ?? '',
-            zoneId: isRestaurant ? String(owner?.zoneId || '') : '',
-            zoneLabel: isRestaurant ? zoneMap.get(String(owner?.zoneId || '')) || 'N/A' : '',
+            zoneId: isShop ? String(owner?.zoneId || '') : '',
+            zoneLabel: isShop ? zoneMap.get(String(owner?.zoneId || '')) || 'N/A' : '',
         };
     });
 
@@ -666,7 +666,7 @@ export const listAdminSubscriptionSubscribers = async ({ type, search = '', zone
         if (normalizedStatus && String(row.status || '').toLowerCase() !== normalizedStatus) {
             return false;
         }
-        if (normalizedZoneId && row.ownerType === 'RESTAURANT' && String(row.zoneId || '') !== normalizedZoneId) {
+        if (normalizedZoneId && row.ownerType === 'SHOP' && String(row.zoneId || '') !== normalizedZoneId) {
             return false;
         }
         if (!normalizedSearch) return true;
@@ -681,7 +681,7 @@ export const listAdminSubscriptionSubscribers = async ({ type, search = '', zone
 
     const activeCount = filteredRows.filter((row) => row.status === 'active').length;
     const totalRevenue = filteredRows.reduce((sum, row) => sum + Number(row.priceValue || 0), 0);
-    const zoneOptions = ownerType === 'RESTAURANT'
+    const zoneOptions = ownerType === 'SHOP'
         ? [...new Map(
             rows
                 .filter((row) => row.zoneId)
@@ -842,21 +842,21 @@ export const releaseUserFreeDeliveryBenefit = async (subscriptionId) => {
     };
 };
 
-export const getPriorityListingRestaurantIds = async (restaurantIds = []) => {
-    const normalizedRestaurantIds = [
+export const getPriorityListingShopIds = async (shopIds = []) => {
+    const normalizedShopIds = [
         ...new Set(
-            (Array.isArray(restaurantIds) ? restaurantIds : [])
+            (Array.isArray(shopIds) ? shopIds : [])
                 .map((id) => String(id || '').trim())
                 .filter((id) => mongoose.Types.ObjectId.isValid(id))
         ),
     ];
 
-    if (!normalizedRestaurantIds.length) return [];
+    if (!normalizedShopIds.length) return [];
 
     await FoodSubscription.updateMany(
         {
-            ownerType: 'RESTAURANT',
-            ownerId: { $in: normalizedRestaurantIds.map((id) => new mongoose.Types.ObjectId(id)) },
+            ownerType: 'SHOP',
+            ownerId: { $in: normalizedShopIds.map((id) => new mongoose.Types.ObjectId(id)) },
             status: 'active',
             expiryDate: { $lt: new Date() },
         },
@@ -864,8 +864,8 @@ export const getPriorityListingRestaurantIds = async (restaurantIds = []) => {
     );
 
     const subscriptions = await FoodSubscription.find({
-        ownerType: 'RESTAURANT',
-        ownerId: { $in: normalizedRestaurantIds.map((id) => new mongoose.Types.ObjectId(id)) },
+        ownerType: 'SHOP',
+        ownerId: { $in: normalizedShopIds.map((id) => new mongoose.Types.ObjectId(id)) },
         status: 'active',
         expiryDate: { $gte: new Date() },
     }).lean();
@@ -883,22 +883,22 @@ export const getPriorityListingRestaurantIds = async (restaurantIds = []) => {
         .filter(Boolean);
 };
 
-export const getActiveRestaurantCommissionBenefit = async (restaurantId) => {
-    const normalizedRestaurantId = String(restaurantId || '').trim();
-    if (!mongoose.Types.ObjectId.isValid(normalizedRestaurantId)) {
+export const getActiveShopCommissionBenefit = async (shopId) => {
+    const normalizedShopId = String(shopId || '').trim();
+    if (!mongoose.Types.ObjectId.isValid(normalizedShopId)) {
         return {
             hasActiveSubscription: false,
             appliesReducedCommission: false,
             commissionRate: null,
             subscriptionId: null,
-            reason: 'invalid_restaurant',
+            reason: 'invalid_shop',
         };
     }
 
     await FoodSubscription.updateMany(
         {
-            ownerType: 'RESTAURANT',
-            ownerId: new mongoose.Types.ObjectId(normalizedRestaurantId),
+            ownerType: 'SHOP',
+            ownerId: new mongoose.Types.ObjectId(normalizedShopId),
             status: 'active',
             expiryDate: { $lt: new Date() },
         },
@@ -906,8 +906,8 @@ export const getActiveRestaurantCommissionBenefit = async (restaurantId) => {
     );
 
     const subscription = await FoodSubscription.findOne({
-        ownerType: 'RESTAURANT',
-        ownerId: new mongoose.Types.ObjectId(normalizedRestaurantId),
+        ownerType: 'SHOP',
+        ownerId: new mongoose.Types.ObjectId(normalizedShopId),
         status: 'active',
         expiryDate: { $gte: new Date() },
     })
@@ -950,11 +950,11 @@ export const getActiveRestaurantCommissionBenefit = async (restaurantId) => {
 export const listOwnerSubscriptions = async (ownerType, ownerId) => {
     await expireOwnerSubscriptions(ownerType, ownerId);
     const subscriptions = await FoodSubscription.find({ ownerType, ownerId }).sort({ purchaseDate: -1 }).lean();
-    if (ownerType === 'RESTAURANT') {
+    if (ownerType === 'SHOP') {
         await Promise.all(
             subscriptions
                 .filter((subscription) => subscription?.status === 'active')
-                .map((subscription) => maybeSendRestaurantExpiryReminder(subscription))
+                .map((subscription) => maybeSendShopExpiryReminder(subscription))
         );
     } else if (ownerType === 'USER') {
         await Promise.all(
@@ -972,8 +972,8 @@ export const listOwnerSubscriptions = async (ownerType, ownerId) => {
 export const getCurrentOwnerSubscription = async (ownerType, ownerId) => {
     const subscriptionDoc = await getActiveOwnerSubscriptionDoc(ownerType, ownerId);
     const subscription = subscriptionDoc ? subscriptionDoc.toObject() : null;
-    if (ownerType === 'RESTAURANT' && subscription?.status === 'active') {
-        await maybeSendRestaurantExpiryReminder(subscription);
+    if (ownerType === 'SHOP' && subscription?.status === 'active') {
+        await maybeSendShopExpiryReminder(subscription);
     } else if (ownerType === 'USER' && subscription?.status === 'active') {
         await maybeSendUserExpiryReminder(subscription);
     }
@@ -1040,7 +1040,7 @@ export const createOwnerSubscriptionRazorpayOrder = async (ownerType, ownerId, b
         };
     }
 
-    const ownerReceiptPrefix = ownerType === 'RESTAURANT' ? 'sub_rest' : 'sub_user';
+    const ownerReceiptPrefix = ownerType === 'SHOP' ? 'sub_rest' : 'sub_user';
     const receipt = `${ownerReceiptPrefix}_${String(ownerId).slice(-6)}_${Date.now()}`;
     const order = await createRazorpayOrder(amountPaise, 'INR', receipt);
 

@@ -63,13 +63,13 @@ export function getUserIdFromToken(token) {
 /**
  * Check if user has access to a module based on role
  * @param {string} role - User role
- * @param {string} module - Module name (admin, restaurant, delivery, user)
+ * @param {string} module - Module name (admin, shop, delivery, user)
  * @returns {boolean} - True if user has access
  */
 export function hasModuleAccess(role, module) {
   const roleModuleMap = {
     'admin': 'admin',
-    'restaurant': 'restaurant',
+    'shop': 'shop',
     'delivery': 'delivery',
     'user': 'user'
   };
@@ -79,7 +79,7 @@ export function hasModuleAccess(role, module) {
 
 /**
  * Get module-specific access token
- * @param {string} module - Module name (admin, restaurant, delivery, user)
+ * @param {string} module - Module name (admin, shop, delivery, user)
  * @returns {string|null} - Access token or null
  */
 export function getModuleToken(module) {
@@ -88,7 +88,7 @@ export function getModuleToken(module) {
 
 /**
  * Get module-specific refresh token (fallback for WebView environments where cookies may be unreliable)
- * @param {string} module - Module name (admin, restaurant, delivery, user)
+ * @param {string} module - Module name (admin, shop, delivery, user)
  * @returns {string|null} - Refresh token or null
  */
 export function getModuleRefreshToken(module) {
@@ -97,7 +97,7 @@ export function getModuleRefreshToken(module) {
 
 /**
  * Get current user's role from a specific module's storage/token
- * @param {string} module - Module name (admin, restaurant, delivery, user)
+ * @param {string} module - Module name (admin, shop, delivery, user)
  * @returns {string|null} - Current user role or null
  */
 export function getCurrentUserRole(module = null) {
@@ -117,7 +117,7 @@ export function getCurrentUserRole(module = null) {
 
 /**
  * Get current user object from specific module's storage
- * @param {string} module - Module name (admin, restaurant, delivery, user)
+ * @param {string} module - Module name (admin, shop, delivery, user)
  * @returns {Object|null} - User object or null
  */
 export function getCurrentUser(module) {
@@ -133,7 +133,7 @@ export function getCurrentUser(module) {
 
 /**
  * Check if user is authenticated for a specific module
- * @param {string} module - Module name (admin, restaurant, delivery, user)
+ * @param {string} module - Module name (admin, shop, delivery, user)
  * @returns {boolean} - True if authenticated
  */
 export function isModuleAuthenticated(module) {
@@ -143,7 +143,7 @@ export function isModuleAuthenticated(module) {
 
 /**
  * Clear authentication data for a specific module
- * @param {string} module - Module name (admin, restaurant, delivery, user)
+ * @param {string} module - Module name (admin, shop, delivery, user)
  */
 export function clearModuleAuth(module) {
   localStorage.removeItem(`${module}_accessToken`);
@@ -157,9 +157,9 @@ export function clearModuleAuth(module) {
   }
   // Clear cached FCM web token for this module
   localStorage.removeItem(`fcm_web_registered_token_${module}`);
-  // "shop" is the frontend module name that maps to restaurant backend
-  if (module === "shop" || module === "restaurant") {
-    clearRestaurantSessionCache();
+  // "shop" is the frontend module name that maps to shop backend
+  if (module === "shop" || module === "shop") {
+    clearShopSessionCache();
     try {
       const openRequest = indexedDB.open("ShopOnboardingFiles");
       openRequest.onsuccess = (event) => {
@@ -167,10 +167,10 @@ export function clearModuleAuth(module) {
         if (db.objectStoreNames.contains("files")) {
           const tx = db.transaction("files", "readwrite");
           const store = tx.objectStore("files");
-          store.delete("backup_restaurant_accessToken");
-          store.delete("backup_restaurant_refreshToken");
-          store.delete("backup_restaurant_user");
-          store.delete("backup_restaurant_pendingPhone");
+          store.delete("backup_shop_accessToken");
+          store.delete("backup_shop_refreshToken");
+          store.delete("backup_shop_user");
+          store.delete("backup_shop_pendingPhone");
           store.delete("onboarding_draft_json");
         }
       };
@@ -189,50 +189,50 @@ export function clearUserSession() {
 }
 
 /**
- * Clear restaurant-local cached UI data to prevent cross-account stale state.
+ * Clear shop-local cached UI data to prevent cross-account stale state.
  */
-export function clearRestaurantSessionCache() {
+export function clearShopSessionCache() {
   const keys = [
-    "restaurant_owner_contact",
-    "restaurant_onboarding",
-    "restaurant_onboarding_data",
-    "restaurant_invited_users",
-    "restaurant_schedule_off",
-    "restaurant_online_status",
-    "restaurant_outlet_timings",
-    "restaurant_hub_menu_active_tab",
-    "restaurant_name",
-    "restaurantName",
-    "restaurant_pendingPhone",
+    "shop_owner_contact",
+    "shop_onboarding",
+    "shop_onboarding_data",
+    "shop_invited_users",
+    "shop_schedule_off",
+    "shop_online_status",
+    "shop_outlet_timings",
+    "shop_hub_menu_active_tab",
+    "shop_name",
+    "shopName",
+    "shop_pendingPhone",
   ];
 
   keys.forEach((key) => localStorage.removeItem(key));
 }
 
-export function setRestaurantPendingPhone(phone) {
+export function setShopPendingPhone(phone) {
   if (typeof localStorage === "undefined") return;
   if (!phone) {
-    localStorage.removeItem("restaurant_pendingPhone");
+    localStorage.removeItem("shop_pendingPhone");
     return;
   }
-  localStorage.setItem("restaurant_pendingPhone", phone);
+  localStorage.setItem("shop_pendingPhone", phone);
 }
 
-export function getRestaurantPendingPhone() {
+export function getShopPendingPhone() {
   if (typeof localStorage === "undefined") return null;
-  return localStorage.getItem("restaurant_pendingPhone");
+  return localStorage.getItem("shop_pendingPhone");
 }
 
-export function clearRestaurantPendingPhone() {
+export function clearShopPendingPhone() {
   if (typeof localStorage === "undefined") return;
-  localStorage.removeItem("restaurant_pendingPhone");
+  localStorage.removeItem("shop_pendingPhone");
 }
 
 /**
  * Clear all authentication data for all modules
  */
 export function clearAuthData() {
-  const modules = ['admin', 'shop', 'restaurant', 'delivery', 'user'];
+  const modules = ['admin', 'shop', 'shop', 'delivery', 'user'];
   modules.forEach(module => {
     clearModuleAuth(module);
   });
@@ -243,7 +243,7 @@ export function clearAuthData() {
 
 /**
  * Set authentication data for a specific module
- * @param {string} module - Module name (admin, restaurant, delivery, user)
+ * @param {string} module - Module name (admin, shop, delivery, user)
  * @param {string} token - Access token
  * @param {Object} user - User data
  * @param {string|null} refreshToken - Optional refresh token
@@ -273,9 +273,9 @@ export function setAuthData(module, token, user, refreshToken = null) {
     const authKey = `${module}_authenticated`;
     const userKey = `${module}_user`;
 
-    // Prevent stale restaurant profile data from previous account after re-login.
-    if (module === "shop" || module === "restaurant") {
-      clearRestaurantSessionCache();
+    // Prevent stale shop profile data from previous account after re-login.
+    if (module === "shop" || module === "shop") {
+      clearShopSessionCache();
     }
 
     if (module === "user") {

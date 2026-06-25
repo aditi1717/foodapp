@@ -15,12 +15,12 @@ export default function AllZonesMap() {
   const mapInstanceRef = useRef(null)
   const zonesPolygonsRef = useRef([])
   const infoWindowsRef = useRef([])
-  const restaurantMarkersRef = useRef([])
+  const shopMarkersRef = useRef([])
   
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState("")
   const [mapLoading, setMapLoading] = useState(true)
   const [zones, setZones] = useState([])
-  const [shops, setRestaurants] = useState([])
+  const [shops, setShops] = useState([])
   const [loading, setLoading] = useState(true)
   const [locationSearch, setLocationSearch] = useState("")
   const autocompleteInputRef = useRef(null)
@@ -28,7 +28,7 @@ export default function AllZonesMap() {
 
   useEffect(() => {
     fetchZones()
-    fetchRestaurants()
+    fetchShops()
     loadGoogleMaps()
   }, [])
 
@@ -62,7 +62,7 @@ export default function AllZonesMap() {
         drawAllZonesOnMap(window.google, mapInstanceRef.current)
       }
       if (shops.length > 0) {
-        drawRestaurantMarkers(window.google, mapInstanceRef.current)
+        drawShopMarkers(window.google, mapInstanceRef.current)
       }
     }
   }, [zones, mapLoading, shops])
@@ -82,11 +82,11 @@ export default function AllZonesMap() {
     }
   }
 
-  const fetchRestaurants = async () => {
+  const fetchShops = async () => {
     try {
-      const response = await adminAPI.getRestaurants({ limit: 1000 })
+      const response = await adminAPI.getShops({ limit: 1000 })
       if (response.data?.success && response.data.data?.shops) {
-        setRestaurants(response.data.data.shops)
+        setShops(response.data.data.shops)
       }
     } catch (error) {
       debugError("Error fetching shops:", error)
@@ -281,14 +281,14 @@ export default function AllZonesMap() {
   }
 
   // Draw shop markers on the map
-  const drawRestaurantMarkers = (google, map) => {
+  const drawShopMarkers = (google, map) => {
     if (!shops || shops.length === 0) return
 
     // Clear previous markers
-    restaurantMarkersRef.current.forEach(marker => {
+    shopMarkersRef.current.forEach(marker => {
       if (marker) marker.setMap(null)
     })
-    restaurantMarkersRef.current = []
+    shopMarkersRef.current = []
 
     shops.forEach(shop => {
       if (!shop.location) return
@@ -316,7 +316,7 @@ export default function AllZonesMap() {
       }
 
       // Create custom icon for shop
-      const restaurantIcon = {
+      const shopIcon = {
         path: google.maps.SymbolPath.CIRCLE,
         scale: 8,
         fillColor: "#ef4444", // Red color
@@ -329,7 +329,7 @@ export default function AllZonesMap() {
       const marker = new google.maps.Marker({
         position: { lat, lng },
         map: map,
-        icon: restaurantIcon,
+        icon: shopIcon,
         title: shop.name || "Shop",
         zIndex: 1000, // Show above zones
       })
@@ -364,7 +364,7 @@ export default function AllZonesMap() {
         infoWindowsRef.current.push(infoWindow)
       })
 
-      restaurantMarkersRef.current.push(marker)
+      shopMarkersRef.current.push(marker)
     })
   }
 

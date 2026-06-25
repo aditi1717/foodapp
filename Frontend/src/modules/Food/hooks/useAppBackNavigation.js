@@ -56,7 +56,7 @@ const resolveBackPath = ({ pathname, search, state }) => {
     return explicitBackPath || "/food/user"
   }
 
-  if (/^\/restaurants\/[^/]+$/.test(userAwarePath)) {
+  if (/^\/shops\/[^/]+$/.test(userAwarePath)) {
     const underParam = Number(searchParams.get("under"))
     if (Number.isFinite(underParam) && underParam > 0) {
       return "/food/under-price"

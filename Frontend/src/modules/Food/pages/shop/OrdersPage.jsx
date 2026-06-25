@@ -17,8 +17,8 @@ import { useNavigate } from "react-router-dom"
 import { getOrderStatus, normalizeStatus, matchesOrdersPageFilter, ORDER_STATUS } from "@food/utils/orderStatus"
 import { getTransactionsByType, getOrderPaymentAmount } from "@food/utils/walletState"
 import { formatCurrency, usdToInr } from "@food/utils/currency"
-import { restaurantAPI } from "@food/api"
-import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
+import { shopAPI } from "@food/api"
+import { ShopGridSkeleton } from "@food/components/ui/loading-skeletons"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 import BRAND_THEME from "@/config/brandTheme"
 const debugLog = (...args) => {}
@@ -142,7 +142,7 @@ export default function OrdersPage() {
         setLoading(true)
         setError(null)
         
-        const response = await restaurantAPI.getOrders()
+        const response = await shopAPI.getOrders()
         
         if (response.data?.success && response.data.data?.orders) {
           // Transform API orders to match component structure
@@ -214,7 +214,7 @@ export default function OrdersPage() {
       debugLog('?? New order notification received, refreshing orders list')
       const fetchOrders = async () => {
         try {
-          const response = await restaurantAPI.getOrders()
+          const response = await shopAPI.getOrders()
           if (response.data?.success && response.data.data?.orders) {
             const transformedOrders = response.data.data.orders.map(order => {
               const createdAt = new Date(order.createdAt)
@@ -267,7 +267,7 @@ export default function OrdersPage() {
     if (!newOrder) {
       const fetchOrders = async () => {
         try {
-          const response = await restaurantAPI.getOrders()
+          const response = await shopAPI.getOrders()
           if (response.data?.success && response.data.data?.orders) {
             const transformedOrders = response.data.data.orders.map(order => {
               const createdAt = new Date(order.createdAt)
@@ -480,7 +480,7 @@ export default function OrdersPage() {
         {/* Orders List */}
         <div className="space-y-3 md:space-y-4">
           {showOrdersSkeleton ? (
-            <RestaurantGridSkeleton
+            <ShopGridSkeleton
               count={4}
               className="grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2"
               compact

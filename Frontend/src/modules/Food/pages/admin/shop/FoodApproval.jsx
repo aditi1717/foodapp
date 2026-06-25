@@ -107,8 +107,8 @@ export default function FoodApproval() {
     return foodRequests.filter((request) =>
       request.itemName?.toLowerCase().includes(query) ||
       request.category?.toLowerCase().includes(query) ||
-      request.restaurantName?.toLowerCase().includes(query) ||
-      request.restaurantId?.toLowerCase().includes(query) ||
+      request.shopName?.toLowerCase().includes(query) ||
+      request.shopId?.toLowerCase().includes(query) ||
       request.approvalStatus?.toLowerCase().includes(query) ||
       request.entityType?.toLowerCase().includes(query)
     )
@@ -124,7 +124,7 @@ export default function FoodApproval() {
       const id = request._id || request.id
       
       if (request.entityType === 'addon') {
-        await adminAPI.approveRestaurantAddon(id)
+        await adminAPI.approveShopAddon(id)
         toast.success('Add-on approved successfully')
       } else {
         await adminAPI.approveFoodItem(id)
@@ -158,7 +158,7 @@ export default function FoodApproval() {
       const id = selectedRequest._id || selectedRequest.id
       
       if (selectedRequest.entityType === 'addon') {
-        await adminAPI.rejectRestaurantAddon(id, rejectReason)
+        await adminAPI.rejectShopAddon(id, rejectReason)
         toast.success('Add-on rejected')
       } else {
         await adminAPI.rejectFoodItem(id, rejectReason)
@@ -287,8 +287,8 @@ export default function FoodApproval() {
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap">
                             <div className="text-sm">
-                              <div className="font-semibold text-gray-900">{request.restaurantName || '-'}</div>
-                              <div className="text-gray-500 text-xs">{request.restaurantId || '-'}</div>
+                              <div className="font-semibold text-gray-900">{request.shopName || '-'}</div>
+                              <div className="text-gray-500 text-xs">{request.shopId || '-'}</div>
                             </div>
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700">
@@ -373,8 +373,8 @@ export default function FoodApproval() {
               <div className="p-4 bg-brand-50/50 rounded-xl border border-brand-100/50 flex items-center justify-between">
                 <div>
                    <h3 className="font-bold text-xs text-brand-700 uppercase tracking-wider mb-1">Shop</h3>
-                   <p className="text-sm font-semibold text-gray-900">{selectedRequest.restaurantName || '-'}</p>
-                   <p className="text-xs text-gray-500">ID: {selectedRequest.restaurantId || '-'}</p>
+                   <p className="text-sm font-semibold text-gray-900">{selectedRequest.shopName || '-'}</p>
+                   <p className="text-xs text-gray-500">ID: {selectedRequest.shopId || '-'}</p>
                 </div>
                 <div className="px-3 py-1 bg-white rounded-full border border-brand-100 text-[10px] font-bold text-brand-600">
                     {selectedRequest.entityType?.toUpperCase()}

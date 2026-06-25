@@ -10,7 +10,7 @@ const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
-export default function RestaurantReviews() {
+export default function ShopReviews() {
   const [searchQuery, setSearchQuery] = useState("")
   const [reviews, setReviews] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -124,7 +124,7 @@ export default function RestaurantReviews() {
     const fetchReviews = async () => {
       try {
         setIsLoading(true)
-        const response = await adminAPI.getRestaurantReviews({ limit: 1000 })
+        const response = await adminAPI.getShopReviews({ limit: 1000 })
         if (response?.data?.success && response?.data?.data?.reviews) {
           setReviews(response.data.data.reviews)
         } else {

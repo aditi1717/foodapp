@@ -21,7 +21,7 @@ const modulePermissions = [
   { id: "coupon", label: "Coupon" },
   { id: "deliverymenEarning", label: "Deliverymen earning provide" },
   { id: "order", label: "Order" },
-  { id: "restaurantWithdraws", label: "Shop withdraws" },
+  { id: "shopWithdraws", label: "Shop withdraws" },
   { id: "disbursement", label: "Disbursement" },
   // Column 3
   { id: "banner", label: "Banner" },

@@ -1,15 +1,15 @@
 import { useState, useMemo, useEffect, useRef } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Search, Download, ChevronDown, Eye, Settings, ArrowUpDown, Loader2, X, MapPin, Phone, Mail, Clock, Star, Building2, User, FileText, CreditCard, Calendar, Image as ImageIcon, ExternalLink, ShieldX, AlertTriangle, Trash2, Plus } from "lucide-react"
-import { adminAPI, restaurantAPI, uploadAPI } from "@food/api"
+import { adminAPI, shopAPI, uploadAPI } from "@food/api"
 import { clearModuleAuth } from "@food/utils/auth"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
-import { exportRestaurantsToPDF } from "@food/components/admin/shops/shopsExportUtils"
+import { exportShopsToPDF } from "@food/components/admin/shops/shopsExportUtils"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 
 // Import icons from Dashboard-icons
 import locationIcon from "@food/assets/Dashboard-icons/image1.png"
-import restaurantIcon from "@food/assets/Dashboard-icons/image2.png"
+import shopIcon from "@food/assets/Dashboard-icons/image2.png"
 import inactiveIcon from "@food/assets/Dashboard-icons/image3.png"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -266,7 +266,7 @@ const normalizeImageUrl = (image) => {
   return ""
 }
 
-const getPrimaryRestaurantImage = (shop, fallback = "") => {
+const getPrimaryShopImage = (shop, fallback = "") => {
   const coverImages = Array.isArray(shop?.coverImages) ? shop.coverImages : []
   const firstCoverImage = coverImages.map(normalizeImageUrl).find(Boolean)
   if (firstCoverImage) return firstCoverImage
@@ -276,20 +276,20 @@ const getPrimaryRestaurantImage = (shop, fallback = "") => {
   return (
     normalizeImageUrl(shop?.profileImage) ||
     normalizeImageUrl(shop?.logo) ||
-    normalizeImageUrl(shop?.restaurantImage) ||
+    normalizeImageUrl(shop?.shopImage) ||
     fallback
   )
 }
 
 
-export default function RestaurantsList() {
+export default function ShopsList() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
-  const [shops, setRestaurants] = useState([])
+  const [shops, setShops] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null)
-  const [restaurantDetails, setRestaurantDetails] = useState(null)
+  const [selectedShop, setSelectedShop] = useState(null)
+  const [shopDetails, setShopDetails] = useState(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [banConfirmDialog, setBanConfirmDialog] = useState(null) // { shop, action: 'ban' | 'unban' }
   const [banning, setBanning] = useState(false)
@@ -303,7 +303,7 @@ export default function RestaurantsList() {
   const [outletTimingsError, setOutletTimingsError] = useState("")
   const [detailsForm, setDetailsForm] = useState({
     name: "",
-    pureVegRestaurant: false,
+    pureVegShop: false,
     ownerName: "",
     ownerEmail: "",
     ownerPhone: "",
@@ -338,7 +338,7 @@ export default function RestaurantsList() {
   const placesAutocompleteRef = useRef(null)
 
   // Format Shop ID to REST format (e.g., REST422829)
-  const formatRestaurantId = (id) => {
+  const formatShopId = (id) => {
     if (!id) return "REST000000"
 
     const idString = String(id)
@@ -378,15 +378,15 @@ export default function RestaurantsList() {
     return `REST${lastDigits}`
   }
 
-  // Fetch restaurants from backend API
+  // Fetch shops from backend API
   useEffect(() => {
     let cancelled = false
-    const fetchRestaurants = async () => {
+    const fetchShops = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        const response = await adminAPI.getApprovedRestaurants({})
+        const response = await adminAPI.getApprovedShops({})
 
         if (cancelled) return
 
@@ -400,7 +400,7 @@ export default function RestaurantsList() {
               ? body.shops
               : []
 
-        const zoneLabelFromRestaurant = (shop) => {
+        const zoneLabelFromShop = (shop) => {
           const zid = shop?.zoneId
           const zoneName =
             (typeof zid === "object" ? (zid?.name || zid?.zoneName) : "") ||
@@ -428,22 +428,22 @@ export default function RestaurantsList() {
         }
 
         if (rawList.length > 0 || body?.success === true) {
-          const mappedRestaurants = rawList.map((shop, index) => ({
+          const mappedShops = rawList.map((shop, index) => ({
             id: shop._id || shop.id || index + 1,
             _id: shop._id,
-            name: shop.name || shop.restaurantName || "N/A",
+            name: shop.name || shop.shopName || "N/A",
             ownerName: shop.ownerName || "N/A",
             ownerPhone: shop.ownerPhone || shop.phone || "N/A",
-            zone: zoneLabelFromRestaurant(shop),
+            zone: zoneLabelFromShop(shop),
             approvalStatus: normalizeApprovalStatus(shop),
             isActive: shop.isActive !== false,
             rating: shop.ratings?.average || shop.rating || 0,
-            logo: getPrimaryRestaurantImage(shop, PLACEHOLDER_40),
+            logo: getPrimaryShopImage(shop, PLACEHOLDER_40),
             originalData: shop,
           }))
-          if (!cancelled) setRestaurants(mappedRestaurants)
+          if (!cancelled) setShops(mappedShops)
         } else {
-          if (!cancelled) setRestaurants([])
+          if (!cancelled) setShops([])
         }
       } catch (err) {
         if (cancelled) return
@@ -452,7 +452,7 @@ export default function RestaurantsList() {
         const serverMessage = err?.response?.data?.message || err?.response?.data?.error
         if (status === 401) {
           setError(serverMessage || "Session expired or not logged in. Please log in as admin.")
-          setRestaurants([])
+          setShops([])
           try {
             clearModuleAuth("admin")
           } catch (_) {}
@@ -460,27 +460,27 @@ export default function RestaurantsList() {
           return
         }
         setError(serverMessage || err.message || "Failed to fetch shops")
-        setRestaurants([])
+        setShops([])
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
-    fetchRestaurants()
+    fetchShops()
     return () => { cancelled = true }
   }, [])
 
   const [searchParams] = useSearchParams()
-  const restaurantIdFromUrl = searchParams.get("restaurantId")
+  const shopIdFromUrl = searchParams.get("shopId")
 
   useEffect(() => {
-    if (restaurantIdFromUrl && shops.length > 0) {
-      const shop = shops.find(r => r.id === restaurantIdFromUrl || r._id === restaurantIdFromUrl)
+    if (shopIdFromUrl && shops.length > 0) {
+      const shop = shops.find(r => r.id === shopIdFromUrl || r._id === shopIdFromUrl)
       if (shop) {
         handleViewDetails(shop)
       }
     }
-  }, [restaurantIdFromUrl, shops])
+  }, [shopIdFromUrl, shops])
 
   const [filters, setFilters] = useState({
     all: "All",
@@ -488,7 +488,7 @@ export default function RestaurantsList() {
     zone: "",
   })
 
-  const filteredRestaurants = useMemo(() => {
+  const filteredShops = useMemo(() => {
     let result = [...shops]
 
     if (searchQuery.trim()) {
@@ -563,9 +563,9 @@ export default function RestaurantsList() {
     setSortConfig({ key, direction })
   }
 
-  const totalRestaurants = shops.length
-  const activeRestaurants = shops.filter(r => r.isActive === true).length
-  const inactiveRestaurants = shops.filter(r => r.isActive !== true).length
+  const totalShops = shops.length
+  const activeShops = shops.filter(r => r.isActive === true).length
+  const inactiveShops = shops.filter(r => r.isActive !== true).length
 
   // Show full phone number without masking
   const formatPhone = (phone) => {
@@ -588,7 +588,7 @@ export default function RestaurantsList() {
     )
   }
 
-  const getLocationFromRestaurant = (shop) => {
+  const getLocationFromShop = (shop) => {
     return (
       shop?.onboarding?.step1?.location ||
       shop?.location ||
@@ -619,8 +619,8 @@ export default function RestaurantsList() {
     return fallback
   }
 
-  const normalizeLocationFormFromRestaurant = (shop) => {
-    const loc = getLocationFromRestaurant(shop)
+  const normalizeLocationFormFromShop = (shop) => {
+    const loc = getLocationFromShop(shop)
     const rawLat = loc.latitude ?? (Array.isArray(loc.coordinates) ? loc.coordinates[1] : "")
     const rawLng = loc.longitude ?? (Array.isArray(loc.coordinates) ? loc.coordinates[0] : "")
     const latNum = typeof rawLat === "number" ? rawLat : parseFloat(String(rawLat))
@@ -904,49 +904,49 @@ export default function RestaurantsList() {
     setIsEditingLocation(false)
     setOutletTimingsError("")
     setOutletSchedule(normalizeScheduleFromOutletTimings(null, shop?.originalData || shop))
-    setSelectedRestaurant(shop)
+    setSelectedShop(shop)
     setLoadingDetails(true)
     setLoadingOutletTimings(true)
-    setRestaurantDetails(null)
+    setShopDetails(null)
 
     try {
       // Always fetch full details from Admin API so the modal matches the
       // original joining-request data instead of the compact list payload.
-      const restaurantId = shop._id || shop.id || shop.restaurantId
-      if (!restaurantId || !adminAPI.getRestaurantById) {
+      const shopId = shop._id || shop.id || shop.shopId
+      if (!shopId || !adminAPI.getShopById) {
         const fallbackData = shop.originalData || shop
-        setRestaurantDetails(fallbackData)
+        setShopDetails(fallbackData)
         setOutletSchedule(normalizeScheduleFromOutletTimings(null, fallbackData))
         return
       }
 
       const [detailsResult, timingsResult] = await Promise.allSettled([
-        adminAPI.getRestaurantById(restaurantId),
-        adminAPI.getRestaurantOutletTimings(restaurantId),
+        adminAPI.getShopById(shopId),
+        adminAPI.getShopOutletTimings(shopId),
       ])
 
-      let resolvedRestaurant = shop.originalData || shop
+      let resolvedShop = shop.originalData || shop
       if (detailsResult.status === "fulfilled" && detailsResult.value?.data?.success) {
         const data = detailsResult.value?.data?.data
-        if (data && (data.restaurantName || data._id)) {
-          resolvedRestaurant = data
+        if (data && (data.shopName || data._id)) {
+          resolvedShop = data
         }
       }
-      setRestaurantDetails(resolvedRestaurant)
+      setShopDetails(resolvedShop)
 
       if (timingsResult.status === "fulfilled") {
         const outletTimings =
           timingsResult.value?.data?.data?.outletTimings ||
           timingsResult.value?.data?.outletTimings
-        setOutletSchedule(normalizeScheduleFromOutletTimings(outletTimings, resolvedRestaurant))
+        setOutletSchedule(normalizeScheduleFromOutletTimings(outletTimings, resolvedShop))
       } else {
-        setOutletSchedule(normalizeScheduleFromOutletTimings(null, resolvedRestaurant))
+        setOutletSchedule(normalizeScheduleFromOutletTimings(null, resolvedShop))
       }
     } catch (err) {
       debugError("Error fetching shop details:", err)
       // Use the shop data we already have
       const fallbackData = shop.originalData || shop
-      setRestaurantDetails(fallbackData)
+      setShopDetails(fallbackData)
       setOutletSchedule(normalizeScheduleFromOutletTimings(null, fallbackData))
     } finally {
       setLoadingDetails(false)
@@ -960,9 +960,9 @@ export default function RestaurantsList() {
   }
 
   const handleSaveLocation = async () => {
-    if (!selectedRestaurant) return
+    if (!selectedShop) return
 
-    const restaurantId = selectedRestaurant._id || selectedRestaurant.id
+    const shopId = selectedShop._id || selectedShop.id
     const latitude = Number(locationForm.latitude)
     const longitude = Number(locationForm.longitude)
 
@@ -995,35 +995,35 @@ export default function RestaurantsList() {
         postalCode: locationForm.pincode || "",
       }
 
-      const response = await adminAPI.updateRestaurantLocation(restaurantId, locationPayload)
-      const updatedRestaurant = response?.data?.data?.shop
+      const response = await adminAPI.updateShopLocation(shopId, locationPayload)
+      const updatedShop = response?.data?.data?.shop
 
-      if (updatedRestaurant?.location) {
-        setRestaurantDetails((prev) => ({
+      if (updatedShop?.location) {
+        setShopDetails((prev) => ({
           ...(prev || {}),
-          ...updatedRestaurant,
-          location: updatedRestaurant.location,
+          ...updatedShop,
+          location: updatedShop.location,
           onboarding: {
             ...(prev?.onboarding || {}),
             step1: {
               ...(prev?.onboarding?.step1 || {}),
-              location: updatedRestaurant.location,
+              location: updatedShop.location,
             },
           },
         }))
 
-        setRestaurants((prev) =>
+        setShops((prev) =>
           prev.map((item) =>
-            (item._id === restaurantId || item.id === restaurantId)
+            (item._id === shopId || item.id === shopId)
               ? {
                 ...item,
                 zone:
-                  updatedRestaurant.location.area ||
-                  updatedRestaurant.location.city ||
+                  updatedShop.location.area ||
+                  updatedShop.location.city ||
                   item.zone,
                 originalData: {
                   ...(item.originalData || {}),
-                  location: updatedRestaurant.location,
+                  location: updatedShop.location,
                 },
               }
               : item,
@@ -1042,10 +1042,10 @@ export default function RestaurantsList() {
   }
 
   useEffect(() => {
-    if (!isEditingLocation || !selectedRestaurant) return
+    if (!isEditingLocation || !selectedShop) return
 
-    const sourceRestaurant = restaurantDetails || selectedRestaurant?.originalData || selectedRestaurant
-    const initialForm = normalizeLocationFormFromRestaurant(sourceRestaurant)
+    const sourceShop = shopDetails || selectedShop?.originalData || selectedShop
+    const initialForm = normalizeLocationFormFromShop(sourceShop)
     setLocationForm(initialForm)
     setLocationEditError("")
 
@@ -1065,7 +1065,7 @@ export default function RestaurantsList() {
       placesAutocompleteRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditingLocation, selectedRestaurant, restaurantDetails?._id])
+  }, [isEditingLocation, selectedShop, shopDetails?._id])
 
   useEffect(() => {
     if (!isEditingDetails) return
@@ -1074,14 +1074,14 @@ export default function RestaurantsList() {
   }, [isEditingDetails, outletSchedule])
 
   const getDetailsEditSource = () => {
-    return restaurantDetails || selectedRestaurant?.originalData || selectedRestaurant || null
+    return shopDetails || selectedShop?.originalData || selectedShop || null
   }
 
-  const buildDetailsFormFromRestaurant = (shop) => {
+  const buildDetailsFormFromShop = (shop) => {
     if (!shop) {
       return {
         name: "",
-        pureVegRestaurant: false,
+        pureVegShop: false,
         ownerName: "",
         ownerEmail: "",
         ownerPhone: "",
@@ -1110,9 +1110,9 @@ export default function RestaurantsList() {
       ""
 
     return {
-      name: shop.restaurantName || shop.name || "",
-      pureVegRestaurant:
-        shop.pureVegRestaurant === true || shop.pureVegRestaurant === "true",
+      name: shop.shopName || shop.name || "",
+      pureVegShop:
+        shop.pureVegShop === true || shop.pureVegShop === "true",
       ownerName: shop.ownerName || "",
       ownerEmail: shop.ownerEmail || "",
       ownerPhone: shop.ownerPhone || shop.phone || "",
@@ -1127,7 +1127,7 @@ export default function RestaurantsList() {
 
   const handleStartEditDetails = () => {
     const source = getDetailsEditSource()
-    const nextForm = buildDetailsFormFromRestaurant(source)
+    const nextForm = buildDetailsFormFromShop(source)
     const primarySlot = Array.isArray(outletSchedule?.slots) ? outletSchedule.slots[0] : null
     if (primarySlot) {
       nextForm.openingTime = primarySlot.openingTime || nextForm.openingTime
@@ -1137,9 +1137,9 @@ export default function RestaurantsList() {
       nextForm.closingTime = ""
     }
     setDetailsForm(nextForm)
-    setLocationForm(normalizeLocationFormFromRestaurant(source))
+    setLocationForm(normalizeLocationFormFromShop(source))
     setProfileImageFile(null)
-    setProfileImagePreview(getPrimaryRestaurantImage(source))
+    setProfileImagePreview(getPrimaryShopImage(source))
     setIsEditingLocation(true)
     setIsEditingDetails(true)
   }
@@ -1153,8 +1153,8 @@ export default function RestaurantsList() {
   }
 
   const handleSaveDetails = async () => {
-    if (!selectedRestaurant) return
-    const restaurantId = selectedRestaurant._id || selectedRestaurant.id
+    if (!selectedShop) return
+    const shopId = selectedShop._id || selectedShop.id
 
     try {
       setSavingDetails(true)
@@ -1185,7 +1185,7 @@ export default function RestaurantsList() {
 
       const payload = {
         name: detailsForm.name.trim(),
-        pureVegRestaurant: detailsForm.pureVegRestaurant === true,
+        pureVegShop: detailsForm.pureVegShop === true,
         ownerName: detailsForm.ownerName.trim(),
         ownerEmail: detailsForm.ownerEmail.trim(),
         ownerPhone: detailsForm.ownerPhone.trim(),
@@ -1234,37 +1234,37 @@ export default function RestaurantsList() {
       }
 
       const requests = [
-        adminAPI.updateRestaurant(restaurantId, payload),
-        adminAPI.saveRestaurantOutletTimings(restaurantId, outletTimingsPayload),
+        adminAPI.updateShop(shopId, payload),
+        adminAPI.saveShopOutletTimings(shopId, outletTimingsPayload),
       ]
 
       if (locationPayload) {
-        requests.push(adminAPI.updateRestaurantLocation(restaurantId, locationPayload))
+        requests.push(adminAPI.updateShopLocation(shopId, locationPayload))
       }
 
       const results = await Promise.all(requests)
       const response = results[0]
       const locationResponse = locationPayload ? results[results.length - 1] : null
       
-      const updatedRestaurant = response?.data?.data?.shop || locationResponse?.data?.data?.shop
+      const updatedShop = response?.data?.data?.shop || locationResponse?.data?.data?.shop
 
-      if (updatedRestaurant) {
-        setRestaurantDetails(updatedRestaurant)
-        setRestaurants((prev) =>
+      if (updatedShop) {
+        setShopDetails(updatedShop)
+        setShops((prev) =>
           prev.map((item) =>
-            (item._id === restaurantId || item.id === restaurantId)
+            (item._id === shopId || item.id === shopId)
               ? {
                 ...item,
-                name: updatedRestaurant.name || item.name,
-                ownerName: updatedRestaurant.ownerName || item.ownerName,
-                ownerPhone: updatedRestaurant.ownerPhone || updatedRestaurant.phone || item.ownerPhone,
-                zone: updatedRestaurant.location?.area || updatedRestaurant.location?.city || item.zone,
-                isActive: updatedRestaurant.isActive !== false,
-                approvalStatus: normalizeApprovalStatus(updatedRestaurant),
-                logo: getPrimaryRestaurantImage(updatedRestaurant, item.logo),
+                name: updatedShop.name || item.name,
+                ownerName: updatedShop.ownerName || item.ownerName,
+                ownerPhone: updatedShop.ownerPhone || updatedShop.phone || item.ownerPhone,
+                zone: updatedShop.location?.area || updatedShop.location?.city || item.zone,
+                isActive: updatedShop.isActive !== false,
+                approvalStatus: normalizeApprovalStatus(updatedShop),
+                logo: getPrimaryShopImage(updatedShop, item.logo),
                 originalData: {
                   ...(item.originalData || {}),
-                  ...updatedRestaurant,
+                  ...updatedShop,
                 },
               }
               : item,
@@ -1293,12 +1293,12 @@ export default function RestaurantsList() {
     setLocationEditError("")
     setOutletTimingsError("")
     setOutletSchedule(createDefaultAdminSchedule())
-    setSelectedRestaurant(null)
-    setRestaurantDetails(null)
+    setSelectedShop(null)
+    setShopDetails(null)
   }
 
   // Handle ban/unban shop
-  const handleBanRestaurant = (shop) => {
+  const handleBanShop = (shop) => {
     const isBanned = !shop.isActive
     setBanConfirmDialog({
       shop,
@@ -1306,7 +1306,7 @@ export default function RestaurantsList() {
     })
   }
 
-  const confirmBanRestaurant = async () => {
+  const confirmBanShop = async () => {
     if (!banConfirmDialog) return
 
     const { shop, action } = banConfirmDialog
@@ -1315,15 +1315,15 @@ export default function RestaurantsList() {
 
     try {
       setBanning(true)
-      const restaurantId = shop._id || shop.id
+      const shopId = shop._id || shop.id
 
       // Update shop status via API
       try {
-        await adminAPI.updateShopStatus(restaurantId, newStatus)
+        await adminAPI.updateShopStatus(shopId, newStatus)
 
         // Update local state on success
-        setRestaurants(prevRestaurants =>
-          prevRestaurants.map(r =>
+        setShops(prevShops =>
+          prevShops.map(r =>
             r.id === shop.id || r._id === shop._id
               ? { ...r, isActive: newStatus }
               : r
@@ -1338,8 +1338,8 @@ export default function RestaurantsList() {
       } catch (apiErr) {
         debugError("API Error:", apiErr)
         // If API fails, still update locally for better UX
-        setRestaurants(prevRestaurants =>
-          prevRestaurants.map(r =>
+        setShops(prevShops =>
+          prevShops.map(r =>
             r.id === shop.id || r._id === shop._id
               ? { ...r, isActive: newStatus }
               : r
@@ -1357,31 +1357,31 @@ export default function RestaurantsList() {
     }
   }
 
-  const cancelBanRestaurant = () => {
+  const cancelBanShop = () => {
     setBanConfirmDialog(null)
   }
 
   // Handle delete shop
-  const handleDeleteRestaurant = (shop) => {
+  const handleDeleteShop = (shop) => {
     setDeleteConfirmDialog({ shop })
   }
 
-  const confirmDeleteRestaurant = async () => {
+  const confirmDeleteShop = async () => {
     if (!deleteConfirmDialog) return
 
     const { shop } = deleteConfirmDialog
 
     try {
       setDeleting(true)
-      const restaurantId = shop._id || shop.id
+      const shopId = shop._id || shop.id
 
       // Delete shop via API
       try {
-        await adminAPI.deleteRestaurant(restaurantId)
+        await adminAPI.deleteShop(shopId)
 
         // Remove from local state on success
-        setRestaurants(prevRestaurants =>
-          prevRestaurants.filter(r =>
+        setShops(prevShops =>
+          prevShops.filter(r =>
             r.id !== shop.id && r._id !== shop._id
           )
         )
@@ -1404,15 +1404,15 @@ export default function RestaurantsList() {
     }
   }
 
-  const cancelDeleteRestaurant = () => {
+  const cancelDeleteShop = () => {
     setDeleteConfirmDialog(null)
   }
 
   // Handle export functionality
   const handleExport = () => {
-    const dataToExport = filteredRestaurants.length > 0 ? filteredRestaurants : shops
-    const filename = "restaurants_list"
-    exportRestaurantsToPDF(dataToExport, filename)
+    const dataToExport = filteredShops.length > 0 ? filteredShops : shops
+    const filename = "shops_list"
+    exportShopsToPDF(dataToExport, filename)
   }
 
   return (
@@ -1435,7 +1435,7 @@ export default function RestaurantsList() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-600 mb-1">Total shops</p>
-                <p className="text-2xl font-bold text-slate-900">{totalRestaurants}</p>
+                <p className="text-2xl font-bold text-slate-900">{totalShops}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-brand-100 flex items-center justify-center">
                 <img src={locationIcon} alt="Location" className="w-8 h-8" />
@@ -1448,10 +1448,10 @@ export default function RestaurantsList() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-600 mb-1">Active shops</p>
-                <p className="text-2xl font-bold text-slate-900">{activeRestaurants}</p>
+                <p className="text-2xl font-bold text-slate-900">{activeShops}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <img src={restaurantIcon} alt="Restaurant" className="w-8 h-8" />
+                <img src={shopIcon} alt="Shop" className="w-8 h-8" />
               </div>
             </div>
           </div>
@@ -1461,7 +1461,7 @@ export default function RestaurantsList() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-600 mb-1">Inactive shops</p>
-                <p className="text-2xl font-bold text-slate-900">{inactiveRestaurants}</p>
+                <p className="text-2xl font-bold text-slate-900">{inactiveShops}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
                 <img src={inactiveIcon} alt="Inactive" className="w-8 h-8" />
@@ -1595,7 +1595,7 @@ export default function RestaurantsList() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-100">
-                  {filteredRestaurants.length === 0 ? (
+                  {filteredShops.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center justify-center">
@@ -1605,7 +1605,7 @@ export default function RestaurantsList() {
                       </td>
                     </tr>
                   ) : (
-                    filteredRestaurants.map((shop, index) => (
+                    filteredShops.map((shop, index) => (
                       <tr
                         key={shop.id}
                         className="hover:bg-slate-50 transition-colors"
@@ -1635,7 +1635,7 @@ export default function RestaurantsList() {
                               >
                                 {shop.name}
                               </span>
-                              <span className="text-xs text-slate-500">ID #{formatRestaurantId(shop.originalData?.restaurantId || shop.originalData?._id || shop._id || shop.id)}</span>
+                              <span className="text-xs text-slate-500">ID #{formatShopId(shop.originalData?.shopId || shop.originalData?._id || shop._id || shop.id)}</span>
                               <span className="text-xs text-slate-500">{renderStars(shop.rating)}</span>
                             </div>
                           </div>
@@ -1677,7 +1677,7 @@ export default function RestaurantsList() {
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleBanRestaurant(shop)}
+                              onClick={() => handleBanShop(shop)}
                               className={`p-1.5 rounded transition-colors ${!shop.isActive
                                 ? "text-green-600 hover:bg-green-50"
                                 : "text-red-600 hover:bg-red-50"
@@ -1699,7 +1699,7 @@ export default function RestaurantsList() {
       </div>
 
       {/* Shop Details Modal */}
-      {selectedRestaurant && (
+      {selectedShop && (
         <div
           className="fixed inset-0 bg-slate-900/10 backdrop-blur-md z-100 flex items-center justify-center p-4 lg:p-8 transition-all duration-300"
           onClick={closeDetailsModal}
@@ -1912,13 +1912,13 @@ export default function RestaurantsList() {
                     </div>
                     <div className="md:col-span-2 flex items-center gap-3">
                       <input
-                        id="restaurant-status-active"
+                        id="shop-status-active"
                         type="checkbox"
                         checked={detailsForm.isActive}
                         onChange={(e) => setDetailsForm((prev) => ({ ...prev, isActive: e.target.checked }))}
                         className="h-4 w-4 rounded border-slate-300 text-brand-600"
                       />
-                      <label htmlFor="restaurant-status-active" className="text-sm text-slate-700">
+                      <label htmlFor="shop-status-active" className="text-sm text-slate-700">
                         Shop is active
                       </label>
                     </div>
@@ -2068,10 +2068,10 @@ export default function RestaurantsList() {
                   </div>
                 </div>
               )}
-              {!loadingDetails && !loadingOutletTimings && !isEditingDetails && (restaurantDetails || selectedRestaurant) && (() => {
-                const r = restaurantDetails || selectedRestaurant?.originalData || selectedRestaurant
+              {!loadingDetails && !loadingOutletTimings && !isEditingDetails && (shopDetails || selectedShop) && (() => {
+                const r = shopDetails || selectedShop?.originalData || selectedShop
                 const detailsApprovalStatus = normalizeApprovalStatus(r)
-                const profileImgUrl = getPrimaryRestaurantImage(r)
+                const profileImgUrl = getPrimaryShopImage(r)
                 const coverImages = Array.isArray(r?.coverImages) ? r.coverImages.map(normalizeImageUrl).filter(Boolean) : []
                 const hasFlatAddress = r?.addressLine1 || r?.area || r?.city || r?.state || r?.pincode
                 const flatAddress = formatLocationAddress(r)
@@ -2130,7 +2130,7 @@ export default function RestaurantsList() {
                     <div className="w-32 h-32 rounded-3xl overflow-hidden bg-slate-50 shrink-0 shadow-inner group">
                       <img
                         src={profileImgUrl || PLACEHOLDER_128}
-                        alt={r?.restaurantName || r?.name || "Restaurant"}
+                        alt={r?.shopName || r?.name || "Shop"}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
                           e.target.src = PLACEHOLDER_128
@@ -2140,14 +2140,14 @@ export default function RestaurantsList() {
                     <div className="flex-1 text-center md:text-left pt-2">
                       <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
                         <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                          {r?.restaurantName || r?.name || "N/A"}
+                          {r?.shopName || r?.name || "N/A"}
                         </h3>
                         <div className="flex items-center justify-center md:justify-start gap-2">
                           <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${r?.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                             {r?.isActive !== false ? 'Active' : 'Inactive'}
                           </span>
-                          <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${r?.pureVegRestaurant === true ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-rose-100 text-rose-700 border border-rose-300'}`}>
-                            {r?.pureVegRestaurant === true ? 'Pure Veg' : 'Mixed'}
+                          <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${r?.pureVegShop === true ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-rose-100 text-rose-700 border border-rose-300'}`}>
+                            {r?.pureVegShop === true ? 'Pure Veg' : 'Mixed'}
                           </span>
                         </div>
                       </div>
@@ -2165,7 +2165,7 @@ export default function RestaurantsList() {
                         )}
                         <div className="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
                           <Building2 className="w-4 h-4" />
-                          <span className="text-xs font-bold tracking-wider">{formatRestaurantId(r?.restaurantId || r?._id)}</span>
+                          <span className="text-xs font-bold tracking-wider">{formatShopId(r?.shopId || r?._id)}</span>
                         </div>
                       </div>
                     </div>
@@ -2233,7 +2233,7 @@ export default function RestaurantsList() {
                             <div>
                               <p className="text-xs text-slate-500">Address</p>
                               <p className="text-sm font-medium text-slate-900">
-                                {formatLocationAddress(r, selectedRestaurant?.zone)}
+                                {formatLocationAddress(r, selectedShop?.zone)}
                               </p>
                             </div>
                           </div>
@@ -2385,7 +2385,7 @@ export default function RestaurantsList() {
                                 >
                                   <img
                                     src={url}
-                                    alt={`Restaurant ${idx + 1}`}
+                                    alt={`Shop ${idx + 1}`}
                                     className="w-full h-full object-cover"
                                     loading="lazy"
                                     onError={(e) => {
@@ -2467,10 +2467,10 @@ export default function RestaurantsList() {
                             </div>
                           </div>
                         )}
-                        {r.restaurantId && (
+                        {r.shopId && (
                           <div>
                             <p className="text-xs text-slate-500 mb-1">Shop ID</p>
-                            <p className="font-medium text-slate-900">{formatRestaurantId(r.restaurantId)}</p>
+                            <p className="font-medium text-slate-900">{formatShopId(r.shopId)}</p>
                           </div>
                         )}
                         {r.slug && (
@@ -2670,10 +2670,10 @@ export default function RestaurantsList() {
                     <div className="pt-6 border-t border-slate-200">
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Registration Step 1 Details</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        {r.onboarding.step1.restaurantName && (
+                        {r.onboarding.step1.shopName && (
                           <div>
                             <p className="text-xs text-slate-500 mb-1">Shop Name (at registration)</p>
-                            <p className="font-medium text-slate-900">{r.onboarding.step1.restaurantName}</p>
+                            <p className="font-medium text-slate-900">{r.onboarding.step1.shopName}</p>
                           </div>
                         )}
                         {r.onboarding.step1.ownerName && (
@@ -2803,7 +2803,7 @@ export default function RestaurantsList() {
                   )}
 
                   {/* Additional Information */}
-                  {(r?.slug || r?.restaurantId || r?.phoneVerified !== undefined || r?.signupMethod) && (
+                  {(r?.slug || r?.shopId || r?.phoneVerified !== undefined || r?.signupMethod) && (
                     <div className="pt-6 border-t border-slate-200">
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Additional Information</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -2813,10 +2813,10 @@ export default function RestaurantsList() {
                             <p className="font-medium text-slate-900">{r.slug}</p>
                           </div>
                         )}
-                        {r?.restaurantId && (
+                        {r?.shopId && (
                           <div>
                             <p className="text-xs text-slate-500 mb-1">Shop ID</p>
-                            <p className="font-medium text-slate-900">{formatRestaurantId(r.restaurantId)}</p>
+                            <p className="font-medium text-slate-900">{formatShopId(r.shopId)}</p>
                           </div>
                         )}
                         {r?.phoneVerified !== undefined && (
@@ -2843,7 +2843,7 @@ export default function RestaurantsList() {
                 </div>
                 )
               })()}
-              {!loadingDetails && !restaurantDetails && !selectedRestaurant && (
+              {!loadingDetails && !shopDetails && !selectedShop && (
                 <div className="flex flex-col items-center justify-center py-20">
                   <p className="text-lg font-semibold text-slate-700 mb-2">No Details Available</p>
                   <p className="text-sm text-slate-500">Unable to load shop details</p>
@@ -2856,7 +2856,7 @@ export default function RestaurantsList() {
 
       {/* Ban/Unban Confirmation Dialog */}
       {banConfirmDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={cancelBanRestaurant}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={cancelBanShop}>
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="p-6">
               <div className="flex items-center gap-4 mb-4">
@@ -2884,14 +2884,14 @@ export default function RestaurantsList() {
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={cancelBanRestaurant}
+                  onClick={cancelBanShop}
                   disabled={banning}
                   className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={confirmBanRestaurant}
+                  onClick={confirmBanShop}
                   disabled={banning}
                   className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${banConfirmDialog.action === 'ban'
                     ? 'bg-red-600 hover:bg-red-700'
@@ -2915,7 +2915,7 @@ export default function RestaurantsList() {
 
       {/* Delete Confirmation Dialog */}
       {deleteConfirmDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={cancelDeleteRestaurant}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={cancelDeleteShop}>
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="p-6">
               <div className="flex items-center gap-4 mb-4">
@@ -2936,14 +2936,14 @@ export default function RestaurantsList() {
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={cancelDeleteRestaurant}
+                  onClick={cancelDeleteShop}
                   disabled={deleting}
                   className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={confirmDeleteRestaurant}
+                  onClick={confirmDeleteShop}
                   disabled={deleting}
                   className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

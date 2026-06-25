@@ -18,7 +18,7 @@ import AnimatedPage from "@food/components/user/AnimatedPage";
 import { Button } from "@food/components/ui/button";
 import BottomNavOrders from "@food/components/shop/BottomNavOrders";
 import useShopBackNavigation from "@food/hooks/useShopBackNavigation";
-import { restaurantAPI } from "@/services/api";
+import { shopAPI } from "@/services/api";
 import { initRazorpayPayment } from "@food/utils/razorpay";
 import { getCompanyNameAsync } from "@food/utils/businessSettings";
 
@@ -67,7 +67,7 @@ export default function ShopSubscriptions() {
     let activeSubscription = null;
 
     try {
-      const currentResponse = await restaurantAPI.getCurrentSubscription();
+      const currentResponse = await shopAPI.getCurrentSubscription();
       activeSubscription = currentResponse?.data?.data?.subscription || null;
       if (activeSubscription?.active) {
         return activeSubscription;
@@ -77,7 +77,7 @@ export default function ShopSubscriptions() {
     }
 
     try {
-      const subscriptionsResponse = await restaurantAPI.getSubscriptions();
+      const subscriptionsResponse = await shopAPI.getSubscriptions();
       const subscriptions = subscriptionsResponse?.data?.data?.subscriptions || [];
       activeSubscription = subscriptions.find((item) => item?.active === true) || null;
     } catch (fallbackError) {
@@ -94,7 +94,7 @@ export default function ShopSubscriptions() {
       try {
         setIsLoading(true);
 
-        const packagesResponse = await restaurantAPI.getSubscriptionPackages();
+        const packagesResponse = await shopAPI.getSubscriptionPackages();
         const packageList = packagesResponse?.data?.data?.packages || [];
         const current = await resolveActiveSubscription();
 
@@ -139,7 +139,7 @@ export default function ShopSubscriptions() {
         return;
       }
 
-      const orderResponse = await restaurantAPI.createSubscriptionRazorpayOrder({
+      const orderResponse = await shopAPI.createSubscriptionRazorpayOrder({
         packageId: plan.id,
       });
       const razorpay = orderResponse?.data?.data?.razorpay;
@@ -148,10 +148,10 @@ export default function ShopSubscriptions() {
         throw new Error("Failed to initialize Razorpay checkout");
       }
 
-      let restaurantInfo = {};
+      let shopInfo = {};
       try {
-        const currentResponse = await restaurantAPI.getCurrentRestaurant();
-        restaurantInfo = currentResponse?.data?.data?.shop || currentResponse?.data?.shop || {};
+        const currentResponse = await shopAPI.getCurrentShop();
+        shopInfo = currentResponse?.data?.data?.shop || currentResponse?.data?.shop || {};
       } catch (profileError) {
         console.warn("Unable to load shop profile for Razorpay prefill", profileError);
       }
@@ -166,17 +166,17 @@ export default function ShopSubscriptions() {
         name: companyName,
         description: `${plan.name} Shop Subscription`,
         prefill: {
-          name: restaurantInfo?.ownerName || restaurantInfo?.restaurantName || restaurantInfo?.name || "",
-          email: restaurantInfo?.ownerEmail || restaurantInfo?.email || "",
-          contact: String(restaurantInfo?.ownerPhone || restaurantInfo?.phone || "").replace(/\D/g, "").slice(-10),
+          name: shopInfo?.ownerName || shopInfo?.shopName || shopInfo?.name || "",
+          email: shopInfo?.ownerEmail || shopInfo?.email || "",
+          contact: String(shopInfo?.ownerPhone || shopInfo?.phone || "").replace(/\D/g, "").slice(-10),
         },
         notes: {
-          type: "restaurant_subscription_purchase",
+          type: "shop_subscription_purchase",
           packageId: plan.id,
         },
         handler: async (response) => {
           try {
-            const verifyResponse = await restaurantAPI.verifySubscriptionRazorpayPayment({
+            const verifyResponse = await shopAPI.verifySubscriptionRazorpayPayment({
               packageId: plan.id,
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,

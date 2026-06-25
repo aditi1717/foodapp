@@ -1,32 +1,32 @@
 import { useCallback } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 
-const toRestaurantPath = (value) => {
+const toShopPath = (value) => {
   if (typeof value !== "string") return null
   const trimmed = value.trim()
 
   if (!trimmed) return null
   if (trimmed.startsWith("/food/shop")) return trimmed
-  if (trimmed === "/restaurant") return "/food/shop"
-  if (trimmed.startsWith("/restaurant/")) return `/food${trimmed}`
+  if (trimmed === "/shop") return "/food/shop"
+  if (trimmed.startsWith("/shop/")) return `/food${trimmed}`
 
   return null
 }
 
-const getNormalizedRestaurantPath = (pathname) => {
+const getNormalizedShopPath = (pathname) => {
   if (pathname.startsWith("/food/shop")) {
     return pathname.slice("/food/shop".length) || "/"
   }
-  if (pathname.startsWith("/restaurant")) {
-    return pathname.slice("/restaurant".length) || "/"
+  if (pathname.startsWith("/shop")) {
+    return pathname.slice("/shop".length) || "/"
   }
 
   return pathname || "/"
 }
 
-const resolveRestaurantBackPath = ({ pathname, state }) => {
-  const normalizedPath = getNormalizedRestaurantPath(pathname)
-  const explicitBackPath = toRestaurantPath(state?.backTo) || toRestaurantPath(state?.from)
+const resolveShopBackPath = ({ pathname, state }) => {
+  const normalizedPath = getNormalizedShopPath(pathname)
+  const explicitBackPath = toShopPath(state?.backTo) || toShopPath(state?.from)
 
   if (
     normalizedPath === "/orders/all" ||
@@ -137,7 +137,7 @@ export default function useShopBackNavigation() {
   const location = useLocation()
 
   return useCallback(() => {
-    const target = resolveRestaurantBackPath(location)
+    const target = resolveShopBackPath(location)
     if (target === "__history_back_orders__") {
       if (window.history.length > 1) {
         navigate(-1)

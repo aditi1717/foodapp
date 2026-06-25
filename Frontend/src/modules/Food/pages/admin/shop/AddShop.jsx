@@ -73,8 +73,8 @@ const isUploadableFile = (value) => {
   )
 }
 
-const ADMIN_ADD_STORAGE_KEY = "admin_add_restaurant_form_data"
-const ADMIN_ADD_FILES_DB = "AdminAddRestaurantFiles"
+const ADMIN_ADD_STORAGE_KEY = "admin_add_shop_form_data"
+const ADMIN_ADD_FILES_DB = "AdminAddShopFiles"
 const ADMIN_ADD_FILES_STORE = "files"
 const MAX_MENU_FILES = 10
 
@@ -155,7 +155,7 @@ const clearAllFilesFromDB = async () => {
   }
 }
 
-export default function AddRestaurant() {
+export default function AddShop() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -168,8 +168,8 @@ export default function AddRestaurant() {
 
   // Step 1: Basic Info
   const [step1, setStep1] = useState({
-    restaurantName: "",
-    pureVegRestaurant: null,
+    shopName: "",
+    pureVegShop: null,
     ownerName: "",
     ownerEmail: "",
     ownerPhone: "",
@@ -415,10 +415,10 @@ export default function AddRestaurant() {
   // Validation functions
   const validateStep1 = () => {
     const errors = []
-    if (!step1.restaurantName?.trim()) {
+    if (!step1.shopName?.trim()) {
       errors.push("Shop name is required")
     }
-    if (typeof step1.pureVegRestaurant !== "boolean") {
+    if (typeof step1.pureVegShop !== "boolean") {
       errors.push("Please select whether shop is pure veg")
     }
     if (!step1.ownerName?.trim()) {
@@ -609,8 +609,8 @@ export default function AddRestaurant() {
       // Prepare payload
       const payload = {
         // Step 1
-        restaurantName: step1.restaurantName,
-        pureVegRestaurant: step1.pureVegRestaurant,
+        shopName: step1.shopName,
+        pureVegShop: step1.pureVegShop,
         ownerName: step1.ownerName,
         ownerEmail: step1.ownerEmail,
         ownerPhone: step1.ownerPhone,
@@ -644,7 +644,7 @@ export default function AddRestaurant() {
       }
 
       // Call backend API
-      const response = await adminAPI.createRestaurant(payload)
+      const response = await adminAPI.createShop(payload)
 
       const data = response?.data?.data ?? response?.data
       if (response?.data?.success !== false && data) {
@@ -945,8 +945,8 @@ export default function AddRestaurant() {
           <div>
             <Label className="text-xs text-gray-700">Shop name*</Label>
             <Input
-              value={step1.restaurantName || ""}
-              onChange={(e) => setStep1({ ...step1, restaurantName: e.target.value })}
+              value={step1.shopName || ""}
+              onChange={(e) => setStep1({ ...step1, shopName: e.target.value })}
               className="mt-1 bg-white text-sm text-black placeholder-black"
               placeholder="Customers will see this name"
             />
@@ -956,9 +956,9 @@ export default function AddRestaurant() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setStep1({ ...step1, pureVegRestaurant: true })}
+                onClick={() => setStep1({ ...step1, pureVegShop: true })}
                 className={`px-3 py-1.5 text-xs rounded-full border ${
-                  step1.pureVegRestaurant === true
+                  step1.pureVegShop === true
                     ? "bg-green-600 text-white border-green-600"
                     : "bg-white text-gray-700 border-gray-200"
                 }`}
@@ -967,9 +967,9 @@ export default function AddRestaurant() {
               </button>
               <button
                 type="button"
-                onClick={() => setStep1({ ...step1, pureVegRestaurant: false })}
+                onClick={() => setStep1({ ...step1, pureVegShop: false })}
                 className={`px-3 py-1.5 text-xs rounded-full border ${
-                  step1.pureVegRestaurant === false
+                  step1.pureVegShop === false
                     ? "bg-gray-900 text-white border-gray-900"
                     : "bg-white text-gray-700 border-gray-200"
                 }`}

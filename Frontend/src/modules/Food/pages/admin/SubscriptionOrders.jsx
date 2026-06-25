@@ -14,7 +14,7 @@ export default function SubscriptionOrders() {
     subscriptionId: true,
     orderType: true,
     duration: true,
-    restaurant: true,
+    shop: true,
     customer: true,
     status: true,
     actions: true,
@@ -44,10 +44,10 @@ export default function SubscriptionOrders() {
   } = useGenericTableManagement(
     emptySubscriptionOrders,
     "Subscription Orders",
-    ["subscriptionId", "customerName", "restaurant", "customerPhone"]
+    ["subscriptionId", "customerName", "shop", "customerPhone"]
   )
 
-  const restaurants = useMemo(() => {
+  const shops = useMemo(() => {
     return [...new Set(emptySubscriptionOrders.map(o => o.shop))]
   }, [])
 
@@ -154,7 +154,7 @@ export default function SubscriptionOrders() {
           subscriptionId: "Subscription ID",
           orderType: "Order Type",
           duration: "Duration",
-          restaurant: "Restaurant",
+          shop: "Shop",
           customer: "Customer",
           status: "Status",
           actions: "Actions",

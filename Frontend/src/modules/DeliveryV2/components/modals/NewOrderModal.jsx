@@ -38,9 +38,9 @@ export const NewOrderModal = ({ order, onAccept, onReject, onMinimize }) => {
     }
 
     // B. Calculate from locations (Local calculation fallback)
-    const rest = order.restaurantLocation || order.restaurantId?.location || {};
-    const resLat = parseFloat(order.restaurant_lat || order.restaurantLat || rest.latitude || rest.lat);
-    const resLng = parseFloat(order.restaurant_lng || order.restaurantLng || rest.longitude || rest.lng);
+    const rest = order.shopLocation || order.shopId?.location || {};
+    const resLat = parseFloat(order.shop_lat || order.shopLat || rest.latitude || rest.lat);
+    const resLng = parseFloat(order.shop_lng || order.shopLng || rest.longitude || rest.lng);
 
     if (riderLocation && !isNaN(resLat) && !isNaN(resLng)) {
       const distM = getHaversineDistance(
@@ -63,8 +63,8 @@ export const NewOrderModal = ({ order, onAccept, onReject, onMinimize }) => {
   if (!order) return null;
 
   const earnings = order.earnings || order.riderEarning || (order.orderAmount ? order.orderAmount * 0.1 : 0);
-  const restaurantName = order.restaurantName || order.restaurant_name || (order.restaurantId?.name) || 'Restaurant';
-  const restaurantAddress = order.restaurantAddress || order.restaurant_address || (order.restaurantId?.location?.address) || 'Address not available';
+  const shopName = order.shopName || order.shop_name || (order.shopId?.name) || 'Shop';
+  const shopAddress = order.shopAddress || order.shop_address || (order.shopId?.location?.address) || 'Address not available';
   const deliveryAddress = order?.deliveryAddress || {};
 
   const geoCoords =
@@ -186,10 +186,10 @@ export const NewOrderModal = ({ order, onAccept, onReject, onMinimize }) => {
                   style={{ color: BRAND_THEME.colors.semantic.success }}
                 >
                   <ChefHat className="w-4 h-4" />
-                  <span>Restaurant Pickup</span>
+                  <span>Shop Pickup</span>
                 </div>
-                <p className="text-gray-950 font-extrabold text-xl leading-tight">{restaurantName}</p>
-                <p className="text-gray-500 text-sm font-medium leading-relaxed">{restaurantAddress}</p>
+                <p className="text-gray-950 font-extrabold text-xl leading-tight">{shopName}</p>
+                <p className="text-gray-500 text-sm font-medium leading-relaxed">{shopAddress}</p>
               </div>
               <div>
                 <div 

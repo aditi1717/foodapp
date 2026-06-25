@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { MapPin, Search, Save, Loader2, ArrowLeft } from "lucide-react"
 import ShopNavbar from "@food/components/shop/ShopNavbar"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { Loader } from "@googlemaps/js-api-loader"
 const debugLog = (...args) => {}
@@ -62,13 +62,13 @@ export default function ZoneSetup() {
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState("")
   const [mapLoading, setMapLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [restaurantData, setRestaurantData] = useState(null)
+  const [shopData, setShopData] = useState(null)
   const [locationSearch, setLocationSearch] = useState("")
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [selectedAddress, setSelectedAddress] = useState("")
 
   useEffect(() => {
-    fetchRestaurantData()
+    fetchShopData()
     loadGoogleMaps()
   }, [])
 
@@ -109,8 +109,8 @@ export default function ZoneSetup() {
 
   // Load existing shop location when data is fetched
   useEffect(() => {
-    if (restaurantData?.location && mapInstanceRef.current && !mapLoading && window.google) {
-      const location = restaurantData.location
+    if (shopData?.location && mapInstanceRef.current && !mapLoading && window.google) {
+      const location = shopData.location
       const savedCoords = getSavedLocationCoords(location)
 
       if (savedCoords) {
@@ -127,14 +127,14 @@ export default function ZoneSetup() {
         updateMarker(lat, lng, address)
       }
     }
-  }, [restaurantData, mapLoading])
+  }, [shopData, mapLoading])
 
-  const fetchRestaurantData = async () => {
+  const fetchShopData = async () => {
     try {
-      const response = await restaurantAPI.getCurrentRestaurant()
+      const response = await shopAPI.getCurrentShop()
       const data = response?.data?.data?.shop || response?.data?.shop
       if (data) {
-        setRestaurantData(data)
+        setShopData(data)
       }
     } catch (error) {
       debugError("Error fetching shop data:", error)
@@ -355,9 +355,9 @@ export default function ZoneSetup() {
       const { lat, lng, address } = selectedLocation
       
       // Update shop location
-      const response = await restaurantAPI.updateProfile({
+      const response = await shopAPI.updateProfile({
         location: {
-          ...(restaurantData?.location || {}),
+          ...(shopData?.location || {}),
           latitude: lat,
           longitude: lng,
           coordinates: [lng, lat], // GeoJSON format: [longitude, latitude]
@@ -366,7 +366,7 @@ export default function ZoneSetup() {
       })
 
       if (response?.data?.data?.shop) {
-        setRestaurantData(response.data.data.shop)
+        setShopData(response.data.data.shop)
         alert("Location saved successfully!")
         
         // Refresh the page to update navbar

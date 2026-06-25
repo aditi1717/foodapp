@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@food/components/ui/button"
-import loginBanner1 from "@food/assets/restaurant/loginbanner1.png"
-import loginBanner2 from "@food/assets/restaurant/loginbanner2.png"
-import loginBanner3 from "@food/assets/restaurant/loginbanner3.png"
-import loginBanner4 from "@food/assets/restaurant/loginbanner4.png"
+import loginBanner1 from "@food/assets/shop/loginbanner1.png"
+import loginBanner2 from "@food/assets/shop/loginbanner2.png"
+import loginBanner3 from "@food/assets/shop/loginbanner3.png"
+import loginBanner4 from "@food/assets/shop/loginbanner4.png"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import BRAND_THEME from "@/config/brandTheme"
 
@@ -14,7 +14,7 @@ const carouselData = [
   {
     id: 1,
     image: loginBanner2,
-    tagline: "Get powerful insights and analytics to grow your restaurant business"
+    tagline: "Get powerful insights and analytics to grow your shop business"
   },
   {
     id: 2,
@@ -33,7 +33,7 @@ const carouselData = [
   }
 ]
 
-export default function RestaurantWelcome() {
+export default function ShopWelcome() {
   const navigate = useNavigate()
   const companyName = useCompanyName() || "Iggymet"
   const [currentIndex, setCurrentIndex] = useState(0)

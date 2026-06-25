@@ -8,7 +8,7 @@ import BRAND_THEME from "@/config/brandTheme"
 export default function PhoneNumbersPage() {
   const navigate = useNavigate()
   const goBack = useShopBackNavigation()
-  const [editingNumber, setEditingNumber] = useState(null) // { type: 'orderReminder1' | 'orderReminder2' | 'restaurantPage' }
+  const [editingNumber, setEditingNumber] = useState(null) // { type: 'orderReminder1' | 'orderReminder2' | 'shopPage' }
   const [countryCode, setCountryCode] = useState("+91")
   const [phoneNumber, setPhoneNumber] = useState("")
   const [isCountryCodeOpen, setIsCountryCodeOpen] = useState(false)
@@ -20,7 +20,7 @@ export default function PhoneNumbersPage() {
   const [phoneData, setPhoneData] = useState({
     orderReminder1: "+91-9981127415",
     orderReminder2: "+91-9981127415",
-    restaurantPage: "+91-9981127415"
+    shopPage: "+91-9981127415"
   })
 
   // Country codes
@@ -207,10 +207,10 @@ export default function PhoneNumbersPage() {
           <div className="mt-4">
             <div className="flex items-center justify-between py-2">
               <div className="flex-1">
-                <p className="text-base font-semibold text-gray-900">{getDisplayNumber("restaurantPage")}</p>
+                <p className="text-base font-semibold text-gray-900">{getDisplayNumber("shopPage")}</p>
               </div>
               <button
-                onClick={() => handleEditClick("restaurantPage")}
+                onClick={() => handleEditClick("shopPage")}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <Edit className="w-4 h-4 text-brand-600" />

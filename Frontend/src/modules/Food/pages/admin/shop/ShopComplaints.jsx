@@ -42,7 +42,7 @@ const COMPLAINT_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
-export default function RestaurantComplaints() {
+export default function ShopComplaints() {
   const [complaints, setComplaints] = useState([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
@@ -83,7 +83,7 @@ export default function RestaurantComplaints() {
       if (filters.complaintType && filters.complaintType !== 'all') params.complaintType = filters.complaintType
       if (filters.search) params.search = filters.search
 
-      const response = await adminAPI.getRestaurantComplaints(params)
+      const response = await adminAPI.getShopComplaints(params)
       if (response?.data?.success) {
         setComplaints(response.data.data.complaints || [])
         setStats(response.data.data.stats || stats)
@@ -110,7 +110,7 @@ export default function RestaurantComplaints() {
   const handleUpdateComplaint = async () => {
     if (!editingComplaint) return
     try {
-      const response = await adminAPI.updateRestaurantComplaint(editingComplaint._id, updateData)
+      const response = await adminAPI.updateShopComplaint(editingComplaint._id, updateData)
       if (response?.data?.success) {
         toast.success('Complaint updated')
         setEditingComplaint(null)
@@ -230,7 +230,7 @@ export default function RestaurantComplaints() {
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Shop</p>
-                        <p className="font-medium">{complaint.restaurantId?.restaurantName || 'Shop'}</p>
+                        <p className="font-medium">{complaint.shopId?.shopName || 'Shop'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Type</p>
@@ -243,10 +243,10 @@ export default function RestaurantComplaints() {
                   </button>
                 </div>
                 <p className="text-sm text-gray-700 mb-3">{complaint.description}</p>
-                {complaint.restaurantResponse && (
+                {complaint.shopResponse && (
                   <div className="bg-brand-50 rounded p-3 mb-3">
                     <p className="text-xs font-semibold text-brand-700 mb-1">Shop Response:</p>
-                    <p className="text-sm text-brand-800">{complaint.restaurantResponse}</p>
+                    <p className="text-sm text-brand-800">{complaint.shopResponse}</p>
                   </div>
                 )}
                 {complaint.adminResponse && (

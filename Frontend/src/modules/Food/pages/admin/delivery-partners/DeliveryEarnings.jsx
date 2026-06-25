@@ -134,7 +134,7 @@ export default function DeliveryEarnings() {
       { key: "deliveryPartnerName", label: "Delivery Boy" },
       { key: "deliveryPartnerPhone", label: "Phone" },
       { key: "orderId", label: "Order ID" },
-      { key: "restaurantName", label: "Shop" },
+      { key: "shopName", label: "Shop" },
       { key: "orderType", label: "Order Type" },
       { key: "amount", label: "Earning" },
       { key: "orderTotal", label: "Order Total" },
@@ -148,7 +148,7 @@ export default function DeliveryEarnings() {
       deliveryPartnerName: earning.deliveryPartnerName || 'N/A',
       deliveryPartnerPhone: earning.deliveryPartnerPhone || 'N/A',
       orderId: earning.orderId || 'N/A',
-      restaurantName: earning.restaurantName || 'N/A',
+      shopName: earning.shopName || 'N/A',
       orderType: getOrderType(earning),
       amount: formatCurrency(earning.amount),
       orderTotal: formatCurrency(earning.orderTotal),
@@ -400,7 +400,7 @@ export default function DeliveryEarnings() {
                         {earning.orderId || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-700">
-                        {earning.restaurantName || 'N/A'}
+                        {earning.shopName || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-700">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${

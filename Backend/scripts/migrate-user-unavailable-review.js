@@ -87,7 +87,7 @@ async function run() {
     }
 
     if (
-      transaction?.settlement?.isRestaurantSettled === true ||
+      transaction?.settlement?.isShopSettled === true ||
       transaction?.settlement?.isRiderSettled === true
     ) {
       skipped.push({

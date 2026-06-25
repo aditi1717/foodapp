@@ -116,7 +116,7 @@ export default function MixedSharedCart() {
 
             <CartSection
               title="Food items"
-              subtitle="Restaurant delivery items in your shared cart."
+              subtitle="Shop delivery items in your shared cart."
               items={foodItems}
               accentClass="bg-brand-100 text-brand-700"
               onIncrement={increment}

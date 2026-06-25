@@ -587,15 +587,15 @@ export default function OrdersPage({ statusKey = "all" }) {
       const customerPhone = order.customerPhone || order.userId?.phone || "N/A"
       const shop =
         order.shop ||
-        order.restaurantName ||
-        order.restaurantId?.restaurantName ||
+        order.shopName ||
+        order.shopId?.shopName ||
         ""
 
       const cancelledBy =
         order.cancelledBy ||
         (backendStatus === "cancelled_by_user"
           ? "user"
-          : backendStatus === "cancelled_by_restaurant"
+          : backendStatus === "cancelled_by_shop"
             ? "shop"
             : backendStatus === "cancelled_by_admin"
               ? "admin"
@@ -760,8 +760,8 @@ export default function OrdersPage({ statusKey = "all" }) {
       recentRealtimeOrderRef.current.set(orderId, now)
 
       const title = "New order received"
-      const body = payload?.restaurantName
-        ? `${payload.restaurantName} • ${orderId}`
+      const body = payload?.shopName
+        ? `${payload.shopName} • ${orderId}`
         : `Order ${orderId}`
 
       activeOrderAlertRef.current = payload || { orderId }

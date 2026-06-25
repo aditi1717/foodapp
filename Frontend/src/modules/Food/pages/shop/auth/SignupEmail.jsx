@@ -7,10 +7,10 @@ import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@food/components/ui/card"
 import loginBg from "@food/assets/loginbanner.png"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 
-export default function RestaurantSignupEmail() {
+export default function ShopSignupEmail() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
   const [step, setStep] = useState(1) // 1: signup form, 2: OTP verification
@@ -59,7 +59,7 @@ export default function RestaurantSignupEmail() {
 
     setIsLoading(true)
     try {
-      await restaurantAPI.sendOTP(null, "register", formData.email)
+      await shopAPI.sendOTP(null, "register", formData.email)
       setStep(2)
       setResendTimer(60)
       const timer = setInterval(() => {
@@ -131,7 +131,7 @@ export default function RestaurantSignupEmail() {
 
     setIsLoading(true)
     try {
-      const response = await restaurantAPI.verifyOTP(
+      const response = await shopAPI.verifyOTP(
         null,
         otpCode,
         "register",
@@ -143,9 +143,9 @@ export default function RestaurantSignupEmail() {
       
       if (data.accessToken && data.shop) {
         // Replace old token with new one (handles cross-module login)
-        setAuthData("restaurant", data.accessToken, data.shop)
+        setAuthData("shop", data.accessToken, data.shop)
         
-        window.dispatchEvent(new Event("restaurantAuthChanged"))
+        window.dispatchEvent(new Event("shopAuthChanged"))
         
         navigate("/shop/onboarding", { replace: true })
       } else {
@@ -171,7 +171,7 @@ export default function RestaurantSignupEmail() {
     setIsLoading(true)
     setError("")
     try {
-      await restaurantAPI.sendOTP(null, "register", formData.email)
+      await shopAPI.sendOTP(null, "register", formData.email)
       setResendTimer(60)
       const timer = setInterval(() => {
         setResendTimer((prev) => {
@@ -200,7 +200,7 @@ export default function RestaurantSignupEmail() {
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
           src={loginBg}
-          alt="Restaurant background"
+          alt="Shop background"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 flex items-center text-white pointer-events-none">

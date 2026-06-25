@@ -41,10 +41,10 @@ const getPartnerZoneId = (partner) =>
   normalizeId(partner?.zone?._id) ||
   normalizeId(partner?.zone)
 
-const getOrderRestaurantZoneId = (order) =>
-  normalizeId(order?.originalOrder?.restaurantId?.zoneId?._id) ||
-  normalizeId(order?.originalOrder?.restaurantId?.zoneId) ||
-  normalizeId(order?.restaurantZoneId)
+const getOrderShopZoneId = (order) =>
+  normalizeId(order?.originalOrder?.shopId?.zoneId?._id) ||
+  normalizeId(order?.originalOrder?.shopId?.zoneId) ||
+  normalizeId(order?.shopZoneId)
 
 const getOrderUserZoneId = (order) =>
   normalizeId(order?.originalOrder?.userId?.zoneId?._id) ||
@@ -68,12 +68,12 @@ export default function AssignDeliveryPartnerDialog({
     normalizeId(order?.zoneId) ||
     normalizeId(order?.originalOrder?.zoneId?._id) ||
     normalizeId(order?.originalOrder?.zoneId) ||
-    normalizeId(order?.originalOrder?.restaurantId?.zoneId?._id) ||
-    normalizeId(order?.originalOrder?.restaurantId?.zoneId)
-  const restaurantZoneId = getOrderRestaurantZoneId(order)
+    normalizeId(order?.originalOrder?.shopId?.zoneId?._id) ||
+    normalizeId(order?.originalOrder?.shopId?.zoneId)
+  const shopZoneId = getOrderShopZoneId(order)
   const userZoneId = getOrderUserZoneId(order)
-  const hasZoneMismatch = Boolean(restaurantZoneId && userZoneId && restaurantZoneId !== userZoneId)
-  const resolvedZoneId = restaurantZoneId || userZoneId || orderZoneId
+  const hasZoneMismatch = Boolean(shopZoneId && userZoneId && shopZoneId !== userZoneId)
+  const resolvedZoneId = shopZoneId || userZoneId || orderZoneId
 
   useEffect(() => {
     if (!isOpen) {

@@ -11,7 +11,7 @@ async function check() {
     console.log('✅ Connected to MongoDB');
 
     const FoodOrder = mongoose.model('FoodOrder', new mongoose.Schema({}, { strict: false }), 'food_orders');
-    const FoodRestaurant = mongoose.model('FoodRestaurant', new mongoose.Schema({}, { strict: false }), 'food_restaurants');
+    const FoodShop = mongoose.model('FoodShop', new mongoose.Schema({}, { strict: false }), 'food_shops');
 
     // Find all scheduled takeaway orders
     const orders = await FoodOrder.find({
@@ -31,24 +31,24 @@ async function check() {
       console.log('Payment Status:', order.payment?.status);
       console.log('Scheduled At:', order.scheduledAt);
       console.log('Created At:', order.createdAt);
-      console.log('Restaurant ID:', order.restaurantId);
+      console.log('Shop ID:', order.shopId);
       
-      const rest = await FoodRestaurant.findById(order.restaurantId).select('name status').lean();
-      console.log('Restaurant Name:', rest ? rest.name : 'Not found');
-      console.log('Restaurant Status:', rest ? rest.status : 'N/A');
+      const rest = await FoodShop.findById(order.shopId).select('name status').lean();
+      console.log('Shop Name:', rest ? rest.name : 'Not found');
+      console.log('Shop Status:', rest ? rest.status : 'N/A');
 
-      // Test listOrdersRestaurant filter query
+      // Test listOrdersShop filter query
       const filter = {
-        restaurantId: order.restaurantId,
+        shopId: order.shopId,
         $or: [
           { "payment.method": { $in: ["cash", "wallet"] } },
           { "payment.status": { $in: ["paid", "authorized", "captured", "settled", "refunded"] } },
-          { orderStatus: { $in: ["cancelled_by_user", "cancelled_by_restaurant", "cancelled_by_user_unavailable", "cancelled_by_admin"] } },
+          { orderStatus: { $in: ["cancelled_by_user", "cancelled_by_shop", "cancelled_by_user_unavailable", "cancelled_by_admin"] } },
         ],
       };
 
       const matchedInList = await FoodOrder.findOne({ _id: order._id, ...filter }).lean();
-      console.log('Matched in listOrdersRestaurant query?', matchedInList ? '✅ YES' : '❌ NO');
+      console.log('Matched in listOrdersShop query?', matchedInList ? '✅ YES' : '❌ NO');
     }
 
     await mongoose.disconnect();

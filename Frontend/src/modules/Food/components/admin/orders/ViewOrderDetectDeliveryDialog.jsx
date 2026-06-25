@@ -87,7 +87,7 @@ export default function ViewOrderDetectDeliveryDialog({ isOpen, onOpenChange, or
               </h3>
               <div>
                 <p className="text-xs text-slate-500">Shop Name</p>
-                <p className="text-sm font-medium text-slate-900">{order.restaurantName}</p>
+                <p className="text-sm font-medium text-slate-900">{order.shopName}</p>
               </div>
             </div>
 

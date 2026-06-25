@@ -1,4 +1,4 @@
-// Quick script to set perUserLimit on all restaurant offers
+// Quick script to set perUserLimit on all shop offers
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
@@ -11,10 +11,10 @@ async function setOfferLimits() {
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
-    const RestaurantOffer = mongoose.model('RestaurantOffer', new mongoose.Schema({}, { strict: false }), 'restaurant_offers');
+    const ShopOffer = mongoose.model('ShopOffer', new mongoose.Schema({}, { strict: false }), 'shop_offers');
 
     // Find offers without perUserLimit
-    const offersWithoutLimit = await RestaurantOffer.find({
+    const offersWithoutLimit = await ShopOffer.find({
       $or: [
         { perUserLimit: { $exists: false } },
         { perUserLimit: 0 },
@@ -37,7 +37,7 @@ async function setOfferLimits() {
     });
 
     // Update all offers to have perUserLimit = 1 (one-time use per user)
-    const result = await RestaurantOffer.updateMany(
+    const result = await ShopOffer.updateMany(
       {
         $or: [
           { perUserLimit: { $exists: false } },
@@ -56,7 +56,7 @@ async function setOfferLimits() {
     console.log('✅ All offers now have perUserLimit = 1');
 
     // Verify
-    const updatedOffers = await RestaurantOffer.find({
+    const updatedOffers = await ShopOffer.find({
       _id: { $in: offersWithoutLimit.map(o => o._id) }
     }, { title: 1, perUserLimit: 1 });
 

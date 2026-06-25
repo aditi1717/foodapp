@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Copy, MapPin, TicketPercent } from "lucide-react";
 import AnimatedPage from "@food/components/user/AnimatedPage";
 import { Button } from "@food/components/ui/button";
-import { restaurantAPI } from "@food/api";
+import { shopAPI } from "@food/api";
 import { toast } from "sonner";
 
 export default function Coupons() {
@@ -15,7 +15,7 @@ export default function Coupons() {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await restaurantAPI.getPublicOffers();
+        const res = await shopAPI.getPublicOffers();
         const list = res?.data?.data?.allOffers || res?.data?.allOffers || [];
         if (!cancelled) {
           const visible = Array.isArray(list) ? list.filter((o) => o?.showInCart !== false) : [];
@@ -68,7 +68,7 @@ export default function Coupons() {
             {sortedOffers.map((offer) => {
               const code = offer?.couponCode || "";
               const title = offer?.title || "";
-              const restaurantName = offer?.restaurantName || "All Shops";
+              const shopName = offer?.shopName || "All Shops";
               const endDate = offer?.endDate ? new Date(offer.endDate) : null;
               const expiryText =
                 endDate && !Number.isNaN(endDate.getTime()) ? `Valid till ${endDate.toLocaleDateString()}` : "No expiry";
@@ -85,7 +85,7 @@ export default function Coupons() {
                           <span className="text-sm font-semibold text-gray-900 dark:text-white">{code}</span>
                           {title && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">{title}</span>}
                         </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate">{restaurantName}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate">{shopName}</p>
                         <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-1">{expiryText}</p>
                       </div>
                     </div>

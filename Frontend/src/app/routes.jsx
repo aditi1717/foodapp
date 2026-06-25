@@ -37,11 +37,11 @@ const isUserAppRoute = (pathname = '') => {
   const normalized = String(pathname || '').toLowerCase()
   const isAdminRoute = normalized === '/admin' || normalized.startsWith('/admin/')
   const isAuthRoute = normalized === '/user/auth' || normalized.startsWith('/user/auth/')
-  const isRestaurantRoute =
+  const isShopRoute =
     normalized === '/food/shop' ||
     normalized.startsWith('/food/shop/') ||
-    normalized === '/restaurant' ||
-    normalized.startsWith('/restaurant/') ||
+    normalized === '/shop' ||
+    normalized.startsWith('/shop/') ||
     normalized === '/food/shop' ||
     normalized.startsWith('/food/shop/') ||
     normalized === '/shop' ||
@@ -52,7 +52,7 @@ const isUserAppRoute = (pathname = '') => {
     normalized === '/delivery' ||
     normalized.startsWith('/delivery/')
 
-  return !isAdminRoute && !isAuthRoute && !isRestaurantRoute && !isDeliveryRoute
+  return !isAdminRoute && !isAuthRoute && !isShopRoute && !isDeliveryRoute
 }
 
 const AppRoutes = () => {

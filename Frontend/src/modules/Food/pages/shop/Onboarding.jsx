@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@food/components/ui/select"
-import { restaurantAPI, zoneAPI, api } from "@food/api"
+import { shopAPI, zoneAPI, api } from "@food/api"
 import { MobileTimePicker } from "@mui/x-date-pickers/MobileTimePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
@@ -44,7 +44,7 @@ const ESTIMATED_DELIVERY_TIME_OPTIONS = [
   "50-60 mins",
 ]
 
-const ONBOARDING_STORAGE_KEY = "restaurant_onboarding_data"
+const ONBOARDING_STORAGE_KEY = "shop_onboarding_data"
 const PAN_NUMBER_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/
 const GST_NUMBER_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/
 const FSSAI_NUMBER_REGEX = /^\d{14}$/
@@ -223,14 +223,14 @@ const isValidOwnerEmail = (value) => {
   return true
 }
 
-const getVerifiedPhoneFromStoredRestaurant = () => {
+const getVerifiedPhoneFromStoredShop = () => {
   try {
-    const pending = localStorage.getItem("restaurant_pendingPhone")
+    const pending = localStorage.getItem("shop_pendingPhone")
     if (pending && pending.trim()) {
       return pending.trim()
     }
 
-    const storedUser = localStorage.getItem("restaurant_user")
+    const storedUser = localStorage.getItem("shop_user")
     if (!storedUser) return ""
     const user = JSON.parse(storedUser)
     const candidates = [
@@ -376,10 +376,10 @@ const saveSessionBackupToIndexedDB = async () => {
     const store = tx.objectStore(ONBOARDING_FILES_STORE)
 
     const keys = [
-      "restaurant_accessToken",
-      "restaurant_refreshToken",
-      "restaurant_user",
-      "restaurant_pendingPhone"
+      "shop_accessToken",
+      "shop_refreshToken",
+      "shop_user",
+      "shop_pendingPhone"
     ]
     for (const key of keys) {
       const val = localStorage.getItem(key)
@@ -404,10 +404,10 @@ const restoreSessionFromIndexedDB = async () => {
     const store = tx.objectStore(ONBOARDING_FILES_STORE)
 
     const keys = [
-      "restaurant_accessToken",
-      "restaurant_refreshToken",
-      "restaurant_user",
-      "restaurant_pendingPhone"
+      "shop_accessToken",
+      "shop_refreshToken",
+      "shop_user",
+      "shop_pendingPhone"
     ]
     let restoredAny = false
     for (const key of keys) {
@@ -435,10 +435,10 @@ const clearSessionBackupFromIndexedDB = async () => {
     const db = await openOnboardingFilesDB()
     const tx = db.transaction(ONBOARDING_FILES_STORE, "readwrite")
     const store = tx.objectStore(ONBOARDING_FILES_STORE)
-    store.delete("backup_restaurant_accessToken")
-    store.delete("backup_restaurant_refreshToken")
-    store.delete("backup_restaurant_user")
-    store.delete("backup_restaurant_pendingPhone")
+    store.delete("backup_shop_accessToken")
+    store.delete("backup_shop_refreshToken")
+    store.delete("backup_shop_user")
+    store.delete("backup_shop_pendingPhone")
     store.delete("onboarding_draft_json")
     await new Promise((resolve, reject) => {
       tx.oncomplete = () => resolve(true)
@@ -615,22 +615,22 @@ export default function ShopOnboarding() {
     try {
       // Explicit logout should wipe onboarding draft/session backups to avoid stale restore.
       try {
-        sessionStorage.setItem("restaurant_skip_restore_once", "1")
+        sessionStorage.setItem("shop_skip_restore_once", "1")
       } catch (_) { }
       clearOnboardingFromLocalStorage()
       clearOnboardingFileCache()
 
-      await restaurantAPI.logout()
-      clearModuleAuth("restaurant")
+      await shopAPI.logout()
+      clearModuleAuth("shop")
       clearAuthData()
       localStorage.removeItem(ONBOARDING_STORAGE_KEY)
-      window.dispatchEvent(new Event("restaurantAuthChanged"))
+      window.dispatchEvent(new Event("shopAuthChanged"))
       navigate("/food/shop/login", { replace: true })
     } catch (error) {
       debugError("Logout failed:", error)
       clearOnboardingFromLocalStorage()
       clearOnboardingFileCache()
-      clearModuleAuth("restaurant")
+      clearModuleAuth("shop")
       navigate("/food/shop/login", { replace: true })
     } finally {
       setIsLoggingOut(false)
@@ -671,8 +671,8 @@ export default function ShopOnboarding() {
   }, [])
 
   const [step1, setStep1] = useState({
-    restaurantName: "",
-    pureVegRestaurant: null,
+    shopName: "",
+    pureVegShop: null,
     ownerName: "",
     ownerEmail: "",
     ownerPhone: "",
@@ -791,9 +791,9 @@ export default function ShopOnboarding() {
       // Skip one-time restore immediately after explicit logout to prevent stale account revival.
       let skipRestoreOnce = false
       try {
-        skipRestoreOnce = sessionStorage.getItem("restaurant_skip_restore_once") === "1"
+        skipRestoreOnce = sessionStorage.getItem("shop_skip_restore_once") === "1"
         if (skipRestoreOnce) {
-          sessionStorage.removeItem("restaurant_skip_restore_once")
+          sessionStorage.removeItem("shop_skip_restore_once")
         }
       } catch (_) { }
 
@@ -802,7 +802,7 @@ export default function ShopOnboarding() {
         await restoreSessionFromIndexedDB()
       }
 
-      const verifiedPhone = getVerifiedPhoneFromStoredRestaurant()
+      const verifiedPhone = getVerifiedPhoneFromStoredShop()
       if (!active) return
       setVerifiedPhoneNumber(verifiedPhone)
 
@@ -841,10 +841,10 @@ export default function ShopOnboarding() {
         restoredDraftRef.current = true
         if (localData.step1) {
           setStep1({
-            restaurantName: localData.step1.restaurantName || "",
-            pureVegRestaurant:
-              typeof localData.step1.pureVegRestaurant === "boolean"
-                ? localData.step1.pureVegRestaurant
+            shopName: localData.step1.shopName || "",
+            pureVegShop:
+              typeof localData.step1.pureVegShop === "boolean"
+                ? localData.step1.pureVegShop
                 : null,
             ownerName: localData.step1.ownerName || "",
             ownerEmail: localData.step1.ownerEmail || "",
@@ -1329,8 +1329,8 @@ export default function ShopOnboarding() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        // Use restaurantAPI.getCurrentRestaurant() to fetch real data
-        const res = await restaurantAPI.getCurrentRestaurant()
+        // Use shopAPI.getCurrentShop() to fetch real data
+        const res = await shopAPI.getCurrentShop()
         const data = res?.data?.data?.shop || res?.data?.shop
 
         if (data) {
@@ -1339,10 +1339,10 @@ export default function ShopOnboarding() {
           const hasLocalDraft = restoredDraftRef.current
           // Map Step 1
           setStep1((prev) => ({
-            restaurantName: hasLocalDraft ? (prev.restaurantName || data.name || data.restaurantName || "") : (data.name || data.restaurantName || ""),
-            pureVegRestaurant: hasLocalDraft
-              ? (typeof prev.pureVegRestaurant === "boolean" ? prev.pureVegRestaurant : (typeof data.pureVegRestaurant === "boolean" ? data.pureVegRestaurant : null))
-              : (typeof data.pureVegRestaurant === "boolean" ? data.pureVegRestaurant : null),
+            shopName: hasLocalDraft ? (prev.shopName || data.name || data.shopName || "") : (data.name || data.shopName || ""),
+            pureVegShop: hasLocalDraft
+              ? (typeof prev.pureVegShop === "boolean" ? prev.pureVegShop : (typeof data.pureVegShop === "boolean" ? data.pureVegShop : null))
+              : (typeof data.pureVegShop === "boolean" ? data.pureVegShop : null),
             ownerName: hasLocalDraft ? (prev.ownerName || data.ownerName || "") : (data.ownerName || ""),
             ownerEmail: hasLocalDraft ? (prev.ownerEmail || data.ownerEmail || "") : (data.ownerEmail || ""),
             ownerPhone: verifiedPhoneNumber || data.ownerPhone || prev.ownerPhone || "",
@@ -1456,10 +1456,10 @@ export default function ShopOnboarding() {
   const validateStep1 = () => {
     const errors = []
 
-    if (!step1.restaurantName?.trim()) {
+    if (!step1.shopName?.trim()) {
       errors.push("Shop name is required")
     }
-    if (typeof step1.pureVegRestaurant !== "boolean") {
+    if (typeof step1.pureVegShop !== "boolean") {
       errors.push("Please select whether your shop is pure veg")
     }
     if (!step1.ownerName?.trim()) {
@@ -1734,10 +1734,10 @@ export default function ShopOnboarding() {
         const formData = new FormData()
 
         // Step 1
-        formData.append("restaurantName", step1.restaurantName || "")
+        formData.append("shopName", step1.shopName || "")
         formData.append(
-          "pureVegRestaurant",
-          step1.pureVegRestaurant === true ? "true" : "false",
+          "pureVegShop",
+          step1.pureVegShop === true ? "true" : "false",
         )
         formData.append("ownerName", step1.ownerName || "")
         formData.append("ownerEmail", (step1.ownerEmail || "").trim())
@@ -1823,17 +1823,17 @@ export default function ShopOnboarding() {
 
         if (isRegistered) {
           debugLog("?? Updating existing shop profile");
-          await restaurantAPI.updateProfile(formData);
+          await shopAPI.updateProfile(formData);
         } else {
           debugLog("?? Registering new shop");
-          await restaurantAPI.register(formData);
+          await shopAPI.register(formData);
         }
 
         // Clear localStorage when onboarding is complete
         clearOnboardingFromLocalStorage()
         clearOnboardingFileCache()
         try {
-          localStorage.setItem("restaurant_pendingPhone", normalizePhoneDigits(step1.ownerPhone))
+          localStorage.setItem("shop_pendingPhone", normalizePhoneDigits(step1.ownerPhone))
         } catch { }
 
         toast.success("Registration submitted. Awaiting admin approval.", { duration: 4000 })
@@ -1876,8 +1876,8 @@ export default function ShopOnboarding() {
           <div>
             <Label className="text-xs text-gray-700">Shop name*</Label>
             <Input
-              value={step1.restaurantName || ""}
-              onChange={(e) => setStep1({ ...step1, restaurantName: e.target.value })}
+              value={step1.shopName || ""}
+              onChange={(e) => setStep1({ ...step1, shopName: e.target.value })}
               onKeyDown={(e) => {
                 // Allow letters, numbers, spaces and common symbols
                 if (e.key.length === 1 && !/^[A-Za-z0-9\s.,&'-]$/.test(e.key)) {
@@ -1894,8 +1894,8 @@ export default function ShopOnboarding() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => isEditing && setStep1({ ...step1, pureVegRestaurant: true })}
-                className={`px-3 py-1.5 text-xs rounded-full border ${step1.pureVegRestaurant === true
+                onClick={() => isEditing && setStep1({ ...step1, pureVegShop: true })}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.pureVegShop === true
                     ? "bg-green-600 text-white border-green-600"
                     : "bg-white text-gray-700 border-gray-200"
                   } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
@@ -1904,12 +1904,12 @@ export default function ShopOnboarding() {
               </button>
               <button
                 type="button"
-                onClick={() => isEditing && setStep1({ ...step1, pureVegRestaurant: false })}
-                className={`px-3 py-1.5 text-xs rounded-full border ${step1.pureVegRestaurant === false
+                onClick={() => isEditing && setStep1({ ...step1, pureVegShop: false })}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.pureVegShop === false
                     ? "text-white border-transparent"
                     : "bg-white text-gray-700 border-gray-200"
                   } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
-                style={step1.pureVegRestaurant === false ? { background: BRAND_THEME.gradients.primary } : undefined}
+                style={step1.pureVegShop === false ? { background: BRAND_THEME.gradients.primary } : undefined}
               >
                 No, Mixed Menu
               </button>
@@ -2301,7 +2301,7 @@ export default function ShopOnboarding() {
                     return imageSrc ? (
                       <img
                         src={imageSrc}
-                        alt="Restaurant profile"
+                        alt="Shop profile"
                         className="w-full h-full object-cover"
                       />
                     ) : (

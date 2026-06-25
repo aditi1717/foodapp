@@ -15,7 +15,7 @@ export default function DisbursementReportShops() {
   const [disbursements, setDisbursements] = useState(emptyDisbursementReportShops)
   const [filters, setFilters] = useState({
     zone: "All Zones",
-    restaurant: "All restaurants",
+    shop: "All shops",
     paymentMethod: "All Payment Method",
     status: "All status",
     time: "All Time",
@@ -30,7 +30,7 @@ export default function DisbursementReportShops() {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(disbursement =>
         disbursement.id.toLowerCase().includes(query) ||
-        disbursement.restaurantName.toLowerCase().includes(query)
+        disbursement.shopName.toLowerCase().includes(query)
       )
     }
 
@@ -39,7 +39,7 @@ export default function DisbursementReportShops() {
     }
 
     if (filters.shop !== "All shops") {
-      result = result.filter(d => d.restaurantName === filters.shop)
+      result = result.filter(d => d.shopName === filters.shop)
     }
 
     if (filters.paymentMethod !== "All Payment Method") {
@@ -63,17 +63,17 @@ export default function DisbursementReportShops() {
     const headers = [
       { key: "sl", label: "SI" },
       { key: "id", label: "ID" },
-      { key: "restaurantName", label: "Shop Info" },
+      { key: "shopName", label: "Shop Info" },
       { key: "createdAt", label: "Created At" },
       { key: "disburseAmount", label: "Disburse Amount" },
       { key: "paymentMethod", label: "Payment Method" },
       { key: "status", label: "Status" },
     ]
     switch (format) {
-      case "csv": exportReportsToCSV(filteredDisbursements, headers, "disbursement_report_restaurants"); break
-      case "excel": exportReportsToExcel(filteredDisbursements, headers, "disbursement_report_restaurants"); break
-      case "pdf": exportReportsToPDF(filteredDisbursements, headers, "disbursement_report_restaurants", "Shop Disbursement Report"); break
-      case "json": exportReportsToJSON(filteredDisbursements, "disbursement_report_restaurants"); break
+      case "csv": exportReportsToCSV(filteredDisbursements, headers, "disbursement_report_shops"); break
+      case "excel": exportReportsToExcel(filteredDisbursements, headers, "disbursement_report_shops"); break
+      case "pdf": exportReportsToPDF(filteredDisbursements, headers, "disbursement_report_shops", "Shop Disbursement Report"); break
+      case "json": exportReportsToJSON(filteredDisbursements, "disbursement_report_shops"); break
     }
   }
 
@@ -184,11 +184,11 @@ export default function DisbursementReportShops() {
                   Shop
                 </label>
                 <select
-                  value={filters.restaurant}
+                  value={filters.shop}
                   onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  <option value="All restaurants">All shops</option>
+                  <option value="All shops">All shops</option>
                   <option value="Caf� Monarch">Caf� Monarch</option>
                   <option value="Hungry Puppets">Hungry Puppets</option>
                   <option value="Redcliff Cafe">Redcliff Cafe</option>
@@ -392,7 +392,7 @@ export default function DisbursementReportShops() {
                         <span className="text-sm font-medium text-slate-900">{disbursement.id}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-slate-700">{disbursement.restaurantName}</span>
+                        <span className="text-sm text-slate-700">{disbursement.shopName}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-slate-700">{disbursement.createdAt}</span>

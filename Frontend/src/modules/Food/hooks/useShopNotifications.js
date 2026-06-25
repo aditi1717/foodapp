@@ -2,14 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@food/api/config';
-import { restaurantAPI } from '@food/api';
+import { shopAPI } from '@food/api';
 import alertSound from '@food/assets/audio/alert.mp3';
 import { dispatchNotificationInboxRefresh } from '@food/hooks/useNotificationInbox';
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
-const storeRestaurantAdminNotification = (payload = {}) => {
+const storeShopAdminNotification = (payload = {}) => {
   if (typeof window === 'undefined') return;
   const id = `admin-${payload?.ticketId || Date.now()}`;
   const item = {
@@ -22,18 +22,18 @@ const storeRestaurantAdminNotification = (payload = {}) => {
   };
 
   try {
-    const saved = localStorage.getItem('restaurant_admin_notifications');
+    const saved = localStorage.getItem('shop_admin_notifications');
     const current = saved ? JSON.parse(saved) : [];
     const rows = Array.isArray(current) ? current : [];
     const next = [item, ...rows.filter((row) => row?.id !== id)].slice(0, 100);
-    localStorage.setItem('restaurant_admin_notifications', JSON.stringify(next));
-    window.dispatchEvent(new CustomEvent('restaurantNotificationsUpdated'));
+    localStorage.setItem('shop_admin_notifications', JSON.stringify(next));
+    window.dispatchEvent(new CustomEvent('shopNotificationsUpdated'));
   } catch {
     // Local notification cache is best-effort only.
   }
 }
 
-const resolveAudioSource = (source, cacheKey = 'restaurant-alert') => {
+const resolveAudioSource = (source, cacheKey = 'shop-alert') => {
   if (!source) return source;
   if (!import.meta.env.DEV) return source;
   const separator = source.includes('?') ? '&' : '?';
@@ -43,7 +43,7 @@ const resolveAudioSource = (source, cacheKey = 'restaurant-alert') => {
 const supportsBrowserNotifications = () =>
   typeof window !== 'undefined' && typeof Notification !== 'undefined';
 
-const buildRestaurantOrderNotification = (orderData = {}) => {
+const buildShopOrderNotification = (orderData = {}) => {
   const orderId = orderData.orderId || orderData.orderMongoId || 'New';
   const itemCount = Array.isArray(orderData.items) ? orderData.items.length : 0;
   const total = Number(orderData.total || orderData.pricing?.total || 0);
@@ -53,7 +53,7 @@ const buildRestaurantOrderNotification = (orderData = {}) => {
     body: itemCount > 0
       ? `${itemCount} item${itemCount === 1 ? '' : 's'} - ₹${total.toFixed(2)}`
       : 'A new order is waiting for review',
-    tag: `restaurant-order-${orderId}`,
+    tag: `shop-order-${orderId}`,
     data: {
       orderId,
       targetUrl: `/food/shop/orders/${orderData.orderMongoId || orderData._id || orderData.id || orderData.orderId || ''}`,
@@ -92,7 +92,7 @@ const triggerWebViewNativeNotification = async (orderData = {}) => {
   if (typeof window === 'undefined') return false;
 
   const bridgePayload = {
-    title: 'New restaurant order',
+    title: 'New shop order',
     body: `Order #${orderData?.orderId || orderData?.orderMongoId || orderData?.id || ''}`.trim(),
     orderId: orderData?.orderId || orderData?.order_id || '',
     orderMongoId: orderData?.orderMongoId || orderData?.order_mongo_id || '',
@@ -138,7 +138,7 @@ const triggerWebViewNativeNotification = async (orderData = {}) => {
 
 
 /**
- * Hook for restaurant to receive real-time order notifications with sound
+ * Hook for shop to receive real-time order notifications with sound
  * @returns {object} - { newOrder, playSound, isConnected }
  */
 export const useShopNotifications = () => {
@@ -153,8 +153,8 @@ export const useShopNotifications = () => {
   const alertLoopStartedAtRef = useRef(0);
   const userInteractedRef = useRef(false); // Track user interaction for autoplay policy
   const audioUnlockAttemptedRef = useRef(false);
-  const [restaurantId, setRestaurantId] = useState(null);
-  const joinedRestaurantRoomRef = useRef(null);
+  const [shopId, setShopId] = useState(null);
+  const joinedShopRoomRef = useRef(null);
   const lastConnectErrorLogRef = useRef(0);
   const lastAlertAtByOrderRef = useRef(new Map());
   const lastBrowserNotificationAtByOrderRef = useRef(new Map());
@@ -163,7 +163,7 @@ export const useShopNotifications = () => {
   const ALERT_LOOP_MAX_MS = 120000;
   const ALERT_DEDUPE_MS = 15000;
   const BROWSER_NOTIFICATION_DEDUPE_MS = 20000;
-  const NOTIFICATION_PERMISSION_ASKED_KEY = 'restaurant_notification_permission_asked';
+  const NOTIFICATION_PERMISSION_ASKED_KEY = 'shop_notification_permission_asked';
 
   const getOrderAlertKey = (orderData = {}) => (
     String(
@@ -203,15 +203,15 @@ export const useShopNotifications = () => {
     if (orderKeys.length === 0) return;
 
     window.dispatchEvent(
-      new CustomEvent('restaurantOrderStatusUpdated', {
+      new CustomEvent('shopOrderStatusUpdated', {
         detail: {
           ...orderData,
           previousOrderStatus: orderData?.orderStatus || orderData?.status || '',
           orderStatus: 'processed',
           status: 'processed',
           orderKeys,
-          message: 'Order is no longer waiting for restaurant review.',
-          source: 'restaurant_pending_recovery',
+          message: 'Order is no longer waiting for shop review.',
+          source: 'shop_pending_recovery',
         },
       }),
     );
@@ -280,12 +280,12 @@ export const useShopNotifications = () => {
         data: notificationOptions.data,
       });
     } catch (error) {
-      debugWarn('Error showing background restaurant notification:', error);
+      debugWarn('Error showing background shop notification:', error);
     }
   };
 
   const showBackgroundOrderNotification = async (orderData) =>
-    showBackgroundBrowserNotification(orderData, buildRestaurantOrderNotification);
+    showBackgroundBrowserNotification(orderData, buildShopOrderNotification);
 
   const stopAlertLoop = () => {
     if (alertLoopTimerRef.current) {
@@ -333,11 +333,11 @@ export const useShopNotifications = () => {
     }
   }, []);
 
-  const recoverRestaurantState = useCallback(async () => {
-    if (!restaurantId) return;
+  const recoverShopState = useCallback(async () => {
+    if (!shopId) return;
 
     try {
-      const response = await restaurantAPI.getOrders({ page: 1, limit: 30 });
+      const response = await shopAPI.getOrders({ page: 1, limit: 30 });
       const rows =
         response?.data?.data?.orders ||
         response?.data?.data?.data?.orders ||
@@ -386,56 +386,56 @@ export const useShopNotifications = () => {
       });
       pendingReview.slice(0, 5).forEach((order) => handleIncomingOrderAlert(order));
     } catch (error) {
-      debugWarn('Restaurant recovery sync failed:', error?.message || error);
+      debugWarn('Shop recovery sync failed:', error?.message || error);
     }
-  }, [restaurantId, handleIncomingOrderAlert]);
+  }, [shopId, handleIncomingOrderAlert]);
 
-  const joinRestaurantRoomIfPossible = useCallback(() => {
-    if (!socketRef.current?.connected || !restaurantId) {
+  const joinShopRoomIfPossible = useCallback(() => {
+    if (!socketRef.current?.connected || !shopId) {
       return false;
     }
 
-    if (joinedRestaurantRoomRef.current === restaurantId) {
+    if (joinedShopRoomRef.current === shopId) {
       return true;
     }
 
-    debugLog('Joining restaurant room', {
-      restaurantId,
+    debugLog('Joining shop room', {
+      shopId,
       socketId: socketRef.current?.id,
     });
-    socketRef.current.emit('join-restaurant', restaurantId);
-    joinedRestaurantRoomRef.current = restaurantId;
+    socketRef.current.emit('join-shop', shopId);
+    joinedShopRoomRef.current = shopId;
     return true;
-  }, [restaurantId]);
+  }, [shopId]);
 
-  // Get restaurant ID only when restaurant is approved and accepting orders.
+  // Get shop ID only when shop is approved and accepting orders.
   useEffect(() => {
-    const fetchRestaurantId = async () => {
+    const fetchShopId = async () => {
       try {
-        const response = await restaurantAPI.getCurrentRestaurant();
-        if (response.data?.success && response.data.data?.restaurant) {
-          const restaurant = response.data.data.restaurant;
+        const response = await shopAPI.getCurrentShop();
+        if (response.data?.success && response.data.data?.shop) {
+          const shop = response.data.data.shop;
           const isEligible =
-            String(restaurant?.status || '').toLowerCase() === 'approved' &&
-            restaurant?.isAcceptingOrders === true;
+            String(shop?.status || '').toLowerCase() === 'approved' &&
+            shop?.isAcceptingOrders === true;
           if (!isEligible) {
             stopAlertLoop();
             activeOrderRef.current = null;
             setNewOrder(null);
-            setRestaurantId(null);
+            setShopId(null);
             if (socketRef.current) {
               socketRef.current.disconnect();
             }
             return;
           }
-          const id = restaurant._id?.toString() || restaurant.restaurantId;
-          setRestaurantId(id);
+          const id = shop._id?.toString() || shop.shopId;
+          setShopId(id);
         }
       } catch (error) {
-        debugError('Error fetching restaurant:', error);
+        debugError('Error fetching shop:', error);
       }
     };
-    fetchRestaurantId();
+    fetchShopId();
 
     const handleOnlineStatusChanged = (event) => {
       const isOnline = event?.detail?.isOnline === true;
@@ -443,27 +443,27 @@ export const useShopNotifications = () => {
         stopAlertLoop();
         activeOrderRef.current = null;
         setNewOrder(null);
-        setRestaurantId(null);
+        setShopId(null);
         if (socketRef.current) {
           socketRef.current.disconnect();
         }
         return;
       }
-      fetchRestaurantId();
+      fetchShopId();
     };
 
-    window.addEventListener('restaurantOnlineStatusChanged', handleOnlineStatusChanged);
+    window.addEventListener('shopOnlineStatusChanged', handleOnlineStatusChanged);
     return () => {
-      window.removeEventListener('restaurantOnlineStatusChanged', handleOnlineStatusChanged);
+      window.removeEventListener('shopOnlineStatusChanged', handleOnlineStatusChanged);
     };
   }, []);
 
   // Reliability fallback:
   // If Socket.IO fails (expired jwt / missing token / room join failed),
-  // we still fetch restaurant orders from REST periodically and trigger the same
-  // alert flow. This prevents "restaurant didn't receive the order" cases.
+  // we still fetch shop orders from REST periodically and trigger the same
+  // alert flow. This prevents "shop didn't receive the order" cases.
   useEffect(() => {
-    if (!restaurantId) return;
+    if (!shopId) return;
 
     const ALERT_POLL_MS = isConnected ? 30000 : 12000; // 12s if disconnected, 30s if connected
     let isCancelled = false;
@@ -472,7 +472,7 @@ export const useShopNotifications = () => {
       if (isCancelled) return;
 
       try {
-        await recoverRestaurantState();
+        await recoverShopState();
       } catch (error) {
         // Non-blocking: keep polling.
       }
@@ -486,7 +486,7 @@ export const useShopNotifications = () => {
       isCancelled = true;
       clearInterval(intervalId);
     };
-  }, [restaurantId, recoverRestaurantState, isConnected]);
+  }, [shopId, recoverShopState, isConnected]);
 
   useEffect(() => {
     if (!supportsBrowserNotifications()) return;
@@ -499,7 +499,7 @@ export const useShopNotifications = () => {
       try {
         await Notification.requestPermission();
       } catch (error) {
-        debugWarn('Failed to request restaurant notification permission:', error);
+        debugWarn('Failed to request shop notification permission:', error);
       }
     };
 
@@ -532,24 +532,24 @@ export const useShopNotifications = () => {
       if (!socketRef.current?.connected) {
         socketRef.current?.connect();
       }
-      joinRestaurantRoomIfPossible();
-      void recoverRestaurantState();
+      joinShopRoomIfPossible();
+      void recoverShopState();
     };
 
     const onWindowFocus = () => {
       if (!socketRef.current?.connected) {
         socketRef.current?.connect();
       }
-      joinRestaurantRoomIfPossible();
-      void recoverRestaurantState();
+      joinShopRoomIfPossible();
+      void recoverShopState();
     };
 
     const onPageShow = () => {
       if (!socketRef.current?.connected) {
         socketRef.current?.connect();
       }
-      joinRestaurantRoomIfPossible();
-      void recoverRestaurantState();
+      joinShopRoomIfPossible();
+      void recoverShopState();
     };
 
     document.addEventListener('visibilitychange', onVisibilityChange);
@@ -560,15 +560,15 @@ export const useShopNotifications = () => {
       window.removeEventListener('focus', onWindowFocus);
       window.removeEventListener('pageshow', onPageShow);
     };
-  }, [joinRestaurantRoomIfPossible, recoverRestaurantState]);
+  }, [joinShopRoomIfPossible, recoverShopState]);
 
   useEffect(() => {
     if (!API_BASE_URL || !String(API_BASE_URL).trim()) {
       setIsConnected(false);
       return;
     }
-    if (!restaurantId) {
-      debugLog('? Waiting for restaurantId...');
+    if (!shopId) {
+      debugLog('? Waiting for shopId...');
       return;
     }
 
@@ -719,7 +719,7 @@ export const useShopNotifications = () => {
     debugLog('?? Attempting to connect to Socket.IO:', socketUrl);
     debugLog('?? Backend URL:', backendUrl);
     debugLog('?? API_BASE_URL:', API_BASE_URL);
-    debugLog('?? Restaurant ID:', restaurantId);
+    debugLog('?? Shop ID:', shopId);
     debugLog('?? Environment:', import.meta.env.MODE);
     debugLog('?? Is Production Build:', isProductionBuild);
     debugLog('?? Is Production Deployment:', isProductionDeployment);
@@ -739,47 +739,47 @@ export const useShopNotifications = () => {
       forceNew: true,
       autoConnect: true,
       auth: {
-        token: localStorage.getItem('restaurant_accessToken') || localStorage.getItem('accessToken')
+        token: localStorage.getItem('shop_accessToken') || localStorage.getItem('accessToken')
       }
     });
 
     socketRef.current.on('connect', () => {
-      debugLog('? Restaurant Socket connected, restaurantId:', restaurantId);
+      debugLog('? Shop Socket connected, shopId:', shopId);
       debugLog('? Socket ID:', socketRef.current.id);
       debugLog('? Socket URL:', socketUrl);
       setIsConnected(true);
-      joinedRestaurantRoomRef.current = null;
+      joinedShopRoomRef.current = null;
       
-      // Join restaurant room immediately after connection with retry
-      if (restaurantId) {
+      // Join shop room immediately after connection with retry
+      if (shopId) {
         const joinRoom = () => {
-          debugLog('?? Joining restaurant room with ID:', restaurantId);
-          socketRef.current.emit('join-restaurant', restaurantId);
-          joinedRestaurantRoomRef.current = restaurantId;
+          debugLog('?? Joining shop room with ID:', shopId);
+          socketRef.current.emit('join-shop', shopId);
+          joinedShopRoomRef.current = shopId;
           
           // Retry join after 2 seconds if no confirmation received
           setTimeout(() => {
             if (socketRef.current?.connected) {
-              debugLog('?? Retrying restaurant room join...');
-              socketRef.current.emit('join-restaurant', restaurantId);
-              joinedRestaurantRoomRef.current = restaurantId;
+              debugLog('?? Retrying shop room join...');
+              socketRef.current.emit('join-shop', shopId);
+              joinedShopRoomRef.current = shopId;
             }
           }, 2000);
         };
         
         joinRoom();
-        void recoverRestaurantState();
+        void recoverShopState();
       } else {
-        debugWarn('?? Cannot join restaurant room: restaurantId is missing');
+        debugWarn('?? Cannot join shop room: shopId is missing');
       }
     });
 
     // Listen for room join confirmation
-    socketRef.current.on('restaurant-room-joined', (data) => {
-      debugLog('? Restaurant room joined successfully:', data);
+    socketRef.current.on('shop-room-joined', (data) => {
+      debugLog('? Shop room joined successfully:', data);
       debugLog('? Room:', data?.room);
-      debugLog('? Restaurant ID in room:', data?.restaurantId);
-      joinedRestaurantRoomRef.current = data?.restaurantId || restaurantId;
+      debugLog('? Shop ID in room:', data?.shopId);
+      joinedShopRoomRef.current = data?.shopId || shopId;
     });
 
     // Listen for connection errors (throttle logs to avoid console spam on reconnect loops)
@@ -790,7 +790,7 @@ export const useShopNotifications = () => {
         lastConnectErrorLogRef.current = now;
         const isTransportError = error.type === 'TransportError' || error.message?.includes('xhr poll error');
         debugWarn(
-          'Restaurant Socket:',
+          'Shop Socket:',
           isTransportError
             ? `Cannot reach backend at ${backendUrl}. Ensure the backend is running (e.g. npm run dev in backend).`
             : error.message
@@ -807,9 +807,9 @@ export const useShopNotifications = () => {
 
     // Listen for disconnection
     socketRef.current.on('disconnect', (reason) => {
-      debugLog('? Restaurant Socket disconnected:', reason);
+      debugLog('? Shop Socket disconnected:', reason);
       setIsConnected(false);
-      joinedRestaurantRoomRef.current = null;
+      joinedShopRoomRef.current = null;
       
       if (reason === 'io server disconnect') {
         // Server disconnected the socket, reconnect manually
@@ -826,14 +826,14 @@ export const useShopNotifications = () => {
     socketRef.current.on('reconnect', (attemptNumber) => {
       debugLog(`? Reconnected after ${attemptNumber} attempts`);
       setIsConnected(true);
-      joinedRestaurantRoomRef.current = null;
+      joinedShopRoomRef.current = null;
       
-      // Rejoin restaurant room after reconnection
-      if (restaurantId) {
-        socketRef.current.emit('join-restaurant', restaurantId);
-        joinedRestaurantRoomRef.current = restaurantId;
+      // Rejoin shop room after reconnection
+      if (shopId) {
+        socketRef.current.emit('join-shop', shopId);
+        joinedShopRoomRef.current = shopId;
       }
-      void recoverRestaurantState();
+      void recoverShopState();
     });
 
     // Listen for new order notifications
@@ -842,7 +842,7 @@ export const useShopNotifications = () => {
       setNewOrder(orderData);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('restaurantNewOrderReceived', {
+          new CustomEvent('shopNewOrderReceived', {
             detail: orderData || {},
           }),
         );
@@ -863,7 +863,7 @@ export const useShopNotifications = () => {
         setNewOrder((prev) => prev || normalizedData);
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
-            new CustomEvent('restaurantNewOrderReceived', {
+            new CustomEvent('shopNewOrderReceived', {
               detail: normalizedData,
             }),
           );
@@ -905,7 +905,7 @@ export const useShopNotifications = () => {
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('restaurantScheduledPreparationReminder', {
+          new CustomEvent('shopScheduledPreparationReminder', {
             detail: normalizedData,
           }),
         );
@@ -917,7 +917,7 @@ export const useShopNotifications = () => {
       debugLog('?? Order status update:', data);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('restaurantOrderStatusUpdated', {
+          new CustomEvent('shopOrderStatusUpdated', {
             detail: data || {},
           }),
         );
@@ -927,7 +927,7 @@ export const useShopNotifications = () => {
       const reasonType = String(data?.reasonType || '').toLowerCase();
       const eventOrderKeys = getOrderKeys(data);
 
-      // Restaurant-side live dispatch notifications (foreground)
+      // Shop-side live dispatch notifications (foreground)
       if (dispatchStatus === 'accepted') {
         const readableOrderId = String(data?.orderId || data?.order_id || '').trim();
         toast.success(
@@ -959,7 +959,7 @@ export const useShopNotifications = () => {
           ).toLowerCase();
           let cancelledBy = 'unknown';
           if (cancelledByRaw.includes('customer') || cancelledByRaw.includes('user')) cancelledBy = 'user';
-          else if (cancelledByRaw.includes('restaurant') || cancelledByRaw.includes('seller')) cancelledBy = 'restaurant';
+          else if (cancelledByRaw.includes('shop') || cancelledByRaw.includes('seller')) cancelledBy = 'shop';
           else if (cancelledByRaw.includes('admin')) cancelledBy = 'admin';
 
           setCancelledOrderId(primaryOrderId);
@@ -973,7 +973,7 @@ export const useShopNotifications = () => {
         }
       }
 
-      // If order is no longer waiting for restaurant review, immediately clear
+      // If order is no longer waiting for shop review, immediately clear
       // the active new-order notification for the same order.
       const isPendingReviewStatus = status === 'created' || status === 'confirmed';
       if (eventOrderKeys.length > 0 && status && !isPendingReviewStatus) {
@@ -1004,7 +1004,7 @@ export const useShopNotifications = () => {
       debugLog('?? Order cancelled event received:', data);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('restaurantOrderStatusUpdated', {
+          new CustomEvent('shopOrderStatusUpdated', {
             detail: { ...data, status: 'cancelled' },
           }),
         );
@@ -1053,12 +1053,12 @@ export const useShopNotifications = () => {
         description: payload?.message || 'New notification received.',
         duration: 8000,
       });
-      storeRestaurantAdminNotification(payload);
+      storeShopAdminNotification(payload);
       dispatchNotificationInboxRefresh();
     });
 
     const handleAuthChange = () => {
-      const newToken = localStorage.getItem('restaurant_accessToken') || localStorage.getItem('accessToken');
+      const newToken = localStorage.getItem('shop_accessToken') || localStorage.getItem('accessToken');
       if (socketRef.current && newToken) {
         socketRef.current.auth.token = newToken;
         if (!socketRef.current.connected) {
@@ -1068,7 +1068,7 @@ export const useShopNotifications = () => {
     };
 
     const handleAuthRefreshed = (e) => {
-      if (e.detail?.module === 'restaurant' && socketRef.current && e.detail.token) {
+      if (e.detail?.module === 'shop' && socketRef.current && e.detail.token) {
         socketRef.current.auth.token = e.detail.token;
         if (!socketRef.current.connected) {
           socketRef.current.connect();
@@ -1076,7 +1076,7 @@ export const useShopNotifications = () => {
       }
     };
 
-    window.addEventListener('restaurantAuthChanged', handleAuthChange);
+    window.addEventListener('shopAuthChanged', handleAuthChange);
     window.addEventListener('authRefreshed', handleAuthRefreshed);
 
     // Load notification sound
@@ -1086,8 +1086,8 @@ export const useShopNotifications = () => {
 
     return () => {
       stopAlertLoop();
-      joinedRestaurantRoomRef.current = null;
-      window.removeEventListener('restaurantAuthChanged', handleAuthChange);
+      joinedShopRoomRef.current = null;
+      window.removeEventListener('shopAuthChanged', handleAuthChange);
       window.removeEventListener('authRefreshed', handleAuthRefreshed);
       if (socketRef.current) {
         socketRef.current.disconnect();
@@ -1098,19 +1098,19 @@ export const useShopNotifications = () => {
         audioRef.current = null;
       }
     };
-  }, [restaurantId, recoverRestaurantState]);
+  }, [shopId, recoverShopState]);
 
   useEffect(() => {
-    if (!restaurantId) {
+    if (!shopId) {
       return;
     }
 
-    joinRestaurantRoomIfPossible();
+    joinShopRoomIfPossible();
 
     if (socketRef.current?.connected) {
-      void recoverRestaurantState();
+      void recoverShopState();
     }
-  }, [restaurantId, joinRestaurantRoomIfPossible, recoverRestaurantState]);
+  }, [shopId, joinShopRoomIfPossible, recoverShopState]);
 
   // Track user interaction for autoplay policy
   useEffect(() => {
@@ -1181,7 +1181,7 @@ export const useShopNotifications = () => {
             debugWarn('Error playing notification sound:', error);
             // Fallback: try one-shot audio instance (more reliable in background tabs on some browsers)
             try {
-              const fallbackAudio = new Audio(resolveAudioSource(alertSound, `restaurant-alert-${Date.now()}`));
+              const fallbackAudio = new Audio(resolveAudioSource(alertSound, `shop-alert-${Date.now()}`));
               fallbackAudio.volume = 1;
               fallbackAudio.play().catch(() => {});
             } catch (fallbackError) {

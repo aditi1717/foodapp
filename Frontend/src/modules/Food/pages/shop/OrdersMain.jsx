@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import BottomNavOrders from "@food/components/shop/BottomNavOrders";
 import ShopNavbar from "@food/components/shop/ShopNavbar";
 import notificationSound from "@food/assets/audio/alert.mp3";
-import { restaurantAPI } from "@food/api";
+import { shopAPI } from "@food/api";
 import { useShopNotifications } from "@food/hooks/useShopNotifications";
 import { formatOrderAddressWithLabels } from "@food/utils/orderAddressFormatter";
 import jsPDF from "jspdf";
@@ -37,7 +37,7 @@ const debugLog = (...args) => {};
 const debugWarn = (...args) => {};
 const debugError = (...args) => {};
 
-const STORAGE_KEY = "restaurant_online_status";
+const STORAGE_KEY = "shop_online_status";
 
 // Top filter tabs
 const filterTabs = [
@@ -122,7 +122,7 @@ const toFiniteMinutes = (value) => {
 const getOrderEtaMinutes = (order = {}) =>
   toFiniteMinutes(order?.eta?.currentEstimatedMinutes) ??
   toFiniteMinutes(order?.eta?.totalBeforeReadyMinutes) ??
-  toFiniteMinutes(order?.eta?.restaurantPrepMinutes) ??
+  toFiniteMinutes(order?.eta?.shopPrepMinutes) ??
   toFiniteMinutes(order?.estimatedDeliveryTime) ??
   30;
 
@@ -161,8 +161,8 @@ const isScheduledOrderReadyForAcceptance = (
 const getScheduledPreparationLeadMinutes = (orderLike = {}) =>
   toFiniteMinutes(orderLike?.eta?.totalBeforeReadyMinutes) ??
   toFiniteMinutes(orderLike?.eta?.currentEstimatedMinutes) ??
-  toFiniteMinutes(orderLike?.eta?.restaurantPrepMinutes) ??
-  toFiniteMinutes(orderLike?.eta?.restaurantBaseMinutes) ??
+  toFiniteMinutes(orderLike?.eta?.shopPrepMinutes) ??
+  toFiniteMinutes(orderLike?.eta?.shopBaseMinutes) ??
   toFiniteMinutes(orderLike?.initialETA) ??
   35;
 
@@ -388,7 +388,7 @@ function useAvailableExclusiveRidersByOrder(orders = [], refreshToken = 0) {
           unassignedOrders.map(async (order) => {
             const orderKey = String(order.mongoId || order.orderId || "");
             try {
-              const response = await restaurantAPI.listExclusivityPartners(orderKey);
+              const response = await shopAPI.listExclusivityPartners(orderKey);
               const riders = response?.data?.data?.associatedRiders || [];
               return [orderKey, riders.length > 0];
             } catch {
@@ -426,7 +426,7 @@ function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
 
     const fetchOrders = async () => {
       try {
-        const response = await restaurantAPI.getOrders();
+        const response = await shopAPI.getOrders();
 
         if (!isMounted) return;
 
@@ -648,7 +648,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
 
     const fetchOrders = async () => {
       try {
-        const response = await restaurantAPI.getOrders();
+        const response = await shopAPI.getOrders();
 
         if (!isMounted) return;
 
@@ -893,7 +893,7 @@ function AllOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
 
     const fetchOrders = async () => {
       try {
-        const response = await restaurantAPI.getOrders();
+        const response = await shopAPI.getOrders();
 
         if (!isMounted) return;
 
@@ -952,7 +952,7 @@ function AllOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
 
     try {
       setMarkingReadyOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.markOrderReady(orderKey);
+      await shopAPI.markOrderReady(orderKey);
       setOrders((prev) =>
         prev.map((order) =>
           (order.mongoId || order.orderId) === orderKey
@@ -982,7 +982,7 @@ function AllOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
 
     try {
       setStartingPreparingOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.startPreparingOrder(orderKey);
+      await shopAPI.startPreparingOrder(orderKey);
       setOrders((prev) =>
         prev.map((order) =>
           (order.mongoId || order.orderId) === orderKey
@@ -1012,7 +1012,7 @@ function AllOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
 
     try {
       setMarkingDeliveredOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.markOrderDelivered(orderKey);
+      await shopAPI.markOrderDelivered(orderKey);
       setOrders((prev) =>
         prev.map((order) =>
           (order.mongoId || order.orderId) === orderKey
@@ -1039,9 +1039,9 @@ function AllOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
     if (!orderKey || autoAssigningOrderIds[orderKey]) return;
     try {
       setAutoAssigningOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.autoAssignDeliveryPartner(orderKey);
+      await shopAPI.autoAssignDeliveryPartner(orderKey);
       toast.success("Auto-assign request sent");
-      const response = await restaurantAPI.getOrders();
+      const response = await shopAPI.getOrders();
       const list = response?.data?.data?.orders || [];
       setOrders(list.map(transformOrderForList).sort((a, b) => ((allOrdersStatusPriority[a.status] ?? 999) - (allOrdersStatusPriority[b.status] ?? 999)) || (b.sortTimestamp - a.sortTimestamp)));
     } catch (error) {
@@ -1055,7 +1055,7 @@ function AllOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
     const orderKey = mongoId || orderId;
     if (!orderKey || assigningOrderIds[orderKey]) return;
     try {
-      const listRes = await restaurantAPI.listExclusivityPartners(orderKey);
+      const listRes = await shopAPI.listExclusivityPartners(orderKey);
       const riders = listRes?.data?.data?.associatedRiders || [];
       if (!riders.length) {
         toast.error("No associated delivery partners found");
@@ -1081,11 +1081,11 @@ function AllOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
     }
     try {
       setAssigningOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.assignDeliveryPartner(orderKey, chosen.partnerId || chosen.id);
+      await shopAPI.assignDeliveryPartner(orderKey, chosen.partnerId || chosen.id);
       toast.success(`Assigned to ${chosen.name}`);
       setAssignDialog({ open: false, orderKey: "", riders: [] });
       setSelectedRiderId("");
-      const response = await restaurantAPI.getOrders();
+      const response = await shopAPI.getOrders();
       const list = response?.data?.data?.orders || [];
       setOrders(list.map(transformOrderForList).sort((a, b) => ((allOrdersStatusPriority[a.status] ?? 999) - (allOrdersStatusPriority[b.status] ?? 999)) || (b.sortTimestamp - a.sortTimestamp)));
     } catch (error) {
@@ -1230,7 +1230,7 @@ export default function OrdersMain() {
   const acceptSliderRef = useRef(null);
   const acceptSwipeStartXRef = useRef(0);
   const acceptSwipeActiveRef = useRef(false);
-  const [restaurantStatus, setShopStatus] = useState({
+  const [shopStatus, setShopStatus] = useState({
     isActive: null,
     rejectionReason: null,
     onboarding: null,
@@ -1488,17 +1488,17 @@ export default function OrdersMain() {
       }
     }
 
-    const couponByRestaurantRaw = Number(pricing?.couponByRestaurant ?? 0);
-    const couponByRestaurant = Number.isFinite(couponByRestaurantRaw)
-      ? couponByRestaurantRaw
+    const couponByShopRaw = Number(pricing?.couponByShop ?? 0);
+    const couponByShop = Number.isFinite(couponByShopRaw)
+      ? couponByShopRaw
       : 0;
 
-    const offerByRestaurantRaw = Number(pricing?.offerByRestaurant ?? 0);
-    const offerByRestaurant = Number.isFinite(offerByRestaurantRaw)
-      ? offerByRestaurantRaw
+    const offerByShopRaw = Number(pricing?.offerByShop ?? 0);
+    const offerByShop = Number.isFinite(offerByShopRaw)
+      ? offerByShopRaw
       : 0;
     const commissionRaw = Number(
-      orderLike?.commission ?? pricing?.restaurantCommission ?? 0,
+      orderLike?.commission ?? pricing?.shopCommission ?? 0,
     );
     const commission = Number.isFinite(commissionRaw) ? commissionRaw : 0;
 
@@ -1526,21 +1526,21 @@ export default function OrdersMain() {
     // Keep this aligned with shop order report/invoice logic:
     // prefer backend payout fields; fallback to net formula used in reports.
     // Keep this aligned with admin regular order report:
-    // restaurantEarning = subtotal + packagingFee - adminCommission - couponByRestaurant - offerByRestaurant
+    // shopEarning = subtotal + packagingFee - adminCommission - couponByShop - offerByShop
     const subtotalForEarning = toFiniteOrNull(pricing?.subtotal) ?? itemTotal;
     const directEarning =
-      toFiniteOrNull(orderLike?.restaurantEarning) ??
+      toFiniteOrNull(orderLike?.shopEarning) ??
       toFiniteOrNull(orderLike?.payout) ??
-      toFiniteOrNull(pricing?.restaurantEarning) ??
-      toFiniteOrNull(pricing?.payoutToRestaurant);
+      toFiniteOrNull(pricing?.shopEarning) ??
+      toFiniteOrNull(pricing?.payoutToShop);
     const earningRaw =
       directEarning ??
       (subtotalForEarning +
         packagingFee -
         commission -
-        couponByRestaurant -
-        offerByRestaurant);
-    const restaurantEarning = Number.isFinite(earningRaw) ? Math.max(0, earningRaw) : 0;
+        couponByShop -
+        offerByShop);
+    const shopEarning = Number.isFinite(earningRaw) ? Math.max(0, earningRaw) : 0;
     const commissionRate =
       subtotalForEarning > 0 && commission > 0
         ? Math.round((commission / subtotalForEarning) * 10000) / 100
@@ -1557,7 +1557,7 @@ export default function OrdersMain() {
       commission,
       commissionRate,
       total,
-      restaurantEarning,
+      shopEarning,
     };
   };
 
@@ -1613,7 +1613,7 @@ export default function OrdersMain() {
   useEffect(() => {
     const fetchShopStatus = async () => {
       try {
-        const response = await restaurantAPI.getCurrentRestaurant();
+        const response = await shopAPI.getCurrentShop();
         const shop =
           response?.data?.data?.shop || response?.data?.shop;
         if (shop) {
@@ -1657,11 +1657,11 @@ export default function OrdersMain() {
       fetchShopStatus();
     };
 
-    window.addEventListener("restaurantProfileRefresh", handleProfileRefresh);
+    window.addEventListener("shopProfileRefresh", handleProfileRefresh);
 
     return () => {
       window.removeEventListener(
-        "restaurantProfileRefresh",
+        "shopProfileRefresh",
         handleProfileRefresh,
       );
     };
@@ -1671,10 +1671,10 @@ export default function OrdersMain() {
   const handleReverify = async () => {
     try {
       setIsReverifying(true);
-      await restaurantAPI.reverify();
+      await shopAPI.reverify();
 
       // Refresh shop status
-      const response = await restaurantAPI.getCurrentRestaurant();
+      const response = await shopAPI.getCurrentShop();
       const shop =
         response?.data?.data?.shop || response?.data?.shop;
       if (shop) {
@@ -1687,7 +1687,7 @@ export default function OrdersMain() {
       }
 
       // Trigger profile refresh event
-      window.dispatchEvent(new Event("restaurantProfileRefresh"));
+      window.dispatchEvent(new Event("shopProfileRefresh"));
 
       alert(
         "Shop reverified successfully! Verification will be done in 24 hours.",
@@ -1838,7 +1838,7 @@ export default function OrdersMain() {
     let active = true;
     (async () => {
       try {
-        const response = await restaurantAPI.getOrderById(lookupId);
+        const response = await shopAPI.getOrderById(lookupId);
         const apiOrder =
           response?.data?.data?.order ||
           response?.data?.order ||
@@ -1983,7 +1983,7 @@ export default function OrdersMain() {
 
     (async () => {
       try {
-        const response = await restaurantAPI.getOrderById(lookupId);
+        const response = await shopAPI.getOrderById(lookupId);
         const apiOrder =
           response?.data?.data?.order ||
           response?.data?.order ||
@@ -2061,7 +2061,7 @@ export default function OrdersMain() {
   const requestOrdersRefresh = () => setOrdersRefreshToken((t) => t + 1);
 
   useEffect(() => {
-    const handleRestaurantOrderStatusUpdated = (event) => {
+    const handleShopOrderStatusUpdated = (event) => {
       const payload = event?.detail || {};
       const hasDispatchUpdate =
         payload?.dispatchStatus != null ||
@@ -2129,14 +2129,14 @@ export default function OrdersMain() {
     };
 
     window.addEventListener(
-      "restaurantOrderStatusUpdated",
-      handleRestaurantOrderStatusUpdated,
+      "shopOrderStatusUpdated",
+      handleShopOrderStatusUpdated,
     );
 
     return () => {
       window.removeEventListener(
-        "restaurantOrderStatusUpdated",
-        handleRestaurantOrderStatusUpdated,
+        "shopOrderStatusUpdated",
+        handleShopOrderStatusUpdated,
       );
     };
   }, []);
@@ -2148,7 +2148,7 @@ export default function OrdersMain() {
       if (showNewOrderPopupRef.current || newOrderRef.current) return;
 
       try {
-        const response = await restaurantAPI.getOrders();
+        const response = await shopAPI.getOrders();
         if (response.data?.success && response.data.data?.orders) {
           const now = Date.now();
 
@@ -2178,8 +2178,8 @@ export default function OrdersMain() {
             const orderForPopup = {
               orderId: orderToPopup.orderId,
               orderMongoId: orderToPopup._id,
-              restaurantId: orderToPopup.restaurantId,
-              restaurantName: orderToPopup.restaurantName,
+              shopId: orderToPopup.shopId,
+              shopName: orderToPopup.shopName,
               items: orderToPopup.items || [],
               pricing: orderToPopup.pricing || {},
               total:
@@ -2196,7 +2196,7 @@ export default function OrdersMain() {
               type: getOrderFulfillmentLabel(orderToPopup),
               estimatedDeliveryTime: orderToPopup.estimatedDeliveryTime || 30,
               note: orderToPopup.note || "",
-              restaurantNote: orderToPopup.restaurantNote || "",
+              shopNote: orderToPopup.shopNote || "",
               customerNote: orderToPopup.customerNote || "",
               sendCutlery: orderToPopup.sendCutlery,
               isBulkOrder:
@@ -2315,12 +2315,12 @@ export default function OrdersMain() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const getOrderNoteForRestaurant = (order) => {
+  const getOrderNoteForShop = (order) => {
     if (!order) return "";
     const noteCandidate =
       order?.notes?.shop ||
       order?.notes?.customer ||
-      order.restaurantNote ||
+      order.shopNote ||
       order.customerNote ||
       order.note ||
       order.specialInstructions ||
@@ -2393,7 +2393,7 @@ export default function OrdersMain() {
     if (orderToAccept?.orderMongoId || orderToAccept?.orderId) {
       try {
         const orderId = orderToAccept.orderMongoId || orderToAccept.orderId;
-        const response = await restaurantAPI.acceptOrder(orderId, prepTime);
+        const response = await shopAPI.acceptOrder(orderId, prepTime);
         debugLog("? Order accepted:", orderId);
         toast.success("Order accepted successfully");
         requestOrdersRefresh();
@@ -2457,7 +2457,7 @@ export default function OrdersMain() {
     if (orderToReject?.orderMongoId || orderToReject?.orderId) {
       try {
         const orderId = orderToReject.orderMongoId || orderToReject.orderId;
-        await restaurantAPI.rejectOrder(orderId, rejectReason);
+        await shopAPI.rejectOrder(orderId, rejectReason);
         debugLog("? Order rejected:", orderId);
         requestOrdersRefresh();
       } catch (error) {
@@ -2500,7 +2500,7 @@ export default function OrdersMain() {
 
     try {
       const orderId = orderToCancel.mongoId || orderToCancel.orderId;
-      await restaurantAPI.rejectOrder(orderId, cancelReason.trim());
+      await shopAPI.rejectOrder(orderId, cancelReason.trim());
       toast.success("Order cancelled successfully");
       requestOrdersRefresh();
       setShowCancelPopup(false);
@@ -2609,7 +2609,7 @@ export default function OrdersMain() {
       doc.text("Order Receipt", 14, 17);
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
-      doc.text(orderToPrint.restaurantName || "Shop", 14, 24);
+      doc.text(orderToPrint.shopName || "Shop", 14, 24);
 
       doc.setTextColor(17, 24, 39);
       doc.setFont("helvetica", "bold");
@@ -2703,7 +2703,7 @@ export default function OrdersMain() {
           : "Cutlery preference: Send cutlery";
       doc.text(cutleryLabel, 14, yPos);
 
-      const orderNote = getOrderNoteForRestaurant(orderToPrint);
+      const orderNote = getOrderNoteForShop(orderToPrint);
       if (orderNote) {
         yPos += 8;
         doc.setFont("helvetica", "bold");
@@ -3065,19 +3065,19 @@ export default function OrdersMain() {
         `}</style>
 
         {/* Verification Pending Card - Show if onboarding is complete (all 4 steps) and shop is not active */}
-        {!restaurantStatus.isLoading &&
-          !restaurantStatus.isActive &&
-          restaurantStatus.onboarding?.completedSteps === 4 && (
+        {!shopStatus.isLoading &&
+          !shopStatus.isActive &&
+          shopStatus.onboarding?.completedSteps === 4 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
               className={`mt-4 mb-4 rounded-2xl shadow-sm px-6 py-4 ${
-                restaurantStatus.rejectionReason
+                shopStatus.rejectionReason
                   ? "bg-white border border-red-200"
                   : "bg-white border border-yellow-200"
               }`}>
-              {restaurantStatus.rejectionReason ? (
+              {shopStatus.rejectionReason ? (
                 <>
                   <div className="flex items-start gap-3 mb-3">
                     <div className="flex-shrink-0 rounded-full p-2 bg-red-100">
@@ -3092,11 +3092,11 @@ export default function OrdersMain() {
                           Reason for Rejection:
                         </p>
                         <div className="text-xs text-red-700 space-y-1">
-                          {restaurantStatus.rejectionReason
+                          {shopStatus.rejectionReason
                             .split("\n")
                             .filter((line) => line.trim()).length > 1 ? (
                             <ul className="space-y-1 list-disc list-inside">
-                              {restaurantStatus.rejectionReason
+                              {shopStatus.rejectionReason
                                 .split("\n")
                                 .map(
                                   (point, index) =>
@@ -3107,7 +3107,7 @@ export default function OrdersMain() {
                             </ul>
                           ) : (
                             <p className="text-red-700">
-                              {restaurantStatus.rejectionReason}
+                              {shopStatus.rejectionReason}
                             </p>
                           )}
                         </div>
@@ -3189,7 +3189,7 @@ export default function OrdersMain() {
                       {(popupOrder || newOrder)?.orderId || "#Order"}
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {(popupOrder || newOrder)?.restaurantName || "Shop"}
+                      {(popupOrder || newOrder)?.shopName || "Shop"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -3331,13 +3331,13 @@ export default function OrdersMain() {
                     )}
                   </div>
 
-                  {getOrderNoteForRestaurant(popupOrder || newOrder) && (
+                  {getOrderNoteForShop(popupOrder || newOrder) && (
                     <div className="mb-3 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-700">
                         Shop note
                       </p>
                       <p className="mt-1 text-sm leading-5 text-brand-900">
-                        {getOrderNoteForRestaurant(popupOrder || newOrder)}
+                        {getOrderNoteForShop(popupOrder || newOrder)}
                       </p>
                     </div>
                   )}
@@ -3586,7 +3586,7 @@ export default function OrdersMain() {
                         <div className="mt-2 rounded-lg border border-green-200 bg-green-50 px-2.5 py-2 flex items-center justify-between">
                           <span className="text-sm font-semibold text-green-800">Your earning</span>
                           <span className="text-sm font-bold text-green-800">
-                            {formatPopupAmount(bill.restaurantEarning)}
+                            {formatPopupAmount(bill.shopEarning)}
                           </span>
                         </div>
                       </div>
@@ -4473,7 +4473,7 @@ function ScheduledOrders({ onSelectOrder, refreshToken = 0 }) {
 
     const fetchOrders = async () => {
       try {
-        const response = await restaurantAPI.getOrders();
+        const response = await shopAPI.getOrders();
         if (!isMounted) return;
 
         if (response.data?.success && response.data.data?.orders) {
@@ -4541,7 +4541,7 @@ function ScheduledOrders({ onSelectOrder, refreshToken = 0 }) {
 
     try {
       setStartingPreparingOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.startPreparingOrder(orderKey);
+      await shopAPI.startPreparingOrder(orderKey);
       setOrders((prev) =>
         prev.filter((order) => (order.mongoId || order.orderId) !== orderKey),
       );
@@ -4610,7 +4610,7 @@ function TakeawayOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
 
     const fetchOrders = async () => {
       try {
-        const response = await restaurantAPI.getOrders();
+        const response = await shopAPI.getOrders();
         if (!isMounted) return;
 
         if (response.data?.success && response.data.data?.orders) {
@@ -4665,7 +4665,7 @@ function TakeawayOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
 
     try {
       setMarkingReadyOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.markOrderReady(orderKey);
+      await shopAPI.markOrderReady(orderKey);
       setOrders((prev) =>
         prev.map((order) =>
           (order.mongoId || order.orderId) === orderKey
@@ -4694,7 +4694,7 @@ function TakeawayOrders({ onSelectOrder, onCancel, refreshToken = 0 }) {
 
     try {
       setMarkingDeliveredOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.markOrderDelivered(orderKey);
+      await shopAPI.markOrderDelivered(orderKey);
       setOrders((prev) =>
         prev.filter((order) => (order.mongoId || order.orderId) !== orderKey),
       );
@@ -4807,7 +4807,7 @@ function PreparingOrders({
     const fetchOrders = async () => {
       try {
         // Fetch all orders and filter for 'preparing' status on frontend
-        const response = await restaurantAPI.getOrders();
+        const response = await shopAPI.getOrders();
 
         if (!isMounted) return;
 
@@ -4907,7 +4907,7 @@ function PreparingOrders({
   const markedReadyOrdersRef = useRef(new Set());
 
   const refreshOrders = async () => {
-    const response = await restaurantAPI.getOrders();
+    const response = await shopAPI.getOrders();
     const rows = response?.data?.data?.orders || [];
     const preparingOrders = rows.filter((order) => order.status === "preparing");
     const transformedOrders = preparingOrders.map((order) => {
@@ -4949,7 +4949,7 @@ function PreparingOrders({
     if (!orderKey || autoAssigningOrderIds[orderKey]) return;
     try {
       setAutoAssigningOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.autoAssignDeliveryPartner(orderKey);
+      await shopAPI.autoAssignDeliveryPartner(orderKey);
       toast.success("Auto-assign request sent");
       await refreshOrders();
     } catch (error) {
@@ -4963,7 +4963,7 @@ function PreparingOrders({
     const orderKey = mongoId || orderId;
     if (!orderKey || assigningOrderIds[orderKey]) return;
     try {
-      const listRes = await restaurantAPI.listExclusivityPartners(orderKey);
+      const listRes = await shopAPI.listExclusivityPartners(orderKey);
       const riders = listRes?.data?.data?.associatedRiders || [];
       if (!riders.length) {
         toast.error("No associated delivery partners found");
@@ -4989,7 +4989,7 @@ function PreparingOrders({
     }
     try {
       setAssigningOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.assignDeliveryPartner(orderKey, chosen.partnerId || chosen.id);
+      await shopAPI.assignDeliveryPartner(orderKey, chosen.partnerId || chosen.id);
       toast.success(`Assigned to ${chosen.name}`);
       setAssignDialog({ open: false, orderKey: "", riders: [] });
       setSelectedRiderId("");
@@ -5031,7 +5031,7 @@ function PreparingOrders({
                 `?? Auto-marking order ${order.orderId} as ready (ETA reached 0)`,
               );
               markedReadyOrdersRef.current.add(orderKey); // Mark as processing
-              await restaurantAPI.markOrderReady(
+              await shopAPI.markOrderReady(
                 order.mongoId || order.orderId,
               );
               debugLog(`? Order ${order.orderId} marked as ready`);
@@ -5091,7 +5091,7 @@ function PreparingOrders({
 
     try {
       setMarkingReadyOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.markOrderReady(orderKey);
+      await shopAPI.markOrderReady(orderKey);
       setOrders((prev) =>
         prev.filter((order) => (order.mongoId || order.orderId) !== orderKey),
       );
@@ -5230,7 +5230,7 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
     const fetchOrders = async () => {
       try {
         // Fetch all orders and filter for 'ready' status on frontend
-        const response = await restaurantAPI.getOrders();
+        const response = await shopAPI.getOrders();
 
         if (!isMounted) return;
 
@@ -5305,7 +5305,7 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
 
     try {
       setMarkingDeliveredOrderIds((prev) => ({ ...prev, [orderKey]: true }));
-      await restaurantAPI.markOrderDelivered(orderKey);
+      await shopAPI.markOrderDelivered(orderKey);
       setOrders((prev) =>
         prev.filter((order) => (order.mongoId || order.orderId) !== orderKey),
       );
@@ -5373,7 +5373,7 @@ const OutForDeliveryOrders = ({ onSelectOrder, refreshToken = 0 }) => {
     const fetchOrders = async () => {
       try {
         // Fetch all orders and filter for active delivery progress statuses on frontend
-        const response = await restaurantAPI.getOrders();
+        const response = await shopAPI.getOrders();
 
         if (!isMounted) return;
 

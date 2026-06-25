@@ -1,11 +1,11 @@
-﻿import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { Textarea } from "@food/components/ui/textarea"
 import { Card, CardContent } from "@food/components/ui/card"
-import { orderAPI, restaurantAPI, supportAPI, authAPI } from "@food/api"
+import { orderAPI, shopAPI, supportAPI, authAPI } from "@food/api"
 import { toast } from "sonner"
 import { ArrowLeft, Building2, HelpCircle, ShoppingBag, ChevronRight } from "lucide-react"
 import BRAND_THEME from "@/config/brandTheme"
@@ -14,9 +14,9 @@ export default function Support() {
   const [step, setStep] = useState("pick")
   const [type, setType] = useState("")
   const [orders, setOrders] = useState([])
-  const [restaurants, setRestaurants] = useState([])
+  const [shops, setShops] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null)
+  const [selectedShop, setSelectedShop] = useState(null)
   const [issueType, setIssueType] = useState("")
   const [subject, setSubject] = useState("")
   const [description, setDescription] = useState("")
@@ -24,7 +24,7 @@ export default function Support() {
   const [tickets, setTickets] = useState([])
   const [loadingTickets, setLoadingTickets] = useState(false)
   const [orderSearch, setOrderSearch] = useState("")
-  const [restaurantSearch, setRestaurantSearch] = useState("")
+  const [shopSearch, setShopSearch] = useState("")
 
   const loadTickets = useCallback(async () => {
     const res = await supportAPI.getMyTickets()
@@ -46,7 +46,7 @@ export default function Support() {
   }, [loadTickets])
 
   const orderIssues = ["Item missing", "Wrong item", "Not delivered", "Payment issue"]
-  const restaurantIssues = ["Bad service", "Wrong info", "Other"]
+  const shopIssues = ["Bad service", "Wrong info", "Other"]
 
   const fetchOrders = async () => {
     try {
@@ -58,11 +58,11 @@ export default function Support() {
     }
   }
 
-  const fetchRestaurants = async () => {
+  const fetchShops = async () => {
     try {
-      const res = await restaurantAPI.getRestaurants({ limit: 20, page: 1 })
+      const res = await shopAPI.getShops({ limit: 20, page: 1 })
       const list = res?.data?.data?.shops || res?.data?.shops || []
-      setRestaurants(list)
+      setShops(list)
     } catch {
       toast.error("Failed to load shops")
     }
@@ -71,13 +71,13 @@ export default function Support() {
   const handlePick = (t) => {
     setType(t)
     setOrderSearch("")
-    setRestaurantSearch("")
+    setShopSearch("")
     if (t === "order") {
       fetchOrders()
       setStep("choose_order")
     } else if (t === "shop") {
-      fetchRestaurants()
-      setStep("choose_restaurant")
+      fetchShops()
+      setStep("choose_shop")
     } else {
       setStep("other_form")
     }
@@ -98,7 +98,7 @@ export default function Support() {
       setStep("pick")
       setType("")
       setSelectedOrder(null)
-      setSelectedRestaurant(null)
+      setSelectedShop(null)
       setIssueType("")
       setSubject("")
       setDescription("")
@@ -121,17 +121,17 @@ export default function Support() {
   }
 
   const getOrderLabel = (order) => {
-    const restaurantName =
-      order?.restaurantName ||
-      order?.shop?.restaurantName ||
-      order?.restaurantId?.restaurantName ||
-      order?.restaurantId?.name ||
+    const shopName =
+      order?.shopName ||
+      order?.shop?.shopName ||
+      order?.shopId?.shopName ||
+      order?.shopId?.name ||
       "Shop"
     const dateValue = order?.createdAt || order?.date
     const dateLabel = dateValue ? new Date(dateValue).toLocaleDateString("en-IN") : "No date"
     const amount = Number(order?.pricing?.total ?? order?.totalAmount ?? order?.total ?? 0)
     const orderCode = order?.displayOrderId || order?.orderId || String(order?._id || order?.id || "").slice(-6)
-    return `${restaurantName} | ${dateLabel} | #${orderCode} | Rs ${amount.toFixed(0)}`
+    return `${shopName} | ${dateLabel} | #${orderCode} | Rs ${amount.toFixed(0)}`
   }
   const getOrderSubmitId = (order) =>
     order?.mongoId ||
@@ -142,8 +142,8 @@ export default function Support() {
     order?.displayOrderId ||
     ""
 
-  const getRestaurantLabel = (shop) => {
-    const name = shop?.restaurantName || shop?.name || "Shop"
+  const getShopLabel = (shop) => {
+    const name = shop?.shopName || shop?.name || "Shop"
     const location = shop?.city || shop?.area || ""
     return `${name}${location ? ` | ${location}` : ""}`
   }
@@ -152,18 +152,18 @@ export default function Support() {
     const id = String(ticket?._id || ticket?.id || "").slice(-6)
     const typeLabel = String(ticket?.type || "other").replace(/_/g, " ")
     const issueLabel = ticket?.issueType || "Issue"
-    const restaurantName =
-      ticket?.restaurantId?.restaurantName ||
-      ticket?.shop?.restaurantName ||
-      ticket?.orderId?.restaurantId?.restaurantName ||
+    const shopName =
+      ticket?.shopId?.shopName ||
+      ticket?.shop?.shopName ||
+      ticket?.orderId?.shopId?.shopName ||
       ""
     const orderCode = ticket?.orderId?.displayOrderId || ticket?.orderId?.orderId || ""
     const context =
       ticket?.type === "order" && orderCode
         ? `Order #${orderCode}`
-        : ticket?.type === "shop" && restaurantName
-        ? restaurantName
-        : restaurantName
+        : ticket?.type === "shop" && shopName
+        ? shopName
+        : shopName
 
     return `#${id} | ${typeLabel}${context ? ` | ${context}` : ""} | ${issueLabel}`
   }
@@ -171,21 +171,21 @@ export default function Support() {
   const filteredOrders = orders.filter((order) => {
     const q = orderSearch.trim().toLowerCase()
     if (!q) return true
-    const restaurantName = String(
-      order?.restaurantName ||
-        order?.shop?.restaurantName ||
-        order?.restaurantId?.restaurantName ||
-        order?.restaurantId?.name ||
+    const shopName = String(
+      order?.shopName ||
+        order?.shop?.shopName ||
+        order?.shopId?.shopName ||
+        order?.shopId?.name ||
         "",
     ).toLowerCase()
     const orderId = String(order?._id || order?.id || order?.orderId || "").toLowerCase()
-    return restaurantName.includes(q) || orderId.includes(q)
+    return shopName.includes(q) || orderId.includes(q)
   })
 
-  const filteredRestaurants = shops.filter((shop) => {
-    const q = restaurantSearch.trim().toLowerCase()
+  const filteredShops = shops.filter((shop) => {
+    const q = shopSearch.trim().toLowerCase()
     if (!q) return true
-    const name = String(shop?.restaurantName || shop?.name || "").toLowerCase()
+    const name = String(shop?.shopName || shop?.name || "").toLowerCase()
     const city = String(shop?.city || shop?.area || "").toLowerCase()
     const id = String(shop?._id || shop?.id || "").toLowerCase()
     return name.includes(q) || city.includes(q) || id.includes(q)
@@ -202,14 +202,14 @@ export default function Support() {
     }
   }
 
-  const handleRestaurantSearchChange = (value) => {
-    setRestaurantSearch(value)
+  const handleShopSearchChange = (value) => {
+    setShopSearch(value)
     const normalized = value.trim().toLowerCase()
     if (!normalized) return
-    const selected = filteredRestaurants.find((r) => getRestaurantLabel(r).toLowerCase() === normalized)
+    const selected = filteredShops.find((r) => getShopLabel(r).toLowerCase() === normalized)
     if (selected) {
-      setSelectedRestaurant(selected)
-      setStep("restaurant_issue")
+      setSelectedShop(selected)
+      setStep("shop_issue")
     }
   }
 
@@ -354,25 +354,25 @@ export default function Support() {
               </div>
             )}
 
-            {step === "choose_restaurant" && (
+            {step === "choose_shop" && (
               <div className="space-y-3">
                 <h3 className="font-semibold text-slate-900 dark:text-white">Select a shop</h3>
                 {shops.length > 0 ? (
                   <div className="space-y-2">
                     <Input
-                      list="support-restaurant-options"
-                      value={restaurantSearch}
-                      onChange={(e) => handleRestaurantSearchChange(e.target.value)}
+                      list="support-shop-options"
+                      value={shopSearch}
+                      onChange={(e) => handleShopSearchChange(e.target.value)}
                       placeholder="Select/search shop"
                     />
-                    <datalist id="support-restaurant-options">
-                      {filteredRestaurants.map((r) => (
-                        <option key={r._id || r.id} value={getRestaurantLabel(r)}>
-                          {getRestaurantLabel(r)}
+                    <datalist id="support-shop-options">
+                      {filteredShops.map((r) => (
+                        <option key={r._id || r.id} value={getShopLabel(r)}>
+                          {getShopLabel(r)}
                         </option>
                       ))}
                     </datalist>
-                    {filteredRestaurants.length === 0 ? <p className="text-sm text-slate-500">No matching shops found</p> : null}
+                    {filteredShops.length === 0 ? <p className="text-sm text-slate-500">No matching shops found</p> : null}
                   </div>
                 ) : (
                   <p className="text-sm text-slate-500">No shops found</p>
@@ -381,17 +381,17 @@ export default function Support() {
               </div>
             )}
 
-            {step === "restaurant_issue" && selectedRestaurant && (
+            {step === "shop_issue" && selectedShop && (
               <div className="space-y-3">
                 <h3 className="font-semibold text-slate-900 dark:text-white">Issue type</h3>
                 <div className="grid grid-cols-2 gap-2">
-                  {restaurantIssues.map((it) => (
+                  {shopIssues.map((it) => (
                     <Button key={it} variant={issueType === it ? "default" : "outline"} className={issueType === it ? BRAND_THEME.tokens.profile.primaryButton : ""} onClick={() => setIssueType(it)}>{it}</Button>
                   ))}
                 </div>
                 <Textarea placeholder="Describe the issue" value={description} onChange={(e) => setDescription(e.target.value)} required />
                 <div className="flex gap-2">
-                  <Button className={BRAND_THEME.tokens.profile.primaryButton} onClick={() => submitTicket({ type: "shop", restaurantId: selectedRestaurant._id || selectedRestaurant.id, issueType: issueType || "Shop issue", description })} disabled={!description.trim() || submitting}>
+                  <Button className={BRAND_THEME.tokens.profile.primaryButton} onClick={() => submitTicket({ type: "shop", shopId: selectedShop._id || selectedShop.id, issueType: issueType || "Shop issue", description })} disabled={!description.trim() || submitting}>
                     {submitting ? "Submitting..." : "Submit Ticket"}
                   </Button>
                   <Button variant="outline" onClick={() => setStep("pick")}>Cancel</Button>

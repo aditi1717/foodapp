@@ -21,35 +21,35 @@ const helpTopics = [
     icon: Power,
     title: "Outlet online / offline status",
     subtitle: "Current status & details",
-    path: "/restaurant/delivery-settings"
+    path: "/shop/delivery-settings"
   },
   {
     id: 2,
     icon: Utensils,
     title: "Order related issues",
     subtitle: "Cancellations & delivery related concerns",
-    path: "/restaurant/orders/all"
+    path: "/shop/orders/all"
   },
   {
     id: 3,
     icon: Building2,
-    title: "Restaurant",
+    title: "Shop",
     subtitle: "Timings, contacts, FSSAI, bank details, location etc.",
-    path: "/restaurant/outlet-info"
+    path: "/shop/outlet-info"
   },
   {
     id: 6,
     icon: Wallet,
     title: "Payments",
     subtitle: "Statement of account, invoices etc.",
-    path: "/restaurant/hub-finance"
+    path: "/shop/hub-finance"
   },
   {
     id: 7,
     icon: LifeBuoy,
     title: "Support",
     subtitle: "Raise ticket and get admin response",
-    path: "/restaurant/help-centre/support"
+    path: "/shop/help-centre/support"
   }
 ]
 

@@ -1,6 +1,6 @@
 import { FoodDeliveryPartner } from '../models/deliveryPartner.model.js';
 import { FoodDeliveryExclusivity } from '../models/deliveryExclusivity.model.js';
-import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodShop } from '../../shop/models/shop.model.js';
 import { FoodOrder } from '../../orders/models/order.model.js';
 import { FoodBusinessSettings } from '../../admin/models/businessSettings.model.js';
 import { sendResponse } from '../../../../utils/response.js';
@@ -14,11 +14,11 @@ const getPhoneVariants = (phone) => {
     return [searchNumber, `+91${searchNumber}`, `91${searchNumber}`];
 };
 
-// ==================== RESTAURANT SIDE CONTROLLERS ====================
+// ==================== SHOP SIDE CONTROLLERS ====================
 
 /**
  * Search delivery partner by 10-digit phone number.
- * Path: GET /api/food/restaurant/delivery-partners/search?phone=9876543210
+ * Path: GET /api/food/shop/delivery-partners/search?phone=9876543210
  */
 export const searchDeliveryPartnerController = async (req, res, next) => {
     try {
@@ -33,7 +33,7 @@ export const searchDeliveryPartnerController = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'No approved delivery partner found with this phone number.' });
         }
 
-        const restaurantId = req.user?.userId;
+        const shopId = req.user?.userId;
 
         // Check relationship status
         const association = await FoodDeliveryExclusivity.findOne({
@@ -42,14 +42,14 @@ export const searchDeliveryPartnerController = async (req, res, next) => {
         }).lean();
 
         const pendingInvite = await FoodDeliveryExclusivity.findOne({
-            restaurantId,
+            shopId,
             deliveryPartnerId: partner._id,
             status: 'pending'
         }).lean();
 
-        const isAssociated = !!(association && association.restaurantId.toString() === restaurantId.toString());
+        const isAssociated = !!(association && association.shopId.toString() === shopId.toString());
         const isPending = !!pendingInvite;
-        const associatedWithOther = !!(association && association.restaurantId.toString() !== restaurantId.toString());
+        const associatedWithOther = !!(association && association.shopId.toString() !== shopId.toString());
 
         return sendResponse(res, 200, 'Delivery partner found', {
             id: partner._id,
@@ -68,7 +68,7 @@ export const searchDeliveryPartnerController = async (req, res, next) => {
 
 /**
  * Send exclusivity invitation to delivery partner.
- * Path: POST /api/food/restaurant/delivery-partners/invite
+ * Path: POST /api/food/shop/delivery-partners/invite
  */
 export const sendExclusivityInviteController = async (req, res, next) => {
     try {
@@ -83,28 +83,28 @@ export const sendExclusivityInviteController = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Approved delivery partner not found' });
         }
 
-        const restaurantId = req.user?.userId;
-        const restaurant = await FoodRestaurant.findById(restaurantId)
-            .select('restaurantName')
+        const shopId = req.user?.userId;
+        const shop = await FoodShop.findById(shopId)
+            .select('shopName')
             .lean();
 
-        // Check if already associated with any restaurant
+        // Check if already associated with any shop
         const existingAssociation = await FoodDeliveryExclusivity.findOne({
             deliveryPartnerId: partner._id,
             status: 'associated'
         });
 
         if (existingAssociation) {
-            if (existingAssociation.restaurantId.toString() === restaurantId.toString()) {
+            if (existingAssociation.shopId.toString() === shopId.toString()) {
                 return res.status(400).json({ success: false, message: 'Delivery partner is already in your active fleet' });
             } else {
-                return res.status(400).json({ success: false, message: 'Delivery partner is already exclusive to another restaurant' });
+                return res.status(400).json({ success: false, message: 'Delivery partner is already exclusive to another shop' });
             }
         }
 
         // Upsert pending request
         const invitation = await FoodDeliveryExclusivity.findOneAndUpdate(
-            { restaurantId, deliveryPartnerId: partner._id },
+            { shopId, deliveryPartnerId: partner._id },
             { status: 'pending', invitedAt: new Date() },
             { upsert: true, new: true }
         );
@@ -114,11 +114,11 @@ export const sendExclusivityInviteController = async (req, res, next) => {
             [{ ownerType: 'DELIVERY_PARTNER', ownerId: partner._id }],
             {
                 title: 'New exclusivity invite',
-                body: `${restaurant?.restaurantName || 'A restaurant'} invited you to join as an exclusive delivery partner.`,
+                body: `${shop?.shopName || 'A shop'} invited you to join as an exclusive delivery partner.`,
                 data: {
                     type: 'delivery_exclusivity_invite',
                     requestId: invitation?._id?.toString?.() || '',
-                    restaurantId: String(restaurantId || ''),
+                    shopId: String(shopId || ''),
                 },
             },
         );
@@ -131,7 +131,7 @@ export const sendExclusivityInviteController = async (req, res, next) => {
 
 /**
  * Cancel pending invitation to delivery partner.
- * Path: POST /api/food/restaurant/delivery-partners/cancel
+ * Path: POST /api/food/shop/delivery-partners/cancel
  */
 export const cancelExclusivityInviteController = async (req, res, next) => {
     try {
@@ -146,10 +146,10 @@ export const cancelExclusivityInviteController = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Delivery partner not found' });
         }
 
-        const restaurantId = req.user?.userId;
+        const shopId = req.user?.userId;
 
         const result = await FoodDeliveryExclusivity.deleteOne({
-            restaurantId,
+            shopId,
             deliveryPartnerId: partner._id,
             status: 'pending'
         });
@@ -165,8 +165,8 @@ export const cancelExclusivityInviteController = async (req, res, next) => {
 };
 
 /**
- * Remove delivery partner from restaurant active fleet.
- * Path: POST /api/food/restaurant/delivery-partners/remove
+ * Remove delivery partner from shop active fleet.
+ * Path: POST /api/food/shop/delivery-partners/remove
  */
 export const removeExclusivityRiderController = async (req, res, next) => {
     try {
@@ -181,16 +181,16 @@ export const removeExclusivityRiderController = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Delivery partner not found' });
         }
 
-        const restaurantId = req.user?.userId;
+        const shopId = req.user?.userId;
 
         const result = await FoodDeliveryExclusivity.deleteOne({
-            restaurantId,
+            shopId,
             deliveryPartnerId: partner._id,
             status: 'associated'
         });
 
         if (result.deletedCount === 0) {
-            return res.status(400).json({ success: false, message: 'Rider is not associated with your restaurant' });
+            return res.status(400).json({ success: false, message: 'Rider is not associated with your shop' });
         }
 
         return sendResponse(res, 200, `${partner.name} has been removed from your delivery fleet`);
@@ -200,12 +200,12 @@ export const removeExclusivityRiderController = async (req, res, next) => {
 };
 
 /**
- * List all invitations and active fleet riders for the restaurant.
- * Path: GET /api/food/restaurant/delivery-partners
+ * List all invitations and active fleet riders for the shop.
+ * Path: GET /api/food/shop/delivery-partners
  */
 export const listExclusivityPartnersController = async (req, res, next) => {
     try {
-        const restaurantId = req.user?.userId;
+        const shopId = req.user?.userId;
         const { orderId } = req.query;
 
         let targetZoneId = null;
@@ -217,7 +217,7 @@ export const listExclusivityPartnersController = async (req, res, next) => {
             }
         }
 
-        const records = await FoodDeliveryExclusivity.find({ restaurantId })
+        const records = await FoodDeliveryExclusivity.find({ shopId })
             .populate({
                 path: 'deliveryPartnerId',
                 select: 'name phone vehicleType rating status availabilityStatus zoneId'
@@ -328,7 +328,7 @@ export const listIncomingRequestsController = async (req, res, next) => {
         const deliveryPartnerId = req.user?.userId;
 
         const records = await FoodDeliveryExclusivity.find({ deliveryPartnerId })
-            .populate('restaurantId', 'restaurantName ownerPhone location address')
+            .populate('shopId', 'shopName ownerPhone location address')
             .lean();
 
         let currentAssociation = null;
@@ -336,12 +336,12 @@ export const listIncomingRequestsController = async (req, res, next) => {
         const rejectedRequests = [];
 
         records.forEach(rec => {
-            const rest = rec.restaurantId;
+            const rest = rec.shopId;
             if (!rest) return;
 
             const formatted = {
                 id: rec._id,
-                restaurantName: rest.restaurantName,
+                shopName: rest.shopName,
                 phone: rest.ownerPhone,
                 location: rest.location?.formattedAddress || rest.address || 'Address not set',
                 status: rec.status,
@@ -370,10 +370,10 @@ export const listIncomingRequestsController = async (req, res, next) => {
 };
 
 /**
- * Get current restaurant-association state (alias endpoint for app integrations).
- * Path: GET /api/food/delivery/restaurant-association
+ * Get current shop-association state (alias endpoint for app integrations).
+ * Path: GET /api/food/delivery/shop-association
  */
-export const getRestaurantAssociationController = async (req, res, next) => {
+export const getShopAssociationController = async (req, res, next) => {
     return listIncomingRequestsController(req, res, next);
 };
 
@@ -395,7 +395,7 @@ export const acceptExclusivityRequestController = async (req, res, next) => {
         if (existingAssociation) {
             return res.status(400).json({
                 success: false,
-                message: 'You are already exclusive to another restaurant. Please leave that partnership first.'
+                message: 'You are already exclusive to another shop. Please leave that partnership first.'
             });
         }
 
@@ -403,7 +403,7 @@ export const acceptExclusivityRequestController = async (req, res, next) => {
             _id: requestId,
             deliveryPartnerId,
             status: 'pending'
-        }).populate('restaurantId', 'restaurantName');
+        }).populate('shopId', 'shopName');
 
         if (!request) {
             return res.status(404).json({ success: false, message: 'Pending invitation not found' });
@@ -426,9 +426,9 @@ export const acceptExclusivityRequestController = async (req, res, next) => {
             }
         );
 
-        // Push notify restaurant after rider accepts
+        // Push notify shop after rider accepts
         await notifyOwnersSafely(
-            [{ ownerType: 'RESTAURANT', ownerId: request.restaurantId._id }],
+            [{ ownerType: 'SHOP', ownerId: request.shopId._id }],
             {
                 title: 'Delivery partner accepted',
                 body: `Your exclusivity invite was accepted by a delivery partner.`,
@@ -440,7 +440,7 @@ export const acceptExclusivityRequestController = async (req, res, next) => {
             },
         );
 
-        return sendResponse(res, 200, `Exclusivity request from ${request.restaurantId.restaurantName} accepted!`);
+        return sendResponse(res, 200, `Exclusivity request from ${request.shopId.shopName} accepted!`);
     } catch (error) {
         next(error);
     }
@@ -459,7 +459,7 @@ export const rejectExclusivityRequestController = async (req, res, next) => {
             _id: requestId,
             deliveryPartnerId,
             status: 'pending'
-        }).populate('restaurantId', 'restaurantName');
+        }).populate('shopId', 'shopName');
 
         if (!request) {
             return res.status(404).json({ success: false, message: 'Pending invitation not found' });
@@ -469,9 +469,9 @@ export const rejectExclusivityRequestController = async (req, res, next) => {
         request.rejectedAt = new Date();
         await request.save();
 
-        // Push notify restaurant after rider rejects
+        // Push notify shop after rider rejects
         await notifyOwnersSafely(
-            [{ ownerType: 'RESTAURANT', ownerId: request.restaurantId._id }],
+            [{ ownerType: 'SHOP', ownerId: request.shopId._id }],
             {
                 title: 'Delivery partner declined',
                 body: `Your exclusivity invite was declined by a delivery partner.`,
@@ -483,7 +483,7 @@ export const rejectExclusivityRequestController = async (req, res, next) => {
             },
         );
 
-        return sendResponse(res, 200, `Exclusivity request from ${request.restaurantId.restaurantName} declined`);
+        return sendResponse(res, 200, `Exclusivity request from ${request.shopId.shopName} declined`);
     } catch (error) {
         next(error);
     }
@@ -513,11 +513,11 @@ export const leaveExclusivityPartnershipController = async (req, res, next) => {
 };
 
 /**
- * Respond to current pending restaurant association.
- * Path: POST /api/food/delivery/restaurant-association/respond
+ * Respond to current pending shop association.
+ * Path: POST /api/food/delivery/shop-association/respond
  * Body: { action: 'accept' | 'reject', requestId?: string }
  */
-export const respondRestaurantAssociationController = async (req, res, next) => {
+export const respondShopAssociationController = async (req, res, next) => {
     try {
         const action = String(req.body?.action || '').trim().toLowerCase();
         const requestId = req.body?.requestId ? String(req.body.requestId).trim() : '';

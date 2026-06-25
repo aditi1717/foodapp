@@ -12,7 +12,7 @@ import {
   Trash2,
   Image as ImageIcon,
 } from "lucide-react"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { toast } from "sonner"
 import BRAND_THEME from "@/config/brandTheme"
 
@@ -34,7 +34,7 @@ export default function MenuCategoriesPage() {
   const fetchCategories = async () => {
     try {
       setLoading(true)
-      const response = await restaurantAPI.getAllCategories({ privateOnly: true })
+      const response = await shopAPI.getAllCategories({ privateOnly: true })
       const data = response?.data?.data?.categories || response?.data?.categories || []
       setCategories(data)
     } catch (error) {
@@ -69,7 +69,7 @@ export default function MenuCategoriesPage() {
     if (!window.confirm("Are you sure you want to delete this category?")) return
 
     try {
-      await restaurantAPI.deleteCategory(id)
+      await shopAPI.deleteCategory(id)
       toast.success("Category deleted successfully")
       fetchCategories()
     } catch (error) {
@@ -81,7 +81,7 @@ export default function MenuCategoriesPage() {
   const handleToggleStatus = async (category) => {
     try {
       const newStatus = !category.isActive
-      await restaurantAPI.updateCategory(category.id || category._id, {
+      await shopAPI.updateCategory(category.id || category._id, {
         isActive: newStatus,
       })
       toast.success(`Category ${newStatus ? "enabled" : "disabled"} successfully`)

@@ -6,9 +6,9 @@ import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@food/components/ui/card"
 import loginBg from "@food/assets/loginbanner.png"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 
-export default function RestaurantForgotPassword() {
+export default function ShopForgotPassword() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1) // 1: email, 2: OTP, 3: new password
   const [email, setEmail] = useState("")
@@ -33,7 +33,7 @@ export default function RestaurantForgotPassword() {
 
     setIsLoading(true)
     try {
-      await restaurantAPI.sendOTP(null, "reset-password", email)
+      await shopAPI.sendOTP(null, "reset-password", email)
       setStep(2)
       setResendTimer(60)
       const timer = setInterval(() => {
@@ -105,7 +105,7 @@ export default function RestaurantForgotPassword() {
 
     setIsLoading(true)
     try {
-      await restaurantAPI.verifyOTP(null, otpCode, "reset-password", null, email)
+      await shopAPI.verifyOTP(null, otpCode, "reset-password", null, email)
       setStep(3)
     } catch (err) {
       const message =
@@ -127,7 +127,7 @@ export default function RestaurantForgotPassword() {
     setIsLoading(true)
     setError("")
     try {
-      await restaurantAPI.sendOTP(null, "reset-password", email)
+      await shopAPI.sendOTP(null, "reset-password", email)
       setResendTimer(60)
       const timer = setInterval(() => {
         setResendTimer((prev) => {
@@ -171,14 +171,14 @@ export default function RestaurantForgotPassword() {
 
     setIsLoading(true)
     try {
-      const response = await restaurantAPI.resetPassword(email, otp.join(""), newPassword)
+      const response = await shopAPI.resetPassword(email, otp.join(""), newPassword)
 
       const data = response?.data || {}
       if (!data.success) {
         throw new Error(data.message || "Failed to reset password")
       }
 
-      navigate("/restaurant/login", {
+      navigate("/shop/login", {
         state: { message: "Password reset successfully. Please login with your new password." },
       })
     } catch (err) {
@@ -199,7 +199,7 @@ export default function RestaurantForgotPassword() {
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
           src={loginBg}
-          alt="Restaurant background"
+          alt="Shop background"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 flex items-center text-white pointer-events-none">

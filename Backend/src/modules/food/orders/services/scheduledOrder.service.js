@@ -5,10 +5,10 @@ import { getIO, rooms } from '../../../../config/socket.js';
 import { notifyOwnersSafely } from './order.helpers.js';
 
 /**
- * Send socket and push alerts to restaurant to start preparing the order
+ * Send socket and push alerts to shop to start preparing the order
  */
 async function sendPreparationReminder(order, customBody) {
-    // 1. Socket notification to restaurant room to trigger alarm buzz and toast
+    // 1. Socket notification to shop room to trigger alarm buzz and toast
     try {
         const io = getIO();
         if (io) {
@@ -19,8 +19,8 @@ async function sendPreparationReminder(order, customBody) {
                 title: "Time to start preparing order",
                 message: customBody,
             };
-            io.to(rooms.restaurant(order.restaurantId)).emit("new_order", payload);
-            io.to(rooms.restaurant(order.restaurantId)).emit("play_notification_sound", {
+            io.to(rooms.shop(order.shopId)).emit("new_order", payload);
+            io.to(rooms.shop(order.shopId)).emit("play_notification_sound", {
                 orderId: order.orderId,
                 orderMongoId: order._id.toString(),
                 isPreparationReminder: true,
@@ -30,9 +30,9 @@ async function sendPreparationReminder(order, customBody) {
         logger.warn(`ScheduledWatchdog: Socket notification failed for order ${order.orderId}: ${socketErr.message}`);
     }
 
-    // 2. Push Notification to restaurant owners via Firebase
+    // 2. Push Notification to shop owners via Firebase
     try {
-        await notifyOwnersSafely([{ ownerType: "RESTAURANT", ownerId: order.restaurantId }], {
+        await notifyOwnersSafely([{ ownerType: "SHOP", ownerId: order.shopId }], {
             title: "Time to start preparing! 🧑‍🍳",
             body: `${customBody} Order #${order.orderId} is scheduled.`,
             image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
@@ -40,7 +40,7 @@ async function sendPreparationReminder(order, customBody) {
                 type: "scheduled_order_start",
                 orderId: order.orderId,
                 orderMongoId: order._id.toString(),
-                link: `/restaurant/orders/${order._id.toString()}`,
+                link: `/shop/orders/${order._id.toString()}`,
                 isPreparationReminder: "true",
             },
         });
@@ -57,7 +57,7 @@ export async function activateScheduledOrders() {
     try {
         const now = new Date();
 
-        // Find all orders that are scheduled and not yet activated (i.e. not yet started by restaurant)
+        // Find all orders that are scheduled and not yet activated (i.e. not yet started by shop)
         const ordersToNotify = await FoodOrder.find({
             isScheduled: true,
             isActivated: false,

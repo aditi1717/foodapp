@@ -22,18 +22,18 @@ const isUserAppRoute = (pathname = '') => {
   const normalized = String(pathname || '').toLowerCase()
   const isAdminRoute = normalized === '/admin' || normalized.startsWith('/admin/')
   const isAuthRoute = normalized === '/user/auth' || normalized.startsWith('/user/auth/')
-  const isRestaurantRoute =
-    normalized === '/food/restaurant' ||
-    normalized.startsWith('/food/restaurant/') ||
-    normalized === '/restaurant' ||
-    normalized.startsWith('/restaurant/')
+  const isShopRoute =
+    normalized === '/food/shop' ||
+    normalized.startsWith('/food/shop/') ||
+    normalized === '/shop' ||
+    normalized.startsWith('/shop/')
   const isDeliveryRoute =
     normalized === '/food/delivery' ||
     normalized.startsWith('/food/delivery/') ||
     normalized === '/delivery' ||
     normalized.startsWith('/delivery/')
 
-  return !isAdminRoute && !isAuthRoute && !isRestaurantRoute && !isDeliveryRoute
+  return !isAdminRoute && !isAuthRoute && !isShopRoute && !isDeliveryRoute
 }
 const savedTheme =
   localStorage.getItem(USER_THEME_STORAGE_KEY) ||
@@ -68,12 +68,12 @@ function resolveNativeInitialRoute() {
   const pathname = rawPathname.replace(/\/index\.html$/i, '') || '/'
 
   if (pathname.startsWith('/food/')) return pathname
-  if (pathname.startsWith('/restaurant')) return `/food${pathname}`
+  if (pathname.startsWith('/shop')) return `/food${pathname}`
   if (pathname.startsWith('/delivery')) return `/food${pathname}`
   if (pathname.startsWith('/user')) return `/food${pathname}`
   if (pathname.startsWith('/admin')) return pathname
 
-  if (isModuleAuthenticated('restaurant')) return '/food/restaurant'
+  if (isModuleAuthenticated('shop')) return '/food/shop'
   if (isModuleAuthenticated('delivery')) return '/food/delivery'
   if (isModuleAuthenticated('admin')) return '/admin'
   if (isModuleAuthenticated('user')) return '/food'
@@ -132,7 +132,7 @@ console.error = (...args) => {
   ) return
 
   if (
-    errorStr.includes('Restaurant Socket connection error') ||
+    errorStr.includes('Shop Socket connection error') ||
     errorStr.includes('xhr poll error') ||
     (errorStr.includes('WebSocket connection to') && errorStr.includes('socket.io') && errorStr.includes('failed'))
   ) return

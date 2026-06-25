@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { adminAPI, restaurantAPI } from "@food/api";
+import { adminAPI, shopAPI } from "@food/api";
 import { foodImages } from "@food/constants/images";
 import { normalizeImageUrl } from "@food/utils/common";
 import BRAND_THEME from "@/config/brandTheme";
@@ -8,8 +8,8 @@ export const useCategoryData = (zoneId) => {
   const homepageDefaults = BRAND_THEME.tokens.homepage.defaults;
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const [restaurantsData, setRestaurantsData] = useState([]);
-  const [loadingRestaurants, setLoadingRestaurants] = useState(true);
+  const [shopsData, setShopsData] = useState([]);
+  const [loadingShops, setLoadingShops] = useState(true);
   const [categoryKeywords, setCategoryKeywords] = useState({});
 
   const fetchCategories = useCallback(async () => {
@@ -45,36 +45,36 @@ export const useCategoryData = (zoneId) => {
     }
   }, [homepageDefaults.allCategoryId, zoneId]);
 
-  const fetchRestaurants = useCallback(async () => {
+  const fetchShops = useCallback(async () => {
     try {
-      setLoadingRestaurants(true);
+      setLoadingShops(true);
       const params = zoneId ? { zoneId } : {};
-      const response = await restaurantAPI.getRestaurants(params);
+      const response = await shopAPI.getShops(params);
       if (response.data?.success) {
-        const raw = response.data.data.restaurants || [];
+        const raw = response.data.data.shops || [];
         const transformed = raw.map(r => ({
           ...r,
-          id: r.restaurantId || r._id,
+          id: r.shopId || r._id,
           image: normalizeImageUrl(r.profileImage?.url || r.image),
           slug: r.slug || r.name?.toLowerCase().replace(/\s+/g, '-')
         }));
-        setRestaurantsData(transformed);
+        setShopsData(transformed);
       }
     } catch (err) {
-      console.error("Failed to fetch restaurants", err);
+      console.error("Failed to fetch shops", err);
     } finally {
-      setLoadingRestaurants(false);
+      setLoadingShops(false);
     }
   }, [zoneId]);
 
   useEffect(() => {
     fetchCategories();
-    fetchRestaurants();
-  }, [fetchCategories, fetchRestaurants]);
+    fetchShops();
+  }, [fetchCategories, fetchShops]);
 
   return {
     categories, loadingCategories,
-    restaurantsData, loadingRestaurants,
+    shopsData, loadingShops,
     categoryKeywords
   };
 };

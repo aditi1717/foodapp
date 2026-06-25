@@ -11,8 +11,8 @@ const DEFAULT_MAINTENANCE_CONTENT = {
         heading: 'Delivery is Temporarily Closed',
         paragraph: 'Please check again shortly.'
     },
-    restaurantApp: {
-        heading: 'Restaurant Panel is Temporarily Closed',
+    shopApp: {
+        heading: 'Shop Panel is Temporarily Closed',
         paragraph: 'Maintenance is in progress. Please come back soon.'
     }
 };
@@ -30,7 +30,7 @@ const sanitizeMaintenanceNode = (rawNode = {}, defaults = {}) => {
 const normalizeMaintenanceModes = (raw = {}, previous = {}) => ({
     userApp: sanitizeMaintenanceNode(raw?.userApp ?? previous?.userApp, DEFAULT_MAINTENANCE_CONTENT.userApp),
     deliveryApp: sanitizeMaintenanceNode(raw?.deliveryApp ?? previous?.deliveryApp, DEFAULT_MAINTENANCE_CONTENT.deliveryApp),
-    restaurantApp: sanitizeMaintenanceNode(raw?.restaurantApp ?? previous?.restaurantApp, DEFAULT_MAINTENANCE_CONTENT.restaurantApp)
+    shopApp: sanitizeMaintenanceNode(raw?.shopApp ?? previous?.shopApp, DEFAULT_MAINTENANCE_CONTENT.shopApp)
 });
 
 export async function getBusinessSettings(req, res, next) {

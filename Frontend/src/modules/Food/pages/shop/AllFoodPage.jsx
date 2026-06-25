@@ -13,7 +13,7 @@ import {
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
 import { formatCurrency } from "@food/utils/currency"
 import BRAND_THEME from "@/config/brandTheme"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
 
 export default function AllFoodPage() {
@@ -61,7 +61,7 @@ export default function AllFoodPage() {
 
     const refreshFoods = async () => {
       try {
-        const response = await restaurantAPI.getMenu()
+        const response = await shopAPI.getMenu()
         const menu = getMenuFromResponse(response)
         const foods = flattenMenuItems(menu)
         if (isMounted) {

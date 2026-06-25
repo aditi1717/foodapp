@@ -2,9 +2,9 @@ import mongoose from 'mongoose';
 
 const deliveryExclusivitySchema = new mongoose.Schema(
     {
-        restaurantId: {
+        shopId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'FoodRestaurant',
+            ref: 'FoodShop',
             required: true,
             index: true
         },

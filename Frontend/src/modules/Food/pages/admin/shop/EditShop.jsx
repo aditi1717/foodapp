@@ -18,7 +18,7 @@ const toNumberOrEmpty = (value) => {
 
 const isNearZero = (n) => Math.abs(Number(n) || 0) < 0.000001
 
-const normalizeRestaurantId = (r) => r?._id || r?.id || r?.restaurantId || ""
+const normalizeShopId = (r) => r?._id || r?.id || r?.shopId || ""
 
 const normalizeZoneId = (zoneId) => {
   if (!zoneId) return ""
@@ -26,7 +26,7 @@ const normalizeZoneId = (zoneId) => {
   return zoneId?._id || zoneId?.id || ""
 }
 
-const normalizeLocationFormFromRestaurant = (shop) => {
+const normalizeLocationFormFromShop = (shop) => {
   const loc =
     shop?.location ||
     shop?.onboarding?.step1?.location ||
@@ -66,11 +66,11 @@ const normalizeLocationFormFromRestaurant = (shop) => {
   }
 }
 
-const normalizeDetailsFormFromRestaurant = (shop) => {
+const normalizeDetailsFormFromShop = (shop) => {
   return {
-    name: shop?.name || shop?.restaurantName || "",
-    pureVegRestaurant:
-      shop?.pureVegRestaurant === true || shop?.pureVegRestaurant === "true",
+    name: shop?.name || shop?.shopName || "",
+    pureVegShop:
+      shop?.pureVegShop === true || shop?.pureVegShop === "true",
     ownerName: shop?.ownerName || "",
     ownerEmail: shop?.ownerEmail || "",
     ownerPhone: shop?.ownerPhone || "",
@@ -123,7 +123,7 @@ async function loadGooglePlaces() {
   return !!window.google?.maps?.places?.Autocomplete
 }
 
-export default function EditRestaurant() {
+export default function EditShop() {
   const { id } = useParams()
   const navigate = useNavigate()
 
@@ -132,42 +132,42 @@ export default function EditRestaurant() {
   const [savingLocation, setSavingLocation] = useState(false)
   const [error, setError] = useState("")
 
-  const [shop, setRestaurant] = useState(null)
+  const [shop, setShop] = useState(null)
   const [zones, setZones] = useState([])
   const [zonesLoading, setZonesLoading] = useState(false)
 
-  const [detailsForm, setDetailsForm] = useState(() => normalizeDetailsFormFromRestaurant(null))
-  const [locationForm, setLocationForm] = useState(() => normalizeLocationFormFromRestaurant(null))
+  const [detailsForm, setDetailsForm] = useState(() => normalizeDetailsFormFromShop(null))
+  const [locationForm, setLocationForm] = useState(() => normalizeLocationFormFromShop(null))
   const [locationError, setLocationError] = useState("")
 
   const locationSearchInputRef = useRef(null)
   const placesAutocompleteRef = useRef(null)
 
-  const restaurantId = useMemo(() => {
+  const shopId = useMemo(() => {
     if (id) return id
-    return normalizeRestaurantId(shop)
+    return normalizeShopId(shop)
   }, [id, shop])
 
   useEffect(() => {
     let mounted = true
     const run = async () => {
-      if (!restaurantId) return
+      if (!shopId) return
       try {
         setLoading(true)
         setError("")
 
-        const res = await adminAPI.getRestaurantById(restaurantId)
+        const res = await adminAPI.getShopById(shopId)
         const data = res?.data?.data || null
         if (!mounted) return
         if (!res?.data?.success || !data) {
           setError(res?.data?.message || "Failed to load shop")
-          setRestaurant(null)
+          setShop(null)
           return
         }
 
-        setRestaurant(data)
-        setDetailsForm(normalizeDetailsFormFromRestaurant(data))
-        setLocationForm(normalizeLocationFormFromRestaurant(data))
+        setShop(data)
+        setDetailsForm(normalizeDetailsFormFromShop(data))
+        setLocationForm(normalizeLocationFormFromShop(data))
       } catch (e) {
         debugError(e)
         if (!mounted) return
@@ -180,7 +180,7 @@ export default function EditRestaurant() {
     return () => {
       mounted = false
     }
-  }, [restaurantId])
+  }, [shopId])
 
   useEffect(() => {
     let mounted = true
@@ -296,7 +296,7 @@ export default function EditRestaurant() {
   }, [locationForm.zoneId, zones])
 
   const handleSaveDetails = async () => {
-    if (!restaurantId) return
+    if (!shopId) return
     try {
       setSavingDetails(true)
 
@@ -307,7 +307,7 @@ export default function EditRestaurant() {
 
       const payload = {
         name: detailsForm.name,
-        pureVegRestaurant: detailsForm.pureVegRestaurant === true,
+        pureVegShop: detailsForm.pureVegShop === true,
         ownerName: detailsForm.ownerName,
         ownerEmail: detailsForm.ownerEmail,
         ownerPhone: detailsForm.ownerPhone,
@@ -325,10 +325,10 @@ export default function EditRestaurant() {
         isActive: detailsForm.isActive !== false,
       }
 
-      const res = await adminAPI.updateRestaurant(restaurantId, payload)
+      const res = await adminAPI.updateShop(shopId, payload)
       const updated = res?.data?.data?.shop || res?.data?.data || null
       if (updated) {
-        setRestaurant((prev) => ({ ...(prev || {}), ...updated }))
+        setShop((prev) => ({ ...(prev || {}), ...updated }))
       }
       alert("Shop details updated successfully")
     } catch (e) {
@@ -339,7 +339,7 @@ export default function EditRestaurant() {
   }
 
   const handleSaveLocation = async () => {
-    if (!restaurantId) return
+    if (!shopId) return
 
     const latitude = Number(locationForm.latitude)
     const longitude = Number(locationForm.longitude)
@@ -373,10 +373,10 @@ export default function EditRestaurant() {
         postalCode: locationForm.pincode || "",
       }
 
-      const res = await adminAPI.updateRestaurantLocation(restaurantId, payload)
-      const updatedRestaurant = res?.data?.data?.shop || null
-      if (updatedRestaurant) {
-        setRestaurant((prev) => ({ ...(prev || {}), ...updatedRestaurant }))
+      const res = await adminAPI.updateShopLocation(shopId, payload)
+      const updatedShop = res?.data?.data?.shop || null
+      if (updatedShop) {
+        setShop((prev) => ({ ...(prev || {}), ...updatedShop }))
       }
       alert("Shop location updated successfully")
     } catch (e) {
@@ -401,7 +401,7 @@ export default function EditRestaurant() {
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Edit Shop</h1>
               <p className="text-sm text-slate-500">
-                {shop?.name || shop?.restaurantName || restaurantId}
+                {shop?.name || shop?.shopName || shopId}
               </p>
             </div>
           </div>
@@ -430,9 +430,9 @@ export default function EditRestaurant() {
                     <div className="flex items-center gap-1 bg-slate-150 p-1 rounded-full w-fit border border-slate-200">
                       <button
                         type="button"
-                        onClick={() => setDetailsForm((p) => ({ ...p, pureVegRestaurant: true }))}
+                        onClick={() => setDetailsForm((p) => ({ ...p, pureVegShop: true }))}
                         className={`px-3 py-1.5 text-[11px] font-bold rounded-full transition-all ${
-                          detailsForm.pureVegRestaurant === true
+                          detailsForm.pureVegShop === true
                             ? "bg-emerald-600 text-white shadow-sm"
                             : "text-slate-600 hover:text-slate-900"
                         }`}
@@ -441,9 +441,9 @@ export default function EditRestaurant() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setDetailsForm((p) => ({ ...p, pureVegRestaurant: false }))}
+                        onClick={() => setDetailsForm((p) => ({ ...p, pureVegShop: false }))}
                         className={`px-3 py-1.5 text-[11px] font-bold rounded-full transition-all ${
-                          detailsForm.pureVegRestaurant === false
+                          detailsForm.pureVegShop === false
                             ? "bg-slate-900 text-white shadow-sm"
                             : "text-slate-600 hover:text-slate-900"
                         }`}

@@ -35,13 +35,13 @@ export default function SupportTickets() {
     return user.phone
   }
 
-  const getRestaurantLabel = (ticket) => {
+  const getShopLabel = (ticket) => {
     const shop = ticket?.shop || {}
-    const name = shop.name || shop.restaurantName || ticket?.restaurantName || ""
+    const name = shop.name || shop.shopName || ticket?.shopName || ""
     const city = shop.city || ""
     if (name && city) return `${name} (${city})`
     if (name) return name
-    if (ticket?.restaurantId) return `#${String(ticket.restaurantId).slice(-6)}`
+    if (ticket?.shopId) return `#${String(ticket.shopId).slice(-6)}`
     return "-"
   }
 
@@ -69,9 +69,9 @@ export default function SupportTickets() {
     return ticket.subject || getIssueLabel(ticket.issueType || ticket.category || ticket.type)
   }
 
-  const shouldShowRestaurantInModal = (ticket) => {
+  const shouldShowShopInModal = (ticket) => {
     if (!ticket) return false
-    return ticket.source === "shop" || ticket.type === "shop" || Boolean(ticket.restaurantId)
+    return ticket.source === "shop" || ticket.type === "shop" || Boolean(ticket.shopId)
   }
 
   const formatDate = (date) => {
@@ -173,7 +173,7 @@ export default function SupportTickets() {
               >
                 <option value="">All Types</option>
                 <option value="order">Order</option>
-                <option value="restaurant">Shop</option>
+                <option value="shop">Shop</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -255,14 +255,14 @@ export default function SupportTickets() {
               </thead>
               <tbody className="divide-y">
                 {loading ? (
-                  <tr><td colSpan={filters.source === "restaurant" ? 6 : 7} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>
+                  <tr><td colSpan={filters.source === "shop" ? 6 : 7} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>
                 ) : tickets.length === 0 ? (
-                  <tr><td colSpan={filters.source === "restaurant" ? 6 : 7} className="px-4 py-6 text-center text-slate-500">No tickets</td></tr>
+                  <tr><td colSpan={filters.source === "shop" ? 6 : 7} className="px-4 py-6 text-center text-slate-500">No tickets</td></tr>
                 ) : tickets.map((ticket) => (
                   <tr key={ticket._id} className="hover:bg-slate-50">
                     <td className="px-4 py-3 text-sm font-medium text-slate-900">#{String(ticket._id).slice(-6)}</td>
                     {filters.source === "shop" ? (
-                      <td className="px-4 py-3 text-sm text-slate-700">{getRestaurantLabel(ticket)}</td>
+                      <td className="px-4 py-3 text-sm text-slate-700">{getShopLabel(ticket)}</td>
                     ) : (
                       <>
                         <td className="px-4 py-3 text-sm font-medium text-slate-900">{getUserDetails(ticket).name}</td>
@@ -330,13 +330,13 @@ export default function SupportTickets() {
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs uppercase font-semibold text-slate-500">Raised By</p>
                   <p className="text-sm font-semibold text-slate-900 mt-1">
-                    {selectedTicket.source === "shop" ? getRestaurantLabel(selectedTicket) : getUserLabel(selectedTicket)}
+                    {selectedTicket.source === "shop" ? getShopLabel(selectedTicket) : getUserLabel(selectedTicket)}
                   </p>
                 </div>
-                {shouldShowRestaurantInModal(selectedTicket) ? (
+                {shouldShowShopInModal(selectedTicket) ? (
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <p className="text-xs uppercase font-semibold text-slate-500">Shop</p>
-                    <p className="text-sm font-semibold text-slate-900 mt-1">{getRestaurantLabel(selectedTicket)}</p>
+                    <p className="text-sm font-semibold text-slate-900 mt-1">{getShopLabel(selectedTicket)}</p>
                   </div>
                 ) : null}
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">

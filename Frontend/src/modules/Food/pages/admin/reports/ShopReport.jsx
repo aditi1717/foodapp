@@ -30,7 +30,7 @@ const htmlEscape = (value) =>
 export default function ShopReport() {
   const todayDate = new Date().toISOString().split("T")[0]
   const [searchQuery, setSearchQuery] = useState("")
-  const [shops, setRestaurants] = useState([])
+  const [shops, setShops] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     zone: "All Zones",
@@ -64,19 +64,19 @@ export default function ShopReport() {
         setLoading(true)
         if (filters.fromDate && filters.toDate && filters.fromDate > filters.toDate) {
           toast.error("Start Date cannot be after End Date")
-          setRestaurants([])
+          setShops([])
           setLoading(false)
           return
         }
         if (filters.fromDate && filters.fromDate > todayDate) {
           toast.error("Start Date cannot be in the future")
-          setRestaurants([])
+          setShops([])
           setLoading(false)
           return
         }
         if (filters.toDate && filters.toDate > todayDate) {
           toast.error("End Date cannot be in the future")
-          setRestaurants([])
+          setShops([])
           setLoading(false)
           return
         }
@@ -93,9 +93,9 @@ export default function ShopReport() {
         const response = await adminAPI.getShopReport(params)
 
         if (response?.data?.success && response.data.data) {
-          setRestaurants(response.data.data.shops || [])
+          setShops(response.data.data.shops || [])
         } else {
-          setRestaurants([])
+          setShops([])
           if (response?.data?.message) {
             toast.error(response.data.message)
           }
@@ -103,7 +103,7 @@ export default function ShopReport() {
       } catch (error) {
         debugError("Error fetching shop report:", error)
         toast.error("Failed to fetch shop report")
-        setRestaurants([])
+        setShops([])
       } finally {
         setLoading(false)
       }
@@ -112,11 +112,11 @@ export default function ShopReport() {
     fetchShopReport()
   }, [filters, searchQuery])
 
-  const filteredRestaurants = useMemo(() => {
+  const filteredShops = useMemo(() => {
     return shops // Backend already filters, so just return shops
   }, [shops])
 
-  const totalRestaurants = filteredRestaurants.length
+  const totalShops = filteredShops.length
 
   const handleReset = () => {
     setFilters({
@@ -147,23 +147,23 @@ export default function ShopReport() {
   }
 
   const handleExport = (format) => {
-    if (filteredRestaurants.length === 0) {
+    if (filteredShops.length === 0) {
       alert("No data to export")
       return
     }
     const headers = [
       { key: "sl", label: "SL" },
-      { key: "restaurantName", label: "Shop Name" },
+      { key: "shopName", label: "Shop Name" },
       { key: "totalFood", label: "Total Food" },
       { key: "totalOrder", label: "Total Order" },
       { key: "totalAdminCommission", label: "Admin Commission" },
       { key: "totalCouponByAdmin", label: "Coupon by Admin" },
-      { key: "totalCouponByRestaurant", label: "Coupon by Shop" },
-      { key: "totalOfferByRestaurant", label: "Offer by Shop" },
+      { key: "totalCouponByShop", label: "Coupon by Shop" },
+      { key: "totalOfferByShop", label: "Offer by Shop" },
       { key: "totalGST", label: "GST" },
-      { key: "totalRestaurantEarning", label: "Total Shop Earning" },
-      { key: "paidRestaurantEarning", label: "Paid To Shop" },
-      { key: "unpaidRestaurantEarning", label: "Unpaid To Shop" },
+      { key: "totalShopEarning", label: "Total Shop Earning" },
+      { key: "paidShopEarning", label: "Paid To Shop" },
+      { key: "unpaidShopEarning", label: "Unpaid To Shop" },
       { key: "totalCash", label: "Total Cash" },
       { key: "cashInHand", label: "Cash In Hand" },
       { key: "givenToAdmin", label: "Given To Admin" },
@@ -173,18 +173,18 @@ export default function ShopReport() {
       { key: "averageRatings", label: "Average Ratings" },
     ]
     if (format === "excel") {
-      const metrics = filteredRestaurants.reduce(
+      const metrics = filteredShops.reduce(
         (acc, item) => {
           acc.totalFood += toAmountNumber(item.totalFood)
           acc.totalOrder += toAmountNumber(item.totalOrder)
           acc.totalAdminCommission += toAmountNumber(item.totalAdminCommission)
           acc.totalCouponByAdmin += toAmountNumber(item.totalCouponByAdmin)
-          acc.totalCouponByRestaurant += toAmountNumber(item.totalCouponByRestaurant)
-          acc.totalOfferByRestaurant += toAmountNumber(item.totalOfferByRestaurant)
+          acc.totalCouponByShop += toAmountNumber(item.totalCouponByShop)
+          acc.totalOfferByShop += toAmountNumber(item.totalOfferByShop)
           acc.totalGST += toAmountNumber(item.totalGST)
-          acc.totalRestaurantEarning += toAmountNumber(item.totalRestaurantEarning)
-          acc.paidRestaurantEarning += toAmountNumber(item.paidRestaurantEarning)
-          acc.unpaidRestaurantEarning += toAmountNumber(item.unpaidRestaurantEarning)
+          acc.totalShopEarning += toAmountNumber(item.totalShopEarning)
+          acc.paidShopEarning += toAmountNumber(item.paidShopEarning)
+          acc.unpaidShopEarning += toAmountNumber(item.unpaidShopEarning)
           acc.totalCash += toAmountNumber(item.totalCash)
           acc.cashInHand += toAmountNumber(item.cashInHand)
           acc.givenToAdmin += toAmountNumber(item.givenToAdmin)
@@ -202,12 +202,12 @@ export default function ShopReport() {
           totalOrder: 0,
           totalAdminCommission: 0,
           totalCouponByAdmin: 0,
-          totalCouponByRestaurant: 0,
-          totalOfferByRestaurant: 0,
+          totalCouponByShop: 0,
+          totalOfferByShop: 0,
           totalGST: 0,
-          totalRestaurantEarning: 0,
-          paidRestaurantEarning: 0,
-          unpaidRestaurantEarning: 0,
+          totalShopEarning: 0,
+          paidShopEarning: 0,
+          unpaidShopEarning: 0,
           totalCash: 0,
           cashInHand: 0,
           givenToAdmin: 0,
@@ -219,22 +219,22 @@ export default function ShopReport() {
         },
       )
 
-      const bodyRowsHtml = filteredRestaurants
+      const bodyRowsHtml = filteredShops
         .map(
           (item, index) => `
           <tr>
             <td>${index + 1}</td>
-            <td>${htmlEscape(item.restaurantName || "-")}</td>
+            <td>${htmlEscape(item.shopName || "-")}</td>
             <td class="num">${htmlEscape(toAmountNumber(item.totalFood ?? 0))}</td>
             <td class="num">${htmlEscape(toAmountNumber(item.totalOrder ?? 0))}</td>
             <td class="num">${htmlEscape(toAmountNumber(item.totalAdminCommission ?? 0).toFixed(2))}</td>
             <td class="num">${htmlEscape(toAmountNumber(item.totalCouponByAdmin ?? 0).toFixed(2))}</td>
-            <td class="num">${htmlEscape(toAmountNumber(item.totalCouponByRestaurant ?? 0).toFixed(2))}</td>
-            <td class="num">${htmlEscape(toAmountNumber(item.totalOfferByRestaurant ?? 0).toFixed(2))}</td>
+            <td class="num">${htmlEscape(toAmountNumber(item.totalCouponByShop ?? 0).toFixed(2))}</td>
+            <td class="num">${htmlEscape(toAmountNumber(item.totalOfferByShop ?? 0).toFixed(2))}</td>
             <td class="num">${htmlEscape(toAmountNumber(item.totalGST ?? 0).toFixed(2))}</td>
-            <td class="num">${htmlEscape(toAmountNumber(item.totalRestaurantEarning ?? 0).toFixed(2))}</td>
-            <td class="num">${htmlEscape(toAmountNumber(item.paidRestaurantEarning ?? 0).toFixed(2))}</td>
-            <td class="num">${htmlEscape(toAmountNumber(item.unpaidRestaurantEarning ?? 0).toFixed(2))}</td>
+            <td class="num">${htmlEscape(toAmountNumber(item.totalShopEarning ?? 0).toFixed(2))}</td>
+            <td class="num">${htmlEscape(toAmountNumber(item.paidShopEarning ?? 0).toFixed(2))}</td>
+            <td class="num">${htmlEscape(toAmountNumber(item.unpaidShopEarning ?? 0).toFixed(2))}</td>
             <td class="num">${htmlEscape(toAmountNumber(item.totalCash ?? 0).toFixed(2))}</td>
             <td class="num">${htmlEscape(toAmountNumber(item.cashInHand ?? 0).toFixed(2))}</td>
             <td class="num">${htmlEscape(toAmountNumber(item.givenToAdmin ?? 0).toFixed(2))}</td>
@@ -304,17 +304,17 @@ export default function ShopReport() {
                 ${bodyRowsHtml}
                 <tr class="total-row">
                   <td>TOTAL</td>
-                  <td>${htmlEscape(`${filteredRestaurants.length} shops`)}</td>
+                  <td>${htmlEscape(`${filteredShops.length} shops`)}</td>
                   <td class="num">${htmlEscape(metrics.totalFood.toFixed(0))}</td>
                   <td class="num">${htmlEscape(metrics.totalOrder.toFixed(0))}</td>
                   <td class="num">${htmlEscape(metrics.totalAdminCommission.toFixed(2))}</td>
                   <td class="num">${htmlEscape(metrics.totalCouponByAdmin.toFixed(2))}</td>
-                  <td class="num">${htmlEscape(metrics.totalCouponByRestaurant.toFixed(2))}</td>
-                  <td class="num">${htmlEscape(metrics.totalOfferByRestaurant.toFixed(2))}</td>
+                  <td class="num">${htmlEscape(metrics.totalCouponByShop.toFixed(2))}</td>
+                  <td class="num">${htmlEscape(metrics.totalOfferByShop.toFixed(2))}</td>
                   <td class="num">${htmlEscape(metrics.totalGST.toFixed(2))}</td>
-                  <td class="num">${htmlEscape(metrics.totalRestaurantEarning.toFixed(2))}</td>
-                  <td class="num">${htmlEscape(metrics.paidRestaurantEarning.toFixed(2))}</td>
-                  <td class="num">${htmlEscape(metrics.unpaidRestaurantEarning.toFixed(2))}</td>
+                  <td class="num">${htmlEscape(metrics.totalShopEarning.toFixed(2))}</td>
+                  <td class="num">${htmlEscape(metrics.paidShopEarning.toFixed(2))}</td>
+                  <td class="num">${htmlEscape(metrics.unpaidShopEarning.toFixed(2))}</td>
                   <td class="num">${htmlEscape(metrics.totalCash.toFixed(2))}</td>
                   <td class="num">${htmlEscape(metrics.cashInHand.toFixed(2))}</td>
                   <td class="num">${htmlEscape(metrics.givenToAdmin.toFixed(2))}</td>
@@ -344,9 +344,9 @@ export default function ShopReport() {
     }
 
     switch (format) {
-      case "csv": exportReportsToCSV(filteredRestaurants, headers, "restaurant_report"); break
-      case "pdf": exportReportsToPDF(filteredRestaurants, headers, "restaurant_report", "Shop Report"); break
-      case "json": exportReportsToJSON(filteredRestaurants, "restaurant_report"); break
+      case "csv": exportReportsToCSV(filteredShops, headers, "shop_report"); break
+      case "pdf": exportReportsToPDF(filteredShops, headers, "shop_report", "Shop Report"); break
+      case "json": exportReportsToJSON(filteredShops, "shop_report"); break
     }
   }
 
@@ -518,7 +518,7 @@ export default function ShopReport() {
         {/* Shop Report Table Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Shop Report Table {totalRestaurants}</h2>
+            <h2 className="text-xl font-bold text-slate-900">Shop Report Table {totalShops}</h2>
 
             <div className="flex items-center gap-3">
               <div className="relative flex-1 sm:flex-initial min-w-[300px]">
@@ -684,7 +684,7 @@ export default function ShopReport() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-100">
-                {filteredRestaurants.length === 0 ? (
+                {filteredShops.length === 0 ? (
                   <tr>
                     <td colSpan={19} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center justify-center">
@@ -694,7 +694,7 @@ export default function ShopReport() {
                     </td>
                   </tr>
                 ) : (
-                  filteredRestaurants.map((shop) => (
+                  filteredShops.map((shop) => (
                     <tr key={shop.sl} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-slate-700">{shop.sl}</span>
@@ -705,7 +705,7 @@ export default function ShopReport() {
                             {shop.icon ? (
                               <img
                                 src={shop.icon}
-                                alt={shop.restaurantName}
+                                alt={shop.shopName}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   e.target.src = "https://via.placeholder.com/32"
@@ -713,11 +713,11 @@ export default function ShopReport() {
                               />
                             ) : (
                               <div className="w-full h-full bg-slate-300 flex items-center justify-center text-xs text-slate-600 font-semibold">
-                                {shop.restaurantName.charAt(0).toUpperCase()}
+                                {shop.shopName.charAt(0).toUpperCase()}
                               </div>
                             )}
                           </div>
-                          <span className="text-sm font-medium text-slate-900">{shop.restaurantName}</span>
+                          <span className="text-sm font-medium text-slate-900">{shop.shopName}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
@@ -733,22 +733,22 @@ export default function ShopReport() {
                         <span className="text-sm font-medium text-green-600">{shop.totalCouponByAdmin}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-medium text-orange-600">{shop.totalCouponByRestaurant}</span>
+                        <span className="text-sm font-medium text-orange-600">{shop.totalCouponByShop}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-medium text-purple-600">{shop.totalOfferByRestaurant}</span>
+                        <span className="text-sm font-medium text-purple-600">{shop.totalOfferByShop}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
                         <span className="text-sm text-slate-700">{shop.totalGST}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-slate-900">{shop.totalRestaurantEarning}</span>
+                        <span className="text-sm font-semibold text-slate-900">{shop.totalShopEarning}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-emerald-600">{shop.paidRestaurantEarning}</span>
+                        <span className="text-sm font-semibold text-emerald-600">{shop.paidShopEarning}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
-                        <span className="text-sm font-semibold text-orange-600">{shop.unpaidRestaurantEarning}</span>
+                        <span className="text-sm font-semibold text-orange-600">{shop.unpaidShopEarning}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right tabular-nums">
                         <span className="text-sm font-semibold text-slate-900">{shop.totalCash}</span>

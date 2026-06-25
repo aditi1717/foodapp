@@ -51,7 +51,7 @@ export default function FeedbackExperienceReport() {
           userName: fb.userName || 'N/A',
           userEmail: fb.userEmail || 'N/A',
           userPhone: fb.userPhone || 'N/A',
-          restaurantName: fb.restaurantId?.restaurantName || 'N/A',
+          shopName: fb.shopId?.shopName || 'N/A',
           rating: fb.rating * 2, // Convert 1-5 back to 1-10 for UI
           experience: fb.comment || 'N/A',
           module: fb.module,
@@ -281,7 +281,7 @@ export default function FeedbackExperienceReport() {
                   >
                     <option value="">All Modules</option>
                     <option value="user">User</option>
-                    <option value="restaurant">Shop</option>
+                    <option value="shop">Shop</option>
                     <option value="delivery">Delivery</option>
                   </select>
                   <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />

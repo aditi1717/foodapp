@@ -75,7 +75,7 @@ export default function Category() {
     const query = String(searchQuery || "").trim().toLowerCase()
     if (!query) return categories
     return categories.filter((category) => {
-      const creator = category?.createdByRestaurant?.name || category?.shop?.name || ""
+      const creator = category?.createdByShop?.name || category?.shop?.name || ""
       return (
         String(category?.name || "").toLowerCase().includes(query) ||
         String(category?.foodTypeScope || "").toLowerCase().includes(query) ||
@@ -348,9 +348,9 @@ export default function Category() {
                 </tr>
               ) : (
                 filteredCategories.map((category) => {
-                  const creatorName = category?.createdByRestaurant?.name || category?.shop?.name || "Admin"
+                  const creatorName = category?.createdByShop?.name || category?.shop?.name || "Admin"
                   const approvalStatus = category?.approvalStatus || "pending"
-                  const isRestaurantCategory = Boolean(category?.createdByRestaurantId || category?.restaurantId)
+                  const isShopCategory = Boolean(category?.createdByShopId || category?.shopId)
 
                   return (
                     <tr key={category.id} className="align-top hover:bg-slate-50/80">
@@ -381,7 +381,7 @@ export default function Category() {
                           <p className="text-xs text-slate-400">
                             {category?.isGlobal ? "Global category" : "Private to creator"}
                           </p>
-                          {category?.isGlobal && isRestaurantCategory && (
+                          {category?.isGlobal && isShopCategory && (
                             <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700">
                               <Globe className="mr-1 h-3.5 w-3.5" />
                               Shared
@@ -426,7 +426,7 @@ export default function Category() {
                                 Approve
                               </button>
                             )}
-                            {isRestaurantCategory && approvalStatus !== "rejected" && (
+                            {isShopCategory && approvalStatus !== "rejected" && (
                               <button
                                 onClick={() => handleReject(category)}
                                 className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
@@ -434,7 +434,7 @@ export default function Category() {
                                 Reject
                               </button>
                             )}
-                            {isRestaurantCategory && !category?.isGlobal && approvalStatus === "approved" && (
+                            {isShopCategory && !category?.isGlobal && approvalStatus === "approved" && (
                               <button
                                 onClick={() => handleMakeGlobal(category)}
                                 className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center gap-1.5"

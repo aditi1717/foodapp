@@ -115,40 +115,40 @@ router.delete('/safety-emergency-reports/:id', adminController.deleteSafetyEmerg
 router.get('/support-tickets', adminController.getSupportTicketsController);
 router.patch('/support-tickets/:id', adminController.updateSupportTicketController);
 router.get('/global-search', adminController.globalSearch);
-router.get('/restaurants/complaints', adminController.getRestaurantComplaints);
-router.patch('/restaurants/complaints/:id', adminController.updateRestaurantComplaint);
+router.get('/shops/complaints', adminController.getShopComplaints);
+router.patch('/shops/complaints/:id', adminController.updateShopComplaint);
 
-// ----- Restaurants -----
-router.get('/restaurants', adminController.getRestaurants);
+// ----- Shops -----
+router.get('/shops', adminController.getShops);
 router.get('/dashboard-stats', adminController.getDashboardStats);
-router.get('/reports/restaurants', adminController.getRestaurantReport);
+router.get('/reports/shops', adminController.getShopReport);
 router.get('/reports/transactions', adminController.getTransactionReport);
 router.get('/reports/tax', adminController.getTaxReport);
 router.get('/reports/tax/:id', adminController.getTaxReportDetail);
-router.get('/restaurants/pending', adminController.getPendingRestaurants);
-router.get('/restaurants/reviews', adminController.getRestaurantReviews);
-router.get('/restaurants/:id', adminController.getRestaurantById);
-router.get('/restaurants/:id/outlet-timings', adminController.getRestaurantOutletTimings);
-router.get('/restaurants/:id/analytics', adminController.getRestaurantAnalytics);
-router.get('/restaurants/:id/menu', adminController.getRestaurantMenuById);
-router.post('/restaurants', adminController.createRestaurant);
-router.patch('/restaurants/:id', adminController.updateRestaurantById);
-router.put('/restaurants/:id/outlet-timings', adminController.updateRestaurantOutletTimings);
-router.patch('/restaurants/:id/status', adminController.updateRestaurantStatus);
-router.patch('/restaurants/:id/location', adminController.updateRestaurantLocation);
-router.patch('/restaurants/:id/menu', adminController.updateRestaurantMenuById);
-router.patch('/restaurants/:id/approve', adminController.approveRestaurant);
-router.patch('/restaurants/:id/reject', adminController.rejectRestaurant);
-router.delete('/restaurants/:id', adminController.deleteRestaurantById);
+router.get('/shops/pending', adminController.getPendingShops);
+router.get('/shops/reviews', adminController.getShopReviews);
+router.get('/shops/:id', adminController.getShopById);
+router.get('/shops/:id/outlet-timings', adminController.getShopOutletTimings);
+router.get('/shops/:id/analytics', adminController.getShopAnalytics);
+router.get('/shops/:id/menu', adminController.getShopMenuById);
+router.post('/shops', adminController.createShop);
+router.patch('/shops/:id', adminController.updateShopById);
+router.put('/shops/:id/outlet-timings', adminController.updateShopOutletTimings);
+router.patch('/shops/:id/status', adminController.updateShopStatus);
+router.patch('/shops/:id/location', adminController.updateShopLocation);
+router.patch('/shops/:id/menu', adminController.updateShopMenuById);
+router.patch('/shops/:id/approve', adminController.approveShop);
+router.patch('/shops/:id/reject', adminController.rejectShop);
+router.delete('/shops/:id', adminController.deleteShopById);
 
-// ----- Restaurant Commission -----
-router.get('/restaurant-commissions/bootstrap', adminController.getRestaurantCommissionBootstrap);
-router.get('/restaurant-commissions', adminController.getRestaurantCommissions);
-router.post('/restaurant-commissions', adminController.createRestaurantCommission);
-router.get('/restaurant-commissions/:id', adminController.getRestaurantCommissionById);
-router.patch('/restaurant-commissions/:id', adminController.updateRestaurantCommission);
-router.delete('/restaurant-commissions/:id', adminController.deleteRestaurantCommission);
-router.patch('/restaurant-commissions/:id/toggle', adminController.toggleRestaurantCommissionStatus);
+// ----- Shop Commission -----
+router.get('/shop-commissions/bootstrap', adminController.getShopCommissionBootstrap);
+router.get('/shop-commissions', adminController.getShopCommissions);
+router.post('/shop-commissions', adminController.createShopCommission);
+router.get('/shop-commissions/:id', adminController.getShopCommissionById);
+router.patch('/shop-commissions/:id', adminController.updateShopCommission);
+router.delete('/shop-commissions/:id', adminController.deleteShopCommission);
+router.patch('/shop-commissions/:id/toggle', adminController.toggleShopCommissionStatus);
 
 // ----- Categories -----
 router.get('/categories', adminController.getCategories);
@@ -169,34 +169,34 @@ router.patch('/subcategories/:id/toggle', adminController.toggleSubcategoryStatu
 router.patch('/subcategories/:id/approve', adminController.approveSubcategory);
 router.patch('/subcategories/:id/reject', adminController.rejectSubcategory);
 
-// ----- Restaurant Add-ons Approval -----
-router.get('/addons', addonsApprovalController.getRestaurantAddons);
-router.patch('/addons/:id', addonsApprovalController.updateRestaurantAddon);
-router.patch('/addons/:id/approve', addonsApprovalController.approveRestaurantAddon);
-router.patch('/addons/:id/reject', addonsApprovalController.rejectRestaurantAddon);
+// ----- Shop Add-ons Approval -----
+router.get('/addons', addonsApprovalController.getShopAddons);
+router.patch('/addons/:id', addonsApprovalController.updateShopAddon);
+router.patch('/addons/:id/approve', addonsApprovalController.approveShopAddon);
+router.patch('/addons/:id/reject', addonsApprovalController.rejectShopAddon);
 
 // ----- Foods -----
 router.get('/foods', adminController.getFoods);
 router.post('/foods', adminController.createFood);
 router.patch('/foods/:id', adminController.updateFood);
 router.delete('/foods/:id', adminController.deleteFood);
-// Food approval queue (pending items created by restaurants)
+// Food approval queue (pending items created by shops)
 router.get('/foods/pending-approvals', foodApprovalController.getPendingFoodApprovals);
 router.patch('/foods/:id/approve', foodApprovalController.approveFoodItemController);
 router.patch('/foods/:id/reject', foodApprovalController.rejectFoodItemController);
 
 // ----- Offers & Coupons -----
 router.get('/offers', adminController.getAllOffers);
-router.get('/offers/pending', adminController.getPendingRestaurantOffers);
+router.get('/offers/pending', adminController.getPendingShopOffers);
 router.post('/offers', adminController.createAdminOffer);
 router.patch('/offers/:id/cart-visibility', adminController.updateAdminOfferCartVisibility);
 router.patch('/offers/:id', adminController.updateAdminOffer);
 router.delete('/offers/:id', adminController.deleteAdminOffer);
-router.patch('/offers/:id/approve', adminController.approveRestaurantOffer);
-router.patch('/offers/:id/reject', adminController.rejectRestaurantOffer);
-router.get('/offers/restaurant/pending', adminController.getPendingRestaurantProductOffers);
-router.patch('/offers/restaurant/:id/approve', adminController.approveRestaurantProductOffer);
-router.patch('/offers/restaurant/:id/reject', adminController.rejectRestaurantProductOffer);
+router.patch('/offers/:id/approve', adminController.approveShopOffer);
+router.patch('/offers/:id/reject', adminController.rejectShopOffer);
+router.get('/offers/shop/pending', adminController.getPendingShopProductOffers);
+router.patch('/offers/shop/:id/approve', adminController.approveShopProductOffer);
+router.patch('/offers/shop/:id/reject', adminController.rejectShopProductOffer);
 
 // ----- Feedback Experience (Admin) -----
 router.get('/feedback-experiences', feedbackExperienceController.getFeedbackExperiences);
@@ -237,8 +237,8 @@ router.put('/delivery-emergency-help', adminController.createOrUpdateEmergencyHe
 // ----- Withdrawals (admin) -----
 router.get('/delivery/withdrawals', adminController.getDeliveryWithdrawals);
 router.patch('/delivery/withdrawals/:id', adminController.updateDeliveryWithdrawalStatus);
-router.get('/restaurant/withdrawals', adminController.getWithdrawals);
-router.patch('/restaurant/withdrawals/:id', adminController.updateWithdrawalStatus);
+router.get('/shop/withdrawals', adminController.getWithdrawals);
+router.patch('/shop/withdrawals/:id', adminController.updateWithdrawalStatus);
 router.get('/delivery/cash-limit-settlements', adminController.getCashLimitSettlements);
 router.get('/payout-settlements/preview', adminController.getPayoutSettlementPreview);
 router.get('/payout-settlements/history', adminController.getPayoutSettlementHistory);

@@ -7,8 +7,8 @@ const createOfferSchema = z.object({
     discountType: z.enum(['percentage', 'flat-price']).default('percentage'),
     discountValue: z.number().positive('Discount value must be greater than 0'),
     customerScope: z.enum(['all', 'first-time']).default('all'),
-    restaurantScope: z.enum(['all', 'selected']).default('all'),
-    restaurantId: z.string().optional(),
+    shopScope: z.enum(['all', 'selected']).default('all'),
+    shopId: z.string().optional(),
     endDate: z.string().optional().or(z.literal('')).or(z.undefined()),
     startDate: z.string().optional().or(z.literal('')).or(z.undefined()),
     minOrderValue: z.number().positive('Minimum order value must be greater than 0').optional(),
@@ -25,8 +25,8 @@ export const validateCreateOfferDto = (body) => {
         discountType: body?.discountType,
         discountValue: Number(body?.discountValue),
         customerScope: body?.customerScope,
-        restaurantScope: body?.restaurantScope,
-        restaurantId: body?.restaurantId ? String(body.restaurantId) : undefined,
+        shopScope: body?.shopScope,
+        shopId: body?.shopId ? String(body.shopId) : undefined,
         endDate: body?.endDate ? String(body.endDate) : undefined,
         startDate: body?.startDate ? String(body.startDate) : undefined,
         minOrderValue: body?.minOrderValue !== undefined ? Number(body.minOrderValue) : undefined,
@@ -41,9 +41,9 @@ export const validateCreateOfferDto = (body) => {
         throw new ValidationError(result.error.errors[0].message);
     }
 
-    if (result.data.restaurantScope === 'selected') {
-        if (!result.data.restaurantId || !mongoose.Types.ObjectId.isValid(result.data.restaurantId)) {
-            throw new ValidationError('Valid restaurantId is required for selected restaurant scope');
+    if (result.data.shopScope === 'selected') {
+        if (!result.data.shopId || !mongoose.Types.ObjectId.isValid(result.data.shopId)) {
+            throw new ValidationError('Valid shopId is required for selected shop scope');
         }
     }
 
@@ -81,8 +81,8 @@ export const validateCreateOfferDto = (body) => {
         discountType: result.data.discountType,
         discountValue: result.data.discountValue,
         customerScope: result.data.customerScope,
-        restaurantScope: result.data.restaurantScope,
-        restaurantId: result.data.restaurantScope === 'selected' ? result.data.restaurantId : undefined,
+        shopScope: result.data.shopScope,
+        shopId: result.data.shopScope === 'selected' ? result.data.shopId : undefined,
         endDate,
         startDate,
         minOrderValue: result.data.minOrderValue,

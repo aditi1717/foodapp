@@ -76,8 +76,8 @@ export default function ZoneFilterPanel({ isOpen, onClose, filters, setFilters, 
               </label>
               <input
                 type="number"
-                value={filters.minRestaurants || ""}
-                onChange={(e) => setFilters(prev => ({ ...prev, minRestaurants: e.target.value }))}
+                value={filters.minShops || ""}
+                onChange={(e) => setFilters(prev => ({ ...prev, minShops: e.target.value }))}
                 placeholder="0"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
@@ -88,8 +88,8 @@ export default function ZoneFilterPanel({ isOpen, onClose, filters, setFilters, 
               </label>
               <input
                 type="number"
-                value={filters.maxRestaurants || ""}
-                onChange={(e) => setFilters(prev => ({ ...prev, maxRestaurants: e.target.value }))}
+                value={filters.maxShops || ""}
+                onChange={(e) => setFilters(prev => ({ ...prev, maxShops: e.target.value }))}
                 placeholder="100"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />

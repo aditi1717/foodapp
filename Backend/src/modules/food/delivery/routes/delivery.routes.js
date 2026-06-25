@@ -6,11 +6,11 @@ import * as orderController from '../../orders/controllers/order.controller.js';
 import { registerDeliveryPartnerController, updateDeliveryPartnerProfileController, updateDeliveryPartnerBankDetailsController, listSupportTicketsController, createSupportTicketController, getSupportTicketByIdController, updateDeliveryPartnerDetailsController, updateDeliveryPartnerProfilePhotoBase64Controller, updateAvailabilityController, getWalletController, createWithdrawalRequestController, createCashDepositOrderController, verifyCashDepositPaymentController, getEarningsController, getTripHistoryController, getPocketDetailsController, getEmergencyHelpController, getCashLimitController, getDeliveryReferralStatsController, getActiveEarningAddonsController, getStoreProductsDelivery, getStoreProductByIdDelivery, createStoreOrderDelivery, createBulkStoreOrderDelivery, verifyStoreOrderDelivery, verifyBulkStoreOrderDelivery, getMyStoreOrders, getStoreOrderByIdDelivery, getOrderQueueController, getReviewsController } from '../controllers/delivery.controller.js';
 import {
     listIncomingRequestsController,
-    getRestaurantAssociationController,
+    getShopAssociationController,
     acceptExclusivityRequestController,
     rejectExclusivityRequestController,
     leaveExclusivityPartnershipController,
-    respondRestaurantAssociationController
+    respondShopAssociationController
 } from '../controllers/deliveryExclusivity.controller.js';
 
 const router = express.Router();
@@ -91,8 +91,8 @@ router.post('/exclusivity-requests/:requestId/accept', authMiddleware, requireRo
 router.post('/exclusivity-requests/:requestId/reject', authMiddleware, requireRoles('DELIVERY_PARTNER'), rejectExclusivityRequestController);
 router.post('/exclusivity-requests/leave', authMiddleware, requireRoles('DELIVERY_PARTNER'), leaveExclusivityPartnershipController);
 // Alias endpoints for association-centric clients
-router.get('/restaurant-association', authMiddleware, requireRoles('DELIVERY_PARTNER'), getRestaurantAssociationController);
-router.post('/restaurant-association/respond', authMiddleware, requireRoles('DELIVERY_PARTNER'), respondRestaurantAssociationController);
+router.get('/shop-association', authMiddleware, requireRoles('DELIVERY_PARTNER'), getShopAssociationController);
+router.post('/shop-association/respond', authMiddleware, requireRoles('DELIVERY_PARTNER'), respondShopAssociationController);
 
 export default router;
 

@@ -68,7 +68,7 @@ const tabConfig = {
     entityLabel: "Shop",
     columnEntity: "Shop Name",
     columnBenefit: "Benefit Type",
-    exportName: "restaurant_subscription_report",
+    exportName: "shop_subscription_report",
     exportTitle: "Shop Subscription Report",
     totalLabel: "Total Shop Revenue",
     periodYearLabel: "Shop Revenue This Year",

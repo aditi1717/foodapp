@@ -19,7 +19,7 @@ import { Card, CardContent } from "@food/components/ui/card";
 import {
   ExploreGridSkeleton,
   LoadingSkeletonRegion,
-  RestaurantGridSkeleton,
+  ShopGridSkeleton,
 } from "@food/components/ui/loading-skeletons";
 import { getShopAvailabilityStatus } from "@food/utils/shopAvailability";
 import foodPattern from "@food/assets/food_pattern_background.png";
@@ -34,32 +34,32 @@ const PRIMARY_FILTERS = [
 ];
 
 const FoodShopCard = memo(function FoodShopCard({
-  restaurant: shop,
+  shop: shop,
   index,
   isOutOfService,
   availabilityTick,
   isFavorite,
   onFavoriteToggle,
-  RestaurantImageCarousel,
+  ShopImageCarousel,
   backendOrigin,
 }) {
   const nameStr = typeof shop?.name === "string" ? shop.name.trim() : "";
   const fallbackSlugSource =
     nameStr ||
-    (typeof shop?.restaurantName === "string" ? shop.restaurantName.trim() : "") ||
-    String(shop?.slug || shop?.id || shop?._id || `restaurant-${index}`);
+    (typeof shop?.shopName === "string" ? shop.shopName.trim() : "") ||
+    String(shop?.slug || shop?.id || shop?._id || `shop-${index}`);
 
-  const restaurantSlug =
+  const shopSlug =
     typeof shop?.slug === "string" && shop.slug.trim()
       ? shop.slug.trim()
       : fallbackSlugSource.toLowerCase().replace(/\s+/g, "-");
 
   const availability = getShopAvailabilityStatus(shop, new Date(availabilityTick));
-  const favorite = isFavorite(restaurantSlug);
+  const favorite = isFavorite(shopSlug);
 
   return (
     <div
-      key={shop?.id || shop?._id || restaurantSlug || index}
+      key={shop?.id || shop?._id || shopSlug || index}
       className="h-full transform transition-all duration-300 hover:-translate-y-3 hover:scale-[1.02]"
       style={{
         perspective: 1000,
@@ -67,15 +67,15 @@ const FoodShopCard = memo(function FoodShopCard({
       }}
     >
       <div className="h-full group">
-        <Link to={`/user/shops/${restaurantSlug}`} className="flex h-full">
+        <Link to={`/user/shops/${shopSlug}`} className="flex h-full">
           <Card
             className={`relative flex h-full w-full flex-col gap-0 overflow-hidden rounded-[28px] border-0 border-background bg-white py-0 shadow-sm transition-all duration-500 hover:shadow-xl dark:border-gray-800 dark:bg-[#1a1a1a] ${
               isOutOfService || !availability.isOpen ? "grayscale opacity-75" : ""
             }`}
           >
             <div className="relative">
-              <RestaurantImageCarousel
-                restaurant={shop}
+              <ShopImageCarousel
+                shop={shop}
                 priority={index < 3}
                 backendOrigin={backendOrigin}
               />
@@ -90,7 +90,7 @@ const FoodShopCard = memo(function FoodShopCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={(event) => onFavoriteToggle(event, shop, restaurantSlug, favorite)}
+                  onClick={(event) => onFavoriteToggle(event, shop, shopSlug, favorite)}
                   aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
                   className={`flex h-11 w-11 items-center justify-center rounded-[20px] shadow-xl transition-all duration-300 ${
                     favorite
@@ -176,24 +176,24 @@ function FoodHomeContent({
   activeFilters,
   onOpenFilter,
   onTogglePrimaryFilter,
-  recommendedForYouRestaurants,
+  recommendedForYouShops,
   exploreMoreHeading,
   showExploreSkeleton,
   finalExploreItems,
-  filteredRestaurants,
-  showRestaurantSkeleton,
+  filteredShops,
+  showShopSkeleton,
   isLoadingFilterResults,
-  loadingRestaurants,
-  visibleRestaurants,
+  loadingShops,
+  visibleShops,
   isOutOfService,
   availabilityTick,
   isFavorite,
   onFavoriteToggle,
   BACKEND_ORIGIN,
-  RestaurantImageCarousel,
-  loadMoreRestaurants,
-  hasMoreRestaurants,
-  restaurantLoadMoreRef,
+  ShopImageCarousel,
+  loadMoreShops,
+  hasMoreShops,
+  shopLoadMoreRef,
 }) {
   const { homepage } = BRAND_THEME.tokens;
   return (
@@ -247,7 +247,7 @@ function FoodHomeContent({
                  {/* Shiny overlay on hover */}
                  <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <span className={`text-center text-[12px] font-black leading-tight text-gray-800 dark:text-gray-200 tracking-tighter opacity-70 group-hover:opacity-100 ${homepage.home.restaurantCard.nameHover} transition-all`}>
+              <span className={`text-center text-[12px] font-black leading-tight text-gray-800 dark:text-gray-200 tracking-tighter opacity-70 group-hover:opacity-100 ${homepage.home.shopCard.nameHover} transition-all`}>
                 {category.name}
               </span>
             </Link>
@@ -305,25 +305,25 @@ function FoodHomeContent({
         </div>
       </motion.section>
 
-      {recommendedForYouRestaurants.length > 0 && (
+      {recommendedForYouShops.length > 0 && (
         <motion.section className="content-auto pt-1 sm:pt-2" initial={false} animate={{ opacity: 1, y: 0 }}>
           <h2 className={`mb-2 px-4 text-xs font-semibold uppercase tracking-widest ${homepage.shared.heading} sm:mb-3 sm:text-sm lg:text-base`}>
             Recommended For You
           </h2>
 
           <div className="grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 lg:grid-cols-4">
-            {recommendedForYouRestaurants.map((shop, index) => {
-              const restaurantSlug = shop.slug || shop.name.toLowerCase().replace(/\s+/g, "-");
+            {recommendedForYouShops.map((shop, index) => {
+              const shopSlug = shop.slug || shop.name.toLowerCase().replace(/\s+/g, "-");
               return (
                 <motion.div
-                  key={`recommended-${shop.mongoId || shop.id || restaurantSlug}`}
+                  key={`recommended-${shop.mongoId || shop.id || shopSlug}`}
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.35, delay: index * 0.05 }}
                 >
                   <Link
-                    to={`/user/shops/${restaurantSlug}`}
+                    to={`/user/shops/${shopSlug}`}
                     className={`block overflow-hidden rounded-[20px] border ${homepage.shared.border} ${homepage.shared.surface} shadow-sm transition-shadow hover:shadow-md`}
                   >
                     <div className="relative h-24 bg-gray-50 sm:h-28 md:h-32">
@@ -434,14 +434,14 @@ function FoodHomeContent({
         <div className="mb-3 px-4 lg:mb-4">
           <div className="flex flex-col gap-0.5 lg:gap-1">
             <h2 className={`text-xs font-semibold uppercase tracking-widest ${homepage.shared.heading} sm:text-sm lg:text-base`}>
-              {filteredRestaurants.length} Shops Delivering to You
+              {filteredShops.length} Shops Delivering to You
             </h2>
             <span className={`text-base font-normal ${homepage.shared.mutedText} sm:text-lg lg:text-2xl`}>Featured</span>
           </div>
         </div>
-        <div className={`relative ${showRestaurantSkeleton ? "min-h-[360px] sm:min-h-[420px]" : ""}`}>
+        <div className={`relative ${showShopSkeleton ? "min-h-[360px] sm:min-h-[420px]" : ""}`}>
           <AnimatePresence>
-            {showRestaurantSkeleton && (
+            {showShopSkeleton && (
               <motion.div
                 className="absolute inset-0 z-10 rounded-lg bg-white/94 dark:bg-[#1a1a1a]/94"
                 initial={{ opacity: 0 }}
@@ -450,7 +450,7 @@ function FoodHomeContent({
                 transition={{ duration: 0.25 }}
               >
                 <LoadingSkeletonRegion label="Loading shops" className="h-full p-1 sm:p-2">
-                  <RestaurantGridSkeleton count={3} className="grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" compact />
+                  <ShopGridSkeleton count={3} className="grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3" compact />
                 </LoadingSkeletonRegion>
               </motion.div>
             )}
@@ -458,19 +458,19 @@ function FoodHomeContent({
 
           <div
             className={`grid grid-cols-1 items-stretch gap-5 px-4 pt-1 transition-opacity duration-300 sm:gap-4 sm:pt-1.5 md:grid-cols-2 lg:gap-5 lg:pt-2 lg:grid-cols-3 xl:gap-6 ${
-              isLoadingFilterResults || loadingRestaurants ? "opacity-50" : "opacity-100"
+              isLoadingFilterResults || loadingShops ? "opacity-50" : "opacity-100"
             }`}
           >
-            {visibleRestaurants.map((shop, index) => (
+            {visibleShops.map((shop, index) => (
               <FoodShopCard
                 key={shop?.id || shop?._id || shop?.slug || index}
-                restaurant={shop}
+                shop={shop}
                 index={index}
                 isOutOfService={isOutOfService}
                 availabilityTick={availabilityTick}
                 isFavorite={isFavorite}
                 onFavoriteToggle={onFavoriteToggle}
-                RestaurantImageCarousel={RestaurantImageCarousel}
+                ShopImageCarousel={ShopImageCarousel}
                 backendOrigin={BACKEND_ORIGIN}
               />
             ))}
@@ -478,17 +478,17 @@ function FoodHomeContent({
         </div>
 
         <div className="flex flex-col items-center gap-2 px-4 pt-2 sm:pt-3">
-          {hasMoreRestaurants && (
+          {hasMoreShops && (
             <Button
               variant="outline"
-              onClick={loadMoreRestaurants}
+              onClick={loadMoreShops}
               className="border-gray-300 text-sm font-medium"
               style={{ color: BRAND_THEME.colors.brand.primary, borderColor: BRAND_THEME.colors.brand.primary }}
             >
               Load more shops
             </Button>
           )}
-          <div ref={restaurantLoadMoreRef} className="h-1 w-full" aria-hidden="true" />
+          <div ref={shopLoadMoreRef} className="h-1 w-full" aria-hidden="true" />
         </div>
       </motion.section>
     </motion.div>

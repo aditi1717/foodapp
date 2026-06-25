@@ -5,8 +5,8 @@ export const exportAdvertisementsToCSV = (ads, filename = "advertisements") => {
     index + 1,
     ad.adsId || ad.sl,
     ad.adsTitle || ad.title || "",
-    ad.restaurantName || "",
-    ad.restaurantEmail || "",
+    ad.shopName || "",
+    ad.shopEmail || "",
     ad.adsType || ad.type || "",
     ad.duration || ""
   ])
@@ -33,8 +33,8 @@ export const exportAdvertisementsToExcel = (ads, filename = "advertisements") =>
     index + 1,
     ad.adsId || ad.sl,
     ad.adsTitle || ad.title || "",
-    ad.restaurantName || "",
-    ad.restaurantEmail || "",
+    ad.shopName || "",
+    ad.shopEmail || "",
     ad.adsType || ad.type || "",
     ad.duration || ""
   ])
@@ -61,8 +61,8 @@ export const exportAdvertisementsToPDF = (ads, filename = "advertisements") => {
     index + 1,
     ad.adsId || ad.sl,
     ad.adsTitle || ad.title || "",
-    ad.restaurantName || "",
-    ad.restaurantEmail || "",
+    ad.shopName || "",
+    ad.shopEmail || "",
     ad.adsType || ad.type || "",
     ad.duration || ""
   ])

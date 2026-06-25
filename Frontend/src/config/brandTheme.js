@@ -257,7 +257,7 @@ export const BRAND_THEME = {
         promoAccentFill: `fill-[${COLORS.brand.primary}]`,
         exploreHoverBorder: `group-hover:border-[${COLORS.brand.primary}]/30`,
         exploreHoverGlow: `group-hover:shadow-[inset_0_0_0_1px_rgba(41,121,251,0.22)]`,
-        restaurantCard: {
+        shopCard: {
           bookmarkActive: `bg-[${COLORS.brand.primary}] text-white`,
           bookmarkIdle: `bg-white/90 backdrop-blur-sm text-gray-800 hover:bg-white hover:text-[${COLORS.brand.primary}]`,
           nameHover: `group-hover:text-[${COLORS.brand.primary}]`,

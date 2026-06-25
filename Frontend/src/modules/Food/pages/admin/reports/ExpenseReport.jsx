@@ -10,7 +10,7 @@ export default function ExpenseReport() {
   const [expenses, setExpenses] = useState(emptyExpenseReports)
   const [filters, setFilters] = useState({
     zone: "All Zones",
-    restaurant: "All restaurants",
+    shop: "All shops",
     customer: "All customers",
     type: "All Type",
     time: "All Time",
@@ -130,13 +130,13 @@ export default function ExpenseReport() {
                   Shop
                 </label>
                 <select
-                  value={filters.restaurant}
+                  value={filters.shop}
                   onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  <option value="All restaurants">All shops</option>
-                  <option value="Restaurant 1">Shop 1</option>
-                  <option value="Restaurant 2">Shop 2</option>
+                  <option value="All shops">All shops</option>
+                  <option value="Shop 1">Shop 1</option>
+                  <option value="Shop 2">Shop 2</option>
                 </select>
                 <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />
               </div>

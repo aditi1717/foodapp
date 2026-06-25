@@ -11,7 +11,7 @@ async function testPricingAPI() {
     const response = await axios.post(
       `${API_BASE}/api/orders/calculate`,
       {
-        restaurantId: 'your-restaurant-id', // Replace with actual restaurant ID
+        shopId: 'your-shop-id', // Replace with actual shop ID
         items: [
           {
             itemId: 'item-id-1',
@@ -45,10 +45,10 @@ async function testPricingAPI() {
     console.log('Discount:', pricing.discount);
     console.log('\n📊 Discount Breakdown:');
     console.log('couponByAdmin:', pricing.couponByAdmin);
-    console.log('couponByRestaurant:', pricing.couponByRestaurant);
-    console.log('offerByRestaurant:', pricing.offerByRestaurant);
+    console.log('couponByShop:', pricing.couponByShop);
+    console.log('offerByShop:', pricing.offerByShop);
 
-    if ('offerByRestaurant' in pricing) {
+    if ('offerByShop' in pricing) {
       console.log('\n✅ Discount breakdown fields are present in API response!');
       console.log('Backend update is working correctly.');
     } else {

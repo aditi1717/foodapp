@@ -2,23 +2,23 @@ import mongoose from 'mongoose';
 import * as adminService from '../services/admin.service.js';
 import { validateAddonAdminListQuery, validateAddonRejectDto } from '../validators/addonApproval.validator.js';
 
-export async function getRestaurantAddons(req, res, next) {
+export async function getShopAddons(req, res, next) {
     try {
         const query = validateAddonAdminListQuery(req.query || {});
-        const data = await adminService.getRestaurantAddonsAdmin(query);
-        res.status(200).json({ success: true, message: 'Restaurant add-ons fetched successfully', data });
+        const data = await adminService.getShopAddonsAdmin(query);
+        res.status(200).json({ success: true, message: 'Shop add-ons fetched successfully', data });
     } catch (error) {
         next(error);
     }
 }
 
-export async function approveRestaurantAddon(req, res, next) {
+export async function approveShopAddon(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid add-on id' });
         }
-        const updated = await adminService.approveRestaurantAddon(id);
+        const updated = await adminService.approveShopAddon(id);
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Add-on not found' });
         }
@@ -28,14 +28,14 @@ export async function approveRestaurantAddon(req, res, next) {
     }
 }
 
-export async function rejectRestaurantAddon(req, res, next) {
+export async function rejectShopAddon(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid add-on id' });
         }
         const { reason } = validateAddonRejectDto(req.body || {});
-        const updated = await adminService.rejectRestaurantAddon(id, reason);
+        const updated = await adminService.rejectShopAddon(id, reason);
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Add-on not found' });
         }
@@ -45,13 +45,13 @@ export async function rejectRestaurantAddon(req, res, next) {
     }
 }
 
-export async function updateRestaurantAddon(req, res, next) {
+export async function updateShopAddon(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid add-on id' });
         }
-        const updated = await adminService.updateRestaurantAddonAdmin(id, req.body || {});
+        const updated = await adminService.updateShopAddonAdmin(id, req.body || {});
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Add-on not found' });
         }

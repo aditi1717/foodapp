@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { ArrowLeft, Check, Loader2, X } from "lucide-react"
 import { useNavigate, useParams } from "react-router-dom"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
@@ -66,7 +66,7 @@ export default function AddOfferPage() {
     const loadProducts = async () => {
       try {
         setLoadingProducts(true)
-        const res = await restaurantAPI.getMenu()
+        const res = await shopAPI.getMenu()
         const menu = res?.data?.data?.menu || res?.data?.menu || res?.menu || res?.data?.data || {}
 
         // Prefer structured sections -> items
@@ -109,7 +109,7 @@ export default function AddOfferPage() {
         setProducts(flattened)
 
         // Also fetch all existing offers to know which products are occupied
-        const offersRes = await restaurantAPI.getRestaurantOffers()
+        const offersRes = await shopAPI.getShopOffers()
         const list = offersRes?.data?.data?.offers || offersRes?.data?.offers || []
         setAllOffers(list)
       } catch (err) {
@@ -166,7 +166,7 @@ export default function AddOfferPage() {
     try {
       setSaving(true)
       if (isEditMode) {
-        await restaurantAPI.updateRestaurantOffer(offerId, {
+        await shopAPI.updateShopOffer(offerId, {
           ...form,
           productId: form.productIds[0],
           discountValue: dv,
@@ -175,7 +175,7 @@ export default function AddOfferPage() {
           perUserLimit: form.perUserLimit === "" ? undefined : Number(form.perUserLimit)
         })
       } else {
-        await restaurantAPI.createRestaurantOffer({
+        await shopAPI.createShopOffer({
           ...form,
           productId: form.productIds[0],
           discountValue: dv,
@@ -184,7 +184,7 @@ export default function AddOfferPage() {
           perUserLimit: form.perUserLimit === "" ? undefined : Number(form.perUserLimit)
         })
       }
-      navigate("/restaurant/offers")
+      navigate("/shop/offers")
     } catch (err) {
       setError(err?.response?.data?.message || "Unable to create offer")
     } finally {
@@ -197,7 +197,7 @@ export default function AddOfferPage() {
     const loadExisting = async () => {
       try {
         setLoadingExisting(true)
-        const res = await restaurantAPI.getRestaurantOffers()
+        const res = await shopAPI.getShopOffers()
         const list = res?.data?.data?.offers || res?.data?.offers || []
         const found = list.find((o) => String(o._id || o.id) === String(offerId))
         if (found) {

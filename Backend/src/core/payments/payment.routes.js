@@ -4,7 +4,7 @@ import {
     getOrderTransactionsController,
     getUserWalletBalanceController,
     getUserWalletTransactionsController,
-    getRestaurantWalletController,
+    getShopWalletController,
     getDeliveryWalletController,
     getAdminWalletController,
     getAdminFinanceSummaryController,
@@ -26,8 +26,8 @@ router.get('/orders/:orderId/refunds', getRefundsByOrderController);
 router.get('/wallet/balance', getUserWalletBalanceController);
 router.get('/wallet/transactions', getUserWalletTransactionsController);
 
-// ─── Restaurant wallet ───
-router.get('/restaurant/:restaurantId/wallet', getRestaurantWalletController);
+// ─── Shop wallet ───
+router.get('/shop/:shopId/wallet', getShopWalletController);
 
 // ─── Delivery partner wallet ───
 router.get('/delivery/:deliveryPartnerId/wallet', getDeliveryWalletController);

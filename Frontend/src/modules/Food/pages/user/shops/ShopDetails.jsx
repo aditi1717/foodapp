@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Component, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { useParams, useNavigate, useSearchParams } from "react-router-dom"
-import { restaurantAPI, orderAPI } from "@food/api"
+import { shopAPI, orderAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { toast } from "sonner"
 import { useLocation } from "@food/hooks/useLocation"
@@ -57,7 +57,7 @@ import {
   hasFoodVariants,
 } from "@food/utils/foodVariants"
 import fssaiLogo from "@food/assets/fssai.png"
-import { RestaurantDetailSkeleton } from "@food/components/ui/loading-skeletons"
+import { ShopDetailSkeleton } from "@food/components/ui/loading-skeletons"
 import ShopFoodCard from "@food/components/user/shops/ShopFoodCard"
 
 const debugLog = (...args) => {}
@@ -68,7 +68,7 @@ const debugError = (...args) => {}
 
 const FOOD_IMAGE_FALLBACK = "https://picsum.photos/seed/food-fallback/800/600"
 const RUPEE_SYMBOL = "\u20B9"
-const RESTAURANT_DETAILS_FILTERS_STORAGE_KEY = "food-shop-details-filters"
+const SHOP_DETAILS_FILTERS_STORAGE_KEY = "food-shop-details-filters"
 const getNormalizedFoodType = (item = {}) =>
   String(item?.foodType || item?.type || item?.category || "")
     .trim()
@@ -90,7 +90,7 @@ const isItemVeg = (item = {}) => {
   return false
 }
 
-function RestaurantDetailsContent() {
+function ShopDetailsContent() {
   const { slug } = useParams()
   const navigate = useNavigate()
   const goBack = () => navigate("/food/user")
@@ -134,10 +134,10 @@ function RestaurantDetailsContent() {
   const [loadingMenuItems, setLoadingMenuItems] = useState(true)
   const [selectedMenuCategory, setSelectedMenuCategory] = useState("all")
   const dishCardRefs = useRef({})
-  const [publicRestaurantOffers, setPublicRestaurantOffers] = useState([])
-  const restaurantItemOffers = useMemo(
-    () => (Array.isArray(publicRestaurantOffers) ? publicRestaurantOffers : []),
-    [publicRestaurantOffers]
+  const [publicShopOffers, setPublicShopOffers] = useState([])
+  const shopItemOffers = useMemo(
+    () => (Array.isArray(publicShopOffers) ? publicShopOffers : []),
+    [publicShopOffers]
   )
 
   const getLineItemIdForDish = (item, variant = null) =>
@@ -169,7 +169,7 @@ function RestaurantDetailsContent() {
       }
     }
     try {
-      const raw = window.localStorage.getItem(RESTAURANT_DETAILS_FILTERS_STORAGE_KEY)
+      const raw = window.localStorage.getItem(SHOP_DETAILS_FILTERS_STORAGE_KEY)
       if (raw) {
         const parsed = JSON.parse(raw)
         const savedFilters = parsed?.[slug]
@@ -203,14 +203,14 @@ function RestaurantDetailsContent() {
   }, [vegMode, filters.vegNonVeg])
 
   // Shop data state
-  const [shop, setRestaurant] = useState(null)
-  const [loadingRestaurant, setLoadingRestaurant] = useState(true)
-  const [restaurantError, setRestaurantError] = useState(null)
-  const fetchedRestaurantRef = useRef(false) // Track if shop has been fetched for current slug
+  const [shop, setShop] = useState(null)
+  const [loadingShop, setLoadingShop] = useState(true)
+  const [shopError, setShopError] = useState(null)
+  const fetchedShopRef = useRef(false) // Track if shop has been fetched for current slug
   const fetchedSlugRef = useRef(null)
 
-  const filteredRestaurantItemOffers = useMemo(() => {
-    const list = Array.isArray(publicRestaurantOffers) ? publicRestaurantOffers : []
+  const filteredShopItemOffers = useMemo(() => {
+    const list = Array.isArray(publicShopOffers) ? publicShopOffers : []
     
     // Helper to find the section/category a menu item belongs to
     const findSectionForItem = (itemId) => {
@@ -313,15 +313,15 @@ function RestaurantDetailsContent() {
         resolvedProducts: filteredProducts
       }
     }).filter(Boolean)
-  }, [publicRestaurantOffers, vegMode, filters.vegNonVeg, shop?.menuSections])
+  }, [publicShopOffers, vegMode, filters.vegNonVeg, shop?.menuSections])
 
   const offerHighlightTexts = useMemo(() => {
     const titles =
-      Array.isArray(filteredRestaurantItemOffers) && filteredRestaurantItemOffers.length > 0
-        ? filteredRestaurantItemOffers.map((o) => o.title || o.offerTitle || "Special offer")
+      Array.isArray(filteredShopItemOffers) && filteredShopItemOffers.length > 0
+        ? filteredShopItemOffers.map((o) => o.title || o.offerTitle || "Special offer")
         : []
     return titles.length > 0 ? titles : ["Special offers available"]
-  }, [filteredRestaurantItemOffers])
+  }, [filteredShopItemOffers])
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -372,33 +372,33 @@ function RestaurantDetailsContent() {
 
   // Fetch shop data from API
   useEffect(() => {
-    const fetchRestaurant = async () => {
+    const fetchShop = async () => {
       if (!slug) return
 
       // Prevent re-fetching for the same slug. Mobile location/zone updates can
       // trigger transient refetch failures that clear already-rendered content.
-      if (fetchedRestaurantRef.current && fetchedSlugRef.current === slug && shop) {
+      if (fetchedShopRef.current && fetchedSlugRef.current === slug && shop) {
         return
       }
 
       try {
         // Keep the existing page visible on background retries.
-        setLoadingRestaurant(!fetchedRestaurantRef.current && !shop)
-        setRestaurantError(null)
+        setLoadingShop(!fetchedShopRef.current && !shop)
+        setShopError(null)
 
         debugLog('Fetching shop with slug:', slug)
         let response = null
-        let apiRestaurant = null
+        let apiShop = null
 
         try {
           // First, try to get shop directly by slug/ID (no zoneId needed)
           try {
-            response = await restaurantAPI.getRestaurantById(slug, {
+            response = await shopAPI.getShopById(slug, {
               params: { _ts: Date.now() },
             })
             if (response?.data?.success && response?.data?.data) {
-              apiRestaurant = response.data.data
-              debugLog('? Found shop in shop API by slug/ID:', apiRestaurant)
+              apiShop = response.data.data
+              debugLog('? Found shop in shop API by slug/ID:', apiShop)
             }
           } catch (directLookupError) {
             // If direct lookup fails, try searching by name.
@@ -411,26 +411,26 @@ function RestaurantDetailsContent() {
 
               for (const searchParams of searchVariants) {
                 try {
-                  const searchResponse = await restaurantAPI.getRestaurants(searchParams, { noCache: true })
+                  const searchResponse = await shopAPI.getShops(searchParams, { noCache: true })
                   const shops = searchResponse?.data?.data?.shops || searchResponse?.data?.data || []
 
                   // Try to find by slug match or name match
-                  const restaurantName = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-                  const matchingRestaurant = shops.find(r =>
+                  const shopName = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                  const matchingShop = shops.find(r =>
                     r.slug === slug ||
                     r.name?.toLowerCase().replace(/\s+/g, '-') === slug.toLowerCase() ||
-                    r.name?.toLowerCase() === restaurantName.toLowerCase()
+                    r.name?.toLowerCase() === shopName.toLowerCase()
                   )
 
-                  if (matchingRestaurant) {
+                  if (matchingShop) {
                     // Get full shop details by ID
-                    const fullResponse = await restaurantAPI.getRestaurantById(
-                      matchingRestaurant._id || matchingRestaurant.restaurantId,
+                    const fullResponse = await shopAPI.getShopById(
+                      matchingShop._id || matchingShop.shopId,
                       { params: { _ts: Date.now() } },
                     )
                     if (fullResponse.data && fullResponse.data.success && fullResponse.data.data) {
-                      apiRestaurant = fullResponse.data.data
-                      debugLog('? Found shop in shop API by name search:', apiRestaurant)
+                      apiShop = fullResponse.data.data
+                      debugLog('? Found shop in shop API by name search:', apiShop)
                       break
                     }
                   }
@@ -439,22 +439,22 @@ function RestaurantDetailsContent() {
                 }
               }
             }
-        } catch (restaurantError) {
-          debugError('? Shop not found in shop API either:', restaurantError)
+        } catch (shopError) {
+          debugError('? Shop not found in shop API either:', shopError)
         }
 
-        if (apiRestaurant) {
-          debugLog('? Fetched shop from API:', apiRestaurant)
-          debugLog('? Shop data keys:', Object.keys(apiRestaurant))
-          debugLog('? Shop name field:', apiRestaurant?.name)
-          debugLog('? Shop restaurantId:', apiRestaurant?.restaurantId)
-          debugLog('? Shop _id:', apiRestaurant?._id)
-          debugLog('? Shop.shop:', apiRestaurant?.shop)
+        if (apiShop) {
+          debugLog('? Fetched shop from API:', apiShop)
+          debugLog('? Shop data keys:', Object.keys(apiShop))
+          debugLog('? Shop name field:', apiShop?.name)
+          debugLog('? Shop shopId:', apiShop?.shopId)
+          debugLog('? Shop _id:', apiShop?._id)
+          debugLog('? Shop.shop:', apiShop?.shop)
 
-          const actualRestaurant = apiRestaurant?.shop || apiRestaurant?.restaurant || apiRestaurant
+          const actualShop = apiShop?.shop || apiShop?.shop || apiShop
 
           // Helper function to format address with zone and pin code
-          const formatRestaurantAddress = (locationObj) => {
+          const formatShopAddress = (locationObj) => {
             if (!locationObj) return "Location"
 
             // If location is a string, return it as is
@@ -548,10 +548,10 @@ function RestaurantDetailsContent() {
           }
 
           // Get location object for address formatting
-          const locationObj = actualRestaurant?.location || apiRestaurant?.location
+          const locationObj = actualShop?.location || apiShop?.location
           debugLog('? Location Object for formatting:', locationObj)
           debugLog('? formattedAddress field:', locationObj?.formattedAddress)
-          const formattedAddress = formatRestaurantAddress(locationObj)
+          const formattedAddress = formatShopAddress(locationObj)
           debugLog('? Final Formatted Address:', formattedAddress)
 
           // Calculate distance from user to shop
@@ -569,10 +569,10 @@ function RestaurantDetailsContent() {
 
           // Get shop coordinates
           // Priority: latitude/longitude fields > coordinates array (GeoJSON format: [lng, lat])
-          const restaurantLat = locationObj?.latitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[1] : null)
-          const restaurantLng = locationObj?.longitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[0] : null)
+          const shopLat = locationObj?.latitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[1] : null)
+          const shopLng = locationObj?.longitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[0] : null)
 
-          debugLog('? Shop coordinates:', { restaurantLat, restaurantLng, locationObj })
+          debugLog('? Shop coordinates:', { shopLat, shopLng, locationObj })
 
           // Get user coordinates
           const userLat = userLocation?.latitude
@@ -582,9 +582,9 @@ function RestaurantDetailsContent() {
 
           // Calculate distance if both coordinates are available
           let calculatedDistance = null
-          if (userLat && userLng && restaurantLat && restaurantLng &&
-            !isNaN(userLat) && !isNaN(userLng) && !isNaN(restaurantLat) && !isNaN(restaurantLng)) {
-            const distanceInKm = calculateDistance(userLat, userLng, restaurantLat, restaurantLng)
+          if (userLat && userLng && shopLat && shopLng &&
+            !isNaN(userLat) && !isNaN(userLng) && !isNaN(shopLat) && !isNaN(shopLng)) {
+            const distanceInKm = calculateDistance(userLat, userLng, shopLat, shopLng)
             // Format distance: show 1 decimal place if >= 1km, otherwise show in meters
             if (distanceInKm >= 1) {
               calculatedDistance = `${distanceInKm.toFixed(1)} km`
@@ -596,11 +596,11 @@ function RestaurantDetailsContent() {
           } else {
             debugWarn('? Cannot calculate distance - missing coordinates:', {
               hasUserLocation: !!(userLat && userLng),
-              hasRestaurantLocation: !!(restaurantLat && restaurantLng),
+              hasShopLocation: !!(shopLat && shopLng),
               userLat,
               userLng,
-              restaurantLat,
-              restaurantLng
+              shopLat,
+              shopLng
             })
           }
 
@@ -616,55 +616,55 @@ function RestaurantDetailsContent() {
           }
 
           const resolvedTopCategory =
-            actualRestaurant?.topCategory ||
-            apiRestaurant?.topCategory ||
-            categoryFromArray(actualRestaurant?.topCategories) ||
-            categoryFromArray(apiRestaurant?.topCategories) ||
-            categoryFromArray(actualRestaurant?.cuisines) ||
-            categoryFromArray(apiRestaurant?.cuisines) ||
-            categoryFromArray(actualRestaurant?.categories) ||
-            categoryFromArray(apiRestaurant?.categories) ||
-            actualRestaurant?.cuisine ||
-            apiRestaurant?.cuisine ||
-            actualRestaurant?.category ||
-            apiRestaurant?.category ||
+            actualShop?.topCategory ||
+            apiShop?.topCategory ||
+            categoryFromArray(actualShop?.topCategories) ||
+            categoryFromArray(apiShop?.topCategories) ||
+            categoryFromArray(actualShop?.cuisines) ||
+            categoryFromArray(apiShop?.cuisines) ||
+            categoryFromArray(actualShop?.categories) ||
+            categoryFromArray(apiShop?.categories) ||
+            actualShop?.cuisine ||
+            apiShop?.cuisine ||
+            actualShop?.category ||
+            apiShop?.category ||
             "Multi-cuisine"
 
-          const onboardingStep2 = actualRestaurant?.onboarding?.step2 || apiRestaurant?.onboarding?.step2 || {}
-          const onboardingStep4 = actualRestaurant?.onboarding?.step4 || apiRestaurant?.onboarding?.step4 || {}
-          const normalizedProfileImage = actualRestaurant?.profileImage || apiRestaurant?.profileImage || onboardingStep2?.profileImageUrl || null
+          const onboardingStep2 = actualShop?.onboarding?.step2 || apiShop?.onboarding?.step2 || {}
+          const onboardingStep4 = actualShop?.onboarding?.step4 || apiShop?.onboarding?.step4 || {}
+          const normalizedProfileImage = actualShop?.profileImage || apiShop?.profileImage || onboardingStep2?.profileImageUrl || null
           const normalizedCoverImages =
-            Array.isArray(actualRestaurant?.coverImages) && actualRestaurant.coverImages.length > 0
-              ? actualRestaurant.coverImages
-              : Array.isArray(apiRestaurant?.coverImages) && apiRestaurant.coverImages.length > 0
-                ? apiRestaurant.coverImages
+            Array.isArray(actualShop?.coverImages) && actualShop.coverImages.length > 0
+              ? actualShop.coverImages
+              : Array.isArray(apiShop?.coverImages) && apiShop.coverImages.length > 0
+                ? apiShop.coverImages
                 : []
           const normalizedMenuImages =
-            Array.isArray(actualRestaurant?.menuImages) && actualRestaurant.menuImages.length > 0
-              ? actualRestaurant.menuImages
-              : Array.isArray(apiRestaurant?.menuImages) && apiRestaurant.menuImages.length > 0
-                ? apiRestaurant.menuImages
+            Array.isArray(actualShop?.menuImages) && actualShop.menuImages.length > 0
+              ? actualShop.menuImages
+              : Array.isArray(apiShop?.menuImages) && apiShop.menuImages.length > 0
+                ? apiShop.menuImages
                 : Array.isArray(onboardingStep2?.menuImageUrls)
                   ? onboardingStep2.menuImageUrls
                   : []
-          const normalizedRestaurantOffers = actualRestaurant?.restaurantOffers || apiRestaurant?.restaurantOffers || {}
+          const normalizedShopOffers = actualShop?.shopOffers || apiShop?.shopOffers || {}
 
           // Transform API data to match expected format with comprehensive fallbacks
-          const transformedRestaurant = {
-            id: actualRestaurant?.restaurantId || actualRestaurant?._id || actualRestaurant?.id || apiRestaurant?.restaurantId || apiRestaurant?._id || null,
-            mongoId: actualRestaurant?._id || apiRestaurant?._id || null,
+          const transformedShop = {
+            id: actualShop?.shopId || actualShop?._id || actualShop?.id || apiShop?.shopId || apiShop?._id || null,
+            mongoId: actualShop?._id || apiShop?._id || null,
             name:
-              actualRestaurant?.name ||
-              actualRestaurant?.restaurantName ||
-              apiRestaurant?.name ||
-              apiRestaurant?.restaurantName ||
+              actualShop?.name ||
+              actualShop?.shopName ||
+              apiShop?.name ||
+              apiShop?.shopName ||
               "Unknown Shop",
             cuisine: resolvedTopCategory,
             topCategory: resolvedTopCategory,
-            rating: actualRestaurant?.rating || apiRestaurant?.rating || actualRestaurant?.averageRating || apiRestaurant?.averageRating || 4.5,
-            reviews: actualRestaurant?.totalRatings || apiRestaurant?.totalRatings || actualRestaurant?.reviewCount || apiRestaurant?.reviewCount || actualRestaurant?.reviews?.length || apiRestaurant?.reviews?.length || 0,
-            deliveryTime: actualRestaurant?.estimatedDeliveryTime || apiRestaurant?.estimatedDeliveryTime || actualRestaurant?.deliveryTime || apiRestaurant?.deliveryTime || actualRestaurant?.avgDeliveryTime || apiRestaurant?.avgDeliveryTime || "25-30 mins",
-            distance: calculatedDistance || actualRestaurant?.distance || apiRestaurant?.distance || actualRestaurant?.distanceFromUser || apiRestaurant?.distanceFromUser || "1.2 km",
+            rating: actualShop?.rating || apiShop?.rating || actualShop?.averageRating || apiShop?.averageRating || 4.5,
+            reviews: actualShop?.totalRatings || apiShop?.totalRatings || actualShop?.reviewCount || apiShop?.reviewCount || actualShop?.reviews?.length || apiShop?.reviews?.length || 0,
+            deliveryTime: actualShop?.estimatedDeliveryTime || apiShop?.estimatedDeliveryTime || actualShop?.deliveryTime || apiShop?.deliveryTime || actualShop?.avgDeliveryTime || apiShop?.avgDeliveryTime || "25-30 mins",
+            distance: calculatedDistance || actualShop?.distance || apiShop?.distance || actualShop?.distanceFromUser || apiShop?.distanceFromUser || "1.2 km",
             location: formattedAddress,
             locationObject: locationObj, // Store full location object for reference
             image: normalizedCoverImages?.[0]?.url
@@ -674,119 +674,119 @@ function RestaurantDetailsContent() {
               || (normalizedMenuImages.length > 0
                 ? (normalizedMenuImages[0]?.url || normalizedMenuImages[0])
                 : null)
-              || actualRestaurant?.image
-              || apiRestaurant?.image
+              || actualShop?.image
+              || apiShop?.image
               || null,
-            priceRange: actualRestaurant?.priceRange || apiRestaurant?.priceRange || onboardingStep4?.priceRange || "$$",
-            offers: Array.isArray(actualRestaurant?.offers) ? actualRestaurant.offers : (Array.isArray(apiRestaurant?.offers) ? apiRestaurant.offers : []), // Will be populated from menu/offers API later
-            offerText: actualRestaurant?.offer || apiRestaurant?.offer || onboardingStep4?.offer || "FLAT 50% OFF",
-            offerCount: actualRestaurant?.offerCount || apiRestaurant?.offerCount || 0,
-            restaurantOffers: {
+            priceRange: actualShop?.priceRange || apiShop?.priceRange || onboardingStep4?.priceRange || "$$",
+            offers: Array.isArray(actualShop?.offers) ? actualShop.offers : (Array.isArray(apiShop?.offers) ? apiShop.offers : []), // Will be populated from menu/offers API later
+            offerText: actualShop?.offer || apiShop?.offer || onboardingStep4?.offer || "FLAT 50% OFF",
+            offerCount: actualShop?.offerCount || apiShop?.offerCount || 0,
+            shopOffers: {
               goldOffer: {
-                title: normalizedRestaurantOffers?.goldOffer?.title || "Gold exclusive offer",
-                description: normalizedRestaurantOffers?.goldOffer?.description || "Free delivery above ₹99",
-                unlockText: normalizedRestaurantOffers?.goldOffer?.unlockText || "join Gold to unlock",
-                buttonText: normalizedRestaurantOffers?.goldOffer?.buttonText || "Add Gold - ₹1",
+                title: normalizedShopOffers?.goldOffer?.title || "Gold exclusive offer",
+                description: normalizedShopOffers?.goldOffer?.description || "Free delivery above ₹99",
+                unlockText: normalizedShopOffers?.goldOffer?.unlockText || "join Gold to unlock",
+                buttonText: normalizedShopOffers?.goldOffer?.buttonText || "Add Gold - ₹1",
               },
-              coupons: Array.isArray(normalizedRestaurantOffers?.coupons)
-                ? normalizedRestaurantOffers.coupons
+              coupons: Array.isArray(normalizedShopOffers?.coupons)
+                ? normalizedShopOffers.coupons
                 : [],
             },
-            outlets: Array.isArray(actualRestaurant?.outlets) ? actualRestaurant.outlets : (Array.isArray(apiRestaurant?.outlets) ? apiRestaurant.outlets : []),
-            categories: Array.isArray(actualRestaurant?.categories) ? actualRestaurant.categories : (Array.isArray(apiRestaurant?.categories) ? apiRestaurant.categories : []),
-            menu: Array.isArray(actualRestaurant?.menu) ? actualRestaurant.menu : (Array.isArray(apiRestaurant?.menu) ? apiRestaurant.menu : []),
-            slug: actualRestaurant?.slug || apiRestaurant?.slug || actualRestaurant?.name?.toLowerCase().replace(/\s+/g, '-') || apiRestaurant?.name?.toLowerCase().replace(/\s+/g, '-') || slug || "unknown",
-            restaurantId: actualRestaurant?.restaurantId || actualRestaurant?._id || actualRestaurant?.id || apiRestaurant?.restaurantId || apiRestaurant?._id || apiRestaurant?.id || null,
+            outlets: Array.isArray(actualShop?.outlets) ? actualShop.outlets : (Array.isArray(apiShop?.outlets) ? apiShop.outlets : []),
+            categories: Array.isArray(actualShop?.categories) ? actualShop.categories : (Array.isArray(apiShop?.categories) ? apiShop.categories : []),
+            menu: Array.isArray(actualShop?.menu) ? actualShop.menu : (Array.isArray(apiShop?.menu) ? apiShop.menu : []),
+            slug: actualShop?.slug || apiShop?.slug || actualShop?.name?.toLowerCase().replace(/\s+/g, '-') || apiShop?.name?.toLowerCase().replace(/\s+/g, '-') || slug || "unknown",
+            shopId: actualShop?.shopId || actualShop?._id || actualShop?.id || apiShop?.shopId || apiShop?._id || apiShop?.id || null,
             // Add other fields with defaults
-            featuredDish: actualRestaurant?.featuredDish || apiRestaurant?.featuredDish || onboardingStep4?.featuredDish || "Special Dish",
-            featuredPrice: actualRestaurant?.featuredPrice || apiRestaurant?.featuredPrice || onboardingStep4?.featuredPrice || 249,
+            featuredDish: actualShop?.featuredDish || apiShop?.featuredDish || onboardingStep4?.featuredDish || "Special Dish",
+            featuredPrice: actualShop?.featuredPrice || apiShop?.featuredPrice || onboardingStep4?.featuredPrice || 249,
             // Additional safety fields
-            openDays: Array.isArray(actualRestaurant?.openDays)
-              ? actualRestaurant.openDays
-              : (Array.isArray(apiRestaurant?.openDays) ? apiRestaurant.openDays : (Array.isArray(onboardingStep2?.openDays) ? onboardingStep2.openDays : [])),
-            deliveryTimings: actualRestaurant?.deliveryTimings || apiRestaurant?.deliveryTimings || {
-              openingTime: actualRestaurant?.openingTime || apiRestaurant?.openingTime || onboardingStep2?.deliveryTimings?.openingTime || "09:00",
-              closingTime: actualRestaurant?.closingTime || apiRestaurant?.closingTime || onboardingStep2?.deliveryTimings?.closingTime || "22:00",
+            openDays: Array.isArray(actualShop?.openDays)
+              ? actualShop.openDays
+              : (Array.isArray(apiShop?.openDays) ? apiShop.openDays : (Array.isArray(onboardingStep2?.openDays) ? onboardingStep2.openDays : [])),
+            deliveryTimings: actualShop?.deliveryTimings || apiShop?.deliveryTimings || {
+              openingTime: actualShop?.openingTime || apiShop?.openingTime || onboardingStep2?.deliveryTimings?.openingTime || "09:00",
+              closingTime: actualShop?.closingTime || apiShop?.closingTime || onboardingStep2?.deliveryTimings?.closingTime || "22:00",
             },
-            outletTimings: actualRestaurant?.outletTimings || apiRestaurant?.outletTimings || null,
-            cuisines: Array.isArray(actualRestaurant?.cuisines) ? actualRestaurant.cuisines : (Array.isArray(apiRestaurant?.cuisines) ? apiRestaurant.cuisines : (Array.isArray(onboardingStep2?.cuisines) ? onboardingStep2.cuisines : [])),
+            outletTimings: actualShop?.outletTimings || apiShop?.outletTimings || null,
+            cuisines: Array.isArray(actualShop?.cuisines) ? actualShop.cuisines : (Array.isArray(apiShop?.cuisines) ? apiShop.cuisines : (Array.isArray(onboardingStep2?.cuisines) ? onboardingStep2.cuisines : [])),
             profileImage: normalizedProfileImage,
             coverImages: normalizedCoverImages,
             menuImages: normalizedMenuImages,
             // Menu sections for display (will be populated from menu API)
             menuSections: [],
             // Onboarding data including FSSAI license
-            onboarding: actualRestaurant?.onboarding || apiRestaurant?.onboarding || null,
+            onboarding: actualShop?.onboarding || apiShop?.onboarding || null,
             // Availability fields for grayscale styling
-            isActive: actualRestaurant?.isActive !== false, // Default to true if not specified
-            isAcceptingOrders: actualRestaurant?.isAcceptingOrders !== false, // Default to true if not specified
-            availabilityStatus: actualRestaurant?.availabilityStatus || apiRestaurant?.availabilityStatus || null,
-            availability: actualRestaurant?.availability || apiRestaurant?.availability || null,
-            isOnline: actualRestaurant?.isOnline ?? apiRestaurant?.isOnline,
-            currentStatus: actualRestaurant?.currentStatus || apiRestaurant?.currentStatus || null,
-            isOpen: actualRestaurant?.isOpen ?? apiRestaurant?.isOpen,
-            openNow: actualRestaurant?.openNow ?? apiRestaurant?.openNow,
-            isOpenNow: actualRestaurant?.isOpenNow ?? apiRestaurant?.isOpenNow,
-            isRestaurantOpen: actualRestaurant?.isRestaurantOpen ?? apiRestaurant?.isRestaurantOpen,
-            todayOpen: actualRestaurant?.todayOpen ?? apiRestaurant?.todayOpen,
-            isOpenToday: actualRestaurant?.isOpenToday ?? apiRestaurant?.isOpenToday,
-            closedToday: actualRestaurant?.closedToday ?? apiRestaurant?.closedToday,
-            isClosedToday: actualRestaurant?.isClosedToday ?? apiRestaurant?.isClosedToday,
-            dayOff: actualRestaurant?.dayOff ?? apiRestaurant?.dayOff,
-            isDayOff: actualRestaurant?.isDayOff ?? apiRestaurant?.isDayOff,
-            offToday: actualRestaurant?.offToday ?? apiRestaurant?.offToday,
+            isActive: actualShop?.isActive !== false, // Default to true if not specified
+            isAcceptingOrders: actualShop?.isAcceptingOrders !== false, // Default to true if not specified
+            availabilityStatus: actualShop?.availabilityStatus || apiShop?.availabilityStatus || null,
+            availability: actualShop?.availability || apiShop?.availability || null,
+            isOnline: actualShop?.isOnline ?? apiShop?.isOnline,
+            currentStatus: actualShop?.currentStatus || apiShop?.currentStatus || null,
+            isOpen: actualShop?.isOpen ?? apiShop?.isOpen,
+            openNow: actualShop?.openNow ?? apiShop?.openNow,
+            isOpenNow: actualShop?.isOpenNow ?? apiShop?.isOpenNow,
+            isShopOpen: actualShop?.isShopOpen ?? apiShop?.isShopOpen,
+            todayOpen: actualShop?.todayOpen ?? apiShop?.todayOpen,
+            isOpenToday: actualShop?.isOpenToday ?? apiShop?.isOpenToday,
+            closedToday: actualShop?.closedToday ?? apiShop?.closedToday,
+            isClosedToday: actualShop?.isClosedToday ?? apiShop?.isClosedToday,
+            dayOff: actualShop?.dayOff ?? apiShop?.dayOff,
+            isDayOff: actualShop?.isDayOff ?? apiShop?.isDayOff,
+            offToday: actualShop?.offToday ?? apiShop?.offToday,
           }
 
-          debugLog('? Transformed shop:', transformedRestaurant)
-          debugLog('? Shop ID for menu fetch:', transformedRestaurant.id)
+          debugLog('? Transformed shop:', transformedShop)
+          debugLog('? Shop ID for menu fetch:', transformedShop.id)
 
-          if (!transformedRestaurant.id) {
+          if (!transformedShop.id) {
             debugError('? No shop ID found! Cannot fetch menu.')
           }
 
-          setRestaurant(transformedRestaurant)
-          fetchedRestaurantRef.current = true // Mark as fetched
+          setShop(transformedShop)
+          fetchedShopRef.current = true // Mark as fetched
           fetchedSlugRef.current = slug
 
           // Load public shop offers alongside the main shop payload so
           // the top-of-page offer banner is always hydrated on first paint.
           try {
-            const publicOfferRestaurantId =
-              transformedRestaurant.mongoId ||
-              actualRestaurant?._id ||
-              apiRestaurant?._id ||
-              transformedRestaurant.id
+            const publicOfferShopId =
+              transformedShop.mongoId ||
+              actualShop?._id ||
+              apiShop?._id ||
+              transformedShop.id
 
-            if (publicOfferRestaurantId) {
-              const publicOffersResponse = await restaurantAPI.getPublicOffers(publicOfferRestaurantId)
+            if (publicOfferShopId) {
+              const publicOffersResponse = await shopAPI.getPublicOffers(publicOfferShopId)
               const publicOffers =
                 publicOffersResponse?.data?.data?.offers ||
                 publicOffersResponse?.data?.offers ||
                 []
 
               if (Array.isArray(publicOffers)) {
-                setPublicRestaurantOffers(publicOffers)
-              } else if (Array.isArray(transformedRestaurant?.offers) && transformedRestaurant.offers.length > 0) {
-                setPublicRestaurantOffers(transformedRestaurant.offers)
+                setPublicShopOffers(publicOffers)
+              } else if (Array.isArray(transformedShop?.offers) && transformedShop.offers.length > 0) {
+                setPublicShopOffers(transformedShop.offers)
               } else {
-                setPublicRestaurantOffers([])
+                setPublicShopOffers([])
               }
             }
           } catch (publicOffersError) {
             debugWarn("Failed to fetch public shop offers during shop load:", publicOffersError?.message)
-            if (Array.isArray(transformedRestaurant?.offers) && transformedRestaurant.offers.length > 0) {
-              setPublicRestaurantOffers(transformedRestaurant.offers)
+            if (Array.isArray(transformedShop?.offers) && transformedShop.offers.length > 0) {
+              setPublicShopOffers(transformedShop.offers)
             }
           }
 
           // Load outlet timings from public endpoint (source of truth for daily opening slots)
           try {
-            const outletRestaurantId = transformedRestaurant.mongoId || actualRestaurant?._id || apiRestaurant?._id
-            if (outletRestaurantId) {
-              const outletResponse = await restaurantAPI.getOutletTimingsByRestaurantId(outletRestaurantId, { noCache: true })
+            const outletShopId = transformedShop.mongoId || actualShop?._id || apiShop?._id
+            if (outletShopId) {
+              const outletResponse = await shopAPI.getOutletTimingsByShopId(outletShopId, { noCache: true })
               const outletTimingsData = outletResponse?.data?.data?.outletTimings || outletResponse?.data?.outletTimings
               if (outletTimingsData) {
-                setRestaurant((prev) => ({ ...prev, outletTimings: outletTimingsData }))
+                setShop((prev) => ({ ...prev, outletTimings: outletTimingsData }))
               }
             }
           } catch (outletError) {
@@ -795,9 +795,9 @@ function RestaurantDetailsContent() {
 
           // Fetch menu and inventory for this shop
           // If no shop ID, try to find matching shop by name
-          let restaurantIdForMenu = transformedRestaurant.id
+          let shopIdForMenu = transformedShop.id
 
-          if (!restaurantIdForMenu) {
+          if (!shopIdForMenu) {
             debugWarn('? No shop ID available, searching for shop by name...')
             try {
               const searchVariants = zoneId
@@ -805,29 +805,29 @@ function RestaurantDetailsContent() {
                 : [{ limit: 20, page: 1, _ts: Date.now() }]
 
               for (const searchParams of searchVariants) {
-                const searchResponse = await restaurantAPI.getRestaurants(searchParams, { noCache: true })
+                const searchResponse = await shopAPI.getShops(searchParams, { noCache: true })
                 const shops = searchResponse?.data?.data?.shops || searchResponse?.data?.data || []
 
                 // Try to find by exact name match
-                const matchingRestaurant = shops.find(r =>
-                  r.name?.toLowerCase().trim() === transformedRestaurant.name?.toLowerCase().trim()
+                const matchingShop = shops.find(r =>
+                  r.name?.toLowerCase().trim() === transformedShop.name?.toLowerCase().trim()
                 )
 
-                if (matchingRestaurant) {
-                  restaurantIdForMenu = matchingRestaurant._id || matchingRestaurant.restaurantId || matchingRestaurant.id
-                  debugLog('? Found matching shop by name, ID:', restaurantIdForMenu)
+                if (matchingShop) {
+                  shopIdForMenu = matchingShop._id || matchingShop.shopId || matchingShop.id
+                  debugLog('? Found matching shop by name, ID:', shopIdForMenu)
 
                   // Update the shop ID in state
-                  setRestaurant(prev => ({
+                  setShop(prev => ({
                     ...prev,
-                    id: restaurantIdForMenu,
-                    restaurantId: restaurantIdForMenu
+                    id: shopIdForMenu,
+                    shopId: shopIdForMenu
                   }))
                   break
                 }
               }
 
-              if (!restaurantIdForMenu) {
+              if (!shopIdForMenu) {
                 debugWarn('? No matching shop found by name')
               }
             } catch (searchError) {
@@ -836,16 +836,16 @@ function RestaurantDetailsContent() {
           }
 
           const normalizedLookupIds = [
-            restaurantIdForMenu,
+            shopIdForMenu,
             slug,
-            transformedRestaurant.id,
-            transformedRestaurant.restaurantId,
-            transformedRestaurant.mongoId,
-            apiRestaurant?.restaurantId,
-            apiRestaurant?._id,
-            actualRestaurant?.restaurantId,
-            actualRestaurant?._id,
-            actualRestaurant?.slug,
+            transformedShop.id,
+            transformedShop.shopId,
+            transformedShop.mongoId,
+            apiShop?.shopId,
+            apiShop?._id,
+            actualShop?.shopId,
+            actualShop?._id,
+            actualShop?.slug,
           ]
             .filter(Boolean)
             .map((value) => String(value).trim())
@@ -853,20 +853,20 @@ function RestaurantDetailsContent() {
 
           setLoadingMenuItems(true)
           if (normalizedLookupIds.length > 0) {
-            let hasPreviousOrderForRestaurant = false
+            let hasPreviousOrderForShop = false
             if (isModuleAuthenticated('user')) {
               try {
                 const normalize = (value) => (value ? String(value).trim().toLowerCase() : "")
-                const targetRestaurantName = normalize(transformedRestaurant.name)
-                const targetRestaurantIds = new Set(
+                const targetShopName = normalize(transformedShop.name)
+                const targetShopIds = new Set(
                   [
                     ...normalizedLookupIds,
-                    transformedRestaurant.id,
-                    transformedRestaurant.restaurantId,
-                    apiRestaurant?.restaurantId,
-                    apiRestaurant?._id,
-                    actualRestaurant?.restaurantId,
-                    actualRestaurant?._id,
+                    transformedShop.id,
+                    transformedShop.shopId,
+                    apiShop?.shopId,
+                    apiShop?._id,
+                    actualShop?.shopId,
+                    actualShop?._id,
                   ].map(normalize).filter(Boolean)
                 )
 
@@ -901,28 +901,28 @@ function RestaurantDetailsContent() {
                   allOrders = [...allOrders, ...remainingOrders]
                 }
 
-                hasPreviousOrderForRestaurant = allOrders.some((order) => {
-                  const orderRestaurantField = order?.restaurantId
+                hasPreviousOrderForShop = allOrders.some((order) => {
+                  const orderShopField = order?.shopId
                   const candidateIds = [
-                    order?.restaurantId,
-                    orderRestaurantField?._id,
-                    orderRestaurantField?.id,
-                    orderRestaurantField?.restaurantId,
+                    order?.shopId,
+                    orderShopField?._id,
+                    orderShopField?.id,
+                    orderShopField?.shopId,
                     order?.shop,
-                    order?.restaurant_id,
+                    order?.shop_id,
                   ].map(normalize).filter(Boolean)
 
-                  if (candidateIds.some((id) => targetRestaurantIds.has(id))) {
+                  if (candidateIds.some((id) => targetShopIds.has(id))) {
                     return true
                   }
 
                   const candidateNames = [
-                    order?.restaurantName,
-                    orderRestaurantField?.name,
+                    order?.shopName,
+                    orderShopField?.name,
                     order?.shop?.name,
                   ].map(normalize).filter(Boolean)
 
-                  return !!targetRestaurantName && candidateNames.includes(targetRestaurantName)
+                  return !!targetShopName && candidateNames.includes(targetShopName)
                 })
               } catch (orderCheckError) {
                 debugWarn("Could not verify previous orders for recommendation section:", orderCheckError)
@@ -930,13 +930,13 @@ function RestaurantDetailsContent() {
             }
 
             try {
-              debugLog('? Fetching menu for shop ID:', restaurantIdForMenu)
+              debugLog('? Fetching menu for shop ID:', shopIdForMenu)
               let menuResponse = null
               let resolvedMenuLookupId = null
               for (const lookupId of normalizedLookupIds) {
                 try {
                   debugLog('? Fetching menu for shop lookup ID:', lookupId)
-                  const response = await restaurantAPI.getMenuByRestaurantId(lookupId, { noCache: true })
+                  const response = await shopAPI.getMenuByShopId(lookupId, { noCache: true })
                   if (response?.data?.success) {
                     menuResponse = response
                     resolvedMenuLookupId = lookupId
@@ -1064,14 +1064,14 @@ function RestaurantDetailsContent() {
                 }
 
                 let finalMenuSections = [...menuSections]
-                if (hasPreviousOrderForRestaurant) {
+                if (hasPreviousOrderForShop) {
                   finalMenuSections = [{ name: "Recommended for you", items: recommendedItems, subsections: [] }, ...finalMenuSections]
                 }
                 if (searchedDishSection) {
                   finalMenuSections = [searchedDishSection, ...finalMenuSections]
                 }
 
-                setRestaurant(prev => ({
+                setShop(prev => ({
                   ...prev,
                   menuSections: finalMenuSections,
                 }))
@@ -1095,13 +1095,13 @@ function RestaurantDetailsContent() {
             }
 
             try {
-              debugLog('? Fetching inventory for shop ID:', restaurantIdForMenu)
+              debugLog('? Fetching inventory for shop ID:', shopIdForMenu)
               let inventoryResponse = null
               let resolvedInventoryLookupId = null
               for (const lookupId of normalizedLookupIds) {
                 try {
                   debugLog('? Fetching inventory for shop lookup ID:', lookupId)
-                  const response = await restaurantAPI.getInventoryByRestaurantId(lookupId)
+                  const response = await shopAPI.getInventoryByShopId(lookupId)
                   if (response?.data?.success) {
                     inventoryResponse = response
                     resolvedInventoryLookupId = lookupId
@@ -1140,7 +1140,7 @@ function RestaurantDetailsContent() {
                   order: category.order !== undefined ? category.order : index,
                 }))
 
-                setRestaurant(prev => ({
+                setShop(prev => ({
                   ...prev,
                   inventory: normalizedInventory,
                 }))
@@ -1160,10 +1160,10 @@ function RestaurantDetailsContent() {
         } else {
           debugError('? No shop data found in API response')
           debugError('? Response:', response)
-          debugError('? apiRestaurant:', apiRestaurant)
-          if (!fetchedRestaurantRef.current) {
-            setRestaurantError('Shop not found')
-            setRestaurant(null)
+          debugError('? apiShop:', apiShop)
+          if (!fetchedShopRef.current) {
+            setShopError('Shop not found')
+            setShop(null)
           }
         }
       } catch (error) {
@@ -1178,27 +1178,27 @@ function RestaurantDetailsContent() {
           // Don't show "Shop not found" for network errors
           // The axios interceptor will show a toast notification
           debugError('Network error fetching shop (backend may not be running):', error)
-          if (!fetchedRestaurantRef.current) {
-            setRestaurantError('Backend server is not connected. Please make sure the backend is running.')
-            setRestaurant(null)
+          if (!fetchedShopRef.current) {
+            setShopError('Backend server is not connected. Please make sure the backend is running.')
+            setShop(null)
           }
         } else if (is404Error) {
           // 404 error - shop doesn't exist in database
           debugLog(`Shop "${slug}" not found in database`)
-          if (!fetchedRestaurantRef.current) {
-            setRestaurantError('Shop not found')
-            setRestaurant(null)
+          if (!fetchedShopRef.current) {
+            setShopError('Shop not found')
+            setShop(null)
           }
         } else {
           // Other errors
           debugError('Error fetching shop:', error)
-          if (!fetchedRestaurantRef.current) {
-            setRestaurantError(error.message || 'Failed to load shop')
-            setRestaurant(null)
+          if (!fetchedShopRef.current) {
+            setShopError(error.message || 'Failed to load shop')
+            setShop(null)
           }
         }
       } finally {
-        setLoadingRestaurant(false)
+        setLoadingShop(false)
         setLoadingMenuItems(false)
       }
     }
@@ -1206,50 +1206,50 @@ function RestaurantDetailsContent() {
     // Reset fetched flag only when URL slug changes.
     // Do not compare with shop.slug because canonical API slug may differ
     // from route slug (e.g. "shop-2513"), causing refetch loops.
-    if (fetchedRestaurantRef.current && fetchedSlugRef.current !== slug) {
-      fetchedRestaurantRef.current = false
+    if (fetchedShopRef.current && fetchedSlugRef.current !== slug) {
+      fetchedShopRef.current = false
       fetchedSlugRef.current = null
     }
 
-    fetchRestaurant()
+    fetchShop()
   }, [slug, zoneId, shop])
 
   // Fetch public offers for this shop so they show on the page
   useEffect(() => {
-    // The public offers endpoint expects the shop Mongo _id, not a business-facing restaurantId string.
-    const restaurantId = shop?.mongoId || shop?._id || shop?.id || shop?.restaurantId
-    if (!restaurantId) return
+    // The public offers endpoint expects the shop Mongo _id, not a business-facing shopId string.
+    const shopId = shop?.mongoId || shop?._id || shop?.id || shop?.shopId
+    if (!shopId) return
 
     const fetchOffers = async () => {
       try {
         // 1) Try scoped public endpoint (already filtered server-side)
-        const res = await restaurantAPI.getPublicOffers(restaurantId)
+        const res = await shopAPI.getPublicOffers(shopId)
         const list = res?.data?.data?.offers || res?.data?.offers || []
-        console.debug("Shop public offers (scoped)", { restaurantId, count: list?.length, list })
+        console.debug("Shop public offers (scoped)", { shopId, count: list?.length, list })
 
         const fallback = Array.isArray(shop?.offers) ? shop.offers : []
-        setPublicRestaurantOffers(Array.isArray(list) ? list : fallback)
+        setPublicShopOffers(Array.isArray(list) ? list : fallback)
       } catch (err) {
         debugWarn("Failed to fetch shop offers for user page", err?.message)
         if (Array.isArray(shop?.offers)) {
-          setPublicRestaurantOffers(shop.offers)
+          setPublicShopOffers(shop.offers)
         }
       }
     }
 
     fetchOffers()
-  }, [shop?.restaurantId, shop?.id, shop?._id, shop?.mongoId, shop?.offers])
+  }, [shop?.shopId, shop?.id, shop?._id, shop?.mongoId, shop?.offers])
 
   // Track previous values to prevent unnecessary recalculations
-  const prevCoordsRef = useRef({ userLat: null, userLng: null, restaurantLat: null, restaurantLng: null })
+  const prevCoordsRef = useRef({ userLat: null, userLng: null, shopLat: null, shopLng: null })
   const prevDistanceRef = useRef(null)
 
   // Extract shop coordinates as stable values (not array references)
-  const restaurantLat = shop?.locationObject?.latitude ||
+  const shopLat = shop?.locationObject?.latitude ||
     (shop?.locationObject?.coordinates && Array.isArray(shop.locationObject.coordinates)
       ? shop.locationObject.coordinates[1]
       : null)
-  const restaurantLng = shop?.locationObject?.longitude ||
+  const shopLng = shop?.locationObject?.longitude ||
     (shop?.locationObject?.coordinates && Array.isArray(shop.locationObject.coordinates)
       ? shop.locationObject.coordinates[0]
       : null)
@@ -1257,7 +1257,7 @@ function RestaurantDetailsContent() {
   // Recalculate distance when user location updates
   useEffect(() => {
     if (!shop || !userLocation?.latitude || !userLocation?.longitude) return
-    if (!restaurantLat || !restaurantLng) return
+    if (!shopLat || !shopLng) return
 
     const userLat = userLocation.latitude
     const userLng = userLocation.longitude
@@ -1266,8 +1266,8 @@ function RestaurantDetailsContent() {
     const coordsChanged =
       Math.abs(prevCoordsRef.current.userLat - userLat) > 0.0001 ||
       Math.abs(prevCoordsRef.current.userLng - userLng) > 0.0001 ||
-      Math.abs(prevCoordsRef.current.restaurantLat - restaurantLat) > 0.0001 ||
-      Math.abs(prevCoordsRef.current.restaurantLng - restaurantLng) > 0.0001
+      Math.abs(prevCoordsRef.current.shopLat - shopLat) > 0.0001 ||
+      Math.abs(prevCoordsRef.current.shopLng - shopLng) > 0.0001
 
     // Skip recalculation if coordinates haven't changed
     if (!coordsChanged && prevDistanceRef.current !== null) {
@@ -1275,10 +1275,10 @@ function RestaurantDetailsContent() {
     }
 
     // Update refs with current coordinates
-    prevCoordsRef.current = { userLat, userLng, restaurantLat, restaurantLng }
+    prevCoordsRef.current = { userLat, userLng, shopLat, shopLng }
 
-    if (userLat && userLng && restaurantLat && restaurantLng &&
-      !isNaN(userLat) && !isNaN(userLng) && !isNaN(restaurantLat) && !isNaN(restaurantLng)) {
+    if (userLat && userLng && shopLat && shopLng &&
+      !isNaN(userLat) && !isNaN(userLng) && !isNaN(shopLat) && !isNaN(shopLng)) {
 
       // Calculate distance
       const calculateDistance = (lat1, lng1, lat2, lng2) => {
@@ -1293,7 +1293,7 @@ function RestaurantDetailsContent() {
         return R * c // Distance in kilometers
       }
 
-      const distanceInKm = calculateDistance(userLat, userLng, restaurantLat, restaurantLng)
+      const distanceInKm = calculateDistance(userLat, userLng, shopLat, shopLng)
       let calculatedDistance = null
 
       // Format distance: show 1 decimal place if >= 1km, otherwise show in meters
@@ -1310,7 +1310,7 @@ function RestaurantDetailsContent() {
         prevDistanceRef.current = calculatedDistance
 
         // Update shop distance
-        setRestaurant(prev => {
+        setShop(prev => {
           // Only update if distance actually changed to prevent infinite loop
           if (prev?.distance === calculatedDistance) {
             return prev
@@ -1322,7 +1322,7 @@ function RestaurantDetailsContent() {
         })
       }
     }
-  }, [userLocation?.latitude, userLocation?.longitude, restaurantLat, restaurantLng])
+  }, [userLocation?.latitude, userLocation?.longitude, shopLat, shopLng])
 
   // Sync quantities from cart on mount and when shop changes
   useEffect(() => {
@@ -1384,12 +1384,12 @@ function RestaurantDetailsContent() {
       return;
     }
 
-    // Ensure we have a valid restaurantId
-    const validRestaurantId = shop?.restaurantId || shop?._id || shop?.id;
-    if (!validRestaurantId) {
+    // Ensure we have a valid shopId
+    const validShopId = shop?.shopId || shop?._id || shop?.id;
+    if (!validShopId) {
       debugError('? Cannot add item to cart: Shop ID is missing!', {
         shop: shop,
-        restaurantId: shop?.restaurantId,
+        shopId: shop?.shopId,
         _id: shop?._id,
         id: shop?.id
       });
@@ -1400,10 +1400,10 @@ function RestaurantDetailsContent() {
     // Log for debugging
     debugLog('? Adding item to cart:', {
       itemName: item.name,
-      restaurantName: shop.name,
-      restaurantId: validRestaurantId,
-      restaurant_id: shop._id,
-      restaurant_restaurantId: shop.restaurantId
+      shopName: shop.name,
+      shopId: validShopId,
+      shop_id: shop._id,
+      shop_shopId: shop.shopId
     });
 
     // Prepare cart item with all required properties
@@ -1418,7 +1418,7 @@ function RestaurantDetailsContent() {
       variantPrice: resolvedVariant?.price ?? item.price,
       image: item.image,
       shop: shop.name, // Use shop.name directly (already validated)
-      restaurantId: validRestaurantId, // Use validated restaurantId
+      shopId: validShopId, // Use validated shopId
       description: item.description,
       originalPrice: item.originalPrice,
       foodType: item.foodType, // Pass foodType property
@@ -1504,7 +1504,7 @@ function RestaurantDetailsContent() {
         // Pass sourcePosition when adding a new item
         const result = addToCart(cartItem, sourcePosition)
         if (result?.ok === false) {
-          toast.error(result.error || 'Cannot add item from different restaurant. Please clear cart first.')
+          toast.error(result.error || 'Cannot add item from different shop. Please clear cart first.')
           return
         }
         if (newQuantity > 1) {
@@ -1648,11 +1648,11 @@ function RestaurantDetailsContent() {
     if (typeof window === "undefined" || !slug) return
 
     try {
-      const raw = window.localStorage.getItem(RESTAURANT_DETAILS_FILTERS_STORAGE_KEY)
+      const raw = window.localStorage.getItem(SHOP_DETAILS_FILTERS_STORAGE_KEY)
       const parsed = raw ? JSON.parse(raw) : {}
       const nextState = parsed && typeof parsed === "object" ? parsed : {}
       nextState[slug] = filters
-      window.localStorage.setItem(RESTAURANT_DETAILS_FILTERS_STORAGE_KEY, JSON.stringify(nextState))
+      window.localStorage.setItem(SHOP_DETAILS_FILTERS_STORAGE_KEY, JSON.stringify(nextState))
     } catch (error) {
       debugWarn("Failed to persist shop filters:", error)
     }
@@ -1668,8 +1668,8 @@ function RestaurantDetailsContent() {
 
   // Handle bookmark click
   const handleBookmarkClick = (item) => {
-    const restaurantId = shop?.restaurantId || shop?._id || shop?.id
-    if (!restaurantId) {
+    const shopId = shop?.shopId || shop?._id || shop?.id
+    if (!shopId) {
       toast.error("Shop information is missing")
       return
     }
@@ -1680,11 +1680,11 @@ function RestaurantDetailsContent() {
       return
     }
 
-    const isFavorite = isDishFavorite(dishId, restaurantId)
+    const isFavorite = isDishFavorite(dishId, shopId)
 
     if (isFavorite) {
       // If already bookmarked, remove it
-      removeDishFavorite(dishId, restaurantId)
+      removeDishFavorite(dishId, shopId)
       toast.success("Dish removed from favorites")
     } else {
       // Add to favorites
@@ -1695,9 +1695,9 @@ function RestaurantDetailsContent() {
         price: item.price,
         originalPrice: item.originalPrice,
         image: item.image,
-        restaurantId: restaurantId,
-        restaurantName: shop?.name || "",
-        restaurantSlug: shop?.slug || slug || "",
+        shopId: shopId,
+        shopName: shop?.name || "",
+        shopSlug: shop?.slug || slug || "",
         foodType: item.foodType,
         customisable: item.customisable,
       }
@@ -1708,9 +1708,9 @@ function RestaurantDetailsContent() {
 
   // Handle add to collection
   const handleAddToCollection = () => {
-    const restaurantSlug = shop?.slug || slug || ""
+    const shopSlug = shop?.slug || slug || ""
 
-    if (!restaurantSlug) {
+    if (!shopSlug) {
       toast.error("Shop information is missing")
       return
     }
@@ -1720,16 +1720,16 @@ function RestaurantDetailsContent() {
       return
     }
 
-    const isAlreadyFavorite = isFavorite(restaurantSlug)
+    const isAlreadyFavorite = isFavorite(shopSlug)
 
     if (isAlreadyFavorite) {
       // Remove from collection
-      removeFavorite(restaurantSlug)
+      removeFavorite(shopSlug)
       toast.success("Shop removed from collection")
     } else {
       // Add to collection
       addFavorite({
-        slug: restaurantSlug,
+        slug: shopSlug,
         name: shop.name || "",
         cuisine: shop.cuisine || "",
         rating: shop.rating || 0,
@@ -1745,17 +1745,17 @@ function RestaurantDetailsContent() {
   }
 
   // Handle share shop
-  const handleShareRestaurant = async () => {
+  const handleShareShop = async () => {
     const companyName = await getCompanyNameAsync()
-    const restaurantSlug = shop?.slug || slug || ""
-    const restaurantName = shop?.name || "this shop"
+    const shopSlug = shop?.slug || slug || ""
+    const shopName = shop?.name || "this shop"
 
     // Create share URL
-    const shareUrl = `${window.location.origin}/user/shops/${restaurantSlug}`
-    const shareText = `Check out ${restaurantName} on ${companyName}! ${shareUrl}`
+    const shareUrl = `${window.location.origin}/user/shops/${shopSlug}`
+    const shareText = `Check out ${shopName} on ${companyName}! ${shareUrl}`
 
     const payload = {
-      title: restaurantName,
+      title: shopName,
       text: shareText,
       url: shareUrl,
     }
@@ -1782,10 +1782,10 @@ function RestaurantDetailsContent() {
   // Handle share click
   const handleShareClick = async (item) => {
     const dishId = item.id || item._id
-    const restaurantSlug = shop?.slug || slug || ""
+    const shopSlug = shop?.slug || slug || ""
 
     // Create share URL
-    const shareUrl = `${window.location.origin}/user/shops/${restaurantSlug}?dish=${dishId}`
+    const shareUrl = `${window.location.origin}/user/shops/${shopSlug}?dish=${dishId}`
     const shareText = `Check out ${item.name} from ${shop?.name || "this shop"}! ${shareUrl}`
 
     const payload = {
@@ -2040,10 +2040,10 @@ function RestaurantDetailsContent() {
   }
 
   const injectOffer = (item) => {
-    if (!publicRestaurantOffers || !Array.isArray(publicRestaurantOffers) || publicRestaurantOffers.length === 0) return item;
+    if (!publicShopOffers || !Array.isArray(publicShopOffers) || publicShopOffers.length === 0) return item;
     
     let productOffer = null;
-    for (const offer of publicRestaurantOffers) {
+    for (const offer of publicShopOffers) {
       if (Array.isArray(offer.products)) {
         const found = offer.products.find(p => String(p._id || p.id || "") === String(item.id));
         if (found) {
@@ -2161,7 +2161,7 @@ function RestaurantDetailsContent() {
 
   const filteredSections = useMemo(
     () => getFilteredSections(),
-    [shop?.menuSections, activeUnderPriceLimit, searchQuery, vegMode, filters, selectedMenuCategory, publicRestaurantOffers]
+    [shop?.menuSections, activeUnderPriceLimit, searchQuery, vegMode, filters, selectedMenuCategory, publicShopOffers]
   )
 
   useEffect(() => {
@@ -2240,7 +2240,7 @@ function RestaurantDetailsContent() {
   const highlightOffers = [
     "Upto 50% OFF",
     shop?.offerText || "",
-    ...(Array.isArray(restaurantItemOffers) ? restaurantItemOffers.map((offer) => offer?.title || "") : []),
+    ...(Array.isArray(shopItemOffers) ? shopItemOffers.map((offer) => offer?.title || "") : []),
     ...(Array.isArray(shop?.offers) ? shop.offers.map((offer) => offer?.title || "") : []),
   ].filter(Boolean)
 
@@ -2267,14 +2267,14 @@ function RestaurantDetailsContent() {
   }, [highlightOffers.length])
 
   // Show loading state
-  if (loadingRestaurant) {
-    return <RestaurantDetailSkeleton />
+  if (loadingShop) {
+    return <ShopDetailSkeleton />
   }
 
   // Show error state if shop not found or network error
-  if (restaurantError && !shop) {
-    const isNetworkError = restaurantError.includes('Backend server is not connected')
-    const isNotFoundError = restaurantError === 'Shop not found'
+  if (shopError && !shop) {
+    const isNetworkError = shopError.includes('Backend server is not connected')
+    const isNotFoundError = shopError === 'Shop not found'
 
     return (
       <AnimatedPage>
@@ -2288,7 +2288,7 @@ function RestaurantDetailsContent() {
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                 {isNetworkError ? 'Connection Error' : isNotFoundError ? 'Shop not found' : 'Error'}
               </h2>
-              <p className="text-sm text-gray-600 mb-4 max-w-md">{restaurantError}</p>
+              <p className="text-sm text-gray-600 mb-4 max-w-md">{shopError}</p>
               {isNetworkError && (
                 <p className="text-xs text-gray-500 mb-4">
                   Make sure the backend server is running at {API_BASE_URL.replace('/api', '')}
@@ -2322,8 +2322,8 @@ function RestaurantDetailsContent() {
   }
 
   const availabilityStatus = getShopAvailabilityStatus(shop, new Date(availabilityTick))
-  const isRestaurantOffline = !availabilityStatus.isOpen
-  const shouldShowGrayscale = isOutOfService || isRestaurantOffline
+  const isShopOffline = !availabilityStatus.isOpen
+  const shouldShowGrayscale = isOutOfService || isShopOffline
 
   return (
     <AnimatedPage
@@ -2434,12 +2434,12 @@ function RestaurantDetailsContent() {
               <Clock className="h-4 w-4" />
               <span>{shop?.deliveryTime || "25-30 mins"}</span>
             </div>
-            <Badge className={`${isRestaurantOffline ? "bg-rose-600" : "bg-emerald-600"} text-white`}>
-              {isRestaurantOffline ? (availabilityStatus.badgeLabel || "Closed") : "Open now"}
+            <Badge className={`${isShopOffline ? "bg-rose-600" : "bg-emerald-600"} text-white`}>
+              {isShopOffline ? (availabilityStatus.badgeLabel || "Closed") : "Open now"}
             </Badge>
           </div>
 
-          {isRestaurantOffline && (
+          {isShopOffline && (
             <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
               This shop is currently offline. Orders are unavailable right now.
             </div>
@@ -2581,9 +2581,9 @@ function RestaurantDetailsContent() {
           </div>
 
           {/* Inline shop offers just below filters (outside scroll container) */}
-          {filteredRestaurantItemOffers.length > 0 && (
+          {filteredShopItemOffers.length > 0 && (
             <div className="w-full flex flex-col gap-3 px-0">
-              {filteredRestaurantItemOffers.map((offer, idx) => (
+              {filteredShopItemOffers.map((offer, idx) => (
                 <div
                   key={`rest-offer-banner-${idx}-${offer?._id || offer?.id || offer?.title || "offer"}`}
                   className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] p-4 shadow-sm"
@@ -2632,7 +2632,7 @@ function RestaurantDetailsContent() {
                               quantity={getDishQuantity(product)}
                               formattedPrice={product?.price != null ? getFoodPriceLabel(product) : ""}
                               onBookmark={handleBookmarkClick}
-                              isFavorite={isDishFavorite(product?.id || product?._id, shop?.restaurantId || shop?._id || shop?.id)}
+                              isFavorite={isDishFavorite(product?.id || product?._id, shop?.shopId || shop?._id || shop?.id)}
                               onShare={handleShareClick}
                               onUpdateQuantity={handleCardQuantityUpdate}
                               disabled={shouldShowGrayscale}
@@ -2795,7 +2795,7 @@ function RestaurantDetailsContent() {
                             quantity={quantity}
                             formattedPrice={getFoodPriceLabel(item)}
                             onBookmark={handleBookmarkClick}
-                            isFavorite={isDishFavorite(item.id, shop?.restaurantId || shop?._id || shop?.id)}
+                            isFavorite={isDishFavorite(item.id, shop?.shopId || shop?._id || shop?.id)}
                             onShare={handleShareClick}
                             onUpdateQuantity={handleCardQuantityUpdate}
                             disabled={shouldShowGrayscale}
@@ -2879,7 +2879,7 @@ function RestaurantDetailsContent() {
                                       quantity={quantity}
                                       formattedPrice={getFoodPriceLabel(item)}
                                       onBookmark={handleBookmarkClick}
-                                      isFavorite={isDishFavorite(item.id, shop?.restaurantId || shop?._id || shop?.id)}
+                                      isFavorite={isDishFavorite(item.id, shop?.shopId || shop?._id || shop?.id)}
                                       onShare={handleShareClick}
                                       onUpdateQuantity={handleCardQuantityUpdate}
                                       disabled={shouldShowGrayscale}
@@ -3338,11 +3338,11 @@ function RestaurantDetailsContent() {
                           <span className="text-base font-medium text-gray-900 dark:text-white">Bookmarks</span>
                           {selectedItem && (
                             <Checkbox
-                              checked={isDishFavorite(selectedItem.id, shop?.restaurantId || shop?._id || shop?.id)}
+                              checked={isDishFavorite(selectedItem.id, shop?.shopId || shop?._id || shop?.id)}
                               onCheckedChange={(checked) => {
                                 if (!checked && selectedItem) {
-                                  const restaurantId = shop?.restaurantId || shop?._id || shop?.id
-                                  removeDishFavorite(selectedItem.id, restaurantId)
+                                  const shopId = shop?.shopId || shop?._id || shop?.id
+                                  removeDishFavorite(selectedItem.id, shopId)
                                   setShowManageCollections(false)
                                 }
                               }}
@@ -3456,22 +3456,22 @@ function RestaurantDetailsContent() {
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
-                          const restaurantId = shop?.restaurantId || shop?._id || shop?.id
-                          const isFav = isDishFavorite(selectedItem.id || selectedItem._id, restaurantId)
+                          const shopId = shop?.shopId || shop?._id || shop?.id
+                          const isFav = isDishFavorite(selectedItem.id || selectedItem._id, shopId)
                           if (isFav) {
-                            removeDishFavorite(selectedItem.id || selectedItem._id, restaurantId)
+                            removeDishFavorite(selectedItem.id || selectedItem._id, shopId)
                           } else {
                             handleBookmarkClick(selectedItem)
                           }
                         }}
                         className={`h-9 w-9 rounded-full flex items-center justify-center shadow-md transition-colors cursor-pointer ${
-                          isDishFavorite(selectedItem.id || selectedItem._id, shop?.restaurantId || shop?._id || shop?.id)
+                          isDishFavorite(selectedItem.id || selectedItem._id, shop?.shopId || shop?._id || shop?.id)
                             ? "bg-red-500 text-white hover:bg-red-600"
                             : "bg-white/90 dark:bg-[#1a1a1a]/90 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-[#1a1a1a]"
                         }`}
                         aria-label="Bookmark dish"
                       >
-                        <Bookmark size={16} className={isDishFavorite(selectedItem.id || selectedItem._id, shop?.restaurantId || shop?._id || shop?.id) ? "fill-white" : ""} />
+                        <Bookmark size={16} className={isDishFavorite(selectedItem.id || selectedItem._id, shop?.shopId || shop?._id || shop?.id) ? "fill-white" : ""} />
                       </button>
                       <button
                         type="button"
@@ -3859,20 +3859,20 @@ function RestaurantDetailsContent() {
                   {/* Scrollable Content */}
                   <div className="flex-1 overflow-y-auto px-4 py-4">
                     {/* Gold Exclusive Offer Section */}
-                    {shop?.restaurantOffers?.goldOffer && (
+                    {shop?.shopOffers?.goldOffer && (
                       <div className="mb-6">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                          {shop.restaurantOffers.goldOffer?.title || "Gold exclusive offer"}
+                          {shop.shopOffers.goldOffer?.title || "Gold exclusive offer"}
                         </h3>
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 flex items-start justify-between gap-4">
                           <div className="flex items-start gap-3 flex-1">
                             <Lock className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: BRAND_THEME.colors.brand.primary }} />
                             <div className="flex-1">
                               <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                                {shop.restaurantOffers.goldOffer?.description || "Free delivery above ₹99"}
+                                {shop.shopOffers.goldOffer?.description || "Free delivery above ₹99"}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {shop.restaurantOffers.goldOffer?.unlockText || "join Gold to unlock"}
+                                {shop.shopOffers.goldOffer?.unlockText || "join Gold to unlock"}
                               </p>
                             </div>
                           </div>
@@ -3883,20 +3883,20 @@ function RestaurantDetailsContent() {
                               // Handle add gold
                             }}
                           >
-                            {shop.restaurantOffers.goldOffer?.buttonText || "Add Gold - ₹1"}
+                            {shop.shopOffers.goldOffer?.buttonText || "Add Gold - ₹1"}
                           </Button>
                         </div>
                       </div>
                     )}
 
                     {/* Shop Coupons Section */}
-                    {shop?.restaurantOffers?.coupons && Array.isArray(shop.restaurantOffers.coupons) && shop.restaurantOffers.coupons.length > 0 && (
+                    {shop?.shopOffers?.coupons && Array.isArray(shop.shopOffers.coupons) && shop.shopOffers.coupons.length > 0 && (
                       <div>
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                           Shop coupons
                         </h3>
                         <div className="space-y-3">
-                          {shop.restaurantOffers.coupons.map((coupon, couponIndex) => {
+                          {shop.shopOffers.coupons.map((coupon, couponIndex) => {
                             const couponKey = coupon?.id || coupon?.code || `coupon-${couponIndex}`
                             const isExpanded = expandedCoupons.has(couponKey)
                             return (
@@ -4030,7 +4030,7 @@ function RestaurantDetailsContent() {
                       {/* Share this shop */}
                       <button
                         className="w-full flex items-center gap-4 px-2 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors text-left"
-                        onClick={handleShareRestaurant}
+                        onClick={handleShareShop}
                       >
                         <Share2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                         <span className="text-base text-gray-900 dark:text-white">Share this shop</span>
@@ -4170,7 +4170,7 @@ function RestaurantDetailsContent() {
   )
 }
 
-class RestaurantDetailsErrorBoundary extends Component {
+class ShopDetailsErrorBoundary extends Component {
   constructor(props) {
     super(props)
     this.state = { hasError: false }
@@ -4181,7 +4181,7 @@ class RestaurantDetailsErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    debugError("RestaurantDetails crashed:", error, info)
+    debugError("ShopDetails crashed:", error, info)
   }
 
   render() {
@@ -4212,11 +4212,11 @@ class RestaurantDetailsErrorBoundary extends Component {
   }
 }
 
-export default function RestaurantDetails() {
+export default function ShopDetails() {
   return (
-    <RestaurantDetailsErrorBoundary>
-      <RestaurantDetailsContent />
-    </RestaurantDetailsErrorBoundary>
+    <ShopDetailsErrorBoundary>
+      <ShopDetailsContent />
+    </ShopDetailsErrorBoundary>
   )
 }
 

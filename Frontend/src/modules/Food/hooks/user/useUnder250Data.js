@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import { restaurantAPI } from "@food/api";
+import { shopAPI } from "@food/api";
 import BRAND_THEME from "@/config/brandTheme";
 
 export const useUnder250Data = (zoneId) => {
   const homepageDefaults = BRAND_THEME.tokens.homepage.defaults;
-  const [restaurants, setRestaurants] = useState([]);
+  const [shops, setShops] = useState([]);
   const [categories, setCategories] = useState([
     { id: homepageDefaults.allCategoryId, name: "All", slug: homepageDefaults.allCategoryId },
   ]);
@@ -15,10 +15,10 @@ export const useUnder250Data = (zoneId) => {
     try {
       setLoading(true);
       const [restRes] = await Promise.all([
-        restaurantAPI.getRestaurantsUnder250(zoneId),
+        shopAPI.getShops({ zoneId }),
       ]);
 
-      if (restRes.data?.success) setRestaurants(restRes.data.data.restaurants || []);
+      if (restRes.data?.success) setShops(restRes.data.data.shops || []);
       // Old backend endpoints (categories + under-250 banner) removed.
       setCategories([
         { id: homepageDefaults.allCategoryId, name: "All", slug: homepageDefaults.allCategoryId },
@@ -35,5 +35,5 @@ export const useUnder250Data = (zoneId) => {
     fetchData();
   }, [fetchData]);
 
-  return { restaurants, categories, banner, loading };
+  return { shops, categories, banner, loading };
 };

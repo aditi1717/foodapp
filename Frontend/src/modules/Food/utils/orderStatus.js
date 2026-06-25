@@ -4,7 +4,7 @@ const debugError = (...args) => {}
 
 /**
  * Order Status Utility Functions
- * Centralized management for order status across the restaurant module
+ * Centralized management for order status across the shop module
  */
 
 // Standard status values (as used in OrderDetails.jsx)

@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Upload, Image as ImageIcon } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Card, CardContent } from "@food/components/ui/card"
-import { getRestaurantData, updateRestaurantData } from "@food/utils/shopManagement"
+import { getShopData, updateShopData } from "@food/utils/shopManagement"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import DocumentUploadActions from "@food/components/DocumentUploadActions"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
@@ -23,9 +23,9 @@ export default function EditShopPage() {
   const [activePicker, setActivePicker] = useState(null) // { type: string, ref: any, title: string }
 
   const [formData, setFormData] = useState(() => {
-    const savedData = getRestaurantData()
+    const savedData = getShopData()
     return {
-      restaurantName: savedData.restaurantName || {
+      shopName: savedData.shopName || {
         english: "Hungry Puppets",
         bengali: "",
         arabic: "",
@@ -44,9 +44,9 @@ export default function EditShopPage() {
   // Reload data when component mounts or data changes
   useEffect(() => {
     const refreshData = () => {
-      const savedData = getRestaurantData()
+      const savedData = getShopData()
       setFormData({
-        restaurantName: savedData.restaurantName || {
+        shopName: savedData.shopName || {
           english: "Hungry Puppets",
           bengali: "",
           arabic: "",
@@ -64,11 +64,11 @@ export default function EditShopPage() {
 
     refreshData()
 
-    window.addEventListener('restaurantDataUpdated', refreshData)
+    window.addEventListener('shopDataUpdated', refreshData)
     window.addEventListener('storage', refreshData)
 
     return () => {
-      window.removeEventListener('restaurantDataUpdated', refreshData)
+      window.removeEventListener('shopDataUpdated', refreshData)
       window.removeEventListener('storage', refreshData)
     }
   }, [])
@@ -81,11 +81,11 @@ export default function EditShopPage() {
   ]
 
   const handleInputChange = (field, value) => {
-    if (field === "restaurantName") {
+    if (field === "shopName") {
       setFormData(prev => ({
         ...prev,
-        restaurantName: {
-          ...prev.restaurantName,
+        shopName: {
+          ...prev.shopName,
           [activeLanguage]: value
         }
       }))
@@ -127,14 +127,14 @@ export default function EditShopPage() {
     e.preventDefault()
     
     // Validate required fields
-    if (!formData.restaurantName.english || !formData.address || !formData.phoneNumber) {
+    if (!formData.shopName.english || !formData.address || !formData.phoneNumber) {
       alert("Please fill in all required fields (Shop Name, Address, Phone Number)")
       return
     }
 
     // Save shop data to localStorage
     try {
-      updateRestaurantData(formData)
+      updateShopData(formData)
       // Navigate back to shop details page
       navigate("/shop/details")
     } catch (error) {
@@ -191,8 +191,8 @@ export default function EditShopPage() {
                 </label>
                 <input
                   type="text"
-                  value={formData.restaurantName[activeLanguage]}
-                  onChange={(e) => handleInputChange("restaurantName", e.target.value)}
+                  value={formData.shopName[activeLanguage]}
+                  onChange={(e) => handleInputChange("shopName", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none"
                   placeholder="Enter shop name"
                 />
@@ -255,7 +255,7 @@ export default function EditShopPage() {
                   <div className="relative w-32 h-32 rounded-lg overflow-hidden">
                     <img 
                       src={formData.logo} 
-                      alt="Restaurant Logo" 
+                      alt="Shop Logo" 
                       className="w-full h-full object-cover"
                     />
                     <button
@@ -312,7 +312,7 @@ export default function EditShopPage() {
                   <div className="relative w-full rounded-lg overflow-hidden">
                     <img 
                       src={formData.cover} 
-                      alt="Restaurant Cover" 
+                      alt="Shop Cover" 
                       className="w-full h-auto object-cover"
                     />
                     <button

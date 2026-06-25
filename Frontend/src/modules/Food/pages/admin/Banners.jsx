@@ -162,7 +162,7 @@ export default function Banners() {
                   onChange={(e) => handleInputChange("bannerType", e.target.value)}
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
                 >
-                  <option value="Restaurant wise">Shop wise</option>
+                  <option value="Shop wise">Shop wise</option>
                   <option value="Zone wise">Zone wise</option>
                 </select>
               </div>
@@ -172,7 +172,7 @@ export default function Banners() {
                   Shop <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.restaurant}
+                  value={formData.shop}
                   onChange={(e) => handleInputChange("shop", e.target.value)}
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
                 >
@@ -232,7 +232,7 @@ export default function Banners() {
                 className="px-4 py-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
               >
                 <option value="all">All Banner</option>
-                <option value="Restaurant wise">Shop wise</option>
+                <option value="Shop wise">Shop wise</option>
                 <option value="Zone wise">Zone wise</option>
               </select>
 

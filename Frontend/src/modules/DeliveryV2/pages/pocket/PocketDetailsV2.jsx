@@ -238,7 +238,7 @@ export const PocketDetailsV2 = () => {
           return {
             id: getTripIdentity(trip),
             displayId: getTripDisplayId(trip),
-            restaurant: trip?.restaurantName || trip?.restaurantId?.name || 'Restaurant',
+            shop: trip?.shopName || trip?.shopId?.name || 'Shop',
             deliveredAt: trip?.deliveredAt || trip?.completedAt || trip?.createdAt || null,
             orderAmount: getTripTotalAmount(trip),
             earning: getTripEarning(trip),
@@ -301,7 +301,7 @@ export const PocketDetailsV2 = () => {
 
     const body = filteredRows.map((row) => [
       row.displayId || row.id,
-      row.restaurant,
+      row.shop,
       row.deliveredAt
         ? new Date(row.deliveredAt).toLocaleString('en-IN', {
             day: '2-digit',
@@ -372,7 +372,7 @@ export const PocketDetailsV2 = () => {
             <thead>
               <tr>
                 <th>Order ID</th>
-                <th>Restaurant</th>
+                <th>Shop</th>
                 <th>Delivered At</th>
                 <th>Payment</th>
                 <th>Order Amount</th>
@@ -532,7 +532,7 @@ export const PocketDetailsV2 = () => {
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
                     <th className="px-6 py-2.5 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">Order</th>
-                    <th className="px-6 py-2.5 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">Restaurant</th>
+                    <th className="px-6 py-2.5 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">Shop</th>
                     <th className="px-6 py-2.5 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">Delivered</th>
                     <th className="px-6 py-2.5 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">Payment</th>
                     <th className="px-6 py-2.5 text-right text-[11px] font-bold text-gray-600 uppercase tracking-wider">Order Amount</th>
@@ -545,7 +545,7 @@ export const PocketDetailsV2 = () => {
                   {filteredRows.map((row) => (
                     <tr key={row.id} className="border-b border-gray-50 last:border-b-0">
                       <td className="px-6 py-2.5 font-semibold text-gray-900 whitespace-nowrap">#{row.displayId || row.id}</td>
-                      <td className="px-6 py-2.5 text-gray-700">{row.restaurant}</td>
+                      <td className="px-6 py-2.5 text-gray-700">{row.shop}</td>
                       <td className="px-6 py-2.5 text-gray-600">
                         {row.deliveredAt
                           ? new Date(row.deliveredAt).toLocaleString('en-IN', {

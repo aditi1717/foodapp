@@ -5,11 +5,11 @@ import { validateSubcategoryListQuery, validateSubcategoryRejectDto, validateSub
 import { validateCreateOfferDto, validateUpdateOfferCartVisibilityDto } from '../validators/offer.validator.js';
 import { validateAddDeliveryBonusDto } from '../validators/deliveryBonus.validator.js';
 import { validateCheckCompletionsDto, validateEarningAddonHistoryActionDto, validateEarningAddonUpsertDto, validateToggleEarningAddonStatusDto } from '../validators/earningAddon.validator.js';
-import { validateDeliveryCommissionRuleDto, validateOptionalStatusDto, validateRestaurantCommissionUpsertDto } from '../validators/commission.validator.js';
+import { validateDeliveryCommissionRuleDto, validateOptionalStatusDto, validateShopCommissionUpsertDto } from '../validators/commission.validator.js';
 import { validateFeeSettingsUpsertDto } from '../validators/feeSettings.validator.js';
 import { validateDeliveryEmergencyHelpUpsertDto } from '../validators/deliveryEmergencyHelp.validator.js';
 import { validateReferralSettingsUpsertDto } from '../validators/referralSettings.validator.js';
-import { getOutletTimingsForRestaurant, upsertOutletTimingsForRestaurant } from '../../restaurant/services/outletTimings.service.js';
+import { getOutletTimingsForShop, upsertOutletTimingsForShop } from '../../shop/services/outletTimings.service.js';
 
 // ----- Customers / Users -----
 export async function getCustomers(req, res, next) {
@@ -93,22 +93,22 @@ export async function deleteSafetyEmergencyReport(req, res, next) {
     }
 }
 
-export async function updateRestaurantComplaint(req, res, next) {
+export async function updateShopComplaint(req, res, next) {
     try {
         const { id } = req.params;
         const { status, adminResponse } = req.body;
-        const updated = await adminService.updateRestaurantComplaint(id, { status, adminResponse });
+        const updated = await adminService.updateShopComplaint(id, { status, adminResponse });
         res.status(200).json({ success: true, message: 'Complaint updated successfully', data: { complaint: updated } });
     } catch (error) {
         next(error);
     }
 }
 
-// ----- Restaurants -----
-export async function getRestaurantComplaints(req, res, next) {
+// ----- Shops -----
+export async function getShopComplaints(req, res, next) {
     try {
-        const data = await adminService.getRestaurantComplaints(req.query || {});
-        res.status(200).json({ success: true, message: 'Restaurant complaints fetched successfully', data });
+        const data = await adminService.getShopComplaints(req.query || {});
+        res.status(200).json({ success: true, message: 'Shop complaints fetched successfully', data });
     } catch (error) {
         next(error);
     }
@@ -128,12 +128,12 @@ export async function globalSearch(req, res, next) {
     }
 }
 
-export async function getRestaurants(req, res, next) {
+export async function getShops(req, res, next) {
     try {
-        const data = await adminService.getRestaurants(req.query, req.adminAuth || {});
+        const data = await adminService.getShops(req.query, req.adminAuth || {});
         res.status(200).json({
             success: true,
-            message: 'Restaurants fetched successfully',
+            message: 'Shops fetched successfully',
             data
         });
     } catch (error) {
@@ -141,12 +141,12 @@ export async function getRestaurants(req, res, next) {
     }
 }
 
-export async function getRestaurantReport(req, res, next) {
+export async function getShopReport(req, res, next) {
     try {
-        const data = await adminService.getRestaurantReport(req.query || {});
+        const data = await adminService.getShopReport(req.query || {});
         res.status(200).json({
             success: true,
-            message: 'Restaurant report fetched successfully',
+            message: 'Shop report fetched successfully',
             data
         });
     } catch (error) {
@@ -207,12 +207,12 @@ export async function getTaxReportDetail(req, res, next) {
     }
 }
 
-export async function getRestaurantReviews(req, res, next) {
+export async function getShopReviews(req, res, next) {
     try {
-        const data = await adminService.getRestaurantReviews(req.query);
+        const data = await adminService.getShopReviews(req.query);
         res.status(200).json({
             success: true,
-            message: 'Restaurant reviews fetched successfully',
+            message: 'Shop reviews fetched successfully',
             data
         });
     } catch (error) {
@@ -220,33 +220,33 @@ export async function getRestaurantReviews(req, res, next) {
     }
 }
 
-export async function getRestaurantById(req, res, next) {
+export async function getShopById(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const restaurant = await adminService.getRestaurantById(id, req.adminAuth || {});
-        if (!restaurant) {
-            return res.status(404).json({ success: false, message: 'Restaurant not found' });
+        const shop = await adminService.getShopById(id, req.adminAuth || {});
+        if (!shop) {
+            return res.status(404).json({ success: false, message: 'Shop not found' });
         }
         res.status(200).json({
             success: true,
-            message: 'Restaurant fetched successfully',
-            data: restaurant
+            message: 'Shop fetched successfully',
+            data: shop
         });
     } catch (error) {
         next(error);
     }
 }
 
-export async function getRestaurantOutletTimings(req, res, next) {
+export async function getShopOutletTimings(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const data = await getOutletTimingsForRestaurant(id);
+        const data = await getOutletTimingsForShop(id);
         return res.status(200).json({
             success: true,
             message: 'Outlet timings fetched successfully',
@@ -257,13 +257,13 @@ export async function getRestaurantOutletTimings(req, res, next) {
     }
 }
 
-export async function updateRestaurantOutletTimings(req, res, next) {
+export async function updateShopOutletTimings(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const data = await upsertOutletTimingsForRestaurant(id, req.body?.outletTimings);
+        const data = await upsertOutletTimingsForShop(id, req.body?.outletTimings);
         return res.status(200).json({
             success: true,
             message: 'Outlet timings updated successfully',
@@ -274,19 +274,19 @@ export async function updateRestaurantOutletTimings(req, res, next) {
     }
 }
 
-export async function getRestaurantAnalytics(req, res, next) {
+export async function getShopAnalytics(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const data = await adminService.getRestaurantAnalytics(id);
+        const data = await adminService.getShopAnalytics(id);
         if (!data) {
-            return res.status(404).json({ success: false, message: 'Restaurant not found' });
+            return res.status(404).json({ success: false, message: 'Shop not found' });
         }
         res.status(200).json({
             success: true,
-            message: 'Restaurant analytics fetched successfully',
+            message: 'Shop analytics fetched successfully',
             data
         });
     } catch (error) {
@@ -294,15 +294,15 @@ export async function getRestaurantAnalytics(req, res, next) {
     }
 }
 
-export async function getRestaurantMenuById(req, res, next) {
+export async function getShopMenuById(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const menu = await adminService.getRestaurantMenuById(id);
+        const menu = await adminService.getShopMenuById(id);
         if (!menu) {
-            return res.status(404).json({ success: false, message: 'Restaurant not found' });
+            return res.status(404).json({ success: false, message: 'Shop not found' });
         }
         res.status(200).json({ success: true, message: 'Menu fetched successfully', data: { menu } });
     } catch (error) {
@@ -310,15 +310,15 @@ export async function getRestaurantMenuById(req, res, next) {
     }
 }
 
-export async function updateRestaurantMenuById(req, res, next) {
+export async function updateShopMenuById(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const menu = await adminService.updateRestaurantMenuById(id, req.body || {});
+        const menu = await adminService.updateShopMenuById(id, req.body || {});
         if (!menu) {
-            return res.status(404).json({ success: false, message: 'Restaurant not found' });
+            return res.status(404).json({ success: false, message: 'Shop not found' });
         }
         res.status(200).json({ success: true, message: 'Menu updated successfully', data: { menu } });
     } catch (error) {
@@ -326,35 +326,35 @@ export async function updateRestaurantMenuById(req, res, next) {
     }
 }
 
-export async function updateRestaurantById(req, res, next) {
+export async function updateShopById(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const updated = await adminService.updateRestaurantById(id, req.body || {}, req.adminAuth || {});
+        const updated = await adminService.updateShopById(id, req.body || {}, req.adminAuth || {});
         if (!updated) {
-            return res.status(404).json({ success: false, message: 'Restaurant not found' });
+            return res.status(404).json({ success: false, message: 'Shop not found' });
         }
-        res.status(200).json({ success: true, message: 'Restaurant updated successfully', data: { restaurant: updated } });
+        res.status(200).json({ success: true, message: 'Shop updated successfully', data: { shop: updated } });
     } catch (error) {
         next(error);
     }
 }
 
-export async function deleteRestaurantById(req, res, next) {
+export async function deleteShopById(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const result = await adminService.deleteRestaurantById(id, req.adminAuth || {});
+        const result = await adminService.deleteShopById(id, req.adminAuth || {});
         if (!result) {
-            return res.status(404).json({ success: false, message: 'Restaurant not found' });
+            return res.status(404).json({ success: false, message: 'Shop not found' });
         }
         res.status(200).json({
             success: true,
-            message: 'Restaurant deleted successfully',
+            message: 'Shop deleted successfully',
             data: result
         });
     } catch (error) {
@@ -362,33 +362,33 @@ export async function deleteRestaurantById(req, res, next) {
     }
 }
 
-export async function updateRestaurantStatus(req, res, next) {
+export async function updateShopStatus(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const updated = await adminService.updateRestaurantStatus(id, req.body || {}, req.adminAuth || {});
+        const updated = await adminService.updateShopStatus(id, req.body || {}, req.adminAuth || {});
         if (!updated) {
-            return res.status(404).json({ success: false, message: 'Restaurant not found' });
+            return res.status(404).json({ success: false, message: 'Shop not found' });
         }
-        res.status(200).json({ success: true, message: 'Restaurant status updated successfully', data: { restaurant: updated } });
+        res.status(200).json({ success: true, message: 'Shop status updated successfully', data: { shop: updated } });
     } catch (error) {
         next(error);
     }
 }
 
-export async function updateRestaurantLocation(req, res, next) {
+export async function updateShopLocation(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid restaurant id' });
+            return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const updated = await adminService.updateRestaurantLocation(id, req.body || {}, req.adminAuth || {});
+        const updated = await adminService.updateShopLocation(id, req.body || {}, req.adminAuth || {});
         if (!updated) {
-            return res.status(404).json({ success: false, message: 'Restaurant not found' });
+            return res.status(404).json({ success: false, message: 'Shop not found' });
         }
-        res.status(200).json({ success: true, message: 'Restaurant location updated successfully', data: { restaurant: updated } });
+        res.status(200).json({ success: true, message: 'Shop location updated successfully', data: { shop: updated } });
     } catch (error) {
         next(error);
     }
@@ -634,22 +634,22 @@ export async function deleteAdminOffer(req, res, next) {
     }
 }
 
-export async function getPendingRestaurantOffers(req, res, next) {
+export async function getPendingShopOffers(req, res, next) {
     try {
-        const data = await adminService.getPendingRestaurantOffers(req.query || {});
-        res.status(200).json({ success: true, message: 'Pending restaurant coupons fetched successfully', data });
+        const data = await adminService.getPendingShopOffers(req.query || {});
+        res.status(200).json({ success: true, message: 'Pending shop coupons fetched successfully', data });
     } catch (error) {
         next(error);
     }
 }
 
-export async function approveRestaurantOffer(req, res, next) {
+export async function approveShopOffer(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid offer id' });
         }
-        const updated = await adminService.approveRestaurantOffer(id);
+        const updated = await adminService.approveShopOffer(id);
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Offer not found' });
         }
@@ -659,14 +659,14 @@ export async function approveRestaurantOffer(req, res, next) {
     }
 }
 
-export async function rejectRestaurantOffer(req, res, next) {
+export async function rejectShopOffer(req, res, next) {
     try {
         const { id } = req.params;
         const reason = req.body?.reason || '';
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid offer id' });
         }
-        const updated = await adminService.rejectRestaurantOffer(id, reason);
+        const updated = await adminService.rejectShopOffer(id, reason);
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Offer not found' });
         }
@@ -676,22 +676,22 @@ export async function rejectRestaurantOffer(req, res, next) {
     }
 }
 
-export async function getPendingRestaurantProductOffers(req, res, next) {
+export async function getPendingShopProductOffers(req, res, next) {
     try {
-        const data = await adminService.getPendingRestaurantProductOffers(req.query || {});
-        res.status(200).json({ success: true, message: 'Pending restaurant product offers fetched successfully', data });
+        const data = await adminService.getPendingShopProductOffers(req.query || {});
+        res.status(200).json({ success: true, message: 'Pending shop product offers fetched successfully', data });
     } catch (error) {
         next(error);
     }
 }
 
-export async function approveRestaurantProductOffer(req, res, next) {
+export async function approveShopProductOffer(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid offer id' });
         }
-        const updated = await adminService.approveRestaurantProductOffer(id);
+        const updated = await adminService.approveShopProductOffer(id);
         if (!updated) return res.status(404).json({ success: false, message: 'Offer not found' });
         res.status(200).json({ success: true, message: 'Offer approved successfully', data: { offer: updated } });
     } catch (error) {
@@ -699,14 +699,14 @@ export async function approveRestaurantProductOffer(req, res, next) {
     }
 }
 
-export async function rejectRestaurantProductOffer(req, res, next) {
+export async function rejectShopProductOffer(req, res, next) {
     try {
         const { id } = req.params;
         const reason = req.body?.reason || '';
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid offer id' });
         }
-        const updated = await adminService.rejectRestaurantProductOffer(id, reason);
+        const updated = await adminService.rejectShopProductOffer(id, reason);
         if (!updated) return res.status(404).json({ success: false, message: 'Offer not found' });
         res.status(200).json({ success: true, message: 'Offer rejected successfully', data: { offer: updated } });
     } catch (error) {
@@ -738,12 +738,12 @@ export async function updateSupportTicketController(req, res, next) {
     }
 }
 
-export async function getPendingRestaurants(req, res, next) {
+export async function getPendingShops(req, res, next) {
     try {
-        const pending = await adminService.getPendingRestaurants();
+        const pending = await adminService.getPendingShops();
         res.status(200).json({
             success: true,
-            message: 'Pending restaurants fetched successfully',
+            message: 'Pending shops fetched successfully',
             data: pending
         });
     } catch (error) {
@@ -903,32 +903,32 @@ export async function checkEarningAddonCompletions(req, res, next) {
     }
 }
 
-// ----- Restaurant Commission (admin) -----
-export async function getRestaurantCommissions(req, res, next) {
+// ----- Shop Commission (admin) -----
+export async function getShopCommissions(req, res, next) {
     try {
-        const data = await adminService.getRestaurantCommissions();
-        res.status(200).json({ success: true, message: 'Restaurant commissions fetched successfully', data });
+        const data = await adminService.getShopCommissions();
+        res.status(200).json({ success: true, message: 'Shop commissions fetched successfully', data });
     } catch (error) {
         next(error);
     }
 }
 
-export async function getRestaurantCommissionBootstrap(req, res, next) {
+export async function getShopCommissionBootstrap(req, res, next) {
     try {
-        const data = await adminService.getRestaurantCommissionBootstrap();
-        res.status(200).json({ success: true, message: 'Restaurant commission bootstrap fetched successfully', data });
+        const data = await adminService.getShopCommissionBootstrap();
+        res.status(200).json({ success: true, message: 'Shop commission bootstrap fetched successfully', data });
     } catch (error) {
         next(error);
     }
 }
 
-export async function getRestaurantCommissionById(req, res, next) {
+export async function getShopCommissionById(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid commission id' });
         }
-        const commission = await adminService.getRestaurantCommissionById(id);
+        const commission = await adminService.getShopCommissionById(id);
         if (!commission) {
             return res.status(404).json({ success: false, message: 'Commission not found' });
         }
@@ -938,24 +938,24 @@ export async function getRestaurantCommissionById(req, res, next) {
     }
 }
 
-export async function createRestaurantCommission(req, res, next) {
+export async function createShopCommission(req, res, next) {
     try {
-        const body = validateRestaurantCommissionUpsertDto(req.body || {});
-        const created = await adminService.createRestaurantCommission(body);
+        const body = validateShopCommissionUpsertDto(req.body || {});
+        const created = await adminService.createShopCommission(body);
         res.status(201).json({ success: true, message: 'Commission created successfully', data: { commission: created } });
     } catch (error) {
         next(error);
     }
 }
 
-export async function updateRestaurantCommission(req, res, next) {
+export async function updateShopCommission(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid commission id' });
         }
-        const body = validateRestaurantCommissionUpsertDto(req.body || {});
-        const updated = await adminService.updateRestaurantCommission(id, body);
+        const body = validateShopCommissionUpsertDto(req.body || {});
+        const updated = await adminService.updateShopCommission(id, body);
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Commission not found' });
         }
@@ -965,13 +965,13 @@ export async function updateRestaurantCommission(req, res, next) {
     }
 }
 
-export async function deleteRestaurantCommission(req, res, next) {
+export async function deleteShopCommission(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid commission id' });
         }
-        const result = await adminService.deleteRestaurantCommission(id);
+        const result = await adminService.deleteShopCommission(id);
         if (!result) {
             return res.status(404).json({ success: false, message: 'Commission not found' });
         }
@@ -981,13 +981,13 @@ export async function deleteRestaurantCommission(req, res, next) {
     }
 }
 
-export async function toggleRestaurantCommissionStatus(req, res, next) {
+export async function toggleShopCommissionStatus(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid commission id' });
         }
-        const updated = await adminService.toggleRestaurantCommissionStatus(id);
+        const updated = await adminService.toggleShopCommissionStatus(id);
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Commission not found' });
         }
@@ -1149,66 +1149,66 @@ export async function createOrUpdateEmergencyHelp(req, res, next) {
     }
 }
 
-export async function approveRestaurant(req, res, next) {
+export async function approveShop(req, res, next) {
     try {
         const { id } = req.params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid restaurant id'
+                message: 'Invalid shop id'
             });
         }
-        const restaurant = await adminService.approveRestaurant(id);
-        if (!restaurant) {
+        const shop = await adminService.approveShop(id);
+        if (!shop) {
             return res.status(404).json({
                 success: false,
-                message: 'Restaurant not found'
+                message: 'Shop not found'
             });
         }
         res.status(200).json({
             success: true,
-            message: 'Restaurant approved successfully',
-            data: restaurant
+            message: 'Shop approved successfully',
+            data: shop
         });
     } catch (error) {
         next(error);
     }
 }
 
-export async function createRestaurant(req, res, next) {
+export async function createShop(req, res, next) {
     try {
-        const restaurant = await adminService.createRestaurantByAdmin(req.body || {});
+        const shop = await adminService.createShopByAdmin(req.body || {});
         res.status(201).json({
             success: true,
-            message: 'Restaurant created successfully',
-            data: restaurant
+            message: 'Shop created successfully',
+            data: shop
         });
     } catch (error) {
         next(error);
     }
 }
 
-export async function rejectRestaurant(req, res, next) {
+export async function rejectShop(req, res, next) {
     try {
         const { id } = req.params;
         const { reason } = req.body || {};
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid restaurant id'
+                message: 'Invalid shop id'
             });
         }
-        const restaurant = await adminService.rejectRestaurant(id, reason);
-        if (!restaurant) {
+        const shop = await adminService.rejectShop(id, reason);
+        if (!shop) {
             return res.status(404).json({
                 success: false,
-                message: 'Restaurant not found'
+                message: 'Shop not found'
             });
         }
         res.status(200).json({
             success: true,
-            message: 'Restaurant rejected successfully',
-            data: restaurant
+            message: 'Shop rejected successfully',
+            data: shop
         });
     } catch (error) {
         next(error);
@@ -1548,12 +1548,12 @@ export async function getCashLimitSettlements(req, res, next) {
 export async function getPayoutSettlementPreview(req, res, next) {
     try {
         const beneficiaryType = String(req.query?.beneficiaryType || 'delivery').toLowerCase();
-        if (!['delivery', 'restaurant'].includes(beneficiaryType)) {
+        if (!['delivery', 'shop'].includes(beneficiaryType)) {
             return res.status(400).json({ success: false, message: 'Invalid beneficiaryType' });
         }
         const data = beneficiaryType === 'delivery' 
             ? await adminService.getDeliveryPayoutSettlementPreview(req.query || {}, req.adminAuth || {})
-            : await adminService.getRestaurantPayoutSettlementPreview(req.query || {}, req.adminAuth || {});
+            : await adminService.getShopPayoutSettlementPreview(req.query || {}, req.adminAuth || {});
         res.status(200).json({ success: true, message: 'Payout settlement preview fetched successfully', data });
     } catch (error) {
         next(error);
@@ -1563,12 +1563,12 @@ export async function getPayoutSettlementPreview(req, res, next) {
 export async function getPayoutSettlementHistory(req, res, next) {
     try {
         const beneficiaryType = String(req.query?.beneficiaryType || 'delivery').toLowerCase();
-        if (!['delivery', 'restaurant'].includes(beneficiaryType)) {
+        if (!['delivery', 'shop'].includes(beneficiaryType)) {
             return res.status(400).json({ success: false, message: 'Invalid beneficiaryType' });
         }
         const data = beneficiaryType === 'delivery' 
             ? await adminService.getDeliveryPayoutSettlementHistory(req.query || {}, req.adminAuth || {})
-            : await adminService.getRestaurantPayoutSettlementHistory(req.query || {}, req.adminAuth || {});
+            : await adminService.getShopPayoutSettlementHistory(req.query || {}, req.adminAuth || {});
         res.status(200).json({ success: true, message: 'Payout settlement history fetched successfully', data });
     } catch (error) {
         next(error);
@@ -1578,12 +1578,12 @@ export async function getPayoutSettlementHistory(req, res, next) {
 export async function markAllPayoutSettlementsPaid(req, res, next) {
     try {
         const beneficiaryType = String(req.body?.beneficiaryType || 'delivery').toLowerCase();
-        if (!['delivery', 'restaurant'].includes(beneficiaryType)) {
+        if (!['delivery', 'shop'].includes(beneficiaryType)) {
             return res.status(400).json({ success: false, message: 'Invalid beneficiaryType' });
         }
         const result = beneficiaryType === 'delivery'
             ? await adminService.markAllDeliveryPayoutSettlementsPaid(req.body || {}, req.adminAuth || {})
-            : await adminService.markAllRestaurantPayoutSettlementsPaid(req.body || {}, req.adminAuth || {});
+            : await adminService.markAllShopPayoutSettlementsPaid(req.body || {}, req.adminAuth || {});
         res.status(200).json({ success: true, message: 'Payout settlements marked as paid successfully', data: result });
     } catch (error) {
         next(error);
@@ -1593,13 +1593,13 @@ export async function markAllPayoutSettlementsPaid(req, res, next) {
 export async function getPayoutSettlementHistoryBatchDetails(req, res, next) {
     try {
         const beneficiaryType = String(req.query?.beneficiaryType || 'delivery').toLowerCase();
-        if (!['delivery', 'restaurant'].includes(beneficiaryType)) {
+        if (!['delivery', 'shop'].includes(beneficiaryType)) {
             return res.status(400).json({ success: false, message: 'Invalid beneficiaryType' });
         }
         const { batchId } = req.params;
         const data = beneficiaryType === 'delivery'
             ? await adminService.getDeliveryPayoutSettlementHistoryBatchDetails(batchId, req.adminAuth || {})
-            : await adminService.getRestaurantPayoutSettlementHistoryBatchDetails(batchId, req.adminAuth || {});
+            : await adminService.getShopPayoutSettlementHistoryBatchDetails(batchId, req.adminAuth || {});
         if (!data) {
             return res.status(404).json({ success: false, message: 'Settlement batch not found' });
         }
@@ -1620,8 +1620,8 @@ export async function getSidebarBadges(req, res, next) {
 
 export async function getExpiredFssaiNotifications(req, res, next) {
     try {
-        const { listExpiredFssaiRestaurants } = await import('../../restaurant/services/fssaiExpiry.service.js');
-        const items = await listExpiredFssaiRestaurants();
+        const { listExpiredFssaiShops } = await import('../../shop/services/fssaiExpiry.service.js');
+        const items = await listExpiredFssaiShops();
         res.status(200).json({
             success: true,
             message: 'Expired FSSAI notifications fetched successfully',

@@ -3,16 +3,16 @@ import mongoose from 'mongoose';
 import { connectDB, disconnectDB } from '../src/config/db.js';
 import { FoodUser } from '../src/core/users/user.model.js';
 import { FoodItem } from '../src/modules/food/admin/models/food.model.js';
-import { FoodRestaurantCommission } from '../src/modules/food/admin/models/restaurantCommission.model.js';
-import { FoodRestaurant } from '../src/modules/food/restaurant/models/restaurant.model.js';
+import { FoodShopCommission } from '../src/modules/food/admin/models/shopCommission.model.js';
+import { FoodShop } from '../src/modules/food/shop/models/shop.model.js';
 import * as orderService from '../src/modules/food/orders/services/order.service.js';
 import {
-  computeRestaurantCommissionAmount,
-  getRestaurantCommissionSnapshot,
+  computeShopCommissionAmount,
+  getShopCommissionSnapshot,
 } from '../src/modules/food/orders/services/foodTransaction.service.js';
 
-function buildAddress(restaurant) {
-  const coords = restaurant?.location?.coordinates || [77.5946, 12.9716];
+function buildAddress(shop) {
+  const coords = shop?.location?.coordinates || [77.5946, 12.9716];
   const lng = Number(coords[0]) || 77.5946;
   const lat = Number(coords[1]) || 12.9716;
 
@@ -83,17 +83,17 @@ async function verifyBulkPricingAndValidation() {
       { 'variants.bulkOrderPricing.enabled': true },
     ],
   })
-    .select('_id name image foodType price variants bulkOrderPricing restaurantId')
+    .select('_id name image foodType price variants bulkOrderPricing shopId')
     .lean();
   if (!food?._id) throw new Error('No bulk-enabled food item found');
 
-  const restaurant = await FoodRestaurant.findById(food.restaurantId)
-    .select('_id restaurantName status takeawayEnabled location zoneId')
+  const shop = await FoodShop.findById(food.shopId)
+    .select('_id shopName status takeawayEnabled location zoneId')
     .lean();
-  if (!restaurant?._id) throw new Error('Restaurant for bulk-enabled food not found');
+  if (!shop?._id) throw new Error('Shop for bulk-enabled food not found');
 
   const item = buildItemPayload(food);
-  const address = buildAddress(restaurant);
+  const address = buildAddress(shop);
   const items = [
     {
       itemId: item.itemId,
@@ -111,7 +111,7 @@ async function verifyBulkPricingAndValidation() {
   const calculateDto = {
     orderType: 'food',
     fulfillmentType: 'delivery',
-    restaurantId: String(restaurant._id),
+    shopId: String(shop._id),
     address,
     items,
     isBulkOrder: true,
@@ -137,7 +137,7 @@ async function verifyBulkPricingAndValidation() {
 
   const output = {
     sample: {
-      restaurantName: restaurant.restaurantName,
+      shopName: shop.shopName,
       itemName: food.name,
       bulkSource: item.source,
       expectedBulkPrice: item.expectedBulkPrice,
@@ -184,7 +184,7 @@ async function verifyBulkPricingAndValidation() {
 }
 
 async function verifyBulkCommissionSelection() {
-  const commissionDoc = await FoodRestaurantCommission.findOne({
+  const commissionDoc = await FoodShopCommission.findOne({
     status: { $ne: false },
     'bulkOrderCommission.type': { $in: ['percentage', 'amount'] },
   }).lean();
@@ -193,28 +193,28 @@ async function verifyBulkCommissionSelection() {
     return {
       ok: false,
       message:
-        'No restaurant commission doc with bulkOrderCommission configured was found for runtime verification.',
+        'No shop commission doc with bulkOrderCommission configured was found for runtime verification.',
     };
   }
 
   const baseAmount = 1000;
-  const expectedBulk = computeRestaurantCommissionAmount(baseAmount, {
+  const expectedBulk = computeShopCommissionAmount(baseAmount, {
     commission: commissionDoc.bulkOrderCommission,
   });
-  const expectedDefault = computeRestaurantCommissionAmount(baseAmount, {
+  const expectedDefault = computeShopCommissionAmount(baseAmount, {
     commission: commissionDoc.defaultCommission,
   });
-  const snapshot = await getRestaurantCommissionSnapshot({
-    restaurantId: commissionDoc.restaurantId,
+  const snapshot = await getShopCommissionSnapshot({
+    shopId: commissionDoc.shopId,
     isBulkOrder: true,
     pricing: {
       subtotal: baseAmount,
-      offerByRestaurant: 0,
+      offerByShop: 0,
     },
   });
 
   return {
-    restaurantId: String(commissionDoc.restaurantId),
+    shopId: String(commissionDoc.shopId),
     defaultCommission: commissionDoc.defaultCommission,
     bulkOrderCommission: commissionDoc.bulkOrderCommission,
     expectedBulkAmount: expectedBulk.commissionAmount,

@@ -19,14 +19,14 @@ export default function AdsList() {
   const [selectedAd, setSelectedAd] = useState(null)
   const [filters, setFilters] = useState({
     status: "",
-    restaurant: "",
+    shop: "",
     priority: "",
   })
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     adsId: true,
     adsTitle: true,
-    restaurantInfo: true,
+    shopInfo: true,
     adsType: true,
     duration: true,
     status: true,
@@ -38,7 +38,7 @@ export default function AdsList() {
     si: "Serial Number",
     adsId: "Ads ID",
     adsTitle: "Ads Title",
-    restaurantInfo: "Restaurant Info",
+    shopInfo: "Shop Info",
     adsType: "Ads Type",
     duration: "Duration",
     status: "Status",
@@ -57,7 +57,7 @@ export default function AdsList() {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(ad =>
         ad.adsId?.toLowerCase().includes(query) ||
-        ad.restaurantName?.toLowerCase().includes(query) ||
+        ad.shopName?.toLowerCase().includes(query) ||
         ad.adsTitle?.toLowerCase().includes(query)
       )
     }
@@ -67,7 +67,7 @@ export default function AdsList() {
     }
 
     if (filters.shop) {
-      result = result.filter(ad => ad.restaurantName === filters.shop)
+      result = result.filter(ad => ad.shopName === filters.shop)
     }
 
     if (filters.priority) {
@@ -136,7 +136,7 @@ export default function AdsList() {
       si: true,
       adsId: true,
       adsTitle: true,
-      restaurantInfo: true,
+      shopInfo: true,
       adsType: true,
       duration: true,
       status: true,
@@ -157,7 +157,7 @@ export default function AdsList() {
     })
   }
 
-  const shops = [...new Set(ads.map(ad => ad.restaurantName))].filter(Boolean)
+  const shops = [...new Set(ads.map(ad => ad.shopName))].filter(Boolean)
   const statuses = [...new Set(ads.map(ad => ad.status))].filter(Boolean)
 
   return (
@@ -193,7 +193,7 @@ export default function AdsList() {
             className="px-4 py-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
           >
             <option value="all">All Ads</option>
-            <option value="Restaurant Promotion">Shop Promotion</option>
+            <option value="Shop Promotion">Shop Promotion</option>
             <option value="Video promotion">Video promotion</option>
           </select>
 
@@ -271,7 +271,7 @@ export default function AdsList() {
                 {visibleColumns.si && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">SI</th>}
                 {visibleColumns.adsId && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads ID</th>}
                 {visibleColumns.adsTitle && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Title</th>}
-                {visibleColumns.restaurantInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop Info</th>}
+                {visibleColumns.shopInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Shop Info</th>}
                 {visibleColumns.adsType && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Type</th>}
                 {visibleColumns.duration && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Duration</th>}
                 {visibleColumns.status && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Status</th>}
@@ -313,15 +313,15 @@ export default function AdsList() {
                         <span className="text-sm font-medium text-slate-900">{ad.adsTitle}</span>
                       </td>
                     )}
-                    {visibleColumns.restaurantInfo && (
+                    {visibleColumns.shopInfo && (
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                             <Building2 className="w-5 h-5 text-orange-600" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-slate-900">{ad.restaurantName}</span>
-                            <span className="text-xs text-slate-500">{ad.restaurantEmail}</span>
+                            <span className="text-sm font-medium text-slate-900">{ad.shopName}</span>
+                            <span className="text-xs text-slate-500">{ad.shopEmail}</span>
                           </div>
                         </div>
                       </td>
@@ -430,13 +430,13 @@ export default function AdsList() {
                 Shop
               </label>
               <select
-                value={filters.restaurant}
+                value={filters.shop}
                 onChange={(e) => setFilters(prev => ({ ...prev, shop: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
               >
                 <option value="">All Shops</option>
                 {shops.map(shop => (
-                  <option key={restaurant} value={restaurant}>{shop}</option>
+                  <option key={shop} value={shop}>{shop}</option>
                 ))}
               </select>
             </div>
@@ -502,11 +502,11 @@ export default function AdsList() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Shop Name</p>
-                  <p className="text-sm text-slate-900">{selectedAd.restaurantName}</p>
+                  <p className="text-sm text-slate-900">{selectedAd.shopName}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Shop Email</p>
-                  <p className="text-sm text-slate-900">{selectedAd.restaurantEmail}</p>
+                  <p className="text-sm text-slate-900">{selectedAd.shopEmail}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Ads Type</p>

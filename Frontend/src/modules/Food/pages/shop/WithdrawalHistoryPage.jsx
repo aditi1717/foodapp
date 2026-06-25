@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Wallet } from "lucide-react"
 import BottomNavOrders from "@food/components/shop/BottomNavOrders"
-import { restaurantAPI } from "@food/api"
+import { shopAPI } from "@food/api"
 import BRAND_THEME from "@/config/brandTheme"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -20,7 +20,7 @@ export default function WithdrawalHistoryPage() {
     const fetchWithdrawalRequests = async () => {
       try {
         setLoadingWithdrawalRequests(true)
-        const response = await restaurantAPI.getWithdrawalHistory()
+        const response = await shopAPI.getWithdrawalHistory()
         // API returns { success: true, data: [...] }
         const history = response?.data?.data || []
         

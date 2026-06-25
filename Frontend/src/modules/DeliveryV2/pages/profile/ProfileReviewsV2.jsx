@@ -116,7 +116,7 @@ export const ProfileReviewsV2 = () => {
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-black text-gray-950">{review.customer || "Customer"}</p>
                     <p className="mt-0.5 truncate text-[10px] font-semibold text-gray-400">
-                      #{review.orderId || "N/A"} - {review.restaurant || "Restaurant"}
+                      #{review.orderId || "N/A"} - {review.shop || "Shop"}
                     </p>
                   </div>
                   <div className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">

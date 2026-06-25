@@ -14,9 +14,9 @@ const foodLandingSettingsSchema = new mongoose.Schema(
             type: String,
             default: ''
         },
-        recommendedRestaurantIds: {
+        recommendedShopIds: {
             type: [mongoose.Schema.Types.ObjectId],
-            ref: 'FoodRestaurant',
+            ref: 'FoodShop',
             default: []
         },
         showHeroBanners: {
@@ -44,7 +44,7 @@ const foodLandingSettingsSchema = new mongoose.Schema(
             default: 250,
             min: 1
         },
-        zoneRestaurantVisibility: {
+        zoneShopVisibility: {
             type: [
                 new mongoose.Schema(
                     {
@@ -58,9 +58,9 @@ const foodLandingSettingsSchema = new mongoose.Schema(
                             enum: ['automatic', 'manual'],
                             default: 'automatic'
                         },
-                        manualRestaurantIds: {
+                        manualShopIds: {
                             type: [mongoose.Schema.Types.ObjectId],
-                            ref: 'FoodRestaurant',
+                            ref: 'FoodShop',
                             default: []
                         }
                     },
