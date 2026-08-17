@@ -33,15 +33,18 @@ export const config = {
     smsDltTemplateId: process.env.SMS_INDIA_HUB_DLT_TEMPLATE_ID,
 
     // Rate limiting
+    rateLimitEnabled: process.env.RATE_LIMIT_ENABLED !== 'false',
     rateLimitWindowMinutes: Number(process.env.RATE_LIMIT_WINDOW || 15),
-    rateLimitMaxRequests: Number(process.env.RATE_LIMIT_MAX || 100),
+    rateLimitMaxRequests: Number(process.env.RATE_LIMIT_MAX || 3500),
+    rateLimitDevMax: Number(process.env.RATE_LIMIT_DEV_MAX || 2000),
     authRateLimitWindowMinutes: Number(process.env.AUTH_RATE_LIMIT_WINDOW || 15),
     authRateLimitMax: Number(process.env.AUTH_RATE_LIMIT_MAX || 30),
 
     // Security
     bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS || 10),
 
-    // Uploads
+    // Uploads & Application URL
+    appUrl: process.env.APP_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://appzeto.com' : `http://localhost:${process.env.PORT || 5000}`),
     uploadPath: process.env.UPLOAD_PATH || 'uploads/',
 
     // Redis
@@ -58,7 +61,7 @@ export const config = {
 
     // Firebase / FCM
     firebaseProjectId: process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID,
-    firebaseDatabaseUrl: process.env.FIREBASE_DATABASE_URL,
+    firebaseDatabaseUrl: process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL,
     firebaseServiceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
     firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
     firebaseWebApiKey: process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY,

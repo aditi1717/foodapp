@@ -11,6 +11,7 @@ import paymentRoutes from '../core/payments/payment.routes.js';
 import fcmRoutes from '../core/notifications/fcm.routes.js';
 import notificationRoutes from '../core/notifications/notification.routes.js';
 import { authMiddleware } from '../core/auth/auth.middleware.js';
+import { privateRateLimiter } from '../middleware/rateLimit.js';
 import * as businessSettingsController from '../modules/food/admin/controllers/businessSettings.controller.js';
 import { requireRoles } from '../core/roles/role.middleware.js';
 import { getQueuesController } from '../controllers/admin.controller.js';
@@ -23,32 +24,32 @@ router.get('/v1/health', (req, res) => {
     res.status(200).json({ status: 'UP', message: 'Server is healthy' });
 });
 
-// Food-prefixed auth routes (preferred)
+// Category A — Authentication APIs (Auth Rate Limiter handles inside authRoutes)
 router.use('/v1/food/auth', authRoutes);
-
-// Backward-compatible auth routes (legacy)
 router.use('/v1/auth', authRoutes);
+
+// Category B — Public APIs (Unrestricted, No Rate Limiter)
 router.use('/v1/food/delivery', deliveryRoutes);
 router.use('/v1/food/shop', shopRoutes);
-// Landing & hero-banners for Food user app (paths start with /food/hero-banners/...)
 router.use('/v1/food', landingRoutes);
 router.use('/v1/food/search', searchRoutes);
 router.use('/v1/uploads', uploadRoutes);
 
-// Mark business-settings/public as truly public (must be before protected admin block)
+// Public business settings
 router.get('/v1/food/admin/business-settings/public', businessSettingsController.getBusinessSettings);
 
-router.use('/v1/food/admin', authMiddleware, requireRoles('ADMIN'), shopAdminRoutes);
-router.use('/v1/food/user', authMiddleware, requireRoles('USER'), userRoutes);
-router.use('/v1/food/notifications', authMiddleware, requireRoles('USER', 'SHOP', 'DELIVERY_PARTNER'), notificationRoutes);
-router.use('/v1/food/orders', authMiddleware, requireRoles('USER'), orderUserRoutes);
-router.use('/v1/food/payments', authMiddleware, paymentRoutes);
+// Webhook routes (Public)
 router.use('/v1/payments/webhook', webhookRoutes);
+
+// Category C — Private APIs (Auth Middleware -> Private Rate Limiter -> Routes)
+router.use('/v1/food/admin', authMiddleware, privateRateLimiter, requireRoles('ADMIN'), shopAdminRoutes);
+router.use('/v1/food/user', authMiddleware, privateRateLimiter, requireRoles('USER'), userRoutes);
+router.use('/v1/food/notifications', authMiddleware, privateRateLimiter, requireRoles('USER', 'SHOP', 'DELIVERY_PARTNER'), notificationRoutes);
+router.use('/v1/food/orders', authMiddleware, privateRateLimiter, requireRoles('USER'), orderUserRoutes);
+router.use('/v1/food/payments', authMiddleware, privateRateLimiter, paymentRoutes);
 router.use('/v1/fcm-tokens', fcmRoutes);
 router.use('/fcm-tokens', fcmRoutes);
-// router.get('/v1/env/public', getPublicEnvController);
-// router.get('/env/public', getPublicEnvController);
 
-router.get('/v1/admin/queues', authMiddleware, requireRoles('ADMIN'), getQueuesController);
+router.get('/v1/admin/queues', authMiddleware, privateRateLimiter, requireRoles('ADMIN'), getQueuesController);
 
 export default router;

@@ -295,7 +295,7 @@ export default function OrderInvoice() {
         pdf.text("INVOICE", margin + logoWidth + 6, y)
         pdf.setFontSize(10)
         pdf.setTextColor(100, 116, 139)
-        pdf.text(String(companyName || "Iggymet").toUpperCase(), margin + logoWidth + 6, y + 7)
+        pdf.text(String(companyName || "FreshCut Local").toUpperCase(), margin + logoWidth + 6, y + 7)
       } else {
         pdf.setFont("helvetica", "bold")
         pdf.setFontSize(24)
@@ -303,7 +303,7 @@ export default function OrderInvoice() {
         pdf.text("INVOICE", margin, y)
         pdf.setFontSize(10)
         pdf.setTextColor(100, 116, 139)
-        pdf.text(String(companyName || "Iggymet").toUpperCase(), margin, y + 7)
+        pdf.text(String(companyName || "FreshCut Local").toUpperCase(), margin, y + 7)
       }
 
       pdf.setFont("helvetica", "bold")
@@ -318,7 +318,7 @@ export default function OrderInvoice() {
       pdf.line(margin, y, pageWidth - margin, y)
       y += 10
 
-      addText(companyName || "Iggymet", margin, { size: 10, color: [100, 116, 139] })
+      addText(companyName || "FreshCut Local", margin, { size: 10, color: [100, 116, 139] })
       addText("Food Delivery Platform", margin, { size: 10, color: [100, 116, 139] })
       y += 3
       addText(`Status: ${invoiceStatus}`, margin, { size: 11, style: "bold", color: [37, 99, 235] })

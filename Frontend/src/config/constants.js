@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  NAME: 'Iggymet',
+  NAME: 'FreshCut Local',
   VERSION: '1.0.0',
 };
 

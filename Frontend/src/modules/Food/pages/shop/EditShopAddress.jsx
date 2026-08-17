@@ -267,7 +267,7 @@ export default function EditShopAddress() {
           {/* Informational Banner */}
           <div className="bg-brand-100 rounded-lg px-4 py-3 mb-4">
             <p className="text-sm text-gray-900">
-              Customers and Iggymet delivery partners will use this to locate your outlet.
+              Customers and FreshCut Local delivery partners will use this to locate your outlet.
             </p>
           </div>
 

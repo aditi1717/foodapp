@@ -35,7 +35,7 @@ const carouselData = [
 
 export default function ShopWelcome() {
   const navigate = useNavigate()
-  const companyName = useCompanyName() || "Iggymet"
+  const companyName = useCompanyName() || "FreshCut Local"
   const [currentIndex, setCurrentIndex] = useState(0)
   const [direction, setDirection] = useState(0) // 1 for next, -1 for previous
   const [touchStart, setTouchStart] = useState(null)
@@ -307,7 +307,7 @@ export default function ShopWelcome() {
           variant="outline"
           className="w-full border-2 border-brand-600 text-brand-600 hover:bg-brand-600 hover:text-white font-bold py-6 md:py-7 text-base md:text-lg rounded-lg transition-all shadow-lg bg-transparent"
         >
-          Partner with Iggymet
+          Partner with FreshCut Local
         </Button> */}
 
         {/* Terms and Conditions */}

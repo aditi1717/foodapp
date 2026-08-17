@@ -8,11 +8,11 @@ import routes from './routes/index.js';
 import errorHandler from './middleware/errorHandler.js';
 import fs from 'fs';
 import path from 'path';
-import { apiRateLimiter } from './middleware/rateLimit.js';
 import { responseTimeLogger } from './middleware/responseTimeLogger.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { healthCheck } from './config/health.js';
 import { config } from './config/env.js';
+import { getUploadDir, ensureUploadDirExists } from './services/storage.service.js';
 
 const app = express();
 
@@ -64,12 +64,16 @@ app.use((req, _res, next) => {
 });
 app.use(xssClean());
 
-// Global rate limiting for API routes
-app.use('/api', apiRateLimiter);
-
 // Optional: log API response time (method, path, status, duration) - no sensitive data
 app.use('/api', responseTimeLogger);
 
+
+// Ensure upload directory exists on boot
+ensureUploadDirExists().catch((err) => console.error('[STORAGE_INIT_ERROR]', err));
+
+// Serve uploads static folder (in dev Express serves /uploads, in prod Nginx handles /uploads/)
+const uploadDir = getUploadDir();
+app.use('/uploads', express.static(uploadDir));
 
 // API Routes
 app.use('/api', routes);

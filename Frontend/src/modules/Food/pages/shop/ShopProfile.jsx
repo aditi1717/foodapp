@@ -1561,7 +1561,7 @@ const ShopProfile = () => {
 
       {/* Branding only */}
       <div className="max-w-5xl mx-auto px-6 mt-12 text-center pb-12">
-        <p className="mt-8 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Powered by Iggymet Bussiness Studio</p>
+        <p className="mt-8 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Powered by FreshCut Local Business Studio</p>
       </div>
     </div>
   )
