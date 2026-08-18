@@ -225,27 +225,58 @@ const isValidOwnerEmail = (value) => {
 
 const getVerifiedPhoneFromStoredShop = () => {
   try {
-    const pending = localStorage.getItem("shop_pendingPhone")
-    if (pending && pending.trim()) {
-      return pending.trim()
+    const phoneKeys = [
+      "shop_pendingPhone",
+      "shopLoginPhone",
+      "pendingPhone",
+      "shop_phone",
+      "user_phone",
+      "phone",
+      "login_phone",
+    ]
+    for (const key of phoneKeys) {
+      const val = localStorage.getItem(key) || sessionStorage.getItem(key)
+      if (val && typeof val === "string" && val.trim()) {
+        const cleaned = normalizePhoneDigits(val)
+        if (cleaned.length === 10) return cleaned
+      }
     }
 
-    const storedUser = localStorage.getItem("shop_user")
-    if (!storedUser) return ""
-    const user = JSON.parse(storedUser)
-    const candidates = [
-      user?.ownerPhone,
-      user?.primaryContactNumber,
-      user?.phone,
-      user?.phoneNumber,
-      user?.mobile,
-      user?.contactNumber,
-      user?.contact?.phone,
-      user?.owner?.phone,
-      user?.shop?.phone,
-    ]
-    const phone = candidates.find((value) => typeof value === "string" && value.trim())
-    return phone ? phone.trim() : ""
+    const authDataStr = sessionStorage.getItem("shopAuthData")
+    if (authDataStr) {
+      try {
+        const data = JSON.parse(authDataStr)
+        if (data?.phone) {
+          const cleaned = normalizePhoneDigits(data.phone)
+          if (cleaned.length === 10) return cleaned
+        }
+      } catch (_) {}
+    }
+
+    const userKeys = ["shop_user", "user_user", "user", "vendor_user", "auth_user"]
+    for (const key of userKeys) {
+      const storedUser = localStorage.getItem(key) || sessionStorage.getItem(key)
+      if (!storedUser) continue
+      const user = JSON.parse(storedUser)
+      const candidates = [
+        user?.ownerPhone,
+        user?.primaryContactNumber,
+        user?.phone,
+        user?.phoneNumber,
+        user?.mobile,
+        user?.mobileNumber,
+        user?.contactNumber,
+        user?.contact?.phone,
+        user?.owner?.phone,
+        user?.shop?.phone,
+      ]
+      const phone = candidates.find((value) => typeof value === "string" && value.trim())
+      if (phone) {
+        const cleaned = normalizePhoneDigits(phone)
+        if (cleaned.length === 10) return cleaned
+      }
+    }
+    return ""
   } catch {
     return ""
   }
@@ -670,26 +701,29 @@ export default function ShopOnboarding() {
     return () => window.removeEventListener("popstate", handlePopState)
   }, [])
 
-  const [step1, setStep1] = useState({
-    shopName: "",
-    pureVegShop: null,
-    ownerName: "",
-    ownerEmail: "",
-    ownerPhone: "",
-    primaryContactNumber: "",
-    zoneId: "",
-    location: {
-      formattedAddress: "",
-      addressLine1: "",
-      addressLine2: "",
-      area: "",
-      city: "",
-      state: "",
-      pincode: "",
-      landmark: "",
-      latitude: "",
-      longitude: "",
-    },
+  const [step1, setStep1] = useState(() => {
+    const loginPhone = getVerifiedPhoneFromStoredShop()
+    return {
+      shopName: "",
+      pureVegShop: null,
+      ownerName: "",
+      ownerEmail: "",
+      ownerPhone: loginPhone || "",
+      primaryContactNumber: loginPhone || "",
+      zoneId: "",
+      location: {
+        formattedAddress: "",
+        addressLine1: "",
+        addressLine2: "",
+        area: "",
+        city: "",
+        state: "",
+        pincode: "",
+        landmark: "",
+        latitude: "",
+        longitude: "",
+      },
+    }
   })
 
   const [step2, setStep2] = useState({
@@ -981,7 +1015,8 @@ export default function ShopOnboarding() {
     if (!verifiedPhoneNumber) return
     setStep1((prev) => ({
       ...prev,
-      ownerPhone: verifiedPhoneNumber,
+      ownerPhone: prev.ownerPhone || verifiedPhoneNumber,
+      primaryContactNumber: prev.primaryContactNumber || verifiedPhoneNumber,
     }))
   }, [verifiedPhoneNumber])
 
@@ -1472,12 +1507,21 @@ export default function ShopOnboarding() {
     } else if (!isValidOwnerEmail(step1.ownerEmail)) {
       errors.push("Please enter a valid email address (example: owner@example.com)")
     }
-    if (!step1.ownerPhone?.trim()) {
+    const ownerPhoneVal = step1.ownerPhone?.trim() || ""
+    const primaryContactVal = step1.primaryContactNumber?.trim() || ""
+
+    const effectiveOwnerPhone = ownerPhoneVal || primaryContactVal
+    const effectivePrimaryPhone = primaryContactVal || ownerPhoneVal
+
+    if (!effectiveOwnerPhone) {
       errors.push("Owner phone number is required")
+    } else if (!INDIAN_MOBILE_REGEX.test(effectiveOwnerPhone)) {
+      errors.push("Owner phone number must be a valid 10-digit mobile number")
     }
-    if (!step1.primaryContactNumber?.trim()) {
+
+    if (!effectivePrimaryPhone) {
       errors.push("Primary contact number is required")
-    } else if (!INDIAN_MOBILE_REGEX.test(step1.primaryContactNumber.trim())) {
+    } else if (!INDIAN_MOBILE_REGEX.test(effectivePrimaryPhone)) {
       errors.push("Primary contact number must be a valid 10-digit mobile number")
     }
     if (!step1.zoneId?.trim()) {
@@ -1965,7 +2009,11 @@ export default function ShopOnboarding() {
               value={step1.ownerPhone || ""}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, "").slice(0, 10)
-                setStep1({ ...step1, ownerPhone: val })
+                setStep1((prev) => ({
+                  ...prev,
+                  ownerPhone: val,
+                  primaryContactNumber: (!prev.primaryContactNumber || prev.primaryContactNumber === prev.ownerPhone) ? val : prev.primaryContactNumber,
+                }))
               }}
               onKeyDown={(e) => {
                 const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"]
@@ -1975,12 +2023,16 @@ export default function ShopOnboarding() {
               onPaste={(e) => {
                 e.preventDefault()
                 const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 10)
-                setStep1({ ...step1, ownerPhone: pasted })
+                setStep1((prev) => ({
+                  ...prev,
+                  ownerPhone: pasted,
+                  primaryContactNumber: (!prev.primaryContactNumber || prev.primaryContactNumber === prev.ownerPhone) ? pasted : prev.primaryContactNumber,
+                }))
               }}
               inputMode="numeric"
-              readOnly
+              readOnly={Boolean(verifiedPhoneNumber)}
               className="mt-1 bg-white text-sm text-black placeholder-black"
-              placeholder="+91 98XXXXXX"
+              placeholder="10-digit owner phone number"
               disabled={!isEditing}
             />
           </div>
@@ -1995,7 +2047,11 @@ export default function ShopOnboarding() {
             value={step1.primaryContactNumber || ""}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "").slice(0, 10)
-              setStep1({ ...step1, primaryContactNumber: val })
+              setStep1((prev) => ({
+                ...prev,
+                primaryContactNumber: val,
+                ownerPhone: (!prev.ownerPhone || prev.ownerPhone === prev.primaryContactNumber) ? val : prev.ownerPhone,
+              }))
             }}
             onKeyDown={(e) => {
               const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"]
@@ -2005,7 +2061,11 @@ export default function ShopOnboarding() {
             onPaste={(e) => {
               e.preventDefault()
               const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 10)
-              setStep1({ ...step1, primaryContactNumber: pasted })
+              setStep1((prev) => ({
+                ...prev,
+                primaryContactNumber: pasted,
+                ownerPhone: (!prev.ownerPhone || prev.ownerPhone === prev.primaryContactNumber) ? pasted : prev.ownerPhone,
+              }))
             }}
             inputMode="numeric"
             className="mt-1 bg-white text-sm text-black placeholder-black"
