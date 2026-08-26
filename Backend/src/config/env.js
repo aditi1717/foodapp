@@ -44,7 +44,11 @@ export const config = {
     bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS || 10),
 
     // Uploads & Application URL
-    appUrl: process.env.APP_URL || process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://appzeto.com' : `http://localhost:${process.env.PORT || 5000}`),
+    appUrl:
+        process.env.APP_URL ||
+        process.env.BACKEND_URL ||
+        (process.env.NODE_ENV === 'production' ? '' : `http://localhost:${process.env.PORT || 5000}`),
+    uploadBaseUrl: process.env.UPLOAD_BASE_URL || '',
     uploadPath: process.env.UPLOAD_PATH || 'uploads/',
 
     // Redis

@@ -4,23 +4,64 @@ import crypto from 'crypto';
 import sharp from 'sharp';
 import { config } from '../config/env.js';
 
-const getUploadBaseUrl = () => {
-    // In local development, always prefer the local backend origin for disk uploads.
-    if (config.nodeEnv !== 'production') {
-        return `http://localhost:${config.port || 5000}`;
+const isAbsoluteHttpUrl = (value = '') => /^https?:\/\//i.test(String(value || '').trim());
+
+const joinUrlSegments = (base, segment) => {
+    const normalizedBase = String(base || '').replace(/\/+$/, '');
+    const normalizedSegment = String(segment || '').replace(/^\/+/, '');
+    return `${normalizedBase}/${normalizedSegment}`;
+};
+
+const buildUploadPublicUrl = (filename) => {
+    const safeFilename = String(filename || '').replace(/^\/+/, '');
+    const configuredBase = String(config.uploadBaseUrl || '').trim().replace(/\/+$/, '');
+
+    if (configuredBase) {
+        if (/\/uploads$/i.test(configuredBase)) {
+            return joinUrlSegments(configuredBase, safeFilename);
+        }
+        return joinUrlSegments(joinUrlSegments(configuredBase, 'uploads'), safeFilename);
     }
 
-    return config.appUrl || `http://localhost:${config.port || 5000}`;
+    // In local development, prefer the local backend origin for disk uploads.
+    if (config.nodeEnv !== 'production') {
+        return joinUrlSegments(`http://localhost:${config.port || 5000}/uploads`, safeFilename);
+    }
+
+    if (config.appUrl) {
+        return joinUrlSegments(joinUrlSegments(config.appUrl, 'uploads'), safeFilename);
+    }
+
+    return `/uploads/${safeFilename}`;
 };
 
 export const normalizeStoredUploadUrl = (value) => {
     const raw = String(value || '').trim();
     if (!raw) return '';
 
-    const baseUrl = getUploadBaseUrl().replace(/\/$/, '');
+    const configuredBase = String(config.uploadBaseUrl || '').trim().replace(/\/+$/, '');
     const uploadsMatch = raw.replace(/\\/g, '/').match(/\/uploads\/[^?#]+/i);
     if (uploadsMatch) {
-        return `${baseUrl}${uploadsMatch[0]}`;
+        if (configuredBase) {
+            if (/\/uploads$/i.test(configuredBase)) {
+                return joinUrlSegments(configuredBase, uploadsMatch[0].replace(/^\/uploads\/+/i, ''));
+            }
+            return joinUrlSegments(configuredBase, uploadsMatch[0].replace(/^\/+/, ''));
+        }
+
+        if (config.nodeEnv !== 'production') {
+            return joinUrlSegments(`http://localhost:${config.port || 5000}`, uploadsMatch[0].replace(/^\/+/, ''));
+        }
+
+        if (config.appUrl) {
+            return joinUrlSegments(config.appUrl, uploadsMatch[0].replace(/^\/+/, ''));
+        }
+
+        return uploadsMatch[0];
+    }
+
+    if (isAbsoluteHttpUrl(raw)) {
+        return raw;
     }
 
     return raw;
@@ -77,8 +118,7 @@ export const uploadImageBuffer = async (buffer, _folder = 'uploads') => {
     await fs.promises.writeFile(filePath, webpBuffer);
 
     // Build accessible URL
-    const baseUrl = getUploadBaseUrl();
-    const fileUrl = `${baseUrl.replace(/\/$/, '')}/uploads/${filename}`;
+    const fileUrl = buildUploadPublicUrl(filename);
 
     return fileUrl;
 };
