@@ -4211,9 +4211,9 @@ function OrderCard({
   const isDeliveryAssignedPending =
     dispatchStatusLower === "assigned" && !isDeliveryAccepted;
   const canShowAutoAssign =
-    !isTakeaway && dispatchStatusLower === "unassigned" && hasExclusiveRiders;
+    !isTakeaway && dispatchStatusLower === "unassigned";
   const canShowManualAssign =
-    !isTakeaway && dispatchStatusLower === "unassigned" && hasExclusiveRiders;
+    !isTakeaway && dispatchStatusLower === "unassigned";
   const assignmentBadgeText = isDeliveryAccepted
     ? "Accepted"
     : isDeliveryAssignedPending
