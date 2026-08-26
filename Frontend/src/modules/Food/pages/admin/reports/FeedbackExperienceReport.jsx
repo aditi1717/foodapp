@@ -52,7 +52,7 @@ export default function FeedbackExperienceReport() {
           userEmail: fb.userEmail || 'N/A',
           userPhone: fb.userPhone || 'N/A',
           shopName: fb.shopId?.shopName || 'N/A',
-          rating: fb.rating * 2, // Convert 1-5 back to 1-10 for UI
+          rating: fb.rating, // Rating stored on 0-10 scale
           experience: fb.comment || 'N/A',
           module: fb.module,
           createdAt: fb.createdAt
@@ -550,6 +550,14 @@ export default function FeedbackExperienceReport() {
                         {selectedFeedback.module || 'N/A'}
                       </span>
                     </p>
+                  </div>
+                </div>
+
+                {/* Feedback Comment Section */}
+                <div className="col-span-2 space-y-1 pt-2">
+                  <label className="text-sm font-semibold text-slate-700 block">Feedback / Comment</label>
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
+                    {getExperienceLabel(selectedFeedback.experience)}
                   </div>
                 </div>
               </div>

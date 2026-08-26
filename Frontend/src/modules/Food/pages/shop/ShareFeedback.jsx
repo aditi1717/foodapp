@@ -19,6 +19,7 @@ export default function ShareFeedback() {
   const navigate = useNavigate()
   const goBack = useShopBackNavigation()
   const [rating, setRating] = useState(null)
+  const [feedbackText, setFeedbackText] = useState("")
   const [showThanks, setShowThanks] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -33,11 +34,13 @@ export default function ShareFeedback() {
     
     try {
       setIsSubmitting(true)
-      // Save feedback experience to backend
+      // Save feedback experience to backend with optional feedback text
+      const commentPayload = feedbackText.trim() || `Shop rated ${rating}/10 overall experience`
+
       const response = await api.post(API_ENDPOINTS.ADMIN.FEEDBACK_EXPERIENCE_CREATE, {
         rating, // Persist exact 0-10 value selected by shop
         module: 'shop',
-        comment: `Shop rated ${rating}/10 overall experience`
+        comment: commentPayload
       })
       
       if (response.data?.success) {
@@ -127,15 +130,30 @@ export default function ShareFeedback() {
           )}
         </div>
 
+        {/* Optional Feedback Text Box */}
+        <div className="mt-4 mb-2">
+          <label htmlFor="feedback-comment" className="block text-xs font-semibold text-gray-700 mb-1.5">
+            Your Feedback <span className="text-gray-400 font-normal">(Optional)</span>
+          </label>
+          <textarea
+            id="feedback-comment"
+            value={feedbackText}
+            onChange={(e) => setFeedbackText(e.target.value)}
+            placeholder="Share any additional thoughts, suggestions, or comments..."
+            rows={3}
+            className="w-full px-3 py-2.5 text-xs text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all resize-none bg-gray-50/50"
+          />
+        </div>
+
         {/* Illustration placeholder */}
-        <div className="mt-10 flex items-center justify-center">
-          <div className="w-full max-w-xs h-48 rounded-3xl bg-gradient-to-r from-indigo-100 via-pink-100 to-yellow-100 flex items-end justify-center px-6 pb-6">
+        <div className="mt-6 flex items-center justify-center">
+          <div className="w-full max-w-xs h-36 rounded-3xl bg-gradient-to-r from-indigo-100 via-pink-100 to-yellow-100 flex items-end justify-center px-6 pb-6">
             <div className="flex items-end gap-2 w-full justify-between">
-              <div className="w-10 h-20 rounded-full bg-indigo-300" />
-              <div className="w-10 h-32 rounded-full bg-pink-300" />
-              <div className="w-10 h-24 rounded-full bg-purple-300" />
-              <div className="w-10 h-28 rounded-full bg-green-300" />
-              <div className="w-10 h-22 rounded-full bg-yellow-300" />
+              <div className="w-10 h-16 rounded-full bg-indigo-300" />
+              <div className="w-10 h-24 rounded-full bg-pink-300" />
+              <div className="w-10 h-18 rounded-full bg-purple-300" />
+              <div className="w-10 h-22 rounded-full bg-green-300" />
+              <div className="w-10 h-16 rounded-full bg-yellow-300" />
             </div>
           </div>
         </div>
@@ -146,16 +164,16 @@ export default function ShareFeedback() {
         <motion.button
           type="button"
           onClick={handleContinue}
-          disabled={rating === null}
+          disabled={rating === null || isSubmitting}
           className={`w-full py-3 rounded-full text-sm font-medium transition-colors ${
-            rating === null
-              ? "bg-gray-200 text-gray-500"
+            rating === null || isSubmitting
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
               : "text-white"
           }`}
-          style={rating === null ? undefined : { background: BRAND_THEME.gradients.primary }}
-          whileTap={rating !== null ? { scale: 0.98 } : undefined}
+          style={rating === null || isSubmitting ? undefined : { background: BRAND_THEME.gradients.primary }}
+          whileTap={rating !== null && !isSubmitting ? { scale: 0.98 } : undefined}
         >
-          Continue
+          {isSubmitting ? "Submitting..." : "Continue"}
         </motion.button>
       </div>
 

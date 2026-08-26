@@ -244,8 +244,11 @@ export default function LandingPageManagement() {
       const response = await api.post('/food/hero-banners/multiple', formData, config)
 
       if (response.data.success) {
-        const uploadedBanners = response.data.data?.banners || []
-        const errors = response.data.data?.errors || []
+        const results = response.data.data?.results || []
+        const uploadedBanners = results.filter(result => result.success && result.banner)
+        const errors = results
+          .filter(result => !result.success)
+          .map(result => result.error || 'Unknown upload error')
         const successCount = uploadedBanners.length
         const failCount = errors.length
 
@@ -309,7 +312,11 @@ export default function LandingPageManagement() {
     try {
       setError(null)
       setSuccess(null)
-      const response = await api.patch(`/food/hero-banners/${id}/status`, {}, getAuthConfig())
+      const response = await api.patch(
+        `/food/hero-banners/${id}/status`,
+        { isActive: !currentStatus },
+        getAuthConfig()
+      )
       if (response.data.success) {
         setSuccess(`Banner ${currentStatus ? 'deactivated' : 'activated'} successfully!`)
         await fetchBanners()
@@ -323,14 +330,19 @@ export default function LandingPageManagement() {
   const handleBannerOrderChange = async (id, direction) => {
     const banner = banners.find(b => b._id === id)
     if (!banner) return
-    const newOrder = direction === 'up' ? banner.order - 1 : banner.order + 1
-    const otherBanner = banners.find(b => b.order === newOrder && b._id !== id)
+    const currentOrder = banner.sortOrder ?? 0
+    const newOrder = direction === 'up' ? currentOrder - 1 : currentOrder + 1
+    const otherBanner = banners.find(b => (b.sortOrder ?? 0) === newOrder && b._id !== id)
     if (!otherBanner && newOrder < 0) return
     try {
       setError(null)
-      await api.patch(`/food/hero-banners/${id}/order`, { order: newOrder }, getAuthConfig())
+      await api.patch(`/food/hero-banners/${id}/order`, { sortOrder: newOrder }, getAuthConfig())
       if (otherBanner) {
-        await api.patch(`/food/hero-banners/${otherBanner._id}/order`, { order: banner.order }, getAuthConfig())
+        await api.patch(
+          `/food/hero-banners/${otherBanner._id}/order`,
+          { sortOrder: currentOrder },
+          getAuthConfig()
+        )
       }
       await fetchBanners()
     } catch (err) {

@@ -1,5 +1,5 @@
 import { FoodHeroBanner } from '../models/heroBanner.model.js';
-import { v2 as cloudinary } from 'cloudinary';
+import { uploadBufferDetailed } from '../../../../services/storage.service.js';
 
 export const listHeroBanners = async () => {
     return FoodHeroBanner.find().sort({ sortOrder: 1, createdAt: -1 }).lean();
@@ -14,20 +14,11 @@ export const createHeroBannersFromFiles = async (files, meta = {}) => {
 
     for (const file of files) {
         try {
-            const uploadResult = await new Promise((resolve, reject) => {
-                const stream = cloudinary.uploader.upload_stream(
-                    { folder: 'food/hero-banners', resource_type: 'image' },
-                    (error, result) => {
-                        if (error) return reject(error);
-                        return resolve(result);
-                    }
-                );
-                stream.end(file.buffer);
-            });
+            const uploadResult = await uploadBufferDetailed(file.buffer, { folder: 'food/hero-banners' });
 
             const banner = await FoodHeroBanner.create({
-                imageUrl: uploadResult.secure_url,
-                publicId: uploadResult.public_id,
+                imageUrl: uploadResult.secure_url || uploadResult.url,
+                publicId: uploadResult.public_id || `banner-${Date.now()}`,
                 title: meta.title,
                 ctaText: meta.ctaText,
                 ctaLink: meta.ctaLink,
@@ -38,7 +29,8 @@ export const createHeroBannersFromFiles = async (files, meta = {}) => {
 
             results.push({ success: true, banner: banner.toObject() });
         } catch (error) {
-            results.push({ success: false, error: error.message });
+            console.error('Hero banner upload error:', error);
+            results.push({ success: false, error: error?.message || String(error) });
         }
     }
 

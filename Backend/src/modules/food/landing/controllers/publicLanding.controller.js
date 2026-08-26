@@ -13,7 +13,7 @@ export const getPublicHeroBannersController = async (req, res, next) => {
             .sort({ sortOrder: 1, createdAt: -1 })
             .populate({
                 path: 'linkedShopIds',
-                select: '_id shopName slug area city rating cuisines profileImage pureVegShop',
+                select: '_id shopName slug area city rating cuisines profileImage pureVegShop zoneId',
                 model: 'FoodShop'
             })
             .lean();

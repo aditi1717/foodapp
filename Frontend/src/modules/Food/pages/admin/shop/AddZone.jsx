@@ -1,112 +1,155 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { MapPin, ArrowLeft, Save, X, Hand, Shapes, Search } from "lucide-react"
+import { MapPin, ArrowLeft, Save, X, Shapes, Search } from "lucide-react"
 import { adminAPI } from "@food/api"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
-import { Loader } from "@googlemaps/js-api-loader"
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
+
 const debugError = (...args) => {}
 
+const MIN_POINTS = 3
+const MAX_POINTS = 10
+
+const orderPointsRadially = (points) => {
+  const normalized = points
+    .map((point) => ({
+      lat: typeof point.lat === "function" ? point.lat() : point.lat,
+      lng: typeof point.lng === "function" ? point.lng() : point.lng
+    }))
+    .filter((point) => typeof point.lat === "number" && typeof point.lng === "number")
+
+  if (normalized.length < MIN_POINTS) {
+    return normalized
+  }
+
+  const centerX = normalized.reduce((sum, point) => sum + point.lng, 0) / normalized.length
+  const centerY = normalized.reduce((sum, point) => sum + point.lat, 0) / normalized.length
+
+  return [...normalized].sort(
+    (a, b) =>
+      Math.atan2(a.lat - centerY, a.lng - centerX) -
+      Math.atan2(b.lat - centerY, b.lng - centerX)
+  )
+}
+
+const waitFor = async (predicate, timeoutMs = 8000) => {
+  const start = Date.now()
+
+  while (Date.now() - start < timeoutMs) {
+    if (predicate()) return true
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+
+  return predicate()
+}
 
 export default function AddZone() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const isEditMode = !!id && !window.location.pathname.includes('/view/')
+  const isEditMode = !!id && !window.location.pathname.includes("/view/")
+
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
-  const drawingManagerRef = useRef(null)
   const polygonRef = useRef(null)
-  const markersRef = useRef([])
   const pathMarkersRef = useRef([])
-  
+  const existingZonesPolygonsRef = useRef([])
+  const mapClickListenerRef = useRef(null)
+  const drawPointsRef = useRef([])
+  const isDrawingRef = useRef(false)
+  const autocompleteInputRef = useRef(null)
+  const autocompleteRef = useRef(null)
+  const hasDrawnInitialZoneRef = useRef(false)
+
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState("")
   const [mapLoading, setMapLoading] = useState(true)
   const [loading, setLoading] = useState(false)
-  
-  // Form state
   const [formData, setFormData] = useState({
     country: "India",
     zoneName: "",
-    unit: "kilometer",
+    unit: "kilometer"
   })
-  
   const [coordinates, setCoordinates] = useState([])
   const [isDrawing, setIsDrawing] = useState(false)
   const [locationSearch, setLocationSearch] = useState("")
   const [existingZones, setExistingZones] = useState([])
-  const autocompleteInputRef = useRef(null)
-  const autocompleteRef = useRef(null)
-  const existingZonesPolygonsRef = useRef([])
 
   useEffect(() => {
     fetchExistingZones()
     loadGoogleMaps()
+
     if (isEditMode && id) {
       fetchZone()
     }
   }, [id, isEditMode])
 
-  // Center map on India when country is selected
   useEffect(() => {
     if (formData.country === "India" && mapInstanceRef.current) {
-      const indiaCenter = { lat: 20.5937, lng: 78.9629 }
-      mapInstanceRef.current.setCenter(indiaCenter)
+      mapInstanceRef.current.setCenter({ lat: 20.5937, lng: 78.9629 })
       mapInstanceRef.current.setZoom(5)
     }
   }, [formData.country])
 
-  // Initialize Places Autocomplete when map is loaded
   useEffect(() => {
-    if (!mapLoading && mapInstanceRef.current && autocompleteInputRef.current && window.google?.maps?.places && !autocompleteRef.current) {
+    if (
+      !mapLoading &&
+      mapInstanceRef.current &&
+      autocompleteInputRef.current &&
+      window.google?.maps?.places &&
+      !autocompleteRef.current
+    ) {
       const autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current, {
-        // No `geocode` type — it routes predictions through Geocoding-style endpoints.
-        componentRestrictions: { country: 'in' } // Restrict to India
+        componentRestrictions: { country: "in" }
       })
-      
-      autocomplete.addListener('place_changed', () => {
+
+      autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace()
-        if (place.geometry && place.geometry.location && mapInstanceRef.current) {
-          const location = place.geometry.location
-          mapInstanceRef.current.setCenter(location)
-          mapInstanceRef.current.setZoom(15) // Zoom in when location is selected
-          
-          // Set the search input value
+        if (place.geometry?.location && mapInstanceRef.current) {
+          mapInstanceRef.current.setCenter(place.geometry.location)
+          mapInstanceRef.current.setZoom(15)
           setLocationSearch(place.formatted_address || place.name || "")
         }
       })
-      
+
       autocompleteRef.current = autocomplete
     }
   }, [mapLoading])
 
-  // Draw existing polygon when in edit mode and coordinates are loaded
   useEffect(() => {
-    if (isEditMode && coordinates.length >= 3 && mapInstanceRef.current && window.google && !mapLoading) {
-      debugLog("Drawing existing polygon in edit mode, coordinates:", coordinates.length)
-      setTimeout(() => {
-        if (mapInstanceRef.current && window.google) {
-          // Ensure drawing mode is off when editing existing polygon
-          if (drawingManagerRef.current) {
-            drawingManagerRef.current.setDrawingMode(null)
-            setIsDrawing(false)
-            debugLog("Drawing mode disabled, polygon is editable")
-          }
-          drawExistingPolygon(window.google, mapInstanceRef.current, coordinates)
-        }
-      }, 500)
+    if (!mapLoading && mapInstanceRef.current && existingZones.length > 0 && window.google) {
+      drawExistingZonesOnMap(window.google, mapInstanceRef.current)
     }
-  }, [isEditMode, coordinates.length, mapLoading])
+  }, [existingZones, mapLoading])
 
+  useEffect(() => {
+    if (
+      isEditMode &&
+      !isDrawing &&
+      !hasDrawnInitialZoneRef.current &&
+      coordinates.length >= MIN_POINTS &&
+      mapInstanceRef.current &&
+      window.google &&
+      !mapLoading
+    ) {
+      hasDrawnInitialZoneRef.current = true
+      drawEditablePolygon(window.google, mapInstanceRef.current, coordinates, true)
+    }
+  }, [isEditMode, coordinates, isDrawing, mapLoading])
+
+  useEffect(() => {
+    return () => {
+      if (mapClickListenerRef.current && window.google?.maps?.event) {
+        window.google.maps.event.removeListener(mapClickListenerRef.current)
+      }
+    }
+  }, [])
 
   const fetchExistingZones = async () => {
     try {
       const response = await adminAPI.getZones({ limit: 1000 })
       if (response.data?.success && response.data.data?.zones) {
-        // Filter out the current zone if in edit mode
-        const zones = isEditMode && id 
-          ? response.data.data.zones.filter(zone => zone._id !== id)
-          : response.data.data.zones
+        const zones =
+          isEditMode && id
+            ? response.data.data.zones.filter((zone) => zone._id !== id)
+            : response.data.data.zones
         setExistingZones(zones)
       }
     } catch (error) {
@@ -124,11 +167,16 @@ export default function AddZone() {
         setFormData({
           country: zoneData.country || "India",
           zoneName: zoneData.name || zoneData.zoneName || "",
-          unit: zoneData.unit || "kilometer",
+          unit: zoneData.unit || "kilometer"
         })
-        
-        if (zoneData.coordinates && zoneData.coordinates.length > 0) {
-          setCoordinates(zoneData.coordinates)
+
+        if (Array.isArray(zoneData.coordinates) && zoneData.coordinates.length > 0) {
+          setCoordinates(
+            zoneData.coordinates.map((coord) => ({
+              latitude: parseFloat(coord.latitude ?? coord.lat),
+              longitude: parseFloat(coord.longitude ?? coord.lng)
+            }))
+          )
         }
       }
     } catch (error) {
@@ -143,339 +191,114 @@ export default function AddZone() {
   const loadGoogleMaps = async () => {
     try {
       const apiKey = await getGoogleMapsApiKey()
-      setGoogleMapsApiKey(apiKey || "loaded")
-      
-      // Wait for Google Maps to be loaded from main.jsx if it's loading
-      let retries = 0
-      const maxRetries = 50 // Wait up to 5 seconds (50 * 100ms)
-      
-      while (!window.google && retries < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-        retries++
+      setGoogleMapsApiKey(apiKey || (window.google?.maps ? "loaded" : ""))
+
+      if (!document.getElementById("google-maps-pac-style")) {
+        const style = document.createElement("style")
+        style.id = "google-maps-pac-style"
+        style.textContent = ".pac-container{z-index:10000 !important;}"
+        document.head.appendChild(style)
       }
 
-      // If Google Maps is already loaded (from main.jsx), use it directly
-      if (window.google && window.google.maps) {
-        initializeMap(window.google)
+      const existingScript = Array.from(document.getElementsByTagName("script")).find((script) =>
+        script.src?.includes("maps.googleapis.com/maps/api/js")
+      )
+
+      if (!window.google?.maps && !existingScript && apiKey) {
+        const loaded = await new Promise((resolve) => {
+          const script = document.createElement("script")
+          script.id = "google-maps-sdk"
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&v=weekly`
+          script.async = true
+          script.defer = true
+          script.onload = () => resolve(true)
+          script.onerror = () => resolve(false)
+          document.head.appendChild(script)
+        })
+
+        if (!loaded) {
+          setMapLoading(false)
+          return
+        }
+      }
+
+      const ready = await waitFor(() => !!window.google?.maps)
+      if (!ready) {
+        setMapLoading(false)
         return
       }
 
-      // If Google Maps is not loaded yet and we have an API key, use Loader as fallback
-      if (apiKey) {
-        const loader = new Loader({
-          apiKey: apiKey,
-          version: "weekly",
-          libraries: ["places", "drawing", "geometry"]
-        })
-
-        const google = await loader.load()
-        initializeMap(google)
-      } else {
-        setMapLoading(false)
-      }
+      initializeMap(window.google)
     } catch (error) {
       debugError("Error loading Google Maps:", error)
       setMapLoading(false)
     }
   }
 
-  const initializeMap = (google) => {
-    if (!mapRef.current) return
-
-    // Initial location (India center)
-    const initialLocation = { lat: 20.5937, lng: 78.9629 }
-
-    // Create map
-    const map = new google.maps.Map(mapRef.current, {
-      center: initialLocation,
-      zoom: 5,
-      mapTypeControl: true,
-      mapTypeControlOptions: {
-        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-        position: google.maps.ControlPosition.TOP_RIGHT,
-        mapTypeIds: [google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.SATELLITE]
-      },
-      zoomControl: true,
-      streetViewControl: false,
-      fullscreenControl: true,
-      scrollwheel: true, // Enable mouse wheel zoom
-      gestureHandling: 'greedy', // Allow zoom with mouse wheel and touch gestures
-      disableDoubleClickZoom: false, // Allow double-click zoom
-    })
-
-    mapInstanceRef.current = map
-
-    // Initialize Drawing Manager
-    const drawingManager = new google.maps.drawing.DrawingManager({
-      drawingMode: null,
-      drawingControl: true, // Enable drawing controls
-      drawingControlOptions: {
-        position: google.maps.ControlPosition.TOP_CENTER,
-        drawingModes: [google.maps.drawing.OverlayType.POLYGON]
-      },
-      polygonOptions: {
-        fillColor: "#9333ea", // Purple color
-        fillOpacity: 0.35,
-        strokeWeight: 2,
-        strokeColor: "#9333ea",
-        clickable: false,
-        editable: true,
-        zIndex: 1
-      }
-    })
-
-    drawingManager.setMap(map)
-    drawingManagerRef.current = drawingManager
-
-    // Track polygon path changes to show markers
-    let currentPolygonPath = null
-    let pathMarkers = []
-    pathMarkersRef.current = pathMarkers
-
-    // Handle overlay complete (when user finishes drawing)
-    google.maps.event.addListener(drawingManager, 'overlaycomplete', (event) => {
-      if (event.type === google.maps.drawing.OverlayType.POLYGON) {
-        const polygon = event.overlay
-        
-        // Remove previous polygon if exists
-        if (polygonRef.current) {
-          polygonRef.current.setMap(null)
-        }
-
-        // Clear previous markers
-        pathMarkers.forEach(marker => marker.setMap(null))
-        pathMarkers = []
-
-        polygonRef.current = polygon
-        currentPolygonPath = polygon.getPath()
-        
-        // Get coordinates and add markers
-        const coords = []
-        const pathLength = currentPolygonPath.getLength()
-        
-        // Get all points except the last one if it's a duplicate of the first (polygon closing point)
-        for (let i = 0; i < pathLength; i++) {
-          const latLng = currentPolygonPath.getAt(i)
-          
-          // Skip the last point if it's the same as the first (polygon closing point)
-          if (i === pathLength - 1) {
-            const firstPoint = currentPolygonPath.getAt(0)
-            if (latLng.lat() === firstPoint.lat() && latLng.lng() === firstPoint.lng()) {
-              break // Skip duplicate closing point
-            }
-          }
-          
-          coords.push({
-            latitude: parseFloat(latLng.lat().toFixed(6)),
-            longitude: parseFloat(latLng.lng().toFixed(6))
-          })
-          
-          // Add marker for each point
-          const marker = new google.maps.Marker({
-            position: latLng,
-            map: map,
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 8,
-              fillColor: "#9333ea",
-              fillOpacity: 1,
-              strokeColor: "#ffffff",
-              strokeWeight: 2
-            },
-            zIndex: 1000,
-            title: `Point ${i + 1}`
-          })
-          pathMarkers.push(marker)
-          pathMarkersRef.current = pathMarkers
-        }
-        
-        debugLog("Coordinates set:", coords)
-        setCoordinates(coords)
-        
-        // Make polygon editable
-        polygon.setEditable(true)
-        polygon.setDraggable(false)
-        
-        // Update coordinates and markers when polygon is edited
-        const updateMarkers = () => {
-          // Clear existing markers
-          pathMarkers.forEach(marker => marker.setMap(null))
-          pathMarkers = []
-          
-          // Update coordinates
-          const newCoords = []
-          const pathLength = currentPolygonPath.getLength()
-          
-          for (let i = 0; i < pathLength; i++) {
-            const latLng = currentPolygonPath.getAt(i)
-            
-            // Skip the last point if it's the same as the first (polygon closing point)
-            if (i === pathLength - 1) {
-              const firstPoint = currentPolygonPath.getAt(0)
-              if (latLng.lat() === firstPoint.lat() && latLng.lng() === firstPoint.lng()) {
-                break // Skip duplicate closing point
-              }
-            }
-            
-            newCoords.push({
-              latitude: parseFloat(latLng.lat().toFixed(6)),
-              longitude: parseFloat(latLng.lng().toFixed(6))
-            })
-            
-            // Add new marker
-            const marker = new google.maps.Marker({
-              position: latLng,
-              map: map,
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 8,
-                fillColor: "#9333ea",
-                fillOpacity: 1,
-                strokeColor: "#ffffff",
-                strokeWeight: 2
-              },
-              zIndex: 1000,
-              title: `Point ${i + 1}`
-            })
-            pathMarkers.push(marker)
-            pathMarkersRef.current = pathMarkers
-          }
-          
-          setCoordinates(newCoords)
-        }
-        
-        google.maps.event.addListener(currentPolygonPath, 'set_at', updateMarkers)
-        google.maps.event.addListener(currentPolygonPath, 'insert_at', updateMarkers)
-        google.maps.event.addListener(currentPolygonPath, 'remove_at', updateMarkers)
-      }
-    })
-
-    setMapLoading(false)
-
-    // Existing zones will be drawn by useEffect when data is ready
-
-    // If in edit mode and coordinates are already loaded, draw the polygon
-    if (isEditMode && coordinates.length >= 3) {
-      setTimeout(() => {
-        if (mapInstanceRef.current && window.google) {
-          drawExistingPolygon(window.google, mapInstanceRef.current, coordinates)
-        }
-      }, 500) // Small delay to ensure map is fully loaded
-    }
+  const renderVertexMarkers = (google, map, points) => {
+    pathMarkersRef.current.forEach((marker) => marker.setMap(null))
+    pathMarkersRef.current = points.map(
+      (point, index) =>
+        new google.maps.Marker({
+          position: point,
+          map,
+          clickable: false,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#9333ea",
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2
+          },
+          zIndex: 1000,
+          title: `Point ${index + 1}`
+        })
+    )
   }
-
-  // Draw existing zones on the map
-  const drawExistingZonesOnMap = (google, map) => {
-    if (!existingZones || existingZones.length === 0) return
-
-    // Clear previous existing zone polygons
-    existingZonesPolygonsRef.current.forEach(polygon => {
-      if (polygon) polygon.setMap(null)
-    })
-    existingZonesPolygonsRef.current = []
-
-    existingZones.forEach((zone, index) => {
-      if (!zone.coordinates || zone.coordinates.length < 3) return
-
-      // Convert coordinates to LatLng array
-      const path = zone.coordinates.map(coord => {
-        const lat = typeof coord === 'object' ? (coord.latitude || coord.lat) : null
-        const lng = typeof coord === 'object' ? (coord.longitude || coord.lng) : null
-        if (lat === null || lng === null) return null
-        return new google.maps.LatLng(lat, lng)
-      }).filter(Boolean)
-
-      if (path.length < 3) return
-
-      // Create polygon for existing zone with different color (gray/blue)
-      const polygon = new google.maps.Polygon({
-        paths: path,
-        strokeColor: "#3b82f6", // Blue color for existing zones
-        strokeOpacity: 0.6,
-        strokeWeight: 2,
-        fillColor: "#3b82f6",
-        fillOpacity: 0.15, // Lighter opacity so new zone stands out
-        editable: false, // Not editable
-        draggable: false,
-        clickable: true,
-        zIndex: 0 // Lower z-index so new zone appears on top
-      })
-
-      polygon.setMap(map)
-      existingZonesPolygonsRef.current.push(polygon)
-
-      // Add info window on click
-      const infoWindow = new google.maps.InfoWindow({
-        content: `
-          <div style="padding: 8px;">
-            <strong>${zone.name || zone.zoneName || 'Unnamed Zone'}</strong><br/>
-            <small>Country: ${zone.country || 'N/A'}</small>
-          </div>
-        `
-      })
-
-      polygon.addListener('click', () => {
-        infoWindow.setPosition(polygon.getPath().getAt(0))
-        infoWindow.open(map)
-      })
-    })
-  }
-
-  // Redraw existing zones when zones data changes or map is ready
-  useEffect(() => {
-    if (!mapLoading && mapInstanceRef.current && existingZones.length > 0 && window.google) {
-      drawExistingZonesOnMap(window.google, mapInstanceRef.current)
-    }
-  }, [existingZones, mapLoading])
 
   const updateCoordinatesFromPolygon = (polygon) => {
     const path = polygon.getPath()
     const coords = []
+
     path.forEach((latLng) => {
       coords.push({
-        latitude: latLng.lat(),
-        longitude: latLng.lng()
+        latitude: parseFloat(latLng.lat().toFixed(6)),
+        longitude: parseFloat(latLng.lng().toFixed(6))
       })
     })
+
     setCoordinates(coords)
   }
 
-  const drawExistingPolygon = (google, map, coords) => {
-    if (!coords || coords.length < 3) {
-      debugLog("drawExistingPolygon: Not enough coordinates", coords?.length)
+  const drawEditablePolygon = (google, map, coords, fitBounds = false) => {
+    if (!Array.isArray(coords) || coords.length < MIN_POINTS) {
       return
     }
 
-    debugLog("drawExistingPolygon: Drawing polygon with", coords.length, "coordinates")
-
-    // Clear existing polygon
     if (polygonRef.current) {
       polygonRef.current.setMap(null)
+      polygonRef.current = null
     }
 
-    // Clear existing markers
-    if (pathMarkersRef.current && pathMarkersRef.current.length > 0) {
-      pathMarkersRef.current.forEach(marker => marker.setMap(null))
-      pathMarkersRef.current = []
-    }
+    pathMarkersRef.current.forEach((marker) => marker.setMap(null))
+    pathMarkersRef.current = []
 
-    // Convert coordinates to LatLng array
-    const path = coords.map(coord => {
-      const lat = typeof coord === 'object' ? (coord.latitude || coord.lat) : null
-      const lng = typeof coord === 'object' ? (coord.longitude || coord.lng) : null
-      if (lat === null || lng === null) {
-        debugError("Invalid coordinate in drawExistingPolygon:", coord)
-        return null
-      }
-      return new google.maps.LatLng(lat, lng)
-    }).filter(Boolean)
+    const path = coords
+      .map((coord) => {
+        const lat = coord.latitude ?? coord.lat
+        const lng = coord.longitude ?? coord.lng
+        if (typeof lat !== "number" || typeof lng !== "number") {
+          return null
+        }
+        return new google.maps.LatLng(lat, lng)
+      })
+      .filter(Boolean)
 
-    if (path.length < 3) {
-      debugError("Not enough valid coordinates after conversion")
+    if (path.length < MIN_POINTS) {
       return
     }
 
-    // Create polygon
     const polygon = new google.maps.Polygon({
       paths: path,
       strokeColor: "#9333ea",
@@ -490,128 +313,247 @@ export default function AddZone() {
 
     polygon.setMap(map)
     polygonRef.current = polygon
-    
-    // Ensure polygon is editable
-    polygon.setEditable(true)
-    polygon.setDraggable(false)
-    debugLog("Polygon created and set to editable:", polygon.getEditable())
 
-    // Fit map to polygon bounds
-    const bounds = new google.maps.LatLngBounds()
-    path.forEach(latLng => bounds.extend(latLng))
-    map.fitBounds(bounds)
-    debugLog("Map fitted to polygon bounds")
-
-    // Add markers for each point
-    const markers = []
-    coords.forEach((coord, index) => {
-      const lat = typeof coord === 'object' ? (coord.latitude || coord.lat) : null
-      const lng = typeof coord === 'object' ? (coord.longitude || coord.lng) : null
-      if (lat !== null && lng !== null) {
-        const marker = new google.maps.Marker({
-          position: { lat, lng },
-          map: map,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#9333ea",
-            fillOpacity: 1,
-            strokeColor: "#ffffff",
-            strokeWeight: 2
-          },
-          zIndex: 1000,
-          title: `Point ${index + 1}`
-        })
-        markers.push(marker)
-      }
-    })
-    pathMarkersRef.current = markers
-    debugLog("drawExistingPolygon: Polygon and markers created successfully")
-
-    // Function to update markers when polygon is edited
-    const updateMarkersFromPolygon = () => {
-      // Clear existing markers
-      if (pathMarkersRef.current && pathMarkersRef.current.length > 0) {
-        pathMarkersRef.current.forEach(marker => marker.setMap(null))
-        pathMarkersRef.current = []
-      }
-
-      // Get updated path from polygon
-      const path = polygon.getPath()
-      const newMarkers = []
-      
-      for (let i = 0; i < path.getLength(); i++) {
-        const latLng = path.getAt(i)
-        const marker = new google.maps.Marker({
-          position: latLng,
-          map: map,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#9333ea",
-            fillOpacity: 1,
-            strokeColor: "#ffffff",
-            strokeWeight: 2
-          },
-          zIndex: 1000,
-          title: `Point ${i + 1}`
-        })
-        newMarkers.push(marker)
-      }
-      
-      pathMarkersRef.current = newMarkers
-      debugLog("Markers updated after polygon edit, new count:", newMarkers.length)
-    }
-
-    // Update coordinates and markers when polygon is edited
-    const handlePolygonEdit = () => {
+    const sync = () => {
       updateCoordinatesFromPolygon(polygon)
-      updateMarkersFromPolygon()
     }
 
     const polygonPath = polygon.getPath()
-    google.maps.event.addListener(polygonPath, 'set_at', handlePolygonEdit)
-    google.maps.event.addListener(polygonPath, 'insert_at', handlePolygonEdit)
-    google.maps.event.addListener(polygonPath, 'remove_at', handlePolygonEdit)
-    
-    debugLog("Event listeners attached for polygon editing")
-  }
+    google.maps.event.addListener(polygonPath, "set_at", sync)
+    google.maps.event.addListener(polygonPath, "insert_at", sync)
+    google.maps.event.addListener(polygonPath, "remove_at", sync)
 
-  const toggleDrawingMode = () => {
-    if (!drawingManagerRef.current) return
-    
-    if (isDrawing) {
-      drawingManagerRef.current.setDrawingMode(null)
-      setIsDrawing(false)
-    } else {
-      drawingManagerRef.current.setDrawingMode(window.google?.maps?.drawing?.OverlayType?.POLYGON || "polygon")
-      setIsDrawing(true)
+    if (fitBounds) {
+      const bounds = new google.maps.LatLngBounds()
+      path.forEach((latLng) => bounds.extend(latLng))
+      map.fitBounds(bounds)
     }
   }
 
-  const clearDrawing = () => {
+  const renderDrawingPolygon = (google, map) => {
+    const points = drawPointsRef.current
+
     if (polygonRef.current) {
       polygonRef.current.setMap(null)
       polygonRef.current = null
     }
-    // Clear all markers
-    if (pathMarkersRef.current && pathMarkersRef.current.length > 0) {
-      pathMarkersRef.current.forEach(marker => marker.setMap(null))
-      pathMarkersRef.current = []
+
+    const ordered =
+      points.length >= MIN_POINTS
+        ? orderPointsRadially(points)
+        : points.map((point) => ({ lat: point.lat(), lng: point.lng() }))
+
+    if (ordered.length >= 2) {
+      polygonRef.current = new google.maps.Polygon({
+        paths: ordered,
+        fillColor: "#9333ea",
+        fillOpacity: 0.35,
+        strokeColor: "#9333ea",
+        strokeWeight: 2,
+        clickable: false,
+        editable: false,
+        zIndex: 1
+      })
+      polygonRef.current.setMap(map)
     }
+
+    renderVertexMarkers(google, map, points)
+
+    setCoordinates(
+      ordered.map((point) => ({
+        latitude: parseFloat(point.lat.toFixed(6)),
+        longitude: parseFloat(point.lng.toFixed(6))
+      }))
+    )
+  }
+
+  const finishDrawing = () => {
+    const google = window.google
+    const map = mapInstanceRef.current
+
+    if (!google || !map) return false
+
+    if (drawPointsRef.current.length < MIN_POINTS) {
+      alert(`Please click at least ${MIN_POINTS} points on the map.`)
+      return false
+    }
+
+    if (polygonRef.current) {
+      polygonRef.current.setMap(null)
+      polygonRef.current = null
+    }
+
+    pathMarkersRef.current.forEach((marker) => marker.setMap(null))
+    pathMarkersRef.current = []
+
+    const ordered = orderPointsRadially(drawPointsRef.current)
+    const coords = ordered.map((point) => ({
+      latitude: parseFloat(point.lat.toFixed(6)),
+      longitude: parseFloat(point.lng.toFixed(6))
+    }))
+
+    setCoordinates(coords)
+    drawEditablePolygon(google, map, coords)
+    hasDrawnInitialZoneRef.current = true
+    return true
+  }
+
+  const initializeMap = (google) => {
+    if (!mapRef.current || mapInstanceRef.current) return
+
+    const map = new google.maps.Map(mapRef.current, {
+      center: { lat: 20.5937, lng: 78.9629 },
+      zoom: 5,
+      mapTypeControl: true,
+      mapTypeControlOptions: {
+        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position: google.maps.ControlPosition.TOP_RIGHT,
+        mapTypeIds: [google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.SATELLITE]
+      },
+      zoomControl: true,
+      streetViewControl: false,
+      fullscreenControl: true,
+      scrollwheel: true,
+      gestureHandling: "greedy",
+      disableDoubleClickZoom: false,
+      clickableIcons: false
+    })
+
+    mapInstanceRef.current = map
+
+    mapClickListenerRef.current = google.maps.event.addListener(map, "click", (event) => {
+      if (!isDrawingRef.current) return
+
+      if (drawPointsRef.current.length >= MAX_POINTS) {
+        alert(`You can add at most ${MAX_POINTS} points. Click "Finish Drawing" to complete.`)
+        return
+      }
+
+      drawPointsRef.current.push(event.latLng)
+      renderDrawingPolygon(google, map)
+    })
+
+    setMapLoading(false)
+  }
+
+  const drawExistingZonesOnMap = (google, map) => {
+    if (!existingZones.length) return
+
+    existingZonesPolygonsRef.current.forEach((polygon) => polygon?.setMap(null))
+    existingZonesPolygonsRef.current = []
+
+    existingZones.forEach((zone) => {
+      if (!Array.isArray(zone.coordinates) || zone.coordinates.length < MIN_POINTS) {
+        return
+      }
+
+      const path = zone.coordinates
+        .map((coord) => {
+          const lat = coord.latitude ?? coord.lat
+          const lng = coord.longitude ?? coord.lng
+          if (typeof lat !== "number" || typeof lng !== "number") {
+            return null
+          }
+          return new google.maps.LatLng(lat, lng)
+        })
+        .filter(Boolean)
+
+      if (path.length < MIN_POINTS) {
+        return
+      }
+
+      const polygon = new google.maps.Polygon({
+        paths: path,
+        strokeColor: "#3b82f6",
+        strokeOpacity: 0.6,
+        strokeWeight: 2,
+        fillColor: "#3b82f6",
+        fillOpacity: 0.15,
+        editable: false,
+        draggable: false,
+        clickable: !isDrawingRef.current,
+        zIndex: 0
+      })
+
+      polygon.setMap(map)
+      existingZonesPolygonsRef.current.push(polygon)
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div style="padding: 8px;">
+            <strong>${zone.name || zone.zoneName || "Unnamed Zone"}</strong><br/>
+            <small>Country: ${zone.country || "N/A"}</small>
+          </div>
+        `
+      })
+
+      polygon.addListener("click", () => {
+        if (isDrawingRef.current) return
+        infoWindow.setPosition(polygon.getPath().getAt(0))
+        infoWindow.open(map)
+      })
+    })
+  }
+
+  const clearDrawing = () => {
+    isDrawingRef.current = false
+    setIsDrawing(false)
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setOptions({ draggableCursor: null })
+    }
+
+    drawPointsRef.current = []
+
+    if (polygonRef.current) {
+      polygonRef.current.setMap(null)
+      polygonRef.current = null
+    }
+
+    pathMarkersRef.current.forEach((marker) => marker.setMap(null))
+    pathMarkersRef.current = []
     setCoordinates([])
+    hasDrawnInitialZoneRef.current = false
+
+    existingZonesPolygonsRef.current.forEach((polygon) => polygon?.setOptions?.({ clickable: true }))
+  }
+
+  const toggleDrawingMode = () => {
+    const google = window.google
+    const map = mapInstanceRef.current
+
+    if (!google || !map) {
+      alert("Map is still loading.")
+      return
+    }
+
+    if (isDrawing) {
+      if (finishDrawing() === false) return
+      isDrawingRef.current = false
+      setIsDrawing(false)
+      map.setOptions({ draggableCursor: null })
+      existingZonesPolygonsRef.current.forEach((polygon) => polygon?.setOptions?.({ clickable: true }))
+      return
+    }
+
+    clearDrawing()
+    drawPointsRef.current = []
+    isDrawingRef.current = true
+    setIsDrawing(true)
+    map.setOptions({ draggableCursor: "crosshair" })
+    existingZonesPolygonsRef.current.forEach((polygon) => polygon?.setOptions?.({ clickable: false }))
   }
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value
     }))
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+
     if (!formData.zoneName) {
       alert("Please enter a zone name")
       return
@@ -622,31 +564,18 @@ export default function AddZone() {
       return
     }
 
-    if (coordinates.length < 3) {
+    if (coordinates.length < MIN_POINTS) {
       alert("Please draw at least 3 points on the map to create a zone")
       return
     }
 
     try {
       setLoading(true)
-      
-      // Validate coordinates format
-      if (!coordinates || coordinates.length < 3) {
-        alert("Please draw at least 3 points on the map")
-        setLoading(false)
-        return
-      }
 
-      // Ensure coordinates have correct format
-      const validCoordinates = coordinates.map(coord => {
-        if (typeof coord === 'object' && coord.latitude !== undefined && coord.longitude !== undefined) {
-          return {
-            latitude: parseFloat(coord.latitude),
-            longitude: parseFloat(coord.longitude)
-          }
-        }
-        return coord
-      })
+      const validCoordinates = coordinates.map((coord) => ({
+        latitude: parseFloat(coord.latitude),
+        longitude: parseFloat(coord.longitude)
+      }))
 
       const zoneData = {
         name: formData.zoneName,
@@ -657,43 +586,32 @@ export default function AddZone() {
         isActive: true
       }
 
-      debugLog("Sending zone data:", zoneData)
-
       if (isEditMode && id) {
-        // Update existing zone
-        const response = await adminAPI.updateZone(id, zoneData)
-        debugLog("Zone updated successfully:", response)
+        await adminAPI.updateZone(id, zoneData)
         alert("Zone updated successfully!")
       } else {
-        // Create new zone
-        const response = await adminAPI.createZone(zoneData)
-        debugLog("Zone created successfully:", response)
+        await adminAPI.createZone(zoneData)
         alert("Zone created successfully!")
       }
+
       navigate("/admin/food/zone-setup")
     } catch (error) {
-      debugError("Error creating zone:", error)
-      
-      // Handle different types of errors
+      debugError("Error saving zone:", error)
+
       let errorMessage = "Failed to create zone. Please try again."
-      
-      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || !error.response) {
-        // Network error - backend not running or CORS issue
+
+      if (error.code === "ERR_NETWORK" || error.message === "Network Error" || !error.response) {
         errorMessage = "Cannot connect to server. Please make sure the backend server is running."
-        debugError("Network error: Backend server might not be running")
       } else if (error.response) {
-        // API error with response
-        errorMessage = error.response.data?.message || 
-                      error.response.data?.error || 
-                      error.message || 
-                      `Server error: ${error.response.status}`
-        debugError("API error:", error.response.data)
-        debugError("Error status:", error.response.status)
+        errorMessage =
+          error.response.data?.message ||
+          error.response.data?.error ||
+          error.message ||
+          `Server error: ${error.response.status}`
       } else {
-        // Other errors
         errorMessage = error.message || errorMessage
       }
-      
+
       alert(errorMessage)
     } finally {
       setLoading(false)
@@ -703,7 +621,6 @@ export default function AddZone() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="p-4 lg:p-6 max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => navigate("/admin/food/zone-setup")}
@@ -728,13 +645,11 @@ export default function AddZone() {
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Panel - Form */}
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
                 <h2 className="text-lg font-semibold text-slate-900 mb-4">Zone Details</h2>
-                
+
                 <div className="space-y-4">
-                  {/* Country Selection */}
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Country <span className="text-red-500">*</span>
@@ -749,7 +664,6 @@ export default function AddZone() {
                     </select>
                   </div>
 
-                  {/* Zone Name */}
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Create Zone name <span className="text-red-500">*</span>
@@ -764,7 +678,6 @@ export default function AddZone() {
                     />
                   </div>
 
-                  {/* Select Unit */}
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Select Unit <span className="text-red-500">*</span>
@@ -783,7 +696,6 @@ export default function AddZone() {
               </div>
             </div>
 
-            {/* Right Panel - Map */}
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-slate-900">Draw Zone on Map</h2>
@@ -798,7 +710,7 @@ export default function AddZone() {
                     }`}
                   >
                     <Shapes className="w-4 h-4" />
-                    <span>{isDrawing ? "Stop Drawing" : "Start Drawing"}</span>
+                    <span>{isDrawing ? "Finish Drawing" : "Start Drawing"}</span>
                   </button>
                   {coordinates.length > 0 && (
                     <button
@@ -825,10 +737,18 @@ export default function AddZone() {
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
+
+                {isDrawing && (
+                  <p className="text-xs text-slate-600 mt-2">
+                    Click on the map to add points ({MIN_POINTS}-{MAX_POINTS}), then click{" "}
+                    <strong>Finish Drawing</strong>.
+                  </p>
+                )}
+
                 {coordinates.length > 0 && (
                   <p className="text-xs text-slate-600 mt-2">
                     Points drawn: <strong>{coordinates.length}</strong>
-                    {coordinates.length < 3 && (
+                    {coordinates.length < MIN_POINTS && (
                       <span className="text-red-600 ml-2">(Minimum 3 points required)</span>
                     )}
                   </p>
@@ -837,7 +757,7 @@ export default function AddZone() {
 
               <div className="relative" style={{ height: "600px" }}>
                 <div ref={mapRef} className="w-full h-full rounded-lg" />
-                
+
                 {mapLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-slate-100 rounded-lg">
                     <div className="text-center">
@@ -859,7 +779,6 @@ export default function AddZone() {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex justify-end gap-3 mt-6">
             <button
               type="button"
@@ -870,7 +789,7 @@ export default function AddZone() {
             </button>
             <button
               type="submit"
-              disabled={loading || coordinates.length < 3 || !formData.zoneName || !formData.country}
+              disabled={loading || coordinates.length < MIN_POINTS || !formData.zoneName || !formData.country}
               className="flex items-center gap-2 px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -891,5 +810,3 @@ export default function AddZone() {
     </div>
   )
 }
-
-

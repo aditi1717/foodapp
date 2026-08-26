@@ -1030,6 +1030,49 @@ export default function Home() {
     });
   }, [heroBannerImages]);
 
+  let resolvedZoneId = null;
+  let getBannerShopZoneId = () => "";
+
+  const zoneMatchedRestaurantBanners = useMemo(() => {
+    const activeZoneId = String(resolvedZoneId || "").trim();
+
+    return (Array.isArray(heroBannersData) ? heroBannersData : [])
+      .map((banner, index) => {
+        const linkedShops = Array.isArray(banner?.linkedShops) ? banner.linkedShops : [];
+
+        if (
+          activeZoneId &&
+          linkedShops.length > 0 &&
+          !linkedShops.some((shop) => String(getBannerShopZoneId(shop)) === activeZoneId)
+        ) {
+          return null;
+        }
+
+        const matchedShop =
+          (activeZoneId && linkedShops.length > 0
+            ? linkedShops.find((shop) => String(getBannerShopZoneId(shop)) === activeZoneId)
+            : null) || linkedShops[0];
+
+        const rawImage = typeof banner?.imageUrl === "string" ? banner.imageUrl : "";
+        const image = extractImageFromValue(rawImage);
+        const shopSlug = matchedShop?.slug || matchedShop?.shopId || matchedShop?._id || "";
+
+        if (!image) return null;
+
+        return {
+          id: banner?._id || `restaurant-banner-${index}`,
+          image,
+          shopSlug,
+          shopName: matchedShop?.shopName || matchedShop?.name || banner?.title || "Special Offer",
+          area: matchedShop?.area || matchedShop?.city || "",
+          cuisines: Array.isArray(matchedShop?.cuisines)
+            ? matchedShop.cuisines.filter(Boolean).join(" • ")
+            : "",
+        };
+      })
+      .filter(Boolean);
+  }, [heroBannersData, resolvedZoneId, getBannerShopZoneId, extractImageFromValue]);
+
   const startHeroBannerAutoSlide = useCallback(() => {
     if (autoSlideIntervalRef.current) {
       clearInterval(autoSlideIntervalRef.current);
@@ -1232,7 +1275,16 @@ export default function Home() {
       return null;
     }
   }, [zoneId, zoneStatus, location?.latitude, location?.longitude]);
-  const resolvedZoneId = zoneId || cachedZoneId;
+  resolvedZoneId = zoneId || cachedZoneId;
+  getBannerShopZoneId = (shop) => {
+    const rawZoneId = shop?.zoneId;
+    if (!rawZoneId) return "";
+    if (typeof rawZoneId === "string") return rawZoneId;
+    if (typeof rawZoneId === "object") {
+      return String(rawZoneId?._id || rawZoneId?.id || "");
+    }
+    return "";
+  };
   const [showToast, setShowToast] = useState(false);
   const [showManageCollections, setShowManageCollections] = useState(false);
   const [selectedShopSlug, setSelectedShopSlug] = useState(null);
@@ -2702,7 +2754,7 @@ export default function Home() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/10" />
               </div>
-            ) : null
+            ) : HeroBannerSection
           }
         />
       )}
@@ -2719,9 +2771,148 @@ export default function Home() {
           >
             <div className="relative z-10">
               {CategoryRailSection}
+
+              {/* EXPLORE MORE SECTION */}
+              <motion.section
+                className="content-auto pt-2 sm:pt-3 lg:pt-4"
+                initial={false}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <h2 className={`text-xs sm:text-sm lg:text-base font-semibold ${BRAND_THEME.tokens.homepage.shared.heading} tracking-widest uppercase mb-2 sm:mb-3 lg:mb-4 px-4`}>
+                  {exploreMoreHeading}
+                </h2>
+                <div
+                  className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 lg:pb-3 min-h-[132px] w-full px-4"
+                  style={{
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                  }}
+                >
+                  {showExploreSkeleton ? (
+                    <div className="w-full min-w-full shrink-0">
+                      <ExploreGridSkeleton />
+                    </div>
+                  ) : (
+                    finalExploreItems.map((item, index) => (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{
+                          duration: 0.4,
+                          delay: index * 0.08,
+                        }}
+                        whileHover={{ y: -5 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Link to={item.href} className="flex-shrink-0">
+                          <div className="flex flex-col items-center gap-3 w-24 sm:w-28 group">
+                            <div className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white dark:bg-[#1a1a1a] flex items-center justify-center shadow-[0_4px_15px_-3px_rgba(0,0,0,0.08)] group-hover:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.12)] transition-all duration-500 overflow-hidden p-3 border border-gray-100 dark:border-gray-800 ${BRAND_THEME.tokens.homepage.home.exploreHoverBorder}`}>
+                              <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${BRAND_THEME.tokens.homepage.home.exploreOverlayPalette[index % BRAND_THEME.tokens.homepage.home.exploreOverlayPalette.length]}`} />
+
+                              <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
+                                <motion.div
+                                  animate={{ x: ['-200%', '200%'] }}
+                                  transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 4 + index * 0.5 }}
+                                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg] w-[150%]"
+                                />
+                              </div>
+
+                              <OptimizedImage
+                                src={item.image}
+                                alt={item.label}
+                                className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-110"
+                                width={112}
+                                height={112}
+                              />
+                            </div>
+                            <span className="text-[11px] font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors text-center tracking-wide">
+                              {item.label}
+                            </span>
+                          </div>
+                        </Link>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </motion.section>
+
+              {/* FULL WIDTH AUTO-SLIDING PROMO BANNER CAROUSEL */}
+              {heroBannerImages.length > 0 && (
+                <motion.section
+                  className="content-auto pt-3 sm:pt-4 lg:pt-5 px-4"
+                  initial={false}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div
+                    className="relative w-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-md transition-all duration-300"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                  >
+                    <div className="relative w-full aspect-[21/9] sm:aspect-[24/9] md:aspect-[30/9] overflow-hidden">
+                      {heroBannerImages.map((image, index) => {
+                        const bannerData = heroBannersData[index];
+                        const shopSlug = bannerData?.linkedShops?.[0]?.slug || bannerData?.linkedShops?.[0]?.shopId || bannerData?.linkedShops?.[0]?._id;
+
+                        return (
+                          <div
+                            key={`${index}-${image}`}
+                            className="absolute inset-0 transition-opacity duration-700 ease-in-out cursor-pointer"
+                            style={{
+                              opacity: currentBannerIndex === index ? 1 : 0,
+                              zIndex: currentBannerIndex === index ? 2 : 1,
+                              pointerEvents: currentBannerIndex === index ? "auto" : "none",
+                            }}
+                            onClick={() => {
+                              if (shopSlug) navigate(`/food/user/shops/${shopSlug}`);
+                            }}
+                          >
+                            <img
+                              src={image}
+                              alt={`Promo Banner ${index + 1}`}
+                              className="h-full w-full object-cover"
+                              loading={index === currentBannerIndex ? "eager" : "lazy"}
+                              draggable={false}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Carousel Dots Indicators */}
+                    {heroBannerImages.length > 1 && (
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-3 py-1.5 bg-black/30 backdrop-blur-md rounded-full border border-white/20 z-10">
+                        {heroBannerImages.map((_, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCurrentBannerIndex(index);
+                              resetAutoSlide();
+                            }}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                              currentBannerIndex === index ? "bg-white w-5" : "bg-white/50 w-1.5"
+                            }`}
+                            aria-label={`Go to slide ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.section>
+              )}
+
+              {/* RECOMMENDED FOR YOU SECTION */}
               {recommendedForYouShops.length > 0 && (
                 <motion.section
-                  className="content-auto pt-1 sm:pt-2"
+                  className="content-auto pt-3 sm:pt-4"
                   initial={false}
                   animate={{ opacity: 1, y: 0 }}
                 >
@@ -2813,71 +3004,6 @@ export default function Home() {
                   </div>
                 </motion.section>
               )}
-
-              <motion.section
-                className="content-auto pt-2 sm:pt-3 lg:pt-4"
-                initial={false}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <h2 className={`text-xs sm:text-sm lg:text-base font-semibold ${BRAND_THEME.tokens.homepage.shared.heading} tracking-widest uppercase mb-2 sm:mb-3 lg:mb-4 px-4`}>
-                  {exploreMoreHeading}
-                </h2>
-                <div
-                  className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 lg:pb-3 min-h-[132px] w-full px-4"
-                  style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                  }}
-                >
-                  {showExploreSkeleton ? (
-                    <div className="w-full min-w-full shrink-0">
-                      <ExploreGridSkeleton />
-                    </div>
-                  ) : (
-                    finalExploreItems.map((item, index) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{
-                          duration: 0.4,
-                          delay: index * 0.08,
-                        }}
-                        whileHover={{ y: -5 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Link to={item.href} className="flex-shrink-0">
-                          <div className="flex flex-col items-center gap-3 w-24 sm:w-28 group">
-                            <div className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white dark:bg-[#1a1a1a] flex items-center justify-center shadow-[0_4px_15px_-3px_rgba(0,0,0,0.08)] group-hover:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.12)] transition-all duration-500 overflow-hidden p-3 border border-gray-100 dark:border-gray-800 ${BRAND_THEME.tokens.homepage.home.exploreHoverBorder}`}>
-                              <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${BRAND_THEME.tokens.homepage.home.exploreOverlayPalette[index % BRAND_THEME.tokens.homepage.home.exploreOverlayPalette.length]}`} />
-
-                              <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
-                                <motion.div
-                                  animate={{ x: ['-200%', '200%'] }}
-                                  transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 4 + index * 0.5 }}
-                                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg] w-[150%]"
-                                />
-                              </div>
-
-                              <OptimizedImage
-                                src={item.image}
-                                alt={item.label}
-                                className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-110"
-                                width={112}
-                                height={112}
-                              />
-                            </div>
-                            <span className="text-[11px] font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors text-center tracking-wide">
-                              {item.label}
-                            </span>
-                          </div>
-                        </Link>
-                      </motion.div>
-                    ))
-                  )}
-                </div>
-              </motion.section>
 
           {/* Featured Foods - Horizontal Scroll */}
 

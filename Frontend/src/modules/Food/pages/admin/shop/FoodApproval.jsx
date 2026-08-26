@@ -41,6 +41,7 @@ export default function FoodApproval() {
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
   const [processing, setProcessing] = useState(false)
+  const [activeTab, setActiveTab] = useState("food")
   const isMountedRef = useRef(true)
 
   // Fetch pending food approval requests
@@ -98,13 +99,15 @@ export default function FoodApproval() {
     }
   }, [fetchFoodRequests])
 
-  // Filter requests based on search query
+  // Filter requests based on search query and active tab
   const filteredRequests = useMemo(() => {
+    let requests = foodRequests.filter(req => req.entityType === activeTab || (activeTab === 'food' && req.entityType !== 'addon'))
+
     if (!searchQuery.trim()) {
-      return foodRequests
+      return requests
     }
     const query = searchQuery.toLowerCase().trim()
-    return foodRequests.filter((request) =>
+    return requests.filter((request) =>
       request.itemName?.toLowerCase().includes(query) ||
       request.category?.toLowerCase().includes(query) ||
       request.shopName?.toLowerCase().includes(query) ||
@@ -112,7 +115,7 @@ export default function FoodApproval() {
       request.approvalStatus?.toLowerCase().includes(query) ||
       request.entityType?.toLowerCase().includes(query)
     )
-  }, [foodRequests, searchQuery])
+  }, [foodRequests, searchQuery, activeTab])
 
   const totalRequests = filteredRequests.length
 
@@ -209,11 +212,27 @@ export default function FoodApproval() {
           {/* Section Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-gray-900">Pending Food & Add-on Approvals</h2>
+              <h2 className="text-base font-semibold text-gray-900">Pending Approvals</h2>
               <span className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-600">
                 {totalRequests}
               </span>
             </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200 mb-4">
+            <button
+              className={`py-2 px-4 text-sm font-medium border-b-2 -mb-[1px] transition-colors ${activeTab === 'food' ? 'text-[#006fbd] border-[#006fbd]' : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'}`}
+              onClick={() => setActiveTab('food')}
+            >
+              Food Items
+            </button>
+            <button
+              className={`py-2 px-4 text-sm font-medium border-b-2 -mb-[1px] transition-colors ${activeTab === 'addon' ? 'text-[#006fbd] border-[#006fbd]' : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'}`}
+              onClick={() => setActiveTab('addon')}
+            >
+              Add-ons
+            </button>
           </div>
 
           {/* Search Bar */}
