@@ -23,6 +23,12 @@ export const normalizeImageUrl = (imageUrl, backendOrigin = "") => {
   if (/^(https?:)?\/\//i.test(normalized)) {
     try {
       const parsed = new URL(normalized, window.location.origin);
+      if (backendOrigin && /^\/uploads\//i.test(parsed.pathname)) {
+        const backendUrl = new URL(backendOrigin, window.location.origin);
+        parsed.protocol = backendUrl.protocol;
+        parsed.hostname = backendUrl.hostname;
+        parsed.port = backendUrl.port;
+      }
       if (appHost && !/^(localhost|127\.0\.0\.1)$/i.test(appHost) && /^(localhost|127\.0\.0\.1)$/i.test(parsed.hostname)) {
         const backendUrl = new URL(backendOrigin || window.location.origin);
         parsed.protocol = backendUrl.protocol;

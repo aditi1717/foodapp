@@ -8,6 +8,7 @@ import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodOfferUsage } from '../../admin/models/offerUsage.model.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { getPriorityListingShopIds } from '../../shared/subscription.service.js';
+import { normalizeStoredUploadUrl } from '../../../../services/storage.service.js';
 
 const normalizeName = (value) =>
     String(value || '')
@@ -36,7 +37,10 @@ const normalizeTotalRatingsValue = (value) => {
     return Math.max(0, Math.floor(numeric));
 };
 
-const toUrl = (v) => (v && (typeof v === 'string' ? v : v.url)) ? (typeof v === 'string' ? v : v.url) : '';
+const toUrl = (v) => {
+    const raw = (v && (typeof v === 'string' ? v : v.url)) ? (typeof v === 'string' ? v : v.url) : '';
+    return normalizeStoredUploadUrl(raw);
+};
 
 const normalizeShopTime = (value) => {
     const raw = String(value || '').trim();
@@ -170,7 +174,7 @@ const toShopProfile = (doc) => {
         pureVegShop: Boolean(doc.pureVegShop),
         zoneId: doc.zoneId ? String(doc.zoneId?._id || doc.zoneId) : '',
         zoneName: doc.zoneId?.name || doc.zoneId?.zoneName || doc.zoneId?.serviceLocation || '',
-        profileImage: doc.profileImage ? { url: doc.profileImage } : null,
+        profileImage: doc.profileImage ? { url: toUrl(doc.profileImage) } : null,
         menuImages,
         coverImages,
         openingTime: normalizeShopTime(doc.openingTime) || null,

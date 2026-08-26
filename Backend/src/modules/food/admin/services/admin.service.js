@@ -54,6 +54,7 @@ import {
     serializeFoodVariants
 } from './foodVariant.service.js';
 import { normalizeAdminPermissions } from '../constants/adminPermissions.js';
+import { normalizeStoredUploadUrl } from '../../../../services/storage.service.js';
 
 const parseBooleanLike = (value, fieldName) => {
     if (typeof value === 'boolean') return value;
@@ -3105,6 +3106,17 @@ export async function getShopById(id, adminScope = {}) {
     if (!shop) return null;
     if (normalizeAdminScope(adminScope).isSubAdmin) {
         assertZoneAccess(adminScope, shop.zoneId?._id || shop.zoneId);
+    }
+    shop.profileImage = normalizeStoredUploadUrl(shop.profileImage);
+    shop.panImage = normalizeStoredUploadUrl(shop.panImage);
+    shop.gstImage = normalizeStoredUploadUrl(shop.gstImage);
+    shop.fssaiImage = normalizeStoredUploadUrl(shop.fssaiImage);
+    shop.upiQrImage = normalizeStoredUploadUrl(shop.upiQrImage);
+    if (Array.isArray(shop.menuImages)) {
+        shop.menuImages = shop.menuImages.map((img) => normalizeStoredUploadUrl(img)).filter(Boolean);
+    }
+    if (Array.isArray(shop.coverImages)) {
+        shop.coverImages = shop.coverImages.map((img) => normalizeStoredUploadUrl(img)).filter(Boolean);
     }
     return shop;
 }

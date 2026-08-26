@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect, useRef } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Search, Download, ChevronDown, Eye, Settings, ArrowUpDown, Loader2, X, MapPin, Phone, Mail, Clock, Star, Building2, User, FileText, CreditCard, Calendar, Image as ImageIcon, ExternalLink, ShieldX, AlertTriangle, Trash2, Plus } from "lucide-react"
 import { adminAPI, shopAPI, uploadAPI } from "@food/api"
+import { getApiOrigin } from "@food/api/baseUrl"
 import { clearModuleAuth } from "@food/utils/auth"
+import { normalizeImageUrl as normalizeImageUrlWithBackend } from "@food/utils/common"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { exportShopsToPDF } from "@food/components/admin/shops/shopsExportUtils"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
@@ -259,14 +261,20 @@ const buildAllDaysOutletPayload = (schedule) => {
   }, {})
 }
 
+const BACKEND_ORIGIN = getApiOrigin()
+
 const normalizeImageUrl = (image) => {
   if (!image) return ""
-  if (typeof image === "string") return image
-  if (typeof image === "object") return image.url || image.secure_url || ""
+  if (typeof image === "string") return normalizeImageUrlWithBackend(image, BACKEND_ORIGIN)
+  if (typeof image === "object") {
+    return normalizeImageUrlWithBackend(image.url || image.secure_url || "", BACKEND_ORIGIN)
+  }
   return ""
 }
 
 const getPrimaryShopImage = (shop, fallback = "") => {
+  const profileImage = normalizeImageUrl(shop?.profileImage)
+  if (profileImage) return profileImage
   const coverImages = Array.isArray(shop?.coverImages) ? shop.coverImages : []
   const firstCoverImage = coverImages.map(normalizeImageUrl).find(Boolean)
   if (firstCoverImage) return firstCoverImage
@@ -274,7 +282,6 @@ const getPrimaryShopImage = (shop, fallback = "") => {
   const firstMenuImage = menuImages.map(normalizeImageUrl).find(Boolean)
   if (firstMenuImage) return firstMenuImage
   return (
-    normalizeImageUrl(shop?.profileImage) ||
     normalizeImageUrl(shop?.logo) ||
     normalizeImageUrl(shop?.shopImage) ||
     fallback

@@ -38,6 +38,7 @@ app.get('/ready', (_req, res) => {
 // Security & parsing middlewares
 app.use(helmet({
     contentSecurityPolicy: { directives: { defaultSrc: ["'self'"] } },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
     hsts: config.nodeEnv === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
     xssFilter: true,
     noSniff: true,
@@ -73,7 +74,11 @@ ensureUploadDirExists().catch((err) => console.error('[STORAGE_INIT_ERROR]', err
 
 // Serve uploads static folder (in dev Express serves /uploads, in prod Nginx handles /uploads/)
 const uploadDir = getUploadDir();
-app.use('/uploads', express.static(uploadDir));
+app.use('/uploads', express.static(uploadDir, {
+    setHeaders: (res) => {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+}));
 
 // API Routes
 app.use('/api', routes);

@@ -12,7 +12,12 @@ export const getApiOrigin = () => {
   const apiBaseUrl = getApiBaseUrl();
 
   if (!apiBaseUrl) {
-    return "";
+    if (typeof window !== "undefined" && import.meta?.env?.DEV) {
+      const protocol = window.location?.protocol || "http:";
+      const hostname = window.location?.hostname || "localhost";
+      return `${protocol}//${hostname}:5000`;
+    }
+    return typeof window !== "undefined" ? window.location.origin : "";
   }
 
   return apiBaseUrl.replace(/\/api\/v1$/i, "").replace(/\/api$/i, "");

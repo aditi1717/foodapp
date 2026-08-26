@@ -4,6 +4,28 @@ import crypto from 'crypto';
 import sharp from 'sharp';
 import { config } from '../config/env.js';
 
+const getUploadBaseUrl = () => {
+    // In local development, always prefer the local backend origin for disk uploads.
+    if (config.nodeEnv !== 'production') {
+        return `http://localhost:${config.port || 5000}`;
+    }
+
+    return config.appUrl || `http://localhost:${config.port || 5000}`;
+};
+
+export const normalizeStoredUploadUrl = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    const baseUrl = getUploadBaseUrl().replace(/\/$/, '');
+    const uploadsMatch = raw.replace(/\\/g, '/').match(/\/uploads\/[^?#]+/i);
+    if (uploadsMatch) {
+        return `${baseUrl}${uploadsMatch[0]}`;
+    }
+
+    return raw;
+};
+
 /**
  * Gets the upload root directory based on environment:
  * - Development: Backend/uploads (or config.uploadPath)
@@ -55,7 +77,7 @@ export const uploadImageBuffer = async (buffer, _folder = 'uploads') => {
     await fs.promises.writeFile(filePath, webpBuffer);
 
     // Build accessible URL
-    const baseUrl = config.appUrl || `http://localhost:${config.port || 5000}`;
+    const baseUrl = getUploadBaseUrl();
     const fileUrl = `${baseUrl.replace(/\/$/, '')}/uploads/${filename}`;
 
     return fileUrl;
