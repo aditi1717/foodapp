@@ -1,11 +1,13 @@
 import { FoodUser } from './user.model.js';
 import { buildPaginationOptions, buildPaginatedResult } from '../../utils/helpers.js';
+import { ensureUserReferralCode } from './referralCode.util.js';
 
 export const findOrCreateUserByPhone = async ({ phone, countryCode = '+91' }) => {
     let user = await FoodUser.findOne({ phone }).lean();
 
     if (!user) {
         const created = await FoodUser.create({ phone, countryCode });
+        await ensureUserReferralCode(created);
         user = created.toObject();
     }
 

@@ -1,6 +1,17 @@
 import { z } from 'zod';
 import { ValidationError } from '../../../../core/auth/errors.js';
 
+const normalizeBooleanLike = (value) => {
+    if (value === undefined) return undefined;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+        if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+    }
+    return value;
+};
+
 const schema = z.object({
     referralRewardUser: z.number().min(0).optional(),
     referralRewardReferredUser: z.number().min(0).optional(),
@@ -17,7 +28,7 @@ export const validateReferralSettingsUpsertDto = (body) => {
         referralRewardDelivery: body?.referralRewardDelivery !== undefined ? Number(body.referralRewardDelivery) : undefined,
         referralLimitUser: body?.referralLimitUser !== undefined ? Number(body.referralLimitUser) : undefined,
         referralLimitDelivery: body?.referralLimitDelivery !== undefined ? Number(body.referralLimitDelivery) : undefined,
-        isActive: body?.isActive !== undefined ? Boolean(body.isActive) : undefined
+        isActive: normalizeBooleanLike(body?.isActive)
     };
 
     const result = schema.safeParse(normalized);

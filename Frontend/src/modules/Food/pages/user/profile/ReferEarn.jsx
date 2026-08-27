@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Share2, Users, Wallet, CircleCheck, Clock3, CircleX } from "lucide-react";
+import { ArrowLeft, Share2, Users, Wallet, CircleCheck, Clock3, CircleX, Copy, Ticket, Link as LinkIcon } from "lucide-react";
 import AnimatedPage from "@food/components/user/AnimatedPage";
 import { Button } from "@food/components/ui/button";
 import { Card, CardContent } from "@food/components/ui/card";
@@ -36,6 +36,8 @@ export default function ReferEarn() {
     referralCount: 0,
     totalReferralEarnings: 0,
     rewardAmount: 0,
+    referralLimitUser: 0,
+    canShare: true,
     totalInvited: 0,
     creditedCount: 0,
     pendingCount: 0,
@@ -56,6 +58,8 @@ export default function ReferEarn() {
             referralCount: Number(nextStats.referralCount) || 0,
             totalReferralEarnings: Number(nextStats.totalReferralEarnings) || 0,
             rewardAmount: Number(nextStats.rewardAmount) || 0,
+            referralLimitUser: Number(nextStats.referralLimitUser) || 0,
+            canShare: nextStats.canShare !== undefined ? Boolean(nextStats.canShare) : true,
             totalInvited: Number(nextStats.totalInvited) || 0,
             creditedCount: Number(nextStats.creditedCount) || 0,
             pendingCount: Number(nextStats.pendingCount) || 0,
@@ -79,9 +83,9 @@ export default function ReferEarn() {
     };
   }, []);
 
-  const refId = userProfile?._id || userProfile?.id || userProfile?.referralCode || "";
-  const referralLink = refId
-    ? `${window.location.origin}/food/user/auth/login?ref=${encodeURIComponent(String(refId))}`
+  const referralCode = String(userProfile?.referralCode || "").trim().toUpperCase();
+  const referralLink = referralCode
+    ? `${window.location.origin}/food/refer/${encodeURIComponent(referralCode)}`
     : "";
 
   const shareText = useMemo(() => {
@@ -89,32 +93,66 @@ export default function ReferEarn() {
     return `Join ${companyName} and earn ${rewardText}.`;
   }, [companyName, stats.rewardAmount]);
 
-  const handleShare = async () => {
+  const handleCopyLink = async () => {
     if (!referralLink) {
       toast.error("Referral link unavailable");
       return;
     }
     try {
+      await navigator.clipboard.writeText(referralLink);
+      toast.success("Referral link copied to clipboard");
+    } catch (_) {
+      toast.error("Unable to copy referral link");
+    }
+  };
+
+  const handleShare = async () => {
+    if (!referralLink) {
+      toast.error("Referral link unavailable");
+      return;
+    }
+    const sharePayload = `${shareText} ${referralLink}`;
+    const fallbackUrl = `https://wa.me/?text=${encodeURIComponent(sharePayload)}`;
+    try {
       if (navigator.share) {
-        await navigator.share({
-          title: `${companyName} referral`,
-          text: shareText,
-          url: referralLink,
-        });
-        return;
+        try {
+          await navigator.share({
+            title: `${companyName} referral`,
+            text: shareText,
+            url: referralLink,
+          });
+          return;
+        } catch (error) {
+          if (error?.name === "AbortError") return;
+        }
       }
 
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(`${shareText} ${referralLink}`);
-        toast.success("Referral link copied");
+        await navigator.clipboard.writeText(referralLink);
+        toast.success("Referral link copied to clipboard");
+        return;
       }
 
-      const fallbackUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${referralLink}`)}`;
       window.open(fallbackUrl, "_blank", "noopener,noreferrer");
     } catch (error) {
-      if (error?.name !== "AbortError") {
+      try {
+        window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+      } catch (_) {
         toast.error("Unable to share right now");
       }
+    }
+  };
+
+  const handleCopyCode = async () => {
+    if (!referralCode) {
+      toast.error("Referral code unavailable");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(referralCode);
+      toast.success("Referral code copied");
+    } catch (_) {
+      toast.error("Unable to copy referral code");
     }
   };
 
@@ -135,6 +173,41 @@ export default function ReferEarn() {
             <p className="text-sm text-gray-600 dark:text-gray-300">
               Invite friends and earn when they sign up.
             </p>
+            <div className="mt-3 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-4 text-white">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.22em] text-slate-300">Referral Code</p>
+                  <p className="mt-2 font-mono text-2xl font-black tracking-[0.3em]">
+                    {referralCode || "------"}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/10 p-2.5">
+                  <Ticket className="h-5 w-5 text-amber-300" />
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleCopyCode}
+                  disabled={!referralCode}
+                  className="flex-1 h-10 rounded-xl bg-white/10 text-white hover:bg-white/15 text-xs font-semibold"
+                >
+                  <Copy className="mr-1.5 h-3.5 w-3.5" />
+                  Copy Code
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleCopyLink}
+                  disabled={!referralLink}
+                  className="flex-1 h-10 rounded-xl bg-white/10 text-white hover:bg-white/15 text-xs font-semibold"
+                >
+                  <LinkIcon className="mr-1.5 h-3.5 w-3.5" />
+                  Copy Link
+                </Button>
+              </div>
+            </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3">
                 <p className="text-[11px] text-gray-500 dark:text-gray-400">Reward per invite</p>
@@ -147,15 +220,21 @@ export default function ReferEarn() {
                 </p>
               </div>
             </div>
-            <Button
-              type="button"
-              onClick={handleShare}
-              disabled={!referralLink}
-              className={`w-full mt-3 h-11 rounded-xl ${BRAND_THEME.tokens.profile.primaryButton}`}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Share Invite
-            </Button>
+            {stats.canShare ? (
+              <Button
+                type="button"
+                onClick={handleShare}
+                disabled={!referralLink}
+                className={`w-full mt-3 h-11 rounded-xl ${BRAND_THEME.tokens.profile.primaryButton}`}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share Invite
+              </Button>
+            ) : (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                Referral sharing is hidden because your reward limit has been reached.
+              </div>
+            )}
           </CardContent>
         </Card>
 

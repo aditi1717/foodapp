@@ -101,6 +101,14 @@ export function verifyUserOtp(
   });
 }
 
+export function validateReferralCode(code) {
+  const normalized = String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!normalized) {
+    return Promise.reject(new Error("Referral code is required"));
+  }
+  return apiClient.get(`/food/auth/referral/validate/${encodeURIComponent(normalized)}`);
+}
+
 /**
  * Admin login (email + password).
  * Validation: email required and valid format, password required and min 6 characters.

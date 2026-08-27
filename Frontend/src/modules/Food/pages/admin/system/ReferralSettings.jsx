@@ -11,6 +11,8 @@ export default function ReferralSettings() {
   const [form, setForm] = useState({
     referralRewardUser: "",
     referralRewardReferredUser: "",
+    referralLimitUser: "",
+    isActive: true,
   });
 
   const loadSettings = async () => {
@@ -27,6 +29,11 @@ export default function ReferralSettings() {
           data?.referralRewardReferredUser !== undefined && data?.referralRewardReferredUser !== null
             ? String(data.referralRewardReferredUser)
             : "0",
+        referralLimitUser:
+          data?.referralLimitUser !== undefined && data?.referralLimitUser !== null
+            ? String(data.referralLimitUser)
+            : "0",
+        isActive: data?.isActive !== undefined ? Boolean(data.isActive) : true,
       });
     } catch (error) {
       debugError("Failed to load referral settings:", error);
@@ -50,8 +57,13 @@ export default function ReferralSettings() {
     const payload = {
       referralRewardUser: Number(form.referralRewardUser || 0),
       referralRewardReferredUser: Number(form.referralRewardReferredUser || 0),
+      referralLimitUser: Number(form.referralLimitUser || 0),
+      isActive: Boolean(form.isActive),
     };
-    if (Object.values(payload).some((n) => !Number.isFinite(n) || n < 0)) {
+    if (
+      [payload.referralRewardUser, payload.referralRewardReferredUser, payload.referralLimitUser]
+        .some((n) => !Number.isFinite(n) || n < 0)
+    ) {
       toast.error("All values must be 0 or more");
       return;
     }
@@ -108,6 +120,36 @@ export default function ReferralSettings() {
                   onChange={(e) => onChange("referralRewardReferredUser", e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Referral Limit Per User
+                </label>
+                <input
+                  type="text"
+                  value={form.referralLimitUser}
+                  onChange={(e) => onChange("referralLimitUser", e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Use 0 for unlimited referrals, or set a max rewardable invite count per user.
+                </p>
+              </div>
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form.isActive)}
+                    onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">Referral Program Active</p>
+                    <p className="text-xs text-slate-500">
+                      Turn this off to keep codes visible but stop reward crediting.
+                    </p>
+                  </div>
+                </label>
               </div>
               <div className="md:col-span-2 pt-2">
                 <button

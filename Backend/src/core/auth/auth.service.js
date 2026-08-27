@@ -6,8 +6,6 @@ import { FoodAdmin } from "../admin/admin.model.js";
 import { AdminResetOtp } from "../admin/adminResetOtp.model.js";
 import { FoodShop } from "../../modules/food/shop/models/shop.model.js";
 import { FoodDeliveryPartner } from "../../modules/food/delivery/models/deliveryPartner.model.js";
-import { FoodReferralSettings } from "../../modules/food/admin/models/referralSettings.model.js";
-import { FoodReferralLog } from "../../modules/food/admin/models/referralLog.model.js";
 import { createOrUpdateOtp, verifyOtp } from "../otp/otp.service.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "./token.util.js";
 import { FoodRefreshToken } from "../refreshTokens/refreshToken.model.js";
@@ -15,8 +13,12 @@ import { ValidationError, AuthError } from "./errors.js";
 import { config } from "../../config/env.js";
 import { logger } from "../../utils/logger.js";
 import { sendAdminResetOtpEmail } from "../../utils/email.js";
-import mongoose from "mongoose";
-import { creditReferralReward } from "../../modules/food/user/services/userWallet.service.js";
+import {
+  ensureUserReferralCode,
+  normalizeReferralCode,
+} from "../users/referralCode.util.js";
+import { applyUserReferral } from "../../modules/food/user/services/applyUserReferral.service.js";
+import { FoodReferralSettings } from "../../modules/food/admin/models/referralSettings.model.js";
 
 const ROLES = {
   USER: "USER",
@@ -35,6 +37,49 @@ export const requestUserOtp = async (phone) => {
   const shouldExposeOtp =
     config.nodeEnv !== "production" || config.useDefaultOtp;
   return shouldExposeOtp ? { otp } : {};
+};
+
+export const validateUserReferralCode = async (rawCode) => {
+  const referralCode = normalizeReferralCode(rawCode);
+  if (!referralCode) {
+    throw new ValidationError("Referral code is required");
+  }
+
+  const [referrer, settingsDoc] = await Promise.all([
+    FoodUser.findOne({ referralCode })
+      .select("_id name referralCode referralCount isActive")
+      .lean(),
+    FoodReferralSettings.findOne({ isActive: true }).sort({ createdAt: -1 }).lean(),
+  ]);
+
+  if (!referrer) {
+    throw new ValidationError("Invalid referral code");
+  }
+  if (referrer.isActive === false) {
+    throw new ValidationError("Referral code is not active");
+  }
+  if (!settingsDoc) {
+    throw new ValidationError("Referral program is not active");
+  }
+
+  const referrerReward = Math.max(0, Number(settingsDoc.referralRewardUser) || 0);
+  const referredUserReward = Math.max(0, Number(settingsDoc.referralRewardReferredUser) || 0);
+  const limit = Math.max(0, Number(settingsDoc.referralLimitUser) || 0);
+  const isWithinLimit = limit <= 0 || Number(referrer.referralCount || 0) < limit;
+
+  if (!isWithinLimit) {
+    throw new ValidationError("Referral limit reached for this code");
+  }
+
+  return {
+    valid: true,
+    referralCode,
+    referrerName: String(referrer.name || "").trim() || "Your friend",
+    referrerReward,
+    referredUserReward,
+    referralLimitUser: limit,
+    isActive: settingsDoc.isActive !== false,
+  };
 };
 
 export const verifyUserOtpAndLogin = async (
@@ -65,6 +110,7 @@ export const verifyUserOtpAndLogin = async (
       isVerified: true,
       ...(trimmedName ? { name: trimmedName } : {}),
     });
+    await ensureUserReferralCode(userDoc);
   } else {
     let needsSave = false;
     if (!userDoc.isVerified) {
@@ -76,6 +122,7 @@ export const verifyUserOtpAndLogin = async (
       needsSave = true;
     }
     if (needsSave) await userDoc.save();
+    await ensureUserReferralCode(userDoc);
   }
 
   // Block login for deactivated users
@@ -107,95 +154,11 @@ export const verifyUserOtpAndLogin = async (
     }
   }
 
-  // Ensure referralCode exists (used for share links on older accounts).
-  if (!userDoc.referralCode) {
-    userDoc.referralCode = String(userDoc._id);
-    await userDoc.save();
-  }
-
   // Referral crediting: only for brand new accounts.
-  const refRaw = typeof ref === "string" ? String(ref).trim() : "";
+  const refRaw = normalizeReferralCode(ref);
   if (isNewUser && refRaw) {
     try {
-      if (mongoose.Types.ObjectId.isValid(refRaw)) {
-        const referrerId = new mongoose.Types.ObjectId(refRaw);
-        if (String(referrerId) !== String(userDoc._id)) {
-          const [referrer, settingsDoc] = await Promise.all([
-            FoodUser.findById(referrerId).select("_id referralCount").lean(),
-            FoodReferralSettings.findOne({ isActive: true })
-              .sort({ createdAt: -1 })
-              .lean(),
-          ]);
-
-          if (referrer && settingsDoc) {
-            const referrerReward = Math.max(
-              0,
-              Number(settingsDoc.referralRewardUser) || 0,
-            );
-            const referredUserReward = Math.max(
-              0,
-              Number(settingsDoc.referralRewardReferredUser) || 0,
-            );
-            const limit = Math.max(
-              0,
-              Number(settingsDoc.referralLimitUser) || 0,
-            );
-            const isWithinLimit =
-              limit <= 0 || Number(referrer.referralCount || 0) < limit;
-
-            if (
-              (referrerReward > 0 || referredUserReward > 0) &&
-              isWithinLimit
-            ) {
-              userDoc.referredBy = referrerId;
-              await userDoc.save();
-
-              const log = await FoodReferralLog.create({
-                referrerId,
-                refereeId: userDoc._id,
-                role: "USER",
-                rewardAmount: referrerReward,
-                status: "credited",
-              });
-
-              await FoodUser.updateOne(
-                { _id: referrerId },
-                { $inc: { referralCount: 1 } },
-              );
-
-              if (referrerReward > 0) {
-                await creditReferralReward(referrerId, referrerReward, {
-                  role: "USER",
-                  refereeId: String(userDoc._id),
-                  referralLogId: String(log._id),
-                  side: "referrer",
-                });
-              }
-
-              if (referredUserReward > 0) {
-                await creditReferralReward(userDoc._id, referredUserReward, {
-                  role: "USER",
-                  referrerId: String(referrerId),
-                  referralLogId: String(log._id),
-                  side: "referred_user",
-                });
-              }
-            } else {
-              await FoodReferralLog.create({
-                referrerId,
-                refereeId: userDoc._id,
-                role: "USER",
-                rewardAmount: referrerReward,
-                status: "rejected",
-                reason:
-                  referrerReward <= 0 && referredUserReward <= 0
-                    ? "reward_disabled"
-                    : "limit_reached",
-              });
-            }
-          }
-        }
-      }
+      await applyUserReferral(userDoc._id, refRaw);
     } catch (e) {
       // Never fail login due to referral errors.
       logger?.warn?.({ err: e }, "Referral crediting failed (user)");

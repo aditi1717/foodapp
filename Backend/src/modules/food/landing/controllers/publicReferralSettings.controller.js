@@ -11,7 +11,8 @@ export async function getPublicReferralSettingsController(req, res, next) {
                 referralRewardReferredUser: Number(settings.referralRewardReferredUser) || 0,
                 referralRewardDelivery: Number(settings.referralRewardDelivery) || 0,
                 referralLimitUser: Number(settings.referralLimitUser) || 0,
-                referralLimitDelivery: Number(settings.referralLimitDelivery) || 0
+                referralLimitDelivery: Number(settings.referralLimitDelivery) || 0,
+                isActive: settings.isActive !== false
             }
             : null;
         return res.status(200).json({ success: true, message: 'Referral settings fetched successfully', data: { referralSettings: payload } });

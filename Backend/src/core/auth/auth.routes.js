@@ -2,6 +2,7 @@ import express from 'express';
 import {
     requestUserOtpController,
     verifyUserOtpController,
+    validateUserReferralCodeController,
     adminLoginController,
     refreshTokenController,
     requestShopOtpController,
@@ -23,6 +24,7 @@ const router = express.Router();
 // router.use(authRateLimiter); // Removed global application to avoid rate-limiting /me or /refresh-token too strictly
 
 // User OTP login
+router.get('/referral/validate/:code', authRateLimiter, validateUserReferralCodeController);
 router.post('/user/request-otp', authRateLimiter, requestUserOtpController);
 router.post('/user/verify-otp', authRateLimiter, verifyUserOtpController);
 

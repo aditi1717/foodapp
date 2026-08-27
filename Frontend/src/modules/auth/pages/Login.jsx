@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react"
 import { motion } from "framer-motion"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import { Phone, ShieldCheck, Loader2 } from "lucide-react"
+import { Phone, ShieldCheck, Loader2, Ticket } from "lucide-react"
 import { toast } from "sonner"
 import { authAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
@@ -20,7 +20,7 @@ export default function UnifiedOTPFastLogin() {
   const [companyName, setCompanyName] = useState(BRAND_THEME.brandName)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const referralCode = searchParams.get("ref") || null
+  const referralCode = String(searchParams.get("ref") || "").trim().toUpperCase() || null
   const submitting = useRef(false)
 
   useEffect(() => {
@@ -148,7 +148,7 @@ export default function UnifiedOTPFastLogin() {
         console.warn("Failed to get FCM token during login", e);
       }
 
-      const response = await authAPI.verifyOTP(phoneNumber, otpDigits, "login", null, null, "user", null, referralCode, fcmToken, platform)
+      const response = await authAPI.verifyOTP(phoneNumber, otpDigits, "login", null, null, "user", null, null, fcmToken, platform)
       const responseBody = response?.data || {}
       const data = responseBody?.data || responseBody || {}
       let accessToken = data.accessToken
@@ -178,6 +178,7 @@ export default function UnifiedOTPFastLogin() {
           accessToken,
           refreshToken,
           user,
+          referralCode: referralCode || null,
         }
         sessionStorage.setItem(
           "userAuthData",
@@ -276,6 +277,12 @@ export default function UnifiedOTPFastLogin() {
                   ? "Continue with your phone number."
                   : `Code sent to +91 ${phoneNumber}`}
               </p>
+              {referralCode && (
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
+                  <Ticket className="h-3.5 w-3.5" />
+                  Referral code {referralCode} will be applied after signup
+                </div>
+              )}
               <div className="h-[2px] w-10 rounded-full mt-1" style={{ backgroundColor: authTheme.accent }} />
            </div>
 

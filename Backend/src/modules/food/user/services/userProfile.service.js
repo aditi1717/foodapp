@@ -1,6 +1,7 @@
 import { FoodUser } from '../../../../core/users/user.model.js';
 import { AuthError, ValidationError } from '../../../../core/auth/errors.js';
 import { uploadImageBuffer } from '../../../../services/cloudinary.service.js';
+import { applyUserReferral } from './applyUserReferral.service.js';
 
 const parseIsoDateOrNull = (value) => {
     if (value === undefined) return undefined;
@@ -39,8 +40,13 @@ export const updateCurrentUserProfile = async (userId, body) => {
     const ann = parseIsoDateOrNull(body.anniversary);
     if (ann !== undefined) user.anniversary = ann;
 
+    let referralResult = null;
+    if (body.referralCode !== undefined) {
+        referralResult = await applyUserReferral(user._id, body.referralCode);
+    }
+
     await user.save();
-    return { user: user.toObject() };
+    return { user: user.toObject(), referral: referralResult };
 };
 
 export const uploadCurrentUserProfileImage = async (userId, file) => {

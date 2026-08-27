@@ -17,10 +17,15 @@ export const getUserReferralStats = async (userId) => {
         FoodReferralSettings.findOne({ isActive: true }).sort({ createdAt: -1 }).lean()
     ]);
 
+    const referralCount = Number(user?.referralCount) || 0;
+    const referralLimitUser = Math.max(0, Number(settingsDoc?.referralLimitUser) || 0);
+
     return {
-        referralCount: Number(user?.referralCount) || 0,
+        referralCount,
         totalReferralEarnings: Number(wallet?.referralEarnings) || 0,
-        rewardAmount: Math.max(0, Number(settingsDoc?.referralRewardUser) || 0)
+        rewardAmount: Math.max(0, Number(settingsDoc?.referralRewardUser) || 0),
+        referralLimitUser,
+        canShare: Boolean(settingsDoc) && (referralLimitUser <= 0 || referralCount < referralLimitUser)
     };
 };
 
@@ -85,11 +90,16 @@ export const getUserReferralDetails = async (userId) => {
     const pendingCount = invitedFriends.filter((entry) => entry.status === 'pending').length;
     const rejectedCount = invitedFriends.filter((entry) => entry.status === 'rejected').length;
 
+    const referralCount = Number(user?.referralCount) || 0;
+    const referralLimitUser = Math.max(0, Number(settingsDoc?.referralLimitUser) || 0);
+
     return {
         stats: {
-            referralCount: Number(user?.referralCount) || 0,
+            referralCount,
             totalReferralEarnings: Number(wallet?.referralEarnings) || 0,
             rewardAmount: Math.max(0, Number(settingsDoc?.referralRewardUser) || 0),
+            referralLimitUser,
+            canShare: Boolean(settingsDoc) && (referralLimitUser <= 0 || referralCount < referralLimitUser),
             totalInvited,
             creditedCount,
             pendingCount,

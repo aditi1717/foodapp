@@ -65,6 +65,7 @@ const ReferEarn = lazy(() => import("@food/pages/user/profile/ReferEarn"))
 const SignIn = lazy(() => import("@food/pages/user/auth/SignIn"))
 const OTP = lazy(() => import("@food/pages/user/auth/OTP"))
 const AuthCallback = lazy(() => import("@food/pages/user/auth/AuthCallback"))
+const ReferralLanding = lazy(() => import("@food/pages/user/auth/ReferralLanding"))
 
 // Help
 const Help = lazy(() => import("@food/pages/user/help/Help"))
@@ -93,6 +94,7 @@ export default function UserRouter() {
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
+        <Route path="refer/:code" element={<ReferralLanding />} />
         <Route element={<UserLayout />}>
           {/* Home & Discovery */}
           <Route path="" element={<Home />} />

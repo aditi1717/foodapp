@@ -13,6 +13,7 @@ import {
   changeAdminPassword,
   requestAdminForgotPasswordOtp,
   resetAdminPasswordWithOtp,
+  validateUserReferralCode,
 } from "./auth.service.js";
 import { validateUserOtpRequestDto } from "../../dtos/auth/userOtpRequest.dto.js";
 import { validateUserOtpVerifyDto } from "../../dtos/auth/userOtpVerify.dto.js";
@@ -27,6 +28,7 @@ import { validateAdminProfileUpdateDto } from "../../dtos/auth/adminProfileUpdat
 import { validateAdminChangePasswordDto } from "../../dtos/auth/adminChangePassword.dto.js";
 import { validateAdminForgotPasswordRequestDto } from "../../dtos/auth/adminForgotPasswordRequest.dto.js";
 import { validateAdminForgotPasswordResetDto } from "../../dtos/auth/adminForgotPasswordReset.dto.js";
+import { validateReferralCodeParam } from "./referralValidate.dto.js";
 import { sendResponse } from "../../utils/response.js";
 
 export const requestUserOtpController = async (req, res, next) => {
@@ -56,6 +58,16 @@ export const verifyUserOtpController = async (req, res, next) => {
       name,
     );
     return sendResponse(res, 200, "Login successful", result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const validateUserReferralCodeController = async (req, res, next) => {
+  try {
+    const { code } = validateReferralCodeParam(req.params || {});
+    const result = await validateUserReferralCode(code);
+    return sendResponse(res, 200, "Referral code is valid", result);
   } catch (error) {
     next(error);
   }

@@ -8,6 +8,11 @@ import { authAPI, userAPI } from "@food/api"
 import { setAuthData as setUserAuthData } from "@food/utils/auth"
 import loginBanner from "@food/assets/loginbanner.png"
 import BRAND_THEME from "@/config/brandTheme"
+import { getErrorMessage } from "@/utils/errorUtils"
+
+
+const normalizeReferralCode = (value) =>
+  String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12)
 
 export default function OTP() {
   const navigate = useNavigate()
@@ -21,6 +26,14 @@ export default function OTP() {
   const [showNameInput, setShowNameInput] = useState(false)
   const [name, setName] = useState("")
   const [nameError, setNameError] = useState("")
+  const [referralCode, setReferralCode] = useState("")
+  const [referralError, setReferralError] = useState("")
+  const [referralStatus, setReferralStatus] = useState({
+    loading: false,
+    valid: false,
+    message: "",
+    referrerName: "",
+  })
   const [verifiedOtp, setVerifiedOtp] = useState("")
   const [contactInfo, setContactInfo] = useState("")
   const [contactType, setContactType] = useState("phone")
@@ -80,6 +93,7 @@ export default function OTP() {
           }
           setDeviceToken(parsed?.fcmToken || null)
           setActivePlatform(parsed?.platform || "web")
+          setReferralCode(normalizeReferralCode(parsed?.referralCode || data?.referralCode || ""))
           if (parsed?.accessToken && parsed?.refreshToken && parsed?.user) {
             setPendingAuth({
               accessToken: parsed.accessToken,
@@ -113,6 +127,45 @@ export default function OTP() {
       inputRefs.current[0].focus()
     }
   }, [showNameInput])
+
+  useEffect(() => {
+    if (!showNameInput) return
+    if (!referralCode) {
+      setReferralStatus({ loading: false, valid: false, message: "", referrerName: "" })
+      return
+    }
+
+    let cancelled = false
+    const timeoutId = setTimeout(async () => {
+      try {
+        setReferralStatus((prev) => ({ ...prev, loading: true, message: "" }))
+        const res = await authAPI.validateReferralCode(referralCode)
+        const data = res?.data?.data || {}
+        if (!cancelled) {
+          setReferralStatus({
+            loading: false,
+            valid: Boolean(data?.valid),
+            message: data?.valid ? "Referral code looks valid." : "Unable to verify referral code.",
+            referrerName: String(data?.referrerName || "").trim(),
+          })
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setReferralStatus({
+            loading: false,
+            valid: false,
+            message: getErrorMessage(err, "Invalid referral code"),
+            referrerName: "",
+          })
+        }
+      }
+    }, 350)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeoutId)
+    }
+  }, [showNameInput, referralCode])
 
   const handleChange = (index, value) => {
     // Only allow digits; OTP is exactly 4 digits
@@ -328,11 +381,7 @@ export default function OTP() {
       }, 500)
     } catch (err) {
       const status = err?.response?.status
-      let message =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Failed to verify OTP. Please try again."
+      let message = getErrorMessage(err, "Failed to verify OTP. Please try again.")
       if (status === 401) {
         // Friendlier copy for deactivated users or auth errors
         if (/deactivat(ed|e)/i.test(String(message))) {
@@ -350,6 +399,7 @@ export default function OTP() {
 
   const handleSubmitName = async () => {
     const trimmedName = name.trim()
+    const normalizedReferralCode = normalizeReferralCode(referralCode)
     if (!trimmedName) {
       setNameError("Name is required")
       return
@@ -363,6 +413,13 @@ export default function OTP() {
     setIsLoading(true)
     setError("")
     setNameError("")
+    setReferralError("")
+
+    if (normalizedReferralCode && referralStatus.message && !referralStatus.valid) {
+      setReferralError(referralStatus.message)
+      setIsLoading(false)
+      return
+    }
 
     try {
       const cachedPending =
@@ -397,12 +454,19 @@ export default function OTP() {
         resolvedPending.user,
         resolvedPending.refreshToken,
       )
-      const profileRes = await userAPI.updateProfile({ name: trimmedName })
+      const profileRes = await userAPI.updateProfile({
+        name: trimmedName,
+        ...(normalizedReferralCode ? { referralCode: normalizedReferralCode } : {}),
+      })
       const updatedUser =
         profileRes?.data?.data?.user ||
         profileRes?.data?.user ||
         profileRes?.data?.data ||
         { ...resolvedPending.user, name: trimmedName }
+      const referralResult =
+        profileRes?.data?.data?.referral ||
+        profileRes?.data?.referral ||
+        null
 
       sessionStorage.removeItem("userAuthData")
       sessionStorage.removeItem("userOtpNameFlow")
@@ -416,18 +480,22 @@ export default function OTP() {
 
       window.dispatchEvent(new Event("userAuthChanged"))
 
+      if (referralResult?.applied) {
+        toast.success(`Referral applied. Bonus added successfully.`)
+      }
+
       setSuccess(true)
 
       setTimeout(() => {
         navigate("/food/user")
       }, 500)
     } catch (err) {
-      const message =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Failed to complete registration. Please try again."
-      setError(message)
+      const message = getErrorMessage(err, "Failed to complete registration. Please try again.")
+      if (/referral/i.test(String(message))) {
+        setReferralError(message)
+      } else {
+        setError(message)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -447,11 +515,7 @@ export default function OTP() {
       // Call backend to resend OTP
       await authAPI.sendOTP(phone, purpose, email)
     } catch (err) {
-      const message =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Failed to resend OTP. Please try again."
+      const message = getErrorMessage(err, "Failed to resend OTP. Please try again.")
       setError(message)
     } finally {
       setIsLoading(false)
@@ -473,6 +537,8 @@ export default function OTP() {
     setShowNameInput(false)
     setName("")
     setNameError("")
+    setReferralCode("")
+    setReferralError("")
     setVerifiedOtp("")
     inputRefs.current[0]?.focus()
   }
@@ -517,7 +583,7 @@ export default function OTP() {
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
                 {showNameInput
-                  ? "We're excited to have you join us! Please tell us your full name to get started."
+                  ? "We're excited to have you join us. Add your name and, if you have one, an optional referral code."
                   : `We've sent a 4-digit code to ${contactInfo}`}
               </p>
             </div>
@@ -595,6 +661,41 @@ export default function OTP() {
                 {nameError && (
                   <p className="text-xs text-red-500 pl-1">
                     {nameError}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => {
+                    setReferralCode(normalizeReferralCode(e.target.value))
+                    if (referralError) setReferralError("")
+                  }}
+                  disabled={isLoading}
+                  placeholder="Referral Code (Optional)"
+                  className={`h-12 md:h-14 text-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 rounded-xl focus-visible:ring-1 ${referralError ? "border-red-500" : ""} transition-all`}
+                  style={{ borderColor: BRAND_THEME.colors.brand.primary, boxShadow: `0 0 0 1px ${BRAND_THEME.colors.brand.primary}33` }}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 pl-1">
+                  Enter a valid referral code if a friend shared one with you.
+                </p>
+                {referralStatus.loading && !referralError ? (
+                  <p className="text-xs text-gray-500 pl-1">
+                    Checking referral code...
+                  </p>
+                ) : null}
+                {!referralError && referralStatus.message ? (
+                  <p className={`text-xs pl-1 ${referralStatus.valid ? "text-green-600" : "text-amber-600"}`}>
+                    {referralStatus.valid && referralStatus.referrerName
+                      ? `${referralStatus.message} Shared by ${referralStatus.referrerName}.`
+                      : referralStatus.message}
+                  </p>
+                ) : null}
+                {referralError && (
+                  <p className="text-xs text-red-500 pl-1">
+                    {referralError}
                   </p>
                 )}
               </div>

@@ -133,6 +133,7 @@ export const authAPI = {
         : null);
     return authService.logout(token, fcmToken, platform);
   },
+  validateReferralCode: (code) => authService.validateReferralCode(code),
 };
 
 export const supportAPI = {
