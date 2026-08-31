@@ -26,6 +26,8 @@ export default function Customers() {
     status: "",
     sortBy: "",
     chooseFirst: "",
+    minOrderAmount: "",
+    maxOrderAmount: "",
   })
 
   const filteredCustomers = useMemo(() => {
@@ -62,6 +64,18 @@ export default function Customers() {
       }
     }
 
+    // Filter by total order amount
+    const minOrderAmount = Number(filters.minOrderAmount)
+    const maxOrderAmount = Number(filters.maxOrderAmount)
+
+    if (filters.minOrderAmount !== "" && !Number.isNaN(minOrderAmount)) {
+      result = result.filter(customer => Number(customer.totalOrderAmount || 0) >= minOrderAmount)
+    }
+
+    if (filters.maxOrderAmount !== "" && !Number.isNaN(maxOrderAmount)) {
+      result = result.filter(customer => Number(customer.totalOrderAmount || 0) <= maxOrderAmount)
+    }
+
     // Sort by options
     if (filters.sortBy) {
       if (filters.sortBy === "name-asc") {
@@ -69,9 +83,13 @@ export default function Customers() {
       } else if (filters.sortBy === "name-desc") {
         result.sort((a, b) => b.name.localeCompare(a.name))
       } else if (filters.sortBy === "orders-asc") {
-        result.sort((a, b) => a.totalOrder - b.totalOrder)
+        result.sort((a, b) => (a.totalOrder || 0) - (b.totalOrder || 0))
       } else if (filters.sortBy === "orders-desc") {
-        result.sort((a, b) => b.totalOrder - a.totalOrder)
+        result.sort((a, b) => (b.totalOrder || 0) - (a.totalOrder || 0))
+      } else if (filters.sortBy === "amount-asc") {
+        result.sort((a, b) => (a.totalOrderAmount || 0) - (b.totalOrderAmount || 0))
+      } else if (filters.sortBy === "amount-desc") {
+        result.sort((a, b) => (b.totalOrderAmount || 0) - (a.totalOrderAmount || 0))
       }
     }
 
@@ -263,7 +281,7 @@ export default function Customers() {
       <div className="max-w-7xl mx-auto">
         {/* Filters Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Order Date
@@ -319,8 +337,10 @@ export default function Customers() {
                 <option value="">Select Customer Sorting Order</option>
                 <option value="name-asc">Name (A-Z)</option>
                 <option value="name-desc">Name (Z-A)</option>
-                <option value="orders-asc">Orders (Low to High)</option>
-                <option value="orders-desc">Orders (High to Low)</option>
+                <option value="orders-desc">Order Count (Max to Min)</option>
+                <option value="orders-asc">Order Count (Min to Max)</option>
+                <option value="amount-desc">Order Amount (High to Low)</option>
+                <option value="amount-asc">Order Amount (Low to High)</option>
               </select>
             </div>
 
@@ -333,6 +353,34 @@ export default function Customers() {
                 value={filters.chooseFirst}
                 onChange={(e) => handleFilterChange("chooseFirst", e.target.value)}
                 placeholder="Ex: 100"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Min Order Amount
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={filters.minOrderAmount}
+                onChange={(e) => handleFilterChange("minOrderAmount", e.target.value)}
+                placeholder="Ex: 500"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Max Order Amount
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={filters.maxOrderAmount}
+                onChange={(e) => handleFilterChange("maxOrderAmount", e.target.value)}
+                placeholder="Ex: 5000"
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
               />
             </div>
@@ -356,6 +404,8 @@ export default function Customers() {
                     status: "",
                     sortBy: "",
                     chooseFirst: "",
+                    minOrderAmount: "",
+                    maxOrderAmount: "",
                   })
                 }}
                 className="px-6 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all"

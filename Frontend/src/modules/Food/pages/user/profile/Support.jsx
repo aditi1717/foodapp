@@ -25,6 +25,12 @@ export default function Support() {
   const [loadingTickets, setLoadingTickets] = useState(false)
   const [orderSearch, setOrderSearch] = useState("")
   const [shopSearch, setShopSearch] = useState("")
+  const [selectedTicket, setSelectedTicket] = useState(null)
+  const [ticketMessages, setTicketMessages] = useState([])
+  const [loadingThread, setLoadingThread] = useState(false)
+  const [replyMessage, setReplyMessage] = useState("")
+  const [sendingReply, setSendingReply] = useState(false)
+  const [updatingTicketStatus, setUpdatingTicketStatus] = useState(false)
 
   const loadTickets = useCallback(async () => {
     const res = await supportAPI.getMyTickets()
@@ -168,6 +174,84 @@ export default function Support() {
     return `#${id} | ${typeLabel}${context ? ` | ${context}` : ""} | ${issueLabel}`
   }
 
+  const formatMessageTime = (value) => {
+    if (!value) return "-"
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString("en-IN")
+  }
+
+  const openTicketChat = async (ticketId) => {
+    setLoadingThread(true)
+    setReplyMessage("")
+    try {
+      const res = await supportAPI.getMyTicketById(ticketId)
+      const data = res?.data?.data || {}
+      setSelectedTicket(data.ticket || null)
+      setTicketMessages(Array.isArray(data.messages) ? data.messages : [])
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to open ticket")
+    } finally {
+      setLoadingThread(false)
+    }
+  }
+
+  const closeTicketChat = () => {
+    setSelectedTicket(null)
+    setTicketMessages([])
+    setReplyMessage("")
+  }
+
+  const sendReply = async () => {
+    if (!selectedTicket?._id) return
+    if (!replyMessage.trim()) {
+      toast.error("Please enter a message")
+      return
+    }
+    setSendingReply(true)
+    try {
+      const res = await supportAPI.sendMyTicketMessage(selectedTicket._id, {
+        message: replyMessage.trim(),
+      })
+      const data = res?.data?.data || {}
+      if (data.message) {
+        setTicketMessages((prev) => [...prev, data.message])
+      }
+      if (data.ticket) {
+        setSelectedTicket(data.ticket)
+      }
+      setReplyMessage("")
+      await loadTickets()
+      toast.success("Message sent")
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to send message")
+    } finally {
+      setSendingReply(false)
+    }
+  }
+
+  const updateTicketStatus = async (nextStatus) => {
+    if (!selectedTicket?._id) return
+    setUpdatingTicketStatus(true)
+    try {
+      const res = await supportAPI.updateMyTicketStatus(selectedTicket._id, {
+        status: nextStatus,
+      })
+      const data = res?.data?.data || {}
+      if (data.ticket) {
+        setSelectedTicket(data.ticket)
+      }
+      if (Array.isArray(data.messages)) {
+        setTicketMessages(data.messages)
+      }
+      await loadTickets()
+      toast.success(nextStatus === "closed" ? "Ticket closed" : "Ticket reopened")
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to update ticket")
+    } finally {
+      setUpdatingTicketStatus(false)
+    }
+  }
+
   const filteredOrders = orders.filter((order) => {
     const q = orderSearch.trim().toLowerCase()
     if (!q) return true
@@ -242,14 +326,22 @@ export default function Support() {
                     {t.status}
                   </span>
                 </div>
-                {t.adminResponse ? (
+                {t.lastMessage ? (
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 whitespace-pre-wrap">
+                    Latest: {t.lastMessage}
+                  </p>
+                ) : t.adminResponse ? (
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">Reply: {t.adminResponse}</p>
-                ) : null}
-                {t.description ? (
+                ) : t.description ? (
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 whitespace-pre-wrap">
                     Description: {t.description}
                   </p>
                 ) : null}
+                <div className="mt-3 flex justify-end">
+                  <Button type="button" variant="outline" size="sm" onClick={() => openTicketChat(t._id || t.id)}>
+                    Open Chat
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -416,6 +508,109 @@ export default function Support() {
 
         <TicketList />
       </div>
+
+      {selectedTicket ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200 flex flex-col">
+            <div className="border-b border-slate-200 px-5 py-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+                  #{String(selectedTicket._id || "").slice(-6)} Support Ticket
+                </p>
+                <h3 className="text-base font-semibold text-slate-900 mt-1">{getTicketTitle(selectedTicket)}</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Status: {selectedTicket.status} | Created {formatMessageTime(selectedTicket.createdAt)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeTicketChat}
+                className="rounded-full w-9 h-9 grid place-items-center border border-slate-200 text-slate-500 hover:bg-slate-50"
+                aria-label="Close ticket chat"
+              >
+                x
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50">
+              {loadingThread ? (
+                <p className="text-sm text-slate-500">Loading conversation...</p>
+              ) : ticketMessages.length === 0 ? (
+                <p className="text-sm text-slate-500">No messages yet</p>
+              ) : (
+                ticketMessages.map((message) => {
+                  const isUser = message.senderType === "user"
+                  const isSystem = message.isSystemMessage === true
+                  return (
+                    <div
+                      key={message._id}
+                      className={`flex ${isSystem ? "justify-center" : isUser ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-3 py-2 ${
+                          isSystem
+                            ? "bg-slate-200 text-slate-600 text-xs"
+                            : isUser
+                              ? "bg-brand-600 text-white"
+                              : "bg-white border border-slate-200 text-slate-800"
+                        }`}
+                      >
+                        {!isSystem ? (
+                          <p className="text-[11px] font-semibold mb-1 opacity-80">
+                            {isUser ? "You" : "Admin"}
+                          </p>
+                        ) : null}
+                        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                        <p className={`mt-1 text-[10px] ${isUser && !isSystem ? "text-white/80" : "text-slate-500"}`}>
+                          {formatMessageTime(message.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            <div className="border-t border-slate-200 px-5 py-4 space-y-3">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => updateTicketStatus(selectedTicket.status === "closed" ? "open" : "closed")}
+                  disabled={updatingTicketStatus}
+                >
+                  {updatingTicketStatus
+                    ? "Updating..."
+                    : selectedTicket.status === "closed"
+                      ? "Reopen Ticket"
+                      : "Close Ticket"}
+                </Button>
+              </div>
+              <Textarea
+                value={replyMessage}
+                onChange={(e) => setReplyMessage(e.target.value)}
+                rows={3}
+                placeholder={
+                  selectedTicket.status === "closed"
+                    ? "Reopen the ticket to continue the conversation"
+                    : "Write your message"
+                }
+                disabled={selectedTicket.status === "closed" || sendingReply}
+              />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  className={BRAND_THEME.tokens.profile.primaryButton}
+                  onClick={sendReply}
+                  disabled={selectedTicket.status === "closed" || !replyMessage.trim() || sendingReply}
+                >
+                  {sendingReply ? "Sending..." : "Send Message"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AnimatedPage>
   )
 }

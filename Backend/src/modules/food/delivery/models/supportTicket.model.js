@@ -31,7 +31,13 @@ const supportTicketSchema = new mongoose.Schema(
             default: 'open'
         },
         adminResponse: { type: String },
-        respondedAt: { type: Date }
+        respondedAt: { type: Date },
+        lastMessage: { type: String, default: '', trim: true },
+        lastMessageAt: { type: Date, default: null },
+        lastMessageSenderType: { type: String, enum: ['admin', 'user', 'shop', 'delivery'], default: 'delivery' },
+        closedAt: { type: Date, default: null },
+        closedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+        closedByType: { type: String, enum: ['admin', 'user', 'shop', 'delivery', 'system'], default: null }
     },
     { collection: 'food_delivery_support_tickets', timestamps: true }
 );

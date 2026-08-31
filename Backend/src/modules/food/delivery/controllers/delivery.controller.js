@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { registerDeliveryPartner, updateDeliveryPartnerProfile, updateDeliveryPartnerBankDetails, listSupportTicketsByPartner, createSupportTicket, getSupportTicketByIdAndPartner, updateDeliveryPartnerDetails, updateDeliveryPartnerProfilePhotoBase64, updateDeliveryAvailability, getDeliveryPartnerWallet, getDeliveryPartnerEarnings, getDeliveryPartnerTripHistory, getDeliveryPocketDetails, getActiveEarningAddonsForPartner, getDeliveryPartnerOrderQueue, getDeliveryPartnerReviews } from '../services/delivery.service.js';
+import { registerDeliveryPartner, updateDeliveryPartnerProfile, updateDeliveryPartnerBankDetails, listSupportTicketsByPartner, createSupportTicket, getSupportTicketByIdAndPartner, getSupportTicketThreadByIdAndPartner, addSupportTicketMessageByPartner, updateSupportTicketStatusByPartner, updateDeliveryPartnerDetails, updateDeliveryPartnerProfilePhotoBase64, updateDeliveryAvailability, getDeliveryPartnerWallet, getDeliveryPartnerEarnings, getDeliveryPartnerTripHistory, getDeliveryPocketDetails, getActiveEarningAddonsForPartner, getDeliveryPartnerOrderQueue, getDeliveryPartnerReviews } from '../services/delivery.service.js';
 import { createDeliveryCashDepositOrder, getDeliveryPartnerWalletEnhanced, requestDeliveryWithdrawal, verifyDeliveryCashDepositPayment } from '../services/deliveryFinance.service.js';
 import { getDeliveryCashLimitSettings, getDeliveryEmergencyHelp } from '../../admin/services/admin.service.js';
 import { DeliveryBonusTransaction } from '../../admin/models/deliveryBonusTransaction.model.js';
@@ -97,11 +97,31 @@ export const createSupportTicketController = async (req, res, next) => {
 export const getSupportTicketByIdController = async (req, res, next) => {
     try {
         const deliveryPartnerId = req.user?.userId;
-        const ticket = await getSupportTicketByIdAndPartner(req.params.id, deliveryPartnerId);
-        if (!ticket) {
+        const data = await getSupportTicketThreadByIdAndPartner(req.params.id, deliveryPartnerId);
+        if (!data?.ticket) {
             return res.status(404).json({ success: false, message: 'Ticket not found' });
         }
-        return sendResponse(res, 200, 'Ticket fetched successfully', ticket);
+        return sendResponse(res, 200, 'Ticket fetched successfully', data);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const addSupportTicketMessageController = async (req, res, next) => {
+    try {
+        const deliveryPartnerId = req.user?.userId;
+        const data = await addSupportTicketMessageByPartner(req.params.id, deliveryPartnerId, req.body || {});
+        return sendResponse(res, 201, 'Message added successfully', data);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateSupportTicketStatusController = async (req, res, next) => {
+    try {
+        const deliveryPartnerId = req.user?.userId;
+        const data = await updateSupportTicketStatusByPartner(req.params.id, deliveryPartnerId, req.body?.status);
+        return sendResponse(res, 200, 'Ticket status updated successfully', data);
     } catch (error) {
         next(error);
     }

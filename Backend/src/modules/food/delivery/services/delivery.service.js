@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 import { FoodDeliveryPartner } from '../models/deliveryPartner.model.js';
 import { DeliverySupportTicket } from '../models/supportTicket.model.js';
+import {
+    appendSupportTicketMessage,
+    listSupportTicketMessages,
+    addTicketStatusSystemMessage
+} from '../../shared/services/supportTicketThread.service.js';
 import { DeliveryBonusTransaction } from '../../admin/models/deliveryBonusTransaction.model.js';
 import { FoodPayoutSettlement } from '../../admin/models/foodPayoutSettlement.model.js';
 import { FoodEarningAddon } from '../../admin/models/earningAddon.model.js';
@@ -355,6 +360,13 @@ export const createSupportTicket = async (deliveryPartnerId, payload) => {
         priority: ['low', 'medium', 'high', 'urgent'].includes(priority) ? priority : 'medium',
         status: 'open'
     });
+    await appendSupportTicketMessage({
+        ticket,
+        sourceType: 'delivery',
+        senderType: 'delivery',
+        senderId: deliveryPartnerId,
+        message: description.trim()
+    });
     return ticket.toObject();
 };
 
@@ -364,6 +376,88 @@ export const getSupportTicketByIdAndPartner = async (ticketId, deliveryPartnerId
         deliveryPartnerId
     }).lean();
     return ticket;
+};
+
+export const getSupportTicketThreadByIdAndPartner = async (ticketId, deliveryPartnerId) => {
+    const ticket = await getSupportTicketByIdAndPartner(ticketId, deliveryPartnerId);
+    if (!ticket) return null;
+    let messages = await listSupportTicketMessages({ ticketId, sourceType: 'delivery' });
+    if (!messages.length) {
+        messages = [];
+        if (String(ticket.description || '').trim()) {
+            messages.push({
+                _id: `legacy-delivery-${ticket._id}`,
+                ticketId: ticket._id,
+                sourceType: 'delivery',
+                senderType: 'delivery',
+                senderId: ticket.deliveryPartnerId || null,
+                message: String(ticket.description).trim(),
+                isSystemMessage: false,
+                createdAt: ticket.createdAt,
+                updatedAt: ticket.createdAt
+            });
+        }
+        if (String(ticket.adminResponse || '').trim()) {
+            messages.push({
+                _id: `legacy-admin-${ticket._id}`,
+                ticketId: ticket._id,
+                sourceType: 'delivery',
+                senderType: 'admin',
+                senderId: null,
+                message: String(ticket.adminResponse).trim(),
+                isSystemMessage: false,
+                createdAt: ticket.respondedAt || ticket.updatedAt || ticket.createdAt,
+                updatedAt: ticket.respondedAt || ticket.updatedAt || ticket.createdAt
+            });
+        }
+    }
+    return { ticket, messages };
+};
+
+export const addSupportTicketMessageByPartner = async (ticketId, deliveryPartnerId, payload = {}) => {
+    const ticket = await DeliverySupportTicket.findOne({
+        _id: ticketId,
+        deliveryPartnerId
+    });
+    if (!ticket) {
+        throw new ValidationError('Ticket not found');
+    }
+    const message = await appendSupportTicketMessage({
+        ticket,
+        sourceType: 'delivery',
+        senderType: 'delivery',
+        senderId: deliveryPartnerId,
+        message: payload.message
+    });
+    const updatedTicket = await getSupportTicketByIdAndPartner(ticketId, deliveryPartnerId);
+    return { ticket: updatedTicket, message };
+};
+
+export const updateSupportTicketStatusByPartner = async (ticketId, deliveryPartnerId, nextStatus) => {
+    const status = String(nextStatus || '').trim().toLowerCase();
+    if (!['open', 'closed'].includes(status)) {
+        throw new ValidationError('Invalid status');
+    }
+    const ticket = await DeliverySupportTicket.findOne({
+        _id: ticketId,
+        deliveryPartnerId
+    });
+    if (!ticket) {
+        throw new ValidationError('Ticket not found');
+    }
+    ticket.status = status;
+    ticket.closedAt = status === 'closed' ? new Date() : null;
+    ticket.closedBy = status === 'closed' ? deliveryPartnerId : null;
+    ticket.closedByType = status === 'closed' ? 'delivery' : null;
+    await ticket.save();
+    await addTicketStatusSystemMessage({
+        ticket,
+        sourceType: 'delivery',
+        actorType: 'delivery',
+        actorId: deliveryPartnerId,
+        nextStatus: status
+    });
+    return getSupportTicketThreadByIdAndPartner(ticketId, deliveryPartnerId);
 };
 
 export const getDeliveryPartnerReviews = async (deliveryPartnerId, query = {}) => {

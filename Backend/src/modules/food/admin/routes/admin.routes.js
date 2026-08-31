@@ -113,6 +113,8 @@ router.delete('/safety-emergency-reports/:id', adminController.deleteSafetyEmerg
 
 // ----- Support Tickets (users) -----
 router.get('/support-tickets', adminController.getSupportTicketsController);
+router.get('/support-tickets/:id/thread', adminController.getSupportTicketThreadController);
+router.post('/support-tickets/:id/messages', adminController.addSupportTicketAdminMessageController);
 router.patch('/support-tickets/:id', adminController.updateSupportTicketController);
 router.get('/global-search', adminController.globalSearch);
 router.get('/shops/complaints', adminController.getShopComplaints);
@@ -269,6 +271,8 @@ router.post('/delivery/earning-addon-history/:id/cancel', adminController.cancel
 router.post('/delivery/earning-addon-completions/check', adminController.checkEarningAddonCompletions);
 router.get('/delivery/support-tickets/stats', adminController.getSupportTicketStats);
 router.get('/delivery/support-tickets', adminController.getSupportTickets);
+router.get('/delivery/support-tickets/:id/thread', adminController.getDeliverySupportTicketThreadController);
+router.post('/delivery/support-tickets/:id/messages', adminController.addDeliverySupportTicketAdminMessageController);
 router.patch('/delivery/support-tickets/:id', adminController.updateSupportTicket);
 router.get('/delivery/partners', adminController.getDeliveryPartners);
 router.get('/delivery/partners-pending-zone', adminController.getDeliveryPartnersPendingZoneChange);

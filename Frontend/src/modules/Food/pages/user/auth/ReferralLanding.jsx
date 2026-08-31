@@ -166,11 +166,13 @@ export default function ReferralLanding() {
           if (error?.name === "AbortError") return;
         }
       }
+
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl);
         toast.success("Referral link copied to clipboard");
         return;
       }
+
       window.open(`https://wa.me/?text=${encodeURIComponent(sharePayload)}`, "_blank", "noopener,noreferrer");
     } catch (error) {
       try {

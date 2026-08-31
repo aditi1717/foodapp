@@ -280,7 +280,7 @@ export async function getShopAnalytics(req, res, next) {
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid shop id' });
         }
-        const data = await adminService.getShopAnalytics(id);
+        const data = await adminService.getShopAnalytics(id, req.query || {});
         if (!data) {
             return res.status(404).json({ success: false, message: 'Shop not found' });
         }
@@ -733,6 +733,35 @@ export async function updateSupportTicketController(req, res, next) {
         const updated = await adminService.updateSupportTicket(id, req.body || {});
         if (!updated) return res.status(404).json({ success: false, message: 'Ticket not found' });
         res.status(200).json({ success: true, message: 'Support ticket updated successfully', data: { ticket: updated } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getSupportTicketThreadController(req, res, next) {
+    try {
+        const { id } = req.params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid ticket id' });
+        }
+        const data = await adminService.getSupportTicketThread(id, req.query?.source || req.body?.source || 'user');
+        if (!data?.ticket) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+        res.status(200).json({ success: true, message: 'Support ticket thread fetched successfully', data });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function addSupportTicketAdminMessageController(req, res, next) {
+    try {
+        const { id } = req.params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid ticket id' });
+        }
+        const data = await adminService.addSupportTicketAdminMessage(id, req.body || {});
+        res.status(201).json({ success: true, message: 'Support ticket message added successfully', data });
     } catch (error) {
         next(error);
     }
@@ -1246,7 +1275,7 @@ export async function getSupportTicketStats(req, res, next) {
 
 export async function getSupportTickets(req, res, next) {
     try {
-        const data = await adminService.getSupportTickets(req.query);
+        const data = await adminService.getDeliverySupportTickets(req.query);
         res.status(200).json({
             success: true,
             message: 'Support tickets fetched successfully',
@@ -1263,9 +1292,38 @@ export async function updateSupportTicket(req, res, next) {
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ success: false, message: 'Invalid ticket id' });
         }
-        const updated = await adminService.updateSupportTicket(id, req.body || {});
+        const updated = await adminService.updateDeliverySupportTicket(id, req.body || {});
         if (!updated) return res.status(404).json({ success: false, message: 'Ticket not found' });
         res.status(200).json({ success: true, message: 'Support ticket updated successfully', data: { ticket: updated } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getDeliverySupportTicketThreadController(req, res, next) {
+    try {
+        const { id } = req.params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid ticket id' });
+        }
+        const data = await adminService.getDeliverySupportTicketThread(id);
+        if (!data?.ticket) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+        res.status(200).json({ success: true, message: 'Delivery support ticket thread fetched successfully', data });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function addDeliverySupportTicketAdminMessageController(req, res, next) {
+    try {
+        const { id } = req.params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid ticket id' });
+        }
+        const data = await adminService.addDeliverySupportTicketAdminMessage(id, req.body || {});
+        res.status(201).json({ success: true, message: 'Delivery support ticket message added successfully', data });
     } catch (error) {
         next(error);
     }

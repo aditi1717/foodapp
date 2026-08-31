@@ -1,14 +1,58 @@
-import { useState, useEffect } from "react"
-import { MessageSquare, Search, Clock, CheckCircle, XCircle, Loader2, Eye, Edit } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { CheckCircle, Clock, Eye, Loader2, MessageSquare, Search, XCircle } from "lucide-react"
 import { adminAPI } from "@food/api"
 import { toast } from "sonner"
-import BRAND_THEME from "@/config/brandTheme"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@food/components/ui/dialog"
-import { Textarea } from "@food/components/ui/textarea"
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
-const debugError = (...args) => {}
 
+const STATUS_OPTIONS = ["open", "in_progress", "resolved", "closed"]
+
+const getStatusLabel = (status) =>
+  String(status || "open")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+
+const formatDateTime = (value) => {
+  if (!value) return "-"
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString("en-IN")
+}
+
+const getStatusIcon = (status) => {
+  switch (status) {
+    case "resolved":
+      return <CheckCircle className="h-4 w-4 text-emerald-600" />
+    case "closed":
+      return <XCircle className="h-4 w-4 text-slate-500" />
+    case "in_progress":
+      return <Clock className="h-4 w-4 text-brand-600" />
+    default:
+      return <Clock className="h-4 w-4 text-amber-500" />
+  }
+}
+
+const getStatusBadge = (status) => {
+  switch (status) {
+    case "resolved":
+      return "bg-emerald-50 text-emerald-700 border border-emerald-200"
+    case "closed":
+      return "bg-slate-100 text-slate-700 border border-slate-200"
+    case "in_progress":
+      return "bg-brand-50 text-brand-700 border border-brand-200"
+    default:
+      return "bg-amber-50 text-amber-700 border border-amber-200"
+  }
+}
+
+const getPartnerName = (ticket) =>
+  ticket?.deliveryPartner?.name ||
+  ticket?.deliveryPartnerName ||
+  ticket?.deliveryBoyName ||
+  "-"
+
+const getPartnerPhone = (ticket) =>
+  ticket?.deliveryPartner?.phone ||
+  ticket?.deliveryPartnerPhone ||
+  ticket?.deliveryBoyPhone ||
+  "-"
 
 export default function DeliverySupportTickets() {
   const [tickets, setTickets] = useState([])
@@ -16,20 +60,23 @@ export default function DeliverySupportTickets() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [priorityFilter, setPriorityFilter] = useState("")
-  const [selectedTicket, setSelectedTicket] = useState(null)
-  const [isViewOpen, setIsViewOpen] = useState(false)
-  const [isResponseOpen, setIsResponseOpen] = useState(false)
-  const [responseText, setResponseText] = useState("")
-  const [updating, setUpdating] = useState(false)
   const [stats, setStats] = useState(null)
+  const [selectedTicket, setSelectedTicket] = useState(null)
+  const [threadMessages, setThreadMessages] = useState([])
+  const [modalDraft, setModalDraft] = useState({ status: "open", message: "" })
+  const [loadingThread, setLoadingThread] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetchTickets()
-  }, [statusFilter, priorityFilter])
+  const computedStats = useMemo(() => {
+    const total = tickets.length
+    const open = tickets.filter((ticket) => ticket.status === "open").length
+    const inProgress = tickets.filter((ticket) => ticket.status === "in_progress").length
+    const resolved = tickets.filter((ticket) => ticket.status === "resolved").length
+    const closed = tickets.filter((ticket) => ticket.status === "closed").length
+    return { total, open, inProgress, resolved, closed }
+  }, [tickets])
 
-  useEffect(() => {
-    fetchStats()
-  }, [])
+  const summaryStats = stats || computedStats
 
   const fetchTickets = async () => {
     try {
@@ -40,15 +87,10 @@ export default function DeliverySupportTickets() {
       if (searchQuery.trim()) params.search = searchQuery.trim()
 
       const response = await adminAPI.getDeliverySupportTickets(params)
-      
-      if (response?.data?.success && response?.data?.data?.tickets) {
-        setTickets(response.data.data.tickets)
-      } else {
-        setTickets([])
-      }
+      const list = response?.data?.data?.tickets || []
+      setTickets(Array.isArray(list) ? list : [])
     } catch (error) {
-      debugError("Error fetching tickets:", error)
-      toast.error("Failed to load tickets")
+      toast.error(error?.response?.data?.message || "Failed to load tickets")
       setTickets([])
     } finally {
       setLoading(false)
@@ -61,188 +103,185 @@ export default function DeliverySupportTickets() {
       if (response?.data?.success && response?.data?.data) {
         setStats(response.data.data)
       }
+    } catch {}
+  }
+
+  useEffect(() => {
+    fetchTickets()
+  }, [statusFilter, priorityFilter])
+
+  useEffect(() => {
+    fetchStats()
+  }, [])
+
+  const openTicketModal = async (ticket) => {
+    setSelectedTicket(ticket)
+    setThreadMessages([])
+    setModalDraft({
+      status: ticket.status || "open",
+      message: "",
+    })
+    setLoadingThread(true)
+
+    try {
+      const response = await adminAPI.getDeliverySupportTicketThread(ticket._id)
+      const data = response?.data?.data || {}
+      if (data.ticket) {
+        setSelectedTicket(data.ticket)
+        setModalDraft((prev) => ({
+          ...prev,
+          status: data.ticket.status || prev.status,
+        }))
+      }
+      setThreadMessages(Array.isArray(data.messages) ? data.messages : [])
     } catch (error) {
-      debugError("Error fetching stats:", error)
+      toast.error(error?.response?.data?.message || "Failed to load conversation")
+    } finally {
+      setLoadingThread(false)
     }
   }
 
-  const handleSearch = () => {
-    fetchTickets()
+  const closeTicketModal = () => {
+    setSelectedTicket(null)
+    setThreadMessages([])
+    setModalDraft({ status: "open", message: "" })
+    setLoadingThread(false)
+    setSaving(false)
   }
 
-  const handleViewTicket = (ticket) => {
-    setSelectedTicket(ticket)
-    setIsViewOpen(true)
+  const syncTicketState = (updatedTicket) => {
+    if (!updatedTicket?._id) return
+    setSelectedTicket(updatedTicket)
+    setTickets((prev) =>
+      prev.map((ticket) =>
+        String(ticket._id) === String(updatedTicket._id)
+          ? { ...ticket, ...updatedTicket }
+          : ticket,
+      ),
+    )
   }
 
-  const handleRespond = (ticket) => {
-    setSelectedTicket(ticket)
-    setResponseText(ticket.adminResponse || "")
-    setIsResponseOpen(true)
+  const refreshListData = async () => {
+    await fetchTickets()
+    await fetchStats()
   }
 
-  const handleUpdateTicket = async () => {
-    if (!selectedTicket) return
+  const saveModalChanges = async () => {
+    if (!selectedTicket?._id) return
+
+    const trimmedMessage = modalDraft.message.trim()
+    const statusChanged = modalDraft.status !== selectedTicket.status
+
+    if (!trimmedMessage && !statusChanged) {
+      closeTicketModal()
+      return
+    }
 
     try {
-      setUpdating(true)
-      const response = await adminAPI.updateDeliverySupportTicket(selectedTicket._id, {
-        adminResponse: responseText.trim(),
-        status: selectedTicket.status === 'open' ? 'in_progress' : selectedTicket.status
-      })
+      setSaving(true)
 
-      if (response?.data?.success) {
-        toast.success("Ticket updated successfully!")
+      if (statusChanged) {
+        const statusResponse = await adminAPI.updateDeliverySupportTicket(selectedTicket._id, {
+          status: modalDraft.status,
+        })
         const updatedTicket =
-          response?.data?.data?.ticket ||
-          response?.data?.ticket ||
-          {
-            ...selectedTicket,
-            adminResponse: responseText.trim(),
-            respondedAt: new Date().toISOString(),
-            status: selectedTicket.status === 'open' ? 'in_progress' : selectedTicket.status,
-          }
-        setSelectedTicket(updatedTicket)
-        setIsResponseOpen(false)
-        setResponseText("")
-        await fetchTickets()
-        await fetchStats()
-      } else {
-        toast.error(response?.data?.message || "Failed to update ticket")
+          statusResponse?.data?.data?.ticket ||
+          statusResponse?.data?.ticket ||
+          null
+
+        if (updatedTicket) {
+          syncTicketState(updatedTicket)
+        }
+
+        if (Array.isArray(statusResponse?.data?.data?.messages)) {
+          setThreadMessages(statusResponse.data.data.messages)
+        }
       }
+
+      if (trimmedMessage) {
+        const messageResponse = await adminAPI.sendDeliverySupportTicketMessage(selectedTicket._id, {
+          message: trimmedMessage,
+        })
+        const data = messageResponse?.data?.data || {}
+        if (data.ticket) {
+          syncTicketState(data.ticket)
+          setModalDraft((prev) => ({
+            ...prev,
+            status: data.ticket.status || prev.status,
+          }))
+        }
+        if (data.message) {
+          setThreadMessages((prev) => [...prev, data.message])
+        }
+      }
+
+      await refreshListData()
+      toast.success(trimmedMessage ? "Reply sent" : "Ticket updated")
+      closeTicketModal()
     } catch (error) {
-      debugError("Error updating ticket:", error)
       toast.error(error?.response?.data?.message || "Failed to update ticket")
     } finally {
-      setUpdating(false)
+      setSaving(false)
     }
-  }
-
-  const handleStatusChange = async (ticketId, newStatus) => {
-    try {
-      const response = await adminAPI.updateDeliverySupportTicket(ticketId, {
-        status: newStatus
-      })
-
-      if (response?.data?.success) {
-        toast.success("Ticket status updated!")
-        await fetchTickets()
-        await fetchStats()
-      }
-    } catch (error) {
-      debugError("Error updating status:", error)
-      toast.error("Failed to update status")
-    }
-  }
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "open":
-        return <Clock className="w-5 h-5 text-orange-500" />
-      case "in_progress":
-        return <Clock className="w-5 h-5 text-brand-500" />
-      case "resolved":
-        return <CheckCircle className="w-5 h-5 text-green-500" />
-      case "closed":
-        return <XCircle className="w-5 h-5 text-gray-500" />
-      default:
-        return <Clock className="w-5 h-5 text-gray-500" />
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "open":
-        return "bg-orange-100 text-orange-700"
-      case "in_progress":
-        return "bg-brand-100 text-brand-700"
-      case "resolved":
-        return "bg-green-100 text-green-700"
-      case "closed":
-        return "bg-gray-100 text-gray-700"
-      default:
-        return "bg-gray-100 text-gray-700"
-    }
-  }
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A"
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  }
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "N/A"
-    const date = new Date(dateString)
-    return date.toLocaleString('en-GB', { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
   }
 
   return (
-    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <MessageSquare className="w-6 h-6 text-slate-600" />
+    <div className="min-h-screen bg-slate-50 p-4 lg:p-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-center gap-3">
+            <MessageSquare className="h-6 w-6 text-slate-600" />
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Delivery Support Tickets</h1>
-              <p className="text-sm text-slate-600 mt-1">
-                Manage and respond to support tickets from delivery partners
+              <p className="mt-1 text-sm text-slate-600">
+                Review delivery partner conversations and reply from admin.
               </p>
             </div>
           </div>
 
-          {/* Stats */}
-          {stats && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-              <div className="bg-slate-50 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
-                <p className="text-xs text-slate-600 mt-1">Total</p>
-              </div>
-              <div className="bg-orange-50 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-orange-700">{stats.open}</p>
-                <p className="text-xs text-orange-600 mt-1">Open</p>
-              </div>
-              <div className="bg-brand-50 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-brand-700">{stats.inProgress}</p>
-                <p className="text-xs text-brand-600 mt-1">In Progress</p>
-              </div>
-              <div className="bg-green-50 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-green-700">{stats.resolved}</p>
-                <p className="text-xs text-green-600 mt-1">Resolved</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-gray-700">{stats.closed}</p>
-                <p className="text-xs text-gray-600 mt-1">Closed</p>
-              </div>
+          <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
+            <div className="rounded-lg bg-slate-50 p-4 text-center">
+              <p className="text-2xl font-bold text-slate-900">{summaryStats.total}</p>
+              <p className="mt-1 text-xs text-slate-600">Total</p>
             </div>
-          )}
+            <div className="rounded-lg bg-amber-50 p-4 text-center">
+              <p className="text-2xl font-bold text-amber-700">{summaryStats.open}</p>
+              <p className="mt-1 text-xs text-amber-600">Open</p>
+            </div>
+            <div className="rounded-lg bg-brand-50 p-4 text-center">
+              <p className="text-2xl font-bold text-brand-700">{summaryStats.inProgress}</p>
+              <p className="mt-1 text-xs text-brand-600">In Progress</p>
+            </div>
+            <div className="rounded-lg bg-emerald-50 p-4 text-center">
+              <p className="text-2xl font-bold text-emerald-700">{summaryStats.resolved}</p>
+              <p className="mt-1 text-xs text-emerald-600">Resolved</p>
+            </div>
+            <div className="rounded-lg bg-slate-100 p-4 text-center">
+              <p className="text-2xl font-bold text-slate-700">{summaryStats.closed}</p>
+              <p className="mt-1 text-xs text-slate-600">Closed</p>
+            </div>
+          </div>
 
-          {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="Search by subject, description, ticket ID, or delivery partner..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") fetchTickets()
+                  }}
+                  placeholder="Search by subject, message, ticket ID, or partner..."
+                  className="w-full rounded-lg border border-slate-300 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">All Status</option>
               <option value="open">Open</option>
@@ -253,7 +292,7 @@ export default function DeliverySupportTickets() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">All Priority</option>
               <option value="low">Low</option>
@@ -261,303 +300,240 @@ export default function DeliverySupportTickets() {
               <option value="high">High</option>
               <option value="urgent">Urgent</option>
             </select>
+            <button
+              type="button"
+              onClick={fetchTickets}
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              Search
+            </button>
           </div>
+        </div>
 
-          {/* Tickets List */}
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-gray-600" />
+            <div className="flex items-center justify-center py-14">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
             </div>
+          ) : tickets.length === 0 ? (
+            <div className="py-14 text-center text-slate-500">No tickets found</div>
           ) : (
-            <div className="space-y-3">
-              {tickets.length === 0 ? (
-                <div className="bg-slate-50 rounded-lg p-8 text-center">
-                  <p className="text-gray-600">No tickets found</p>
-                </div>
-              ) : (
-                tickets.map((ticket) => (
-                  <div
-                    key={ticket._id}
-                    className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {getStatusIcon(ticket.status)}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            {ticket.ticketId && (
-                              <span className="text-xs font-mono font-semibold bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
-                                #{ticket.ticketId}
-                              </span>
-                            )}
-                            <span className="text-sm font-medium text-gray-900 truncate">
-                              {ticket.subject}
-                            </span>
-                            <span className="text-xs text-gray-600">
-                              {ticket.deliveryPartner?.name || 'N/A'}
-                            </span>
-                            {ticket.deliveryPartner?._id && (
-                              <span className="text-xs text-gray-500">
-                                ID: DP-{String(ticket.deliveryPartner._id).slice(-8).toUpperCase()}
-                              </span>
-                            )}
-                            <span className="text-xs text-gray-500">
-                              {formatDateTime(ticket.createdAt)}
-                            </span>
-                          </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[920px]">
+                <thead className="bg-slate-50">
+                  <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    <th className="px-4 py-3">Ticket ID</th>
+                    <th className="px-4 py-3">Delivery Boy Name</th>
+                    <th className="px-4 py-3">Mobile Number</th>
+                    <th className="px-4 py-3">Subject</th>
+                    <th className="px-4 py-3">Ticket Status</th>
+                    <th className="px-4 py-3">Last Activity</th>
+                    <th className="px-4 py-3 text-center">View</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {tickets.map((ticket) => (
+                    <tr key={ticket._id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 text-sm font-semibold text-slate-900">
+                        #{ticket.ticketId || String(ticket._id).slice(-6)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-800">
+                        {getPartnerName(ticket)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        {getPartnerPhone(ticket)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        <div className="max-w-[320px]">
+                          <p className="font-medium text-slate-900">
+                            {ticket.subject || "Delivery Support Ticket"}
+                          </p>
+                          <p className="mt-1 line-clamp-1 text-xs text-slate-500">
+                            {ticket.lastMessage || ticket.description || "No message yet"}
+                          </p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadge(ticket.status)}`}>
+                          {getStatusIcon(ticket.status)}
+                          {getStatusLabel(ticket.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {formatDateTime(ticket.lastMessageAt || ticket.updatedAt || ticket.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => handleViewTicket(ticket)}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="View Details"
+                          type="button"
+                          onClick={() => openTicketModal(ticket)}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                          title="View ticket"
                         >
-                          <Eye className="w-4 h-4 text-gray-600" />
+                          <Eye className="h-4 w-4" />
                         </button>
-                        <button
-                          onClick={() => handleRespond(ticket)}
-                          className="p-2 hover:bg-brand-50 rounded-lg transition-colors"
-                          title={ticket.adminResponse ? "Edit Response" : "Send Response"}
-                        >
-                          <Edit className="w-4 h-4 text-brand-600" />
-                        </button>
-                        {ticket.status !== 'closed' && (
-                          <select
-                            value={ticket.status}
-                            onChange={(e) => handleStatusChange(ticket._id, e.target.value)}
-                            className="text-xs px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <option value="open">Open</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="resolved">Resolved</option>
-                            <option value="closed">Closed</option>
-                          </select>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       </div>
 
-      {/* View Ticket Dialog - Full Details */}
-      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="flex w-[calc(100%-2rem)] max-w-[600px] max-h-[85vh] flex-col overflow-hidden border border-slate-200 bg-white p-0 shadow-2xl">
-          <DialogHeader className="border-b border-slate-200 px-6 py-5 pr-14">
-            <DialogTitle className="text-xl font-semibold text-gray-900">Ticket Details</DialogTitle>
-            <p className="text-sm text-gray-600 mt-1">Complete information about the support ticket</p>
-          </DialogHeader>
-          {selectedTicket && (
-            <div className="flex-1 overflow-y-auto px-6 py-5">
-              <div className="space-y-6">
-              {/* Ticket Information Section */}
+      {selectedTicket ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
+          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4">
               <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-1 h-6 bg-brand-500 rounded"></div>
-                  <h3 className="text-base font-semibold text-gray-900">Ticket Information</h3>
-                </div>
-                <div className="pl-4 space-y-4">
-                  {/* Ticket ID */}
-                  {selectedTicket.ticketId && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Ticket ID</p>
-                      <div className="bg-gray-200 text-gray-800 px-4 py-2.5 rounded-lg inline-block">
-                        <p className="text-base font-mono font-semibold">
-                          #{selectedTicket.ticketId}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Subject */}
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Subject</p>
-                    <p className="text-base text-gray-900 font-semibold">{selectedTicket.subject}</p>
-                  </div>
-
-                  {/* Description / Issue */}
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Description / Issue</p>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-64 overflow-y-auto">
-                      <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
-                        {selectedTicket.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Status, Priority, Category */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Status</p>
-                      <span className={`inline-block px-4 py-2 rounded-full text-xs font-semibold ${getStatusColor(selectedTicket.status)}`}>
-                        {selectedTicket.status.charAt(0).toUpperCase() + selectedTicket.status.slice(1).replace('_', ' ')}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Priority</p>
-                      <p className="text-sm text-gray-900 capitalize font-semibold">{selectedTicket.priority}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Category</p>
-                      <p className="text-sm text-gray-900 capitalize font-semibold">{selectedTicket.category}</p>
-                    </div>
-                  </div>
-
-                  {/* Created Date */}
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Created</p>
-                    <p className="text-sm text-gray-900">{formatDateTime(selectedTicket.createdAt)}</p>
-                  </div>
-                </div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+                  Delivery Ticket #{selectedTicket.ticketId || String(selectedTicket._id).slice(-6)}
+                </p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-900">
+                  {selectedTicket.subject || "Delivery Support Ticket"}
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Created {formatDateTime(selectedTicket.createdAt)}
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={closeTicketModal}
+                className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+                aria-label="Close ticket modal"
+              >
+                x
+              </button>
+            </div>
 
-              {/* Delivery Partner Section */}
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-1 h-6 bg-orange-500 rounded"></div>
-                  <h3 className="text-base font-semibold text-gray-900">Delivery Partner</h3>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="rounded-2xl border border-slate-200 bg-white">
+                <div className="border-b border-slate-200 px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-900">
+                      {getPartnerName(selectedTicket)}
+                    </span>
+                    <span className="text-sm text-slate-500">{getPartnerPhone(selectedTicket)}</span>
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadge(selectedTicket.status)}`}>
+                      {getStatusLabel(selectedTicket.status)}
+                    </span>
+                  </div>
+                  {selectedTicket.description ? (
+                    <p className="mt-2 text-sm text-slate-600">
+                      {selectedTicket.description}
+                    </p>
+                  ) : null}
                 </div>
-                <div className="pl-4 space-y-3">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Name</p>
-                    <p className="text-sm text-gray-900 font-semibold">{selectedTicket.deliveryPartner?.name || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Phone Number</p>
-                    <p className="text-sm text-gray-900">{selectedTicket.deliveryPartner?.phone || 'N/A'}</p>
-                  </div>
-                  {selectedTicket.deliveryPartner?._id && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">ID</p>
-                      <p className="text-sm text-gray-900">DP-{String(selectedTicket.deliveryPartner._id).slice(-8).toUpperCase()}</p>
+
+                <div className="max-h-[420px] space-y-3 overflow-y-auto bg-slate-50 p-4">
+                  {loadingThread ? (
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading conversation...
                     </div>
+                  ) : threadMessages.length === 0 ? (
+                    <p className="text-sm text-slate-500">No messages yet</p>
+                  ) : (
+                    threadMessages.map((message) => {
+                      const isSystem = message.isSystemMessage === true
+                      const isAdmin = !isSystem && message.senderType === "admin"
+
+                      if (isSystem) {
+                        return (
+                          <div key={message._id} className="flex justify-center my-2">
+                            <div className="text-center px-3 py-1 text-xs font-medium text-slate-500">
+                              <span>{message.message}</span>
+                              <span className="ml-2 text-[10px] text-slate-400">
+                                {formatDateTime(message.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      return (
+                        <div
+                          key={message._id}
+                          className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-[82%] rounded-2xl px-4 py-3 ${
+                              isAdmin
+                                ? "bg-slate-900 text-white"
+                                : "border border-slate-200 bg-white text-slate-800"
+                            }`}
+                          >
+                            <p className={`mb-1 text-[11px] font-semibold ${isAdmin ? "text-white/80" : "text-slate-500"}`}>
+                              {isAdmin ? "Admin" : "Delivery Partner"}
+                            </p>
+                            <p className="whitespace-pre-wrap text-sm">{message.message}</p>
+                            <p className={`mt-2 text-[10px] ${isAdmin ? "text-white/80" : "text-slate-500"}`}>
+                              {formatDateTime(message.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })
                   )}
                 </div>
-              </div>
 
-              {/* Admin Response Section */}
-              {selectedTicket.adminResponse && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-1 h-6 bg-green-500 rounded"></div>
-                    <h3 className="text-base font-semibold text-gray-900">Admin Response</h3>
-                  </div>
-                  <div className="pl-4">
-                    <div className="bg-brand-50 border border-brand-200 p-4 rounded-lg">
-                      <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">{selectedTicket.adminResponse}</p>
-                      {selectedTicket.respondedAt && (
-                        <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-brand-200">
-                          Responded on: {formatDateTime(selectedTicket.respondedAt)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              {selectedTicket.status !== 'closed' && (
-                <div className="flex flex-col sm:flex-row gap-3 pt-5 border-t border-gray-200">
-                  <button
-                    onClick={() => handleRespond(selectedTicket)}
-                    className="px-5 py-2.5 text-white rounded-lg font-medium transition-colors shadow-sm"
-                    style={{ background: BRAND_THEME.colors.brand.primary }}
-                  >
-                    {selectedTicket.adminResponse ? "Edit Response" : "Send Response"}
-                  </button>
-                  {selectedTicket.status === 'in_progress' && (
-                    <button
-                      onClick={() => {
-                        handleStatusChange(selectedTicket._id, 'resolved')
-                        setIsViewOpen(false)
-                      }}
-                      className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors shadow-sm"
+                <div className="grid gap-4 border-t border-slate-200 p-4">
+                  <label className="block">
+                    <span className="text-xs font-semibold uppercase text-slate-500">Status</span>
+                    <select
+                      value={modalDraft.status}
+                      onChange={(e) => setModalDraft((prev) => ({ ...prev, status: e.target.value }))}
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                     >
-                      Mark Resolved
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      handleStatusChange(selectedTicket._id, 'closed')
-                      setIsViewOpen(false)
-                    }}
-                    className="px-5 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors shadow-sm"
-                  >
-                    Close Ticket
-                  </button>
+                      {STATUS_OPTIONS.map((status) => (
+                        <option key={status} value={status}>
+                          {getStatusLabel(status)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-semibold uppercase text-slate-500">Reply</span>
+                    <textarea
+                      value={modalDraft.message}
+                      onChange={(e) => setModalDraft((prev) => ({ ...prev, message: e.target.value }))}
+                      rows={5}
+                      className="mt-1 w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      placeholder={
+                        modalDraft.status === "closed"
+                          ? "Add a closing note for this ticket"
+                          : "Write a reply for the delivery partner"
+                      }
+                    />
+                    <span className="mt-1 block text-xs text-slate-500">
+                      This message will be added to the delivery support conversation.
+                    </span>
+                  </label>
                 </div>
-              )}
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
-      {/* Respond Dialog */}
-      <Dialog open={isResponseOpen} onOpenChange={setIsResponseOpen}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-[560px] overflow-hidden border border-slate-200 bg-white p-0 shadow-2xl">
-          <DialogHeader className="border-b border-slate-200 px-6 py-5 pr-14">
-            <DialogTitle className="text-xl font-semibold text-slate-900">
-              Respond to Ticket
-            </DialogTitle>
-            {selectedTicket && (
-              <div className="mt-2 space-y-1">
-                <p className="text-sm font-medium text-slate-600">
-                  {selectedTicket.ticketId ? `#${selectedTicket.ticketId}` : "Support Ticket"}
-                </p>
-                <p className="text-sm text-slate-500 line-clamp-2">
-                  {selectedTicket.subject || "Send an update that the delivery partner can see."}
-                </p>
-              </div>
-            )}
-          </DialogHeader>
-          <div className="space-y-4 px-6 py-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Response
-              </label>
-              <Textarea
-                value={responseText}
-                onChange={(e) => setResponseText(e.target.value)}
-                placeholder="Enter your response..."
-                rows={6}
-                className="min-h-[180px] resize-y rounded-xl border-slate-300 bg-white px-4 py-3 text-sm leading-6 text-slate-800 shadow-sm focus-visible:border-brand-500 focus-visible:ring-4 focus-visible:ring-brand-100"
-              />
-              <p className="mt-2 text-xs text-slate-500">
-                This message will be visible to the delivery partner in their support ticket.
-              </p>
+            <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={closeTicketModal}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveModalChanges}
+                disabled={saving}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
             </div>
           </div>
-          <DialogFooter className="border-t border-slate-200 px-6 py-4">
-            <button
-              onClick={() => setIsResponseOpen(false)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleUpdateTicket}
-              disabled={updating || !responseText.trim()}
-              className="flex min-w-[140px] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ background: BRAND_THEME.colors.brand.primary }}
-            >
-              {updating ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update Ticket"
-              )}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      ) : null}
     </div>
   )
 }

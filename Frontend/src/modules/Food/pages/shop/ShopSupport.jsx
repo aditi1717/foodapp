@@ -54,6 +54,12 @@ export default function ShopSupport() {
   const [statusFilter, setStatusFilter] = useState("")
   const [orders, setOrders] = useState([])
   const [loadingOrders, setLoadingOrders] = useState(false)
+  const [selectedTicket, setSelectedTicket] = useState(null)
+  const [ticketMessages, setTicketMessages] = useState([])
+  const [loadingThread, setLoadingThread] = useState(false)
+  const [replyMessage, setReplyMessage] = useState("")
+  const [sendingReply, setSendingReply] = useState(false)
+  const [updatingTicketStatus, setUpdatingTicketStatus] = useState(false)
   const [form, setForm] = useState({
     category: "orders",
     issueType: "",
@@ -173,6 +179,84 @@ export default function ShopSupport() {
       toast.error(error?.response?.data?.message || "Failed to submit support ticket")
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const formatMessageTime = (value) => {
+    if (!value) return "-"
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString("en-IN")
+  }
+
+  const openTicketChat = async (ticketId) => {
+    setLoadingThread(true)
+    setReplyMessage("")
+    try {
+      const response = await shopAPI.getSupportTicketById(ticketId)
+      const data = response?.data?.data || {}
+      setSelectedTicket(data.ticket || null)
+      setTicketMessages(Array.isArray(data.messages) ? data.messages : [])
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to open support ticket")
+    } finally {
+      setLoadingThread(false)
+    }
+  }
+
+  const closeTicketChat = () => {
+    setSelectedTicket(null)
+    setTicketMessages([])
+    setReplyMessage("")
+  }
+
+  const sendReply = async () => {
+    if (!selectedTicket?._id) return
+    if (!replyMessage.trim()) {
+      toast.error("Please enter a message")
+      return
+    }
+    setSendingReply(true)
+    try {
+      const response = await shopAPI.sendSupportTicketMessage(selectedTicket._id, {
+        message: replyMessage.trim(),
+      })
+      const data = response?.data?.data || {}
+      if (data.message) {
+        setTicketMessages((prev) => [...prev, data.message])
+      }
+      if (data.ticket) {
+        setSelectedTicket(data.ticket)
+      }
+      setReplyMessage("")
+      await loadTickets()
+      toast.success("Message sent")
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to send message")
+    } finally {
+      setSendingReply(false)
+    }
+  }
+
+  const updateTicketStatus = async (nextStatus) => {
+    if (!selectedTicket?._id) return
+    setUpdatingTicketStatus(true)
+    try {
+      const response = await shopAPI.updateSupportTicketStatus(selectedTicket._id, {
+        status: nextStatus,
+      })
+      const data = response?.data?.data || {}
+      if (data.ticket) {
+        setSelectedTicket(data.ticket)
+      }
+      if (Array.isArray(data.messages)) {
+        setTicketMessages(data.messages)
+      }
+      await loadTickets()
+      toast.success(nextStatus === "closed" ? "Ticket closed" : "Ticket reopened")
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to update support ticket")
+    } finally {
+      setUpdatingTicketStatus(false)
     }
   }
 
@@ -325,7 +409,11 @@ export default function ShopSupport() {
                       Order: {ticket.orderRef}
                     </p>
                   ) : null}
-                  {ticket.description ? (
+                  {ticket.lastMessage ? (
+                    <p className="text-sm text-slate-700 mt-2 whitespace-pre-wrap">
+                      Latest: {ticket.lastMessage}
+                    </p>
+                  ) : ticket.description ? (
                     <p className="text-sm text-slate-700 mt-2 whitespace-pre-wrap">
                       {ticket.description}
                     </p>
@@ -336,12 +424,125 @@ export default function ShopSupport() {
                       <p className="text-sm text-brand-900 mt-1 whitespace-pre-wrap">{ticket.adminResponse}</p>
                     </div>
                   ) : null}
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => openTicketChat(ticket._id)}
+                      className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Open Chat
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {selectedTicket ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200 flex flex-col">
+            <div className="border-b border-slate-200 px-5 py-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+                  #{String(selectedTicket._id || "").slice(-6)} Shop Support Ticket
+                </p>
+                <h3 className="text-base font-semibold text-slate-900 mt-1">{getIssueLabel(selectedTicket.issueType)}</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Status: {selectedTicket.status} | Created {formatMessageTime(selectedTicket.createdAt)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeTicketChat}
+                className="rounded-full w-9 h-9 grid place-items-center border border-slate-200 text-slate-500 hover:bg-slate-50"
+                aria-label="Close ticket chat"
+              >
+                x
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50">
+              {loadingThread ? (
+                <p className="text-sm text-slate-500">Loading conversation...</p>
+              ) : ticketMessages.length === 0 ? (
+                <p className="text-sm text-slate-500">No messages yet</p>
+              ) : (
+                ticketMessages.map((message) => {
+                  const isShop = message.senderType === "shop"
+                  const isSystem = message.isSystemMessage === true
+                  return (
+                    <div
+                      key={message._id}
+                      className={`flex ${isSystem ? "justify-center" : isShop ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-3 py-2 ${
+                          isSystem
+                            ? "bg-slate-200 text-slate-600 text-xs"
+                            : isShop
+                              ? "bg-brand-600 text-white"
+                              : "bg-white border border-slate-200 text-slate-800"
+                        }`}
+                      >
+                        {!isSystem ? (
+                          <p className="text-[11px] font-semibold mb-1 opacity-80">
+                            {isShop ? "Shop" : "Admin"}
+                          </p>
+                        ) : null}
+                        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                        <p className={`mt-1 text-[10px] ${isShop && !isSystem ? "text-white/80" : "text-slate-500"}`}>
+                          {formatMessageTime(message.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            <div className="border-t border-slate-200 px-5 py-4 space-y-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateTicketStatus(selectedTicket.status === "closed" ? "open" : "closed")}
+                  disabled={updatingTicketStatus}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  {updatingTicketStatus
+                    ? "Updating..."
+                    : selectedTicket.status === "closed"
+                      ? "Reopen Ticket"
+                      : "Close Ticket"}
+                </button>
+              </div>
+              <textarea
+                value={replyMessage}
+                onChange={(e) => setReplyMessage(e.target.value)}
+                rows={3}
+                placeholder={
+                  selectedTicket.status === "closed"
+                    ? "Reopen the ticket to continue the conversation"
+                    : "Write your message"
+                }
+                disabled={selectedTicket.status === "closed" || sendingReply}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={sendReply}
+                disabled={selectedTicket.status === "closed" || !replyMessage.trim() || sendingReply}
+                className="w-full rounded-lg text-white py-2.5 text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-2"
+                style={{ background: BRAND_THEME.gradients.primary }}
+              >
+                {sendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Send Message
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <BottomNavOrders />
     </div>

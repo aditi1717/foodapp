@@ -17,7 +17,6 @@ import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 
 const defaultFormData = {
   name: "",
-  type: "", // Text label
   foodTypeScope: "Both", // Enum
   image: "",
   isActive: true,
@@ -106,7 +105,6 @@ export default function EditCategoryPage() {
       if (category) {
         setFormData({
           name: category.name || "",
-          type: category.type || "",
           foodTypeScope: category.foodTypeScope || "Both",
           image: category.image || "",
           isActive: category.isActive ?? category.status ?? true,
@@ -169,7 +167,6 @@ export default function EditCategoryPage() {
 
       const payload = {
         name: formData.name.trim(),
-        type: formData.type.trim(),
         foodTypeScope: formData.foodTypeScope,
         sortOrder: Number(formData.sortOrder || 0),
         image: imageUrl,
@@ -319,17 +316,6 @@ export default function EditCategoryPage() {
                 />
               </div>
 
-              {/* Category Type Label */}
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Category Type (Label)</label>
-                <input
-                  type="text"
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  placeholder="e.g. Starters, Desserts, Pizza"
-                  className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all font-medium"
-                />
-              </div>
 
               {/* Diet Scope */}
               <div className="space-y-2">

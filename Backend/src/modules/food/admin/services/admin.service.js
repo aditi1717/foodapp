@@ -28,6 +28,11 @@ import { FoodSafetyEmergencyReport } from '../models/safetyEmergencyReport.model
 import { FoodAddon } from '../../shop/models/foodAddon.model.js';
 import { FoodSupportTicket } from '../../user/models/supportTicket.model.js';
 import { FoodShopSupportTicket } from '../../shop/models/supportTicket.model.js';
+import {
+    appendSupportTicketMessage,
+    listSupportTicketMessages,
+    addTicketStatusSystemMessage
+} from '../../shared/services/supportTicketThread.service.js';
 import { ShopOffer } from '../../shop/models/shopOffer.model.js';
 import { FoodOrder } from '../../orders/models/order.model.js';
 import { FoodTransaction } from '../../orders/models/foodTransaction.model.js';
@@ -2225,6 +2230,9 @@ export async function getSupportTickets(query = {}) {
             description: t.description,
             status: t.status,
             adminResponse: t.adminResponse,
+            lastMessage: t.lastMessage || '',
+            lastMessageAt: t.lastMessageAt || t.updatedAt || t.createdAt,
+            lastMessageSenderType: t.lastMessageSenderType || '',
             createdAt: t.createdAt,
             updatedAt: t.updatedAt,
             user,
@@ -2260,6 +2268,9 @@ export async function getSupportTickets(query = {}) {
             priority: t.priority || 'medium',
             status: t.status,
             adminResponse: t.adminResponse,
+            lastMessage: t.lastMessage || '',
+            lastMessageAt: t.lastMessageAt || t.updatedAt || t.createdAt,
+            lastMessageSenderType: t.lastMessageSenderType || '',
             createdAt: t.createdAt,
             updatedAt: t.updatedAt,
             user: null,
@@ -2287,12 +2298,222 @@ export async function getSupportTickets(query = {}) {
     return { tickets, total, page, limit };
 }
 
+export async function getSupportTicketThread(id, source = 'user') {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
+    const normalizedSource = String(source || 'user').trim().toLowerCase();
+    if (normalizedSource === 'shop') {
+        const ticket = await FoodShopSupportTicket.findById(id)
+            .populate('shopId', 'shopName city area')
+            .lean();
+        if (!ticket) return null;
+        const shop =
+            ticket.shopId && typeof ticket.shopId === 'object'
+                ? {
+                      _id: ticket.shopId._id,
+                      name: ticket.shopId.shopName || '',
+                      city: ticket.shopId.city || '',
+                      area: ticket.shopId.area || ''
+                  }
+                : null;
+        let messages = await listSupportTicketMessages({ ticketId: id, sourceType: 'shop' });
+        if (!messages.length) {
+            messages = [];
+            if (String(ticket.description || '').trim()) {
+                messages.push({
+                    _id: `legacy-shop-${ticket._id}`,
+                    ticketId: ticket._id,
+                    sourceType: 'shop',
+                    senderType: 'shop',
+                    senderId: shop?._id || null,
+                    message: String(ticket.description).trim(),
+                    isSystemMessage: false,
+                    createdAt: ticket.createdAt,
+                    updatedAt: ticket.createdAt
+                });
+            }
+            if (String(ticket.adminResponse || '').trim()) {
+                messages.push({
+                    _id: `legacy-admin-${ticket._id}`,
+                    ticketId: ticket._id,
+                    sourceType: 'shop',
+                    senderType: 'admin',
+                    senderId: null,
+                    message: String(ticket.adminResponse).trim(),
+                    isSystemMessage: false,
+                    createdAt: ticket.updatedAt || ticket.createdAt,
+                    updatedAt: ticket.updatedAt || ticket.createdAt
+                });
+            }
+        }
+        return {
+            ticket: {
+                _id: ticket._id,
+                source: 'shop',
+                userId: null,
+                type: 'shop-support',
+                category: ticket.category || 'other',
+                orderId: null,
+                orderRef: ticket.orderRef || '',
+                shopId: shop?._id ? String(shop._id) : '',
+                issueType: ticket.issueType,
+                subject: ticket.subject || '',
+                description: ticket.description || '',
+                priority: ticket.priority || 'medium',
+                status: ticket.status,
+                adminResponse: ticket.adminResponse || '',
+                lastMessage: ticket.lastMessage || '',
+                lastMessageAt: ticket.lastMessageAt || ticket.updatedAt || ticket.createdAt,
+                lastMessageSenderType: ticket.lastMessageSenderType || '',
+                createdAt: ticket.createdAt,
+                updatedAt: ticket.updatedAt,
+                user: null,
+                shop,
+                shopName: shop?.name || ''
+            },
+            messages
+        };
+    }
+
+    if (normalizedSource !== 'user') return null;
+
+    const ticket = await FoodSupportTicket.findById(id)
+        .populate('userId', 'name phone email')
+        .populate('shopId', 'shopName city area')
+        .populate({
+            path: 'orderId',
+            select: 'orderId displayOrderId shopId',
+            populate: { path: 'shopId', select: 'shopName city area' }
+        })
+        .lean();
+
+    if (!ticket) return null;
+
+    const user =
+        ticket.userId && typeof ticket.userId === 'object'
+            ? {
+                  _id: ticket.userId._id,
+                  name: ticket.userId.name || '',
+                  phone: ticket.userId.phone || '',
+                  email: ticket.userId.email || ''
+              }
+            : null;
+
+    let shopDoc = null;
+    if (ticket.shopId && typeof ticket.shopId === 'object') {
+        shopDoc = ticket.shopId;
+    } else if (ticket.orderId && typeof ticket.orderId === 'object' && ticket.orderId.shopId && typeof ticket.orderId.shopId === 'object') {
+        shopDoc = ticket.orderId.shopId;
+    }
+
+    const shop = shopDoc
+        ? {
+              _id: shopDoc._id,
+              name: shopDoc.shopName || '',
+              city: shopDoc.city || '',
+              area: shopDoc.area || ''
+          }
+        : null;
+
+    let messages = await listSupportTicketMessages({ ticketId: id, sourceType: 'user' });
+    if (!messages.length) {
+        messages = [];
+        if (String(ticket.description || '').trim()) {
+            messages.push({
+                _id: `legacy-user-${ticket._id}`,
+                ticketId: ticket._id,
+                sourceType: 'user',
+                senderType: 'user',
+                senderId: user?._id || null,
+                message: String(ticket.description).trim(),
+                isSystemMessage: false,
+                createdAt: ticket.createdAt,
+                updatedAt: ticket.createdAt
+            });
+        }
+        if (String(ticket.adminResponse || '').trim()) {
+            messages.push({
+                _id: `legacy-admin-${ticket._id}`,
+                ticketId: ticket._id,
+                sourceType: 'user',
+                senderType: 'admin',
+                senderId: null,
+                message: String(ticket.adminResponse).trim(),
+                isSystemMessage: false,
+                createdAt: ticket.updatedAt || ticket.createdAt,
+                updatedAt: ticket.updatedAt || ticket.createdAt
+            });
+        }
+    }
+
+    return {
+        ticket: {
+            _id: ticket._id,
+            source: 'user',
+            userId: user?._id ? String(user._id) : '',
+            type: ticket.type,
+            orderId: ticket.orderId || null,
+            orderRef:
+                ticket.orderId && typeof ticket.orderId === 'object'
+                    ? ticket.orderId.displayOrderId || ticket.orderId.orderId || String(ticket.orderId._id || '').slice(-6)
+                    : '',
+            shopId: shop?._id ? String(shop._id) : '',
+            issueType: ticket.issueType,
+            description: ticket.description || '',
+            status: ticket.status,
+            adminResponse: ticket.adminResponse || '',
+            lastMessage: ticket.lastMessage || '',
+            lastMessageAt: ticket.lastMessageAt || ticket.updatedAt || ticket.createdAt,
+            lastMessageSenderType: ticket.lastMessageSenderType || '',
+            createdAt: ticket.createdAt,
+            updatedAt: ticket.updatedAt,
+            user,
+            shop,
+            shopName: shop?.name || ''
+        },
+        messages
+    };
+}
+
+export async function addSupportTicketAdminMessage(id, body = {}) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        throw new ValidationError('Invalid support ticket id');
+    }
+    const source = String(body.source || 'user').trim().toLowerCase();
+    if (!['user', 'shop'].includes(source)) {
+        throw new ValidationError('Only user and shop support ticket chat are enabled in this phase');
+    }
+    const ticket = source === 'shop'
+        ? await FoodShopSupportTicket.findById(id)
+        : await FoodSupportTicket.findById(id);
+    if (!ticket) {
+        throw new ValidationError('Support ticket not found');
+    }
+    const message = await appendSupportTicketMessage({
+        ticket,
+        sourceType: source,
+        senderType: 'admin',
+        senderId: null,
+        message: body.message
+    });
+    const thread = await getSupportTicketThread(id, source);
+    return { ticket: thread?.ticket || null, message };
+}
+
 export async function updateSupportTicket(id, body = {}) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
     const source = String(body.source || 'user').toLowerCase();
     const set = {};
-    if (body.status && ['open', 'in-progress', 'resolved'].includes(String(body.status))) {
+    if (body.status && ['open', 'in-progress', 'resolved', 'closed'].includes(String(body.status))) {
         set.status = String(body.status);
+        if (set.status === 'closed') {
+            set.closedAt = new Date();
+            set.closedBy = null;
+            set.closedByType = 'admin';
+        } else if (set.status === 'open') {
+            set.closedAt = null;
+            set.closedBy = null;
+            set.closedByType = null;
+        }
     }
     if (typeof body.adminResponse === 'string') {
         set.adminResponse = body.adminResponse;
@@ -2303,7 +2524,22 @@ export async function updateSupportTicket(id, body = {}) {
     else if (source === 'delivery') model = DeliverySupportTicket;
     else model = FoodSupportTicket;
 
+    const previous =
+        source === 'shop'
+            ? await FoodShopSupportTicket.findById(id)
+            : source === 'user'
+                ? await FoodSupportTicket.findById(id)
+                : null;
     const updated = await model.findByIdAndUpdate(id, { $set: set }, { new: true }).lean();
+    if (previous && set.status && previous.status !== set.status) {
+        await addTicketStatusSystemMessage({
+            ticket: previous,
+            sourceType: source === 'shop' ? 'shop' : 'user',
+            actorType: 'admin',
+            actorId: null,
+            nextStatus: set.status
+        });
+    }
     if (updated) {
         try {
             const { createInboxNotifications } = await import('../../../../core/notifications/notification.service.js');
@@ -3121,15 +3357,33 @@ export async function getShopById(id, adminScope = {}) {
     return shop;
 }
 
-export async function getShopAnalytics(shopId) {
+export async function getShopAnalytics(shopId, query = {}) {
     if (!shopId || !mongoose.Types.ObjectId.isValid(shopId)) return null;
     const rId = new mongoose.Types.ObjectId(shopId);
+
+    let periodRange = null;
+    if (query.startDate || query.endDate) {
+        const start = query.startDate ? new Date(query.startDate) : new Date(0);
+        const end = query.endDate ? new Date(query.endDate) : new Date();
+        if (query.endDate) end.setHours(23, 59, 59, 999);
+        periodRange = { start, end };
+    } else if (query.period) {
+        periodRange = getDateRangeByPeriod(query.period);
+    }
+
+    const orderMatch = { shopId: rId };
+    const txMatch = { shopId: rId };
+
+    if (periodRange) {
+        orderMatch.createdAt = { $gte: periodRange.start, $lte: periodRange.end };
+        txMatch.createdAt = { $gte: periodRange.start, $lte: periodRange.end };
+    }
 
     const [shop, commissionDoc, orders, txRows] = await Promise.all([
         FoodShop.findById(rId).lean(),
         FoodShopCommission.findOne({ shopId: rId, status: { $ne: false } }).lean(),
-        FoodOrder.find({ shopId: rId }).lean(),
-        FoodTransaction.find({ shopId: rId })
+        FoodOrder.find(orderMatch).lean(),
+        FoodTransaction.find(txMatch)
             .populate('orderId', 'orderStatus createdAt pricing')
             .sort({ createdAt: -1 })
             .lean(),
@@ -3142,7 +3396,8 @@ export async function getShopAnalytics(shopId) {
     const currentYear = now.getFullYear();
 
     const completedOrders = orders.filter(o => o.orderStatus === 'delivered');
-    const cancelledOrders = orders.filter(o => ['cancelled_by_user', 'cancelled_by_shop', 'cancelled_by_admin'].includes(o.orderStatus));
+    const cancelledOrders = orders.filter(o => String(o.orderStatus || '').startsWith('cancelled'));
+    const inProgressOrders = orders.filter(o => ['placed', 'created', 'scheduled', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'user_unavailable_review'].includes(o.orderStatus));
 
     // Money metrics should come from the ledger (FoodTransaction), not FoodOrder.
     const completedTx = (txRows || []).filter((tx) => {
@@ -3157,15 +3412,17 @@ export async function getShopAnalytics(shopId) {
     });
 
     const sum = (arr, pick) => (arr || []).reduce((s, it) => s + (Number(pick(it)) || 0), 0);
+    const getShopShare = (tx) => Number(tx?.amounts?.shopShare ?? tx?.amounts?.restaurantShare ?? 0);
+    const getShopCommission = (tx) => Number(tx?.amounts?.shopCommission ?? tx?.amounts?.restaurantCommission ?? tx?.pricing?.shopCommission ?? tx?.pricing?.restaurantCommission ?? 0);
 
     // 1) Total order value (gross customer paid)
     const totalRevenue = sum(completedTx, (tx) => tx?.amounts?.totalCustomerPaid ?? tx?.pricing?.total ?? tx?.orderId?.pricing?.total);
 
     // 2) Shop share (payout to shop)
-    const shopEarning = sum(completedTx, (tx) => tx?.amounts?.shopShare);
+    const shopEarning = sum(completedTx, getShopShare);
 
     // 3) Shop commission paid to admin
-    const totalCommission = sum(completedTx, (tx) => tx?.amounts?.shopCommission ?? tx?.pricing?.shopCommission);
+    const totalCommission = sum(completedTx, getShopCommission);
 
     // 4) Shop profit (in this system, equals shop share)
     const shopProfit = shopEarning;
@@ -3178,7 +3435,7 @@ export async function getShopAnalytics(shopId) {
         const d = new Date(tx?.createdAt || tx?.orderId?.createdAt || 0);
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
-    const monthlyProfit = sum(monthlyCompletedTx, (tx) => tx?.amounts?.shopShare);
+    const monthlyProfit = sum(monthlyCompletedTx, getShopShare);
 
     const yearlyOrdersList = orders.filter(o => {
         const d = new Date(o.createdAt);
@@ -3188,10 +3445,11 @@ export async function getShopAnalytics(shopId) {
         const d = new Date(tx?.createdAt || tx?.orderId?.createdAt || 0);
         return d.getFullYear() === currentYear;
     });
-    const yearlyProfit = sum(yearlyCompletedTx, (tx) => tx?.amounts?.shopShare);
+    const yearlyProfit = sum(yearlyCompletedTx, getShopShare);
 
     const totalOrdersCount = orders.length;
     const avgOrderValue = completedTx.length > 0 ? totalRevenue / completedTx.length : 0;
+    const avgMonthlyProfit = currentMonth >= 0 ? (yearlyProfit / (currentMonth + 1)) : yearlyProfit;
 
     const uniqueCustomers = new Set(orders.map(o => String(o.userId))).size;
     const customerOrderCounts = orders.reduce((acc, o) => {
@@ -3214,6 +3472,7 @@ export async function getShopAnalytics(shopId) {
         totalOrders: totalOrdersCount,
         cancelledOrders: cancelledOrders.length,
         completedOrders: completedOrders.length,
+        inProgressOrders: inProgressOrders.length,
         averageRating: Number(shop.rating || 0),
         totalRatings: Number(shop.totalRatings || 0),
         commissionPercentage: computedCommissionPercent,
@@ -3226,8 +3485,8 @@ export async function getShopAnalytics(shopId) {
         shopProfit,
         monthlyOrders: monthlyOrdersList.length,
         yearlyOrders: yearlyOrdersList.length,
-        averageMonthlyProfit: monthlyProfit, // Placeholder: can be improved if historical data exists
-        averageYearlyProfit: yearlyProfit,   // Placeholder: can be improved if historical data exists
+        averageMonthlyProfit: avgMonthlyProfit,
+        averageYearlyProfit: yearlyProfit,
         status: shop.status === 'approved' ? 'active' : 'inactive',
         joinDate: shop.createdAt,
         totalCustomers: uniqueCustomers,
@@ -4931,7 +5190,9 @@ export async function getSupportTicketStats() {
 
 export async function getDeliverySupportTickets(query = {}) {
     const { status, priority, search, page = 1, limit = 100 } = query;
-    const filter = {};
+    const filter = {
+        deliveryPartnerId: { $exists: true, $ne: null }
+    };
     if (status && String(status).trim()) filter.status = String(status).trim();
     if (priority && String(priority).trim()) filter.priority = String(priority).trim();
     if (search && typeof search === 'string' && search.trim()) {
@@ -4965,6 +5226,9 @@ export async function getDeliverySupportTickets(query = {}) {
         priority: t.priority,
         status: t.status,
         adminResponse: t.adminResponse,
+        lastMessage: t.lastMessage || '',
+        lastMessageAt: t.lastMessageAt || t.updatedAt || t.createdAt,
+        lastMessageSenderType: t.lastMessageSenderType || '',
         respondedAt: t.respondedAt,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
@@ -4989,21 +5253,130 @@ export async function getDeliverySupportTickets(query = {}) {
     };
 }
 
+export async function getDeliverySupportTicketThread(id) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
+    const ticket = await DeliverySupportTicket.findById(id)
+        .populate('deliveryPartnerId', 'name phone email')
+        .lean();
+    if (!ticket) return null;
+
+    const deliveryPartner = ticket.deliveryPartnerId
+        ? {
+              _id: ticket.deliveryPartnerId._id,
+              name: ticket.deliveryPartnerId.name || '',
+              phone: ticket.deliveryPartnerId.phone || '',
+              email: ticket.deliveryPartnerId.email || ''
+          }
+        : null;
+
+    let messages = await listSupportTicketMessages({ ticketId: id, sourceType: 'delivery' });
+    if (!messages.length) {
+        messages = [];
+        if (String(ticket.description || '').trim()) {
+            messages.push({
+                _id: `legacy-delivery-${ticket._id}`,
+                ticketId: ticket._id,
+                sourceType: 'delivery',
+                senderType: 'delivery',
+                senderId: deliveryPartner?._id || null,
+                message: String(ticket.description).trim(),
+                isSystemMessage: false,
+                createdAt: ticket.createdAt,
+                updatedAt: ticket.createdAt
+            });
+        }
+        if (String(ticket.adminResponse || '').trim()) {
+            messages.push({
+                _id: `legacy-admin-${ticket._id}`,
+                ticketId: ticket._id,
+                sourceType: 'delivery',
+                senderType: 'admin',
+                senderId: null,
+                message: String(ticket.adminResponse).trim(),
+                isSystemMessage: false,
+                createdAt: ticket.respondedAt || ticket.updatedAt || ticket.createdAt,
+                updatedAt: ticket.respondedAt || ticket.updatedAt || ticket.createdAt
+            });
+        }
+    }
+
+    return {
+        ticket: {
+            _id: ticket._id,
+            ticketId: ticket.ticketId,
+            subject: ticket.subject,
+            description: ticket.description,
+            category: ticket.category,
+            priority: ticket.priority,
+            status: ticket.status,
+            adminResponse: ticket.adminResponse,
+            lastMessage: ticket.lastMessage || '',
+            lastMessageAt: ticket.lastMessageAt || ticket.updatedAt || ticket.createdAt,
+            lastMessageSenderType: ticket.lastMessageSenderType || '',
+            respondedAt: ticket.respondedAt,
+            createdAt: ticket.createdAt,
+            updatedAt: ticket.updatedAt,
+            deliveryPartner
+        },
+        messages
+    };
+}
+
+export async function addDeliverySupportTicketAdminMessage(id, body = {}) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        throw new ValidationError('Invalid support ticket id');
+    }
+    const ticket = await DeliverySupportTicket.findById(id);
+    if (!ticket) {
+        throw new ValidationError('Support ticket not found');
+    }
+    const message = await appendSupportTicketMessage({
+        ticket,
+        sourceType: 'delivery',
+        senderType: 'admin',
+        senderId: null,
+        message: body.message
+    });
+    const thread = await getDeliverySupportTicketThread(id);
+    return { ticket: thread?.ticket || null, message };
+}
+
 export async function updateDeliverySupportTicket(id, body = {}) {
     const { status, adminResponse } = body;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) throw new ValidationError('Invalid support ticket id');
     const ticket = await DeliverySupportTicket.findById(id);
     if (!ticket) throw new ValidationError('Support ticket not found');
+    const previousStatus = ticket.status;
 
     if (status !== undefined) {
         const allowed = ['open', 'in_progress', 'resolved', 'closed'];
-        if (allowed.includes(String(status))) ticket.status = String(status);
+        if (allowed.includes(String(status))) {
+            ticket.status = String(status);
+            if (ticket.status === 'closed') {
+                ticket.closedAt = new Date();
+                ticket.closedBy = null;
+                ticket.closedByType = 'admin';
+            } else if (ticket.status === 'open') {
+                ticket.closedAt = null;
+                ticket.closedBy = null;
+                ticket.closedByType = null;
+            }
+        }
     }
     if (adminResponse !== undefined) {
         ticket.adminResponse = typeof adminResponse === 'string' ? adminResponse.trim() : '';
         if (ticket.adminResponse) ticket.respondedAt = new Date();
     }
     await ticket.save();
+    if (status !== undefined && String(status) !== String(previousStatus)) {
+        await addTicketStatusSystemMessage({
+            ticket,
+            sourceType: 'delivery',
+            actorType: 'admin',
+            actorId: null,
+            nextStatus: status
+        });
+    }
     const updated = ticket.toObject();
 
     try {

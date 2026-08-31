@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 import { FoodShopSupportTicket } from '../models/supportTicket.model.js';
 import { sendError, sendResponse } from '../../../../utils/response.js';
+import {
+    appendSupportTicketMessage,
+    listSupportTicketMessages,
+    addTicketStatusSystemMessage
+} from '../../shared/services/supportTicketThread.service.js';
 
 const ALLOWED_CATEGORIES = ['orders', 'payments', 'menu', 'shop', 'technical', 'other'];
 const ALLOWED_ISSUE_TYPES = [
@@ -12,7 +17,47 @@ const ALLOWED_ISSUE_TYPES = [
     'app_technical_issue',
     'other'
 ];
-const ALLOWED_STATUSES = ['open', 'in-progress', 'resolved'];
+const ALLOWED_STATUSES = ['open', 'in-progress', 'resolved', 'closed'];
+
+async function findShopTicketOrNull(ticketId, shopId) {
+    if (!ticketId || !mongoose.Types.ObjectId.isValid(ticketId)) return null;
+    return FoodShopSupportTicket.findOne({
+        _id: new mongoose.Types.ObjectId(ticketId),
+        shopId: new mongoose.Types.ObjectId(shopId)
+    }).lean();
+}
+
+function buildLegacyMessages(ticket, messages = []) {
+    if (Array.isArray(messages) && messages.length > 0) return messages;
+    const fallback = [];
+    if (String(ticket?.description || '').trim()) {
+        fallback.push({
+            _id: `legacy-shop-${ticket?._id || ''}`,
+            ticketId: ticket?._id,
+            sourceType: 'shop',
+            senderType: 'shop',
+            senderId: ticket?.shopId || null,
+            message: String(ticket.description).trim(),
+            isSystemMessage: false,
+            createdAt: ticket?.createdAt,
+            updatedAt: ticket?.createdAt
+        });
+    }
+    if (String(ticket?.adminResponse || '').trim()) {
+        fallback.push({
+            _id: `legacy-admin-${ticket?._id || ''}`,
+            ticketId: ticket?._id,
+            sourceType: 'shop',
+            senderType: 'admin',
+            senderId: null,
+            message: String(ticket.adminResponse).trim(),
+            isSystemMessage: false,
+            createdAt: ticket?.updatedAt || ticket?.createdAt,
+            updatedAt: ticket?.updatedAt || ticket?.createdAt
+        });
+    }
+    return fallback;
+}
 
 export const createShopSupportTicketController = async (req, res, next) => {
     try {
@@ -50,6 +95,13 @@ export const createShopSupportTicketController = async (req, res, next) => {
             subject,
             description,
             orderRef
+        });
+        await appendSupportTicketMessage({
+            ticket: created,
+            sourceType: 'shop',
+            senderType: 'shop',
+            senderId: shopId,
+            message: description
         });
 
         return sendResponse(res, 201, 'Support ticket created successfully', {
@@ -103,6 +155,101 @@ export const listShopSupportTicketsController = async (req, res, next) => {
             page,
             limit
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getShopSupportTicketByIdController = async (req, res, next) => {
+    try {
+        const shopId = req.user?.userId;
+        if (!shopId || !mongoose.Types.ObjectId.isValid(shopId)) {
+            return sendError(res, 401, 'Unauthorized');
+        }
+        const ticket = await findShopTicketOrNull(req.params.id, shopId);
+        if (!ticket) {
+            return sendError(res, 404, 'Ticket not found');
+        }
+        const messages = buildLegacyMessages(
+            ticket,
+            await listSupportTicketMessages({ ticketId: ticket._id, sourceType: 'shop' })
+        );
+        return sendResponse(res, 200, 'Support ticket fetched successfully', { ticket, messages });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const addShopSupportTicketMessageController = async (req, res, next) => {
+    try {
+        const shopId = req.user?.userId;
+        const ticketId = req.params.id;
+        if (!shopId || !mongoose.Types.ObjectId.isValid(shopId)) {
+            return sendError(res, 401, 'Unauthorized');
+        }
+        if (!ticketId || !mongoose.Types.ObjectId.isValid(ticketId)) {
+            return sendError(res, 400, 'Invalid ticket id');
+        }
+        const ticket = await FoodShopSupportTicket.findOne({
+            _id: new mongoose.Types.ObjectId(ticketId),
+            shopId: new mongoose.Types.ObjectId(shopId)
+        });
+        if (!ticket) {
+            return sendError(res, 404, 'Ticket not found');
+        }
+        const message = await appendSupportTicketMessage({
+            ticket,
+            sourceType: 'shop',
+            senderType: 'shop',
+            senderId: shopId,
+            message: req.body?.message
+        });
+        const updatedTicket = await findShopTicketOrNull(ticketId, shopId);
+        return sendResponse(res, 201, 'Message added successfully', { ticket: updatedTicket, message });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateShopSupportTicketStatusController = async (req, res, next) => {
+    try {
+        const shopId = req.user?.userId;
+        const ticketId = req.params.id;
+        const nextStatus = String(req.body?.status || '').trim().toLowerCase();
+        if (!shopId || !mongoose.Types.ObjectId.isValid(shopId)) {
+            return sendError(res, 401, 'Unauthorized');
+        }
+        if (!ticketId || !mongoose.Types.ObjectId.isValid(ticketId)) {
+            return sendError(res, 400, 'Invalid ticket id');
+        }
+        if (!['open', 'closed'].includes(nextStatus)) {
+            return sendError(res, 400, 'Invalid status');
+        }
+        const ticket = await FoodShopSupportTicket.findOne({
+            _id: new mongoose.Types.ObjectId(ticketId),
+            shopId: new mongoose.Types.ObjectId(shopId)
+        });
+        if (!ticket) {
+            return sendError(res, 404, 'Ticket not found');
+        }
+        ticket.status = nextStatus;
+        ticket.closedAt = nextStatus === 'closed' ? new Date() : null;
+        ticket.closedBy = nextStatus === 'closed' ? new mongoose.Types.ObjectId(shopId) : null;
+        ticket.closedByType = nextStatus === 'closed' ? 'shop' : null;
+        await ticket.save();
+        await addTicketStatusSystemMessage({
+            ticket,
+            sourceType: 'shop',
+            actorType: 'shop',
+            actorId: shopId,
+            nextStatus
+        });
+        const updatedTicket = await findShopTicketOrNull(ticketId, shopId);
+        const messages = buildLegacyMessages(
+            updatedTicket,
+            await listSupportTicketMessages({ ticketId, sourceType: 'shop' })
+        );
+        return sendResponse(res, 200, 'Support ticket status updated successfully', { ticket: updatedTicket, messages });
     } catch (error) {
         next(error);
     }

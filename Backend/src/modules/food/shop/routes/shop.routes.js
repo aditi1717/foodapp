@@ -16,7 +16,10 @@ import {
 } from '../controllers/shop.controller.js';
 import {
     createShopSupportTicketController,
-    listShopSupportTicketsController
+    listShopSupportTicketsController,
+    getShopSupportTicketByIdController,
+    addShopSupportTicketMessageController,
+    updateShopSupportTicketStatusController
 } from '../controllers/supportTicket.controller.js';
 import {
     listCategoriesController,
@@ -266,6 +269,9 @@ router.post('/orders/:orderId/resend-notification', authMiddleware, requireShop,
 router.get('/complaints', authMiddleware, requireShop, getShopComplaintsController);
 router.post('/support/tickets', authMiddleware, requireShop, createShopSupportTicketController);
 router.get('/support/tickets', authMiddleware, requireShop, listShopSupportTicketsController);
+router.get('/support/tickets/:id', authMiddleware, requireShop, getShopSupportTicketByIdController);
+router.post('/support/tickets/:id/messages', authMiddleware, requireShop, addShopSupportTicketMessageController);
+router.patch('/support/tickets/:id/status', authMiddleware, requireShop, updateShopSupportTicketStatusController);
 
 
 // Complaints (shop dashboard)

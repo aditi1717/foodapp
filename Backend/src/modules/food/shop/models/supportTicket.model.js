@@ -18,8 +18,14 @@ const shopSupportTicketSchema = new mongoose.Schema(
         description: { type: String, default: '', trim: true },
         orderRef: { type: String, default: '', trim: true },
         priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium', index: true },
-        status: { type: String, enum: ['open', 'in-progress', 'resolved'], default: 'open', index: true },
-        adminResponse: { type: String, default: '' }
+        status: { type: String, enum: ['open', 'in-progress', 'resolved', 'closed'], default: 'open', index: true },
+        adminResponse: { type: String, default: '' },
+        lastMessage: { type: String, default: '', trim: true },
+        lastMessageAt: { type: Date, default: null },
+        lastMessageSenderType: { type: String, enum: ['admin', 'user', 'shop', 'delivery'], default: 'shop' },
+        closedAt: { type: Date, default: null },
+        closedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+        closedByType: { type: String, enum: ['admin', 'user', 'shop', 'delivery', 'system'], default: null }
     },
     { collection: 'food_shop_support_tickets', timestamps: true }
 );

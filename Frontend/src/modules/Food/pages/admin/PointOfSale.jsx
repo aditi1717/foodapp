@@ -15,6 +15,11 @@ export default function PointOfSale() {
   const [paymentSummary, setPaymentSummary] = useState(null)
   const [showSearchResults, setShowSearchResults] = useState(false)
 
+  // Period / Date filter state
+  const [selectedPeriod, setSelectedPeriod] = useState('overall')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+
   const getShopName = (shop) => {
     return String(
       shop?.name ||
@@ -66,6 +71,7 @@ export default function PointOfSale() {
     totalOrders: 0,
     cancelledOrders: 0,
     completedOrders: 0,
+    inProgressOrders: 0,
     averageRating: 0,
     totalRatings: 0,
     commissionPercentage: 0,
@@ -93,10 +99,10 @@ export default function PointOfSale() {
     fetchShops()
   }, [])
 
-  // Fetch shop analytics when shop is selected
+  // Fetch shop analytics when shop or filters change
   useEffect(() => {
     if (selectedShop) {
-      fetchShopAnalytics(selectedShop)
+      fetchShopAnalytics(selectedShop, { period: selectedPeriod, startDate, endDate })
     } else {
       setShopData(null)
       setPaymentSummary(null)
@@ -104,6 +110,7 @@ export default function PointOfSale() {
         totalOrders: 0,
         cancelledOrders: 0,
         completedOrders: 0,
+        inProgressOrders: 0,
         averageRating: 0,
         totalRatings: 0,
         commissionPercentage: 0,
@@ -126,7 +133,7 @@ export default function PointOfSale() {
         completionRate: 0
       })
     }
-  }, [selectedShop])
+  }, [selectedShop, selectedPeriod, startDate, endDate])
 
   const fetchShops = async () => {
     try {
@@ -143,7 +150,7 @@ export default function PointOfSale() {
     }
   }
 
-  const fetchShopAnalytics = async (shopId) => {
+  const fetchShopAnalytics = async (shopId, filters = {}) => {
     try {
       setLoading(true)
       
@@ -152,11 +159,21 @@ export default function PointOfSale() {
         debugError('Shop ID is required')
         return
       }
+
+      const activePeriod = filters.period || selectedPeriod
+      const activeStart = filters.startDate !== undefined ? filters.startDate : startDate
+      const activeEnd = filters.endDate !== undefined ? filters.endDate : endDate
+
+      const params = {
+        period: activePeriod,
+        ...(activePeriod === 'custom' && activeStart ? { startDate: activeStart } : {}),
+        ...(activePeriod === 'custom' && activeEnd ? { endDate: activeEnd } : {}),
+      }
       
-      debugLog('Fetching analytics for shop:', shopId)
+      debugLog('Fetching analytics for shop:', shopId, params)
       
       // Fetch comprehensive shop analytics from backend
-      const analyticsResponse = await adminAPI.getShopAnalytics(shopId)
+      const analyticsResponse = await adminAPI.getShopAnalytics(shopId, params)
       
       debugLog('Analytics response:', analyticsResponse)
       
@@ -183,6 +200,7 @@ export default function PointOfSale() {
           totalOrders: Number(analytics.totalOrders) || 0,
           cancelledOrders: Number(analytics.cancelledOrders) || 0,
           completedOrders: Number(analytics.completedOrders) || 0,
+          inProgressOrders: Number(analytics.inProgressOrders) || 0,
           averageRating: Number(analytics.averageRating) || 0,
           totalRatings: Number(analytics.totalRatings) || 0,
           commissionPercentage: commissionPercentage,
@@ -457,6 +475,80 @@ export default function PointOfSale() {
               </div>
             </div>
 
+            {/* Time Period & Date Filter Control Card */}
+            <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-5">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-brand-50 rounded-lg">
+                    <Calendar className="w-5 h-5 text-[#006fbd]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#334257]">Date Range Filter</h3>
+                    <p className="text-xs text-[#8a94aa]">Filter sales, orders, and profit metrics by date range</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { id: 'overall', label: 'Overall' },
+                    { id: 'today', label: 'Today' },
+                    { id: 'week', label: 'This Week' },
+                    { id: 'month', label: 'This Month' },
+                    { id: 'year', label: 'This Year' },
+                    { id: 'custom', label: 'Custom Range' },
+                  ].map((period) => (
+                    <button
+                      key={period.id}
+                      type="button"
+                      onClick={() => setSelectedPeriod(period.id)}
+                      className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        selectedPeriod === period.id
+                          ? 'bg-[#006fbd] text-white shadow-sm'
+                          : 'bg-[#f4f6fa] text-[#4a5671] hover:bg-[#e8ecf4]'
+                      }`}
+                    >
+                      {period.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {selectedPeriod === 'custom' && (
+                <div className="mt-4 pt-4 border-t border-[#e3e6ef] flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-[#4a5671]">From Date:</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="h-10 px-3 rounded-lg border border-[#e3e6ef] text-xs text-[#4a5671] focus:outline-none focus:ring-1 focus:ring-[#006fbd] bg-white"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-[#4a5671]">To Date:</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="h-10 px-3 rounded-lg border border-[#e3e6ef] text-xs text-[#4a5671] focus:outline-none focus:ring-1 focus:ring-[#006fbd] bg-white"
+                    />
+                  </div>
+                  {(startDate || endDate) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartDate('')
+                        setEndDate('')
+                      }}
+                      className="text-xs font-medium text-red-600 hover:underline ml-auto"
+                    >
+                      Reset Dates
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Total Orders */}
@@ -469,7 +561,7 @@ export default function PointOfSale() {
                 </div>
                 <h3 className="text-sm font-medium text-[#8a94aa] mb-1">Total Orders</h3>
                 <p className="text-2xl font-bold text-[#334257]">{formatNumber(analyticsData.totalOrders)}</p>
-                <p className="text-xs text-[#8a94aa] mt-2">Completed: {formatNumber(analyticsData.completedOrders)}</p>
+                <p className="text-xs text-[#8a94aa] mt-2">Delivered: {formatNumber(analyticsData.completedOrders)} | In Progress: {formatNumber(analyticsData.inProgressOrders)}</p>
                 </div>
 
               {/* Cancelled Orders */}
@@ -745,22 +837,26 @@ export default function PointOfSale() {
             {/* Order Statistics Summary */}
             <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-6">
               <h3 className="text-lg font-semibold text-[#334257] mb-4">Order Statistics Summary</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div className="text-center p-4 bg-brand-50 rounded-lg">
                   <p className="text-2xl font-bold text-brand-600">{formatNumber(analyticsData.totalOrders)}</p>
-                  <p className="text-xs text-[#8a94aa] mt-1">Total Orders</p>
+                  <p className="text-xs text-[#8a94aa] mt-1 font-medium">Total Orders</p>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <p className="text-2xl font-bold text-green-600">{formatNumber(analyticsData.completedOrders)}</p>
-                  <p className="text-xs text-[#8a94aa] mt-1">Completed</p>
+                  <p className="text-xs text-green-700 mt-1 font-medium">Delivered</p>
+                </div>
+                <div className="text-center p-4 bg-amber-50 rounded-lg">
+                  <p className="text-2xl font-bold text-amber-600">{formatNumber(analyticsData.inProgressOrders)}</p>
+                  <p className="text-xs text-amber-700 mt-1 font-medium">In Progress</p>
                 </div>
                 <div className="text-center p-4 bg-red-50 rounded-lg">
                   <p className="text-2xl font-bold text-red-600">{formatNumber(analyticsData.cancelledOrders)}</p>
-                  <p className="text-xs text-[#8a94aa] mt-1">Cancelled</p>
+                  <p className="text-xs text-red-700 mt-1 font-medium">Cancelled</p>
                 </div>
-                <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                  <p className="text-2xl font-bold text-yellow-600">{analyticsData.completionRate.toFixed(1)}%</p>
-                  <p className="text-xs text-[#8a94aa] mt-1">Success Rate</p>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <p className="text-2xl font-bold text-purple-600">{analyticsData.completionRate.toFixed(1)}%</p>
+                  <p className="text-xs text-purple-700 mt-1 font-medium">Success Rate</p>
                 </div>
               </div>
             </div>

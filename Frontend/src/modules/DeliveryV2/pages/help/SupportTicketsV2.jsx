@@ -93,7 +93,7 @@ export const SupportTicketsV2 = () => {
                          <h4 className="text-sm font-black text-gray-950 group-hover:text-[#8B9543] transition-colors uppercase tracking-tight line-clamp-1">{ticket.subject}</h4>
                          {ticket.ticketId && <span className="text-[9px] font-mono font-bold bg-gray-100 px-2 py-0.5 rounded">#{ticket.ticketId}</span>}
                       </div>
-                      <p className="text-xs text-gray-500 font-medium line-clamp-1">{ticket.description}</p>
+                      <p className="text-xs text-gray-500 font-medium line-clamp-1">{ticket.lastMessage || ticket.description}</p>
                    </div>
                    <ChevronRight className="w-5 h-5 text-gray-200" />
                 </div>

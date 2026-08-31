@@ -8,6 +8,9 @@ export default function SupportTickets() {
   const [filters, setFilters] = useState({ status: "", type: "", source: "user" })
   const [selectedTicket, setSelectedTicket] = useState(null)
   const [modalDraft, setModalDraft] = useState({ status: "open", adminResponse: "" })
+  const [threadMessages, setThreadMessages] = useState([])
+  const [loadingThread, setLoadingThread] = useState(false)
+  const [sendingReply, setSendingReply] = useState(false)
 
   const stats = useMemo(() => {
     const total = tickets.length
@@ -106,17 +109,38 @@ export default function SupportTickets() {
     return () => clearTimeout(timer)
   }, [filters.status, filters.type, filters.source])
 
-  const openTicketModal = (ticket) => {
+  const openTicketModal = async (ticket) => {
     setSelectedTicket(ticket)
     setModalDraft({
       status: ticket.status || "open",
-      adminResponse: ticket.adminResponse || "",
+      adminResponse: "",
     })
+    setThreadMessages([])
+
+    if (!["user", "shop"].includes(ticket.source)) {
+      return
+    }
+
+    setLoadingThread(true)
+    try {
+      const res = await supportAPI.getSupportTicketThreadAdmin(ticket._id, { source: ticket.source })
+      const data = res?.data?.data || {}
+      if (data.ticket) {
+        setSelectedTicket(data.ticket)
+        setModalDraft((prev) => ({ ...prev, status: data.ticket.status || prev.status }))
+      }
+      setThreadMessages(Array.isArray(data.messages) ? data.messages : [])
+    } catch {
+      toast.error("Failed to load conversation")
+    } finally {
+      setLoadingThread(false)
+    }
   }
 
   const closeTicketModal = () => {
     setSelectedTicket(null)
     setModalDraft({ status: "open", adminResponse: "" })
+    setThreadMessages([])
   }
 
   const update = async (id, patch) => {
@@ -138,11 +162,56 @@ export default function SupportTickets() {
 
   const saveModalChanges = async () => {
     if (!selectedTicket?._id) return
+    if (["user", "shop"].includes(selectedTicket.source)) {
+      if (modalDraft.status !== selectedTicket.status) {
+        await update(selectedTicket._id, {
+          status: modalDraft.status,
+        })
+      }
+      if (modalDraft.adminResponse.trim()) {
+        setSendingReply(true)
+        try {
+          const res = await supportAPI.sendSupportTicketMessageAdmin(selectedTicket._id, {
+            source: selectedTicket.source,
+            message: modalDraft.adminResponse.trim(),
+          })
+          const data = res?.data?.data || {}
+          if (data.message) {
+            setThreadMessages((prev) => [...prev, data.message])
+          }
+          if (data.ticket) {
+            setSelectedTicket(data.ticket)
+            setTickets((prev) =>
+              prev.map((ticket) =>
+                String(ticket._id) === String(selectedTicket._id)
+                  ? { ...ticket, ...data.ticket }
+                  : ticket,
+              ),
+            )
+          }
+          toast.success("Reply sent")
+        } catch {
+          toast.error("Failed to send reply")
+          return
+        } finally {
+          setSendingReply(false)
+        }
+      }
+      closeTicketModal()
+      return
+    }
+
     await update(selectedTicket._id, {
       status: modalDraft.status,
       adminResponse: modalDraft.adminResponse.trim(),
     })
     closeTicketModal()
+  }
+
+  const formatMessageTime = (date) => {
+    if (!date) return "-"
+    const parsed = new Date(date)
+    return Number.isNaN(parsed.getTime()) ? "-" : parsed.toLocaleString("en-IN")
   }
 
   return (
@@ -377,7 +446,79 @@ export default function SupportTickets() {
               </div>
 
               <div className="rounded-xl border border-slate-200 p-4">
-                <p className="text-sm font-semibold text-slate-900">Admin Action</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                  {["user", "shop"].includes(selectedTicket.source) ? "Conversation" : "Admin Action"}
+                </p>
+                {["user", "shop"].includes(selectedTicket.source) ? (
+                  <div className="mt-4 space-y-4">
+                    <div className="max-h-[320px] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                      {loadingThread ? (
+                        <p className="text-sm text-slate-500">Loading conversation...</p>
+                      ) : threadMessages.length === 0 ? (
+                        <p className="text-sm text-slate-500">No messages yet</p>
+                      ) : (
+                        threadMessages.map((message) => {
+                          const isAdmin = message.senderType === "admin"
+                          const isSystem = message.isSystemMessage === true
+                          return (
+                            <div
+                              key={message._id}
+                              className={`flex ${isSystem ? "justify-center" : isAdmin ? "justify-end" : "justify-start"}`}
+                            >
+                              <div
+                                className={`max-w-[80%] rounded-2xl px-3 py-2 ${
+                                  isSystem
+                                    ? "bg-slate-200 text-slate-600 text-xs"
+                                    : isAdmin
+                                      ? "bg-brand-600 text-white"
+                                      : "bg-white border border-slate-200 text-slate-800"
+                                }`}
+                              >
+                                {!isSystem ? (
+                                  <p className="text-[11px] font-semibold mb-1 opacity-80">
+                                    {isAdmin ? "Admin" : selectedTicket.source === "shop" ? "Shop" : "User"}
+                                  </p>
+                                ) : null}
+                                <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                                <p className={`mt-1 text-[10px] ${isAdmin && !isSystem ? "text-white/80" : "text-slate-500"}`}>
+                                  {formatMessageTime(message.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      <label className="block">
+                        <span className="text-xs font-semibold uppercase text-slate-500">Status</span>
+                        <select
+                          value={modalDraft.status}
+                          onChange={(e) => setModalDraft((prev) => ({ ...prev, status: e.target.value }))}
+                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+                        >
+                          <option value="open">Open</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="closed">Closed</option>
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold uppercase text-slate-500">Reply</span>
+                        <textarea
+                          value={modalDraft.adminResponse}
+                          onChange={(e) => setModalDraft((prev) => ({ ...prev, adminResponse: e.target.value }))}
+                          rows={5}
+                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm resize-none"
+                          placeholder="Write a reply for this ticket"
+                        />
+                        <span className="text-xs text-slate-500 mt-1 block">
+                          This message will be added to the conversation for the {selectedTicket.source === "shop" ? "shop" : "user"}.
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                ) : (
                 <div className="mt-4 grid grid-cols-1 gap-4">
                   <label className="block">
                     <span className="text-xs font-semibold uppercase text-slate-500">Status</span>
@@ -405,6 +546,7 @@ export default function SupportTickets() {
                     </span>
                   </label>
                 </div>
+                )}
               </div>
             </div>
 
@@ -419,9 +561,10 @@ export default function SupportTickets() {
               <button
                 type="button"
                 onClick={saveModalChanges}
+                disabled={sendingReply}
                 className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700"
               >
-                Save Response
+                {sendingReply ? "Sending..." : ["user", "shop"].includes(selectedTicket.source) ? "Save Changes" : "Save Response"}
               </button>
             </div>
           </div>

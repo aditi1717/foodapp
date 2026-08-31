@@ -146,9 +146,30 @@ export const supportAPI = {
       params,
       contextModule: "user",
     }),
+  getMyTicketById: (id) =>
+    apiClient.get(`/food/user/support/tickets/${String(id)}`, {
+      contextModule: "user",
+    }),
+  sendMyTicketMessage: (id, body = {}) =>
+    apiClient.post(`/food/user/support/tickets/${String(id)}/messages`, body ?? {}, {
+      contextModule: "user",
+    }),
+  updateMyTicketStatus: (id, body = {}) =>
+    apiClient.patch(`/food/user/support/tickets/${String(id)}/status`, body ?? {}, {
+      contextModule: "user",
+    }),
   getSupportTicketsAdmin: (params = {}) =>
     apiClient.get("/food/admin/support-tickets", {
       params,
+      contextModule: "admin",
+    }),
+  getSupportTicketThreadAdmin: (id, params = {}) =>
+    apiClient.get(`/food/admin/support-tickets/${String(id)}/thread`, {
+      params,
+      contextModule: "admin",
+    }),
+  sendSupportTicketMessageAdmin: (id, body = {}) =>
+    apiClient.post(`/food/admin/support-tickets/${String(id)}/messages`, body ?? {}, {
       contextModule: "admin",
     }),
   updateSupportTicketAdmin: (id, body = {}) =>
@@ -373,6 +394,14 @@ export const adminAPI = {
     apiClient.get("/food/admin/delivery/support-tickets/stats", {
       contextModule: "admin",
     }),
+  getDeliverySupportTicketThread: (id) =>
+    apiClient.get(`/food/admin/delivery/support-tickets/${id}/thread`, {
+      contextModule: "admin",
+    }),
+  sendDeliverySupportTicketMessage: (id, body = {}) =>
+    apiClient.post(`/food/admin/delivery/support-tickets/${id}/messages`, body ?? {}, {
+      contextModule: "admin",
+    }),
   /** PATCH /food/admin/delivery/support-tickets/:id - update adminResponse, status. */
   updateDeliverySupportTicket: (id, body) =>
     apiClient.patch(`/food/admin/delivery/support-tickets/${id}`, body ?? {}, {
@@ -490,8 +519,9 @@ export const adminAPI = {
       { contextModule: "admin" },
     ),
   /** Get shop analytics for POS. */
-  getShopAnalytics: (id) =>
+  getShopAnalytics: (id, params) =>
     apiClient.get(`/food/admin/shops/${id}/analytics`, {
+      params,
       contextModule: "admin",
     }),
   /** Update shop basic details (admin). */
@@ -1636,6 +1666,18 @@ export const adminAPI = {
       params,
       contextModule: "shop",
     }),
+  getSupportTicketById: (id) =>
+    apiClient.get(`/food/shop/support/tickets/${String(id)}`, {
+      contextModule: "shop",
+    }),
+  sendSupportTicketMessage: (id, body = {}) =>
+    apiClient.post(`/food/shop/support/tickets/${String(id)}/messages`, body ?? {}, {
+      contextModule: "shop",
+    }),
+  updateSupportTicketStatus: (id, body = {}) =>
+    apiClient.patch(`/food/shop/support/tickets/${String(id)}/status`, body ?? {}, {
+      contextModule: "shop",
+    }),
   /** Search delivery partner by phone */
   searchDeliveryPartner: (phone) =>
     apiClient.get("/food/shop/delivery-partners/search", {
@@ -2008,6 +2050,14 @@ export const deliveryAPI = {
   /** GET /food/delivery/support-tickets/:id - get one ticket (own only). */
   getSupportTicketById: (id) =>
     apiClient.get(`/food/delivery/support-tickets/${id}`, {
+      contextModule: "delivery",
+    }),
+  sendSupportTicketMessage: (id, body = {}) =>
+    apiClient.post(`/food/delivery/support-tickets/${id}/messages`, body ?? {}, {
+      contextModule: "delivery",
+    }),
+  updateSupportTicketStatus: (id, body = {}) =>
+    apiClient.patch(`/food/delivery/support-tickets/${id}/status`, body ?? {}, {
       contextModule: "delivery",
     }),
   /** GET /food/delivery/reviews - list reviews for logged-in delivery partner. */
