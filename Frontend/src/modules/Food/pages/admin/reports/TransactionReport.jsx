@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react"
-import { BarChart3, ChevronDown, Info, Settings, FileText, FileSpreadsheet, Code, Loader2 } from "lucide-react"
+import { BarChart3, ChevronDown, Info, Settings, FileText, FileSpreadsheet, Code, Loader2, Printer } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@food/components/ui/dialog"
+import { generateOrderInvoicePDF } from "@food/components/admin/orders/useOrdersManagement"
 import { exportTransactionReportToCSV, exportTransactionReportToExcel, exportTransactionReportToPDF, exportTransactionReportToJSON } from "@food/components/admin/reports/reportsExportUtils"
 import { adminAPI } from "@food/api"
 import { getFoodOrderStatusLabel } from "@food/utils/foodOrderStatusUnified"
@@ -42,6 +43,51 @@ export default function TransactionReport() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [zones, setZones] = useState([])
   const [shops, setShops] = useState([])
+
+  const handleDownloadInvoice = async (transaction) => {
+    try {
+      const rawOrder = transaction.order && typeof transaction.order === "object" ? transaction.order : {}
+      const items = Array.isArray(transaction.items) && transaction.items.length > 0
+        ? transaction.items
+        : (Array.isArray(rawOrder.items) && rawOrder.items.length > 0 ? rawOrder.items : [])
+
+      const normalizedOrder = {
+        ...rawOrder,
+        ...transaction,
+        id: transaction.orderId || rawOrder.orderId || transaction.id,
+        orderId: transaction.orderId || rawOrder.orderId || transaction.id,
+        date: rawOrder.date || transaction.date || (transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() : new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase()),
+        time: rawOrder.time || transaction.time || "",
+        customerName: (transaction.customerName && transaction.customerName !== "Guest" && transaction.customerName !== "Invalid Customer Data")
+          ? transaction.customerName
+          : (rawOrder.customerName || "Customer"),
+        customerPhone: transaction.customerPhone && transaction.customerPhone !== "N/A"
+          ? transaction.customerPhone
+          : (rawOrder.customerPhone || rawOrder.customerAddress?.phone || "N/A"),
+        shop: transaction.shop && transaction.shop !== "N/A" ? transaction.shop : (rawOrder.shop || "Shop"),
+        items: items,
+        totalItemAmount: transaction.totalItemAmount || rawOrder.totalItemAmount || rawOrder.pricing?.subtotal || 0,
+        subtotal: transaction.totalItemAmount || rawOrder.totalItemAmount || rawOrder.pricing?.subtotal || 0,
+        deliveryCharge: transaction.deliveryCharge || rawOrder.deliveryCharge || rawOrder.pricing?.deliveryFee || 0,
+        deliveryFee: transaction.deliveryCharge || rawOrder.deliveryCharge || rawOrder.pricing?.deliveryFee || 0,
+        platformFee: transaction.platformFee || rawOrder.platformFee || rawOrder.pricing?.platformFee || 0,
+        vatTax: transaction.vatTax || rawOrder.vatTax || rawOrder.pricing?.tax || 0,
+        couponDiscount: (transaction.couponByAdmin || 0) + (transaction.couponByShop || 0) + (transaction.offerByShop || 0) || rawOrder.couponDiscount || rawOrder.pricing?.discount || 0,
+        discountAmount: (transaction.couponByAdmin || 0) + (transaction.couponByShop || 0) + (transaction.offerByShop || 0) || rawOrder.discountAmount || rawOrder.pricing?.discount || 0,
+        totalAmount: transaction.orderAmount || rawOrder.totalAmount || rawOrder.pricing?.total || 0,
+        paymentType: rawOrder.paymentType || rawOrder.payment?.method || transaction.paymentType || "Paid",
+        paymentStatus: transaction.status || rawOrder.paymentStatus || "Paid",
+        orderStatus: transaction.displayStatus || transaction.orderStatus || rawOrder.orderStatus || "Delivered",
+        address: transaction.address || rawOrder.address || rawOrder.customerAddress || rawOrder.deliveryAddress,
+        couponCode: transaction.couponCode || rawOrder.couponCode || rawOrder.pricing?.appliedCoupon?.code || "",
+      }
+
+      await generateOrderInvoicePDF(normalizedOrder)
+    } catch (err) {
+      debugError("Failed to generate invoice PDF:", err)
+      toast.error("Failed to download invoice")
+    }
+  }
 
   // Fetch zones and shops for filters
   useEffect(() => {
@@ -486,14 +532,15 @@ export default function TransactionReport() {
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '7%' }}>Vat/Tax</th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '7%' }}>Delivery Charge</th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '7%' }}>Platform Fee</th>
-                  <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '8%' }}>Order Amount</th>
-                  <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '8%' }}>Status</th>
+                  <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '7%' }}>Order Amount</th>
+                  <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '7%' }}>Status</th>
+                  <th className="px-1.5 py-1 text-center text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '7%' }}>Invoice</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-100">
                 {filteredTransactions.length === 0 ? (
                   <tr>
-                    <td colSpan={14} className="px-6 py-20 text-center">
+                    <td colSpan={15} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
                         <p className="text-sm text-slate-500">No transactions match your search</p>
@@ -557,6 +604,17 @@ export default function TransactionReport() {
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${getStatusBadgeClasses(getRawDisplayStatus(transaction))}`}>
                           {getDisplayStatus(transaction)}
                         </span>
+                      </td>
+                      <td className="px-1.5 py-1 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadInvoice(transaction)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-md transition-all shadow-sm cursor-pointer"
+                          title="Download Order Invoice PDF"
+                        >
+                          <FileText className="w-2.5 h-2.5 text-brand-600" />
+                          <span>Invoice</span>
+                        </button>
                       </td>
                     </tr>
                   ))

@@ -26,6 +26,8 @@ export default function OTP() {
   const [showNameInput, setShowNameInput] = useState(false)
   const [name, setName] = useState("")
   const [nameError, setNameError] = useState("")
+  const [email, setEmail] = useState("")
+  const [emailError, setEmailError] = useState("")
   const [referralCode, setReferralCode] = useState("")
   const [referralError, setReferralError] = useState("")
   const [referralStatus, setReferralStatus] = useState({
@@ -399,7 +401,9 @@ export default function OTP() {
 
   const handleSubmitName = async () => {
     const trimmedName = name.trim()
+    const trimmedEmail = email.trim().toLowerCase()
     const normalizedReferralCode = normalizeReferralCode(referralCode)
+
     if (!trimmedName) {
       setNameError("Name is required")
       return
@@ -410,9 +414,21 @@ export default function OTP() {
       return
     }
 
+    if (!trimmedEmail) {
+      setEmailError("Email address is required")
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(trimmedEmail)) {
+      setEmailError("Please enter a valid email address")
+      return
+    }
+
     setIsLoading(true)
     setError("")
     setNameError("")
+    setEmailError("")
     setReferralError("")
 
     if (normalizedReferralCode && referralStatus.message && !referralStatus.valid) {
@@ -447,7 +463,7 @@ export default function OTP() {
         throw new Error("Session expired. Please go back and verify OTP again.")
       }
 
-      // Authenticate once using the already-verified OTP response, then save name in profile.
+      // Authenticate once using the already-verified OTP response, then save name and email in profile.
       setUserAuthData(
         "user",
         resolvedPending.accessToken,
@@ -456,6 +472,7 @@ export default function OTP() {
       )
       const profileRes = await userAPI.updateProfile({
         name: trimmedName,
+        email: trimmedEmail,
         ...(normalizedReferralCode ? { referralCode: normalizedReferralCode } : {}),
       })
       const updatedUser =
@@ -654,13 +671,33 @@ export default function OTP() {
                     if (nameError) setNameError("")
                   }}
                   disabled={isLoading}
-                  placeholder="Full Name"
+                  placeholder="Full Name *"
                   className={`h-12 md:h-14 text-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 rounded-xl focus-visible:ring-1 ${nameError ? "border-red-500" : ""} transition-all`}
                   style={{ borderColor: BRAND_THEME.colors.brand.primary, boxShadow: `0 0 0 1px ${BRAND_THEME.colors.brand.primary}33` }}
                 />
                 {nameError && (
                   <p className="text-xs text-red-500 pl-1">
                     {nameError}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (emailError) setEmailError("")
+                  }}
+                  disabled={isLoading}
+                  placeholder="Email Address *"
+                  className={`h-12 md:h-14 text-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 rounded-xl focus-visible:ring-1 ${emailError ? "border-red-500" : ""} transition-all`}
+                  style={{ borderColor: BRAND_THEME.colors.brand.primary, boxShadow: `0 0 0 1px ${BRAND_THEME.colors.brand.primary}33` }}
+                />
+                {emailError && (
+                  <p className="text-xs text-red-500 pl-1">
+                    {emailError}
                   </p>
                 )}
               </div>

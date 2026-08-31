@@ -1145,7 +1145,7 @@ export async function getTransactionReport(query = {}) {
     // We will query the FoodTransaction table directly as it is the ledger
     const transactionRows = await FoodTransaction.find(match)
         .populate('orderId')
-        .populate('userId', 'name')
+        .populate('userId', 'name phone email')
         .populate('shopId', 'shopName')
         .sort({ createdAt: -1 })
         .lean();
@@ -1219,8 +1219,12 @@ export async function getTransactionReport(query = {}) {
         return {
             id: tx._id,
             orderId: tx.orderReadableId || order.orderId || 'N/A',
-            shop: tx.shopId?.shopName || 'N/A',
-            customerName: tx.userId?.name || 'Guest',
+            shop: tx.shopId?.shopName || order.shopName || order.shop || 'N/A',
+            customerName: order.customerName || tx.userId?.name || 'Guest',
+            customerPhone: order.customerPhone || tx.userId?.phone || order.deliveryAddress?.phone || 'N/A',
+            address: order.deliveryAddress || order.address || null,
+            items: Array.isArray(order.items) ? order.items : [],
+            order: order,
             totalItemAmount: subtotal,
             itemDiscount: pricing.offerByShop || 0,
             couponDiscount: (pricing.couponByAdmin || 0) + (pricing.couponByShop || 0),

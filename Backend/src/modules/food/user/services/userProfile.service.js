@@ -7,7 +7,6 @@ const parseIsoDateOrNull = (value) => {
     if (value === undefined) return undefined;
     if (value === null || value === '') return null;
     const d = new Date(`${String(value)}T00:00:00.000Z`);
-    // Keep null for invalid; validation is handled by DTO, but be defensive.
     return Number.isNaN(d.getTime()) ? null : d;
 };
 
@@ -24,14 +23,22 @@ export const updateCurrentUserProfile = async (userId, body) => {
     if (body.phone !== undefined) {
         const nextPhone = String(body.phone || '').trim();
         const currentPhone = String(user.phone || '').trim();
-        // OTP login is phone-based in this project; don't allow changing it from profile edit.
         if (nextPhone && nextPhone !== currentPhone) {
             throw new ValidationError('Phone number cannot be changed');
         }
     }
 
     if (body.name !== undefined) user.name = String(body.name || '').trim();
-    if (body.email !== undefined) user.email = String(body.email || '').trim().toLowerCase();
+    if (body.email !== undefined) {
+        const nextEmail = String(body.email || '').trim().toLowerCase();
+        if (nextEmail && nextEmail !== String(user.email || '').trim().toLowerCase()) {
+            const existingEmailUser = await FoodUser.findOne({ email: nextEmail, _id: { $ne: user._id } });
+            if (existingEmailUser) {
+                throw new ValidationError('Email address is already registered with another account');
+            }
+            user.email = nextEmail;
+        }
+    }
     if (body.profileImage !== undefined) user.profileImage = String(body.profileImage || '').trim();
     if (body.gender !== undefined) user.gender = String(body.gender || '').trim();
 
@@ -61,4 +68,3 @@ export const uploadCurrentUserProfileImage = async (userId, file) => {
     await user.save();
     return { profileImage: user.profileImage, user: user.toObject() };
 };
-

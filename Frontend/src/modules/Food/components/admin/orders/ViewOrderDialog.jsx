@@ -698,57 +698,45 @@ export default function ViewOrderDialog({
           <div className="border-t border-slate-200 pt-4">
             <h3 className="text-sm font-semibold text-slate-700 mb-4">Pricing Breakdown</h3>
             <div className="space-y-2">
-              {order.totalItemAmount !== undefined && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Subtotal</span>
-                  <span className="font-medium text-slate-900">₹{order.totalItemAmount.toFixed(2)}</span>
-                </div>
-              )}
-              {order.itemDiscount !== undefined && order.itemDiscount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Discount</span>
-                  <span className="font-medium text-emerald-600">-₹{order.itemDiscount.toFixed(2)}</span>
-                </div>
-              )}
-              {order.couponDiscount !== undefined && order.couponDiscount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Coupon Discount</span>
-                  <span className="font-medium text-emerald-600">-₹{order.couponDiscount.toFixed(2)}</span>
-                </div>
-              )}
-              {order.dueAmount !== undefined && Number(order.dueAmount) > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">{order.dueLabel || "Previous Due"}</span>
-                  <span className="font-medium text-slate-900">₹{Number(order.dueAmount).toFixed(2)}</span>
-                </div>
-              )}
-              {order.deliveryCharge !== undefined && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Delivery Charge</span>
-                  <span className="font-medium text-slate-900">
-                    {order.deliveryCharge > 0 ? `₹${order.deliveryCharge.toFixed(2)}` : <span className="text-emerald-600">Free delivery</span>}
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Subtotal</span>
+                <span className="font-medium text-slate-900">
+                  ₹{Number(order.totalItemAmount ?? order.subtotal ?? order.pricing?.subtotal ?? 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Delivery Fee</span>
+                <span className="font-medium text-slate-900">
+                  {Number(order.deliveryCharge ?? order.deliveryFee ?? order.pricing?.deliveryFee ?? 0) > 0 
+                    ? `₹${Number(order.deliveryCharge ?? order.deliveryFee ?? order.pricing?.deliveryFee ?? 0).toFixed(2)}`
+                    : <span className="text-emerald-600 font-semibold">₹0.00 (Free)</span>}
+                </span>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">Platform Fee</span>
                 <span className="font-medium text-slate-900">
-                  {order.platformFee !== undefined && order.platformFee > 0 
-                    ? `₹${order.platformFee.toFixed(2)}` 
-                    : <span className="text-slate-400">₹0.00</span>}
+                  ₹{Number(order.platformFee ?? order.pricing?.platformFee ?? 0).toFixed(2)}
                 </span>
               </div>
-              {order.vatTax !== undefined && order.vatTax > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Tax (GST)</span>
-                  <span className="font-medium text-slate-900">₹{order.vatTax.toFixed(2)}</span>
-                </div>
-              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Tax / GST</span>
+                <span className="font-medium text-slate-900">
+                  ₹{Number(order.vatTax ?? order.taxAmount ?? order.tax ?? order.pricing?.tax ?? 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">
+                  Discount {order.couponCode || order.pricing?.appliedCoupon?.code ? `(${order.couponCode || order.pricing?.appliedCoupon?.code})` : ""}
+                </span>
+                <span className="font-medium text-emerald-600">
+                  -₹{Number(order.couponDiscount ?? order.discountAmount ?? order.pricing?.discount ?? 0).toFixed(2)}
+                </span>
+              </div>
               <div className="pt-2 border-t border-slate-200">
                 <div className="flex justify-between items-center">
-                  <span className="text-base font-semibold text-slate-700">Total Amount</span>
+                  <span className="text-base font-semibold text-slate-700">Grand Total</span>
                   <span className="text-xl font-bold text-emerald-600">
-                    ₹{(order.totalAmount || order.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₹{Number(order.totalAmount || order.total || order.pricing?.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>

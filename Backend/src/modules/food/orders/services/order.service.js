@@ -3,6 +3,8 @@ import { FoodOrder, FoodSettings } from '../models/order.model.js';
 import { FoodUserDebt } from '../models/userDebt.model.js';
 // import { paymentSnapshotFromOrder } from './foodOrderPayment.service.js';
 import { logger } from '../../../../utils/logger.js';
+import { generateInvoicePDFBuffer } from '../../../../utils/pdfInvoiceGenerator.js';
+import { sendOrderDeliveryInvoiceEmail } from '../../../../utils/email.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
 import { FoodShop } from '../../shop/models/shop.model.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
@@ -4474,10 +4476,29 @@ function emitOrderUpdate(order, deliveryPartnerId) {
           orderMongoId: order._id?.toString?.() || "",
           orderStatus: status || order.orderStatus,
           paymentMethod: order.payment?.method,
-          amountCollected: String(order.pricing?.total || 0),
         },
       }
     );
+
+    if (String(status || '').toLowerCase() === 'delivered') {
+      try {
+        FoodOrder.findById(order._id)
+          .populate('userId', 'email name phone')
+          .lean()
+          .then((fullOrder) => {
+            const targetOrder = fullOrder || order;
+            const customerEmail = targetOrder?.userId?.email || targetOrder?.customerEmail;
+            if (customerEmail) {
+              generateInvoicePDFBuffer(targetOrder)
+                .then((pdfBuf) => sendOrderDeliveryInvoiceEmail(customerEmail, targetOrder, pdfBuf))
+                .catch((err) => logger.error("Failed to generate/send delivery invoice email:", err.message));
+            }
+          })
+          .catch((err) => logger.error("Error fetching order for delivery email:", err.message));
+      } catch (err) {
+        logger.error("Error triggering delivery invoice email:", err.message);
+      }
+    }
   } catch (e) {
     console.error("Error emitting order update:", e);
   }
