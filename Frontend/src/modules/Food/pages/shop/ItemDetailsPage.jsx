@@ -109,9 +109,51 @@ export default function ItemDetailsPage() {
   const [loadingCategories, setLoadingCategories] = useState(true)
   const [subcategories, setSubcategories] = useState([])
   const [loadingSubcategories, setLoadingSubcategories] = useState(false)
+  const [productSkeletons, setProductSkeletons] = useState([])
+  const [selectedSkeletonId, setSelectedSkeletonId] = useState("")
+  const [isFromSkeleton, setIsFromSkeleton] = useState(false)
   const [loadingItem, setLoadingItem] = useState(false)
   const [keyboardInset, setKeyboardInset] = useState(0)
   const [isPureVeg, setIsPureVeg] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchSkeletons = async () => {
+      if (!selectedCategoryId) {
+        setProductSkeletons([])
+        return
+      }
+      try {
+        const params = { categoryId: selectedCategoryId }
+        if (selectedSubcategoryId) params.subcategoryId = selectedSubcategoryId
+        const res = await shopAPI.getProductSkeletonsByCategory(params)
+        const list = res?.data?.data?.skeletons || res?.data?.skeletons || []
+        if (isMounted) setProductSkeletons(Array.isArray(list) ? list : [])
+      } catch {
+        if (isMounted) setProductSkeletons([])
+      }
+    }
+    fetchSkeletons()
+    return () => { isMounted = false }
+  }, [selectedCategoryId, selectedSubcategoryId])
+
+  const handleSkeletonSelectInItemDetails = (skelId) => {
+    setSelectedSkeletonId(skelId)
+    if (!skelId) {
+      setIsFromSkeleton(false)
+      return
+    }
+    const skel = productSkeletons.find((s) => String(s._id) === String(skelId))
+    if (skel) {
+      setIsFromSkeleton(true)
+      setItemName(skel.name || itemName)
+      setItemDescription(skel.description || itemDescription)
+      if (skel.image) {
+        setImages([skel.image])
+      }
+      toast.info(`Selected Parent Structure "${skel.name}". Item Name, Image & Description locked for brand uniformity.`)
+    }
+  }
 
   useEffect(() => {
     const fetchShopProfile = async () => {
@@ -139,6 +181,14 @@ export default function ItemDetailsPage() {
 
   const populateFormFromItem = (item = {}) => {
     setItemData(item)
+
+    if (item.skeletonId) {
+      setSelectedSkeletonId(String(item.skeletonId))
+      setIsFromSkeleton(Boolean(item.isFromSkeleton))
+    } else {
+      setSelectedSkeletonId("")
+      setIsFromSkeleton(false)
+    }
 
     setItemName(item.name || "")
     setCategory(item.category || item.categoryName || defaultCategory)
@@ -832,6 +882,8 @@ export default function ItemDetailsPage() {
           categoryName,
           subcategoryId: subcategoryId || undefined,
           subcategoryName,
+          skeletonId: selectedSkeletonId || undefined,
+          isFromSkeleton: Boolean(isFromSkeleton),
           bulkOrderPricing: bulkOrderPricingPayload,
         })
         const created = createRes?.data?.data?.food || createRes?.data?.food
@@ -857,6 +909,8 @@ export default function ItemDetailsPage() {
           categoryName,
           subcategoryId: subcategoryId || undefined,
           subcategoryName,
+          skeletonId: selectedSkeletonId || undefined,
+          isFromSkeleton: Boolean(isFromSkeleton),
           bulkOrderPricing: bulkOrderPricingPayload,
         })
       }
@@ -966,6 +1020,16 @@ export default function ItemDetailsPage() {
 
         {/* Image Carousel */}
         <div className="relative bg-white">
+          {isFromSkeleton && (
+            <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                🔒 Image Preserved from Parent Structure
+              </span>
+              <span className="text-[10px] font-bold text-amber-700 uppercase bg-amber-200/80 px-2 py-0.5 rounded-full">
+                Auto-Synced
+              </span>
+            </div>
+          )}
           {images.length > 0 ? (
             <div className="relative w-full h-80 overflow-hidden bg-gray-100">
               {/* Image container with swipe support */}
@@ -1014,13 +1078,15 @@ export default function ItemDetailsPage() {
                   </>
                 )}
 
-                {/* Delete image button */}
-                <button
-                  onClick={() => handleImageDelete(currentImageIndex)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all z-10"
-                >
-                  <Trash2 className="w-5 h-5 text-gray-900" />
-                </button>
+                {/* Delete image button - disabled when locked by skeleton */}
+                {!isFromSkeleton && (
+                  <button
+                    onClick={() => handleImageDelete(currentImageIndex)}
+                    className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all z-10"
+                  >
+                    <Trash2 className="w-5 h-5 text-gray-900" />
+                  </button>
+                )}
 
                 {/* Image counter */}
                 {images.length > 1 && (
@@ -1064,39 +1130,47 @@ export default function ItemDetailsPage() {
             </div>
           )}
 
-          {/* Add image actions */}
-          <div className="px-4 py-4 bg-white border-t border-gray-100">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleImageAdd(e.target.files?.[0])}
-              className="hidden"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={handleCameraClick}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-white rounded-xl text-sm font-semibold cursor-pointer transition-all shadow-md hover:shadow-lg active:scale-95"
-                style={{
-                  background: BRAND_THEME.gradients.primary,
-                  boxShadow: `0 16px 36px -22px ${BRAND_THEME.colors.brand.primaryDark}`,
-                }}
-              >
-                <Camera className="w-4 h-4" />
-                <span>Use Camera</span>
-              </button>
-              <button
-                onClick={handleUploadDeviceClick}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 active:scale-95"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Upload Device</span>
-              </button>
+          {/* Add image actions - locked when skeleton is chosen */}
+          {isFromSkeleton ? (
+            <div className="px-4 py-3.5 bg-amber-50 border-t border-amber-200 text-center">
+              <span className="text-xs font-semibold text-amber-800 flex items-center justify-center gap-1.5">
+                🔒 Image upload is locked by Parent Food Structure (Product Skeleton)
+              </span>
             </div>
-            <p className="mt-2 text-xs text-gray-500 text-center">
-              Item image is required to save.
-            </p>
-          </div>
+          ) : (
+            <div className="px-4 py-4 bg-white border-t border-gray-100">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageAdd(e.target.files?.[0])}
+                className="hidden"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleCameraClick}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 text-white rounded-xl text-sm font-semibold cursor-pointer transition-all shadow-md hover:shadow-lg active:scale-95"
+                  style={{
+                    background: BRAND_THEME.gradients.primary,
+                    boxShadow: `0 16px 36px -22px ${BRAND_THEME.colors.brand.primaryDark}`,
+                  }}
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Use Camera</span>
+                </button>
+                <button
+                  onClick={handleUploadDeviceClick}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Upload Device</span>
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-gray-500 text-center">
+                Item image is required to save.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Form Fields */}
@@ -1134,21 +1208,58 @@ export default function ItemDetailsPage() {
             </button>
           </div>
 
+          {/* Parent Food Structure (Product Skeleton) Dropdown */}
+          {productSkeletons.length > 0 && (
+            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 sm:p-3.5 space-y-2 max-w-full overflow-hidden">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-amber-900 truncate">
+                  Parent Food Structure (Product Skeleton)
+                </span>
+                <span className="shrink-0 text-[10px] font-semibold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full uppercase">
+                  Optional
+                </span>
+              </div>
+              <select
+                value={selectedSkeletonId}
+                onChange={(e) => handleSkeletonSelectInItemDetails(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-amber-300 rounded-lg text-xs sm:text-sm outline-none focus:ring-2 focus:ring-amber-500 font-semibold text-gray-900 truncate"
+              >
+                <option value="">Custom Item (Enter custom details)</option>
+                {productSkeletons.map((skel) => (
+                  <option key={skel._id} value={skel._id}>
+                    {skel.name} ({skel.foodType})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] sm:text-xs text-amber-800 font-medium leading-tight">
+                Selecting a master skeleton auto-fills & locks Name, Image, and Description for brand uniformity.
+              </p>
+            </div>
+          )}
+
           {/* Item Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Item name
+            <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center justify-between">
+              <span>Item name</span>
+              {isFromSkeleton && (
+                <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                  🔒 Locked by Parent Structure
+                </span>
+              )}
             </label>
             <div className="relative">
               <input
                 type="text"
                 value={itemName}
+                disabled={isFromSkeleton}
                 onChange={(e) => setItemName(e.target.value)}
                 maxLength={maxNameLength}
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                className={`w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-sm text-gray-900 ${
+                  isFromSkeleton ? "bg-gray-100 text-gray-500 cursor-not-allowed font-semibold" : "bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                }`}
                 placeholder="Enter item name"
               />
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100">
+              <button className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100" disabled={isFromSkeleton}>
                 <EditIcon className="w-4 h-4 text-gray-500" />
               </button>
             </div>
@@ -1159,22 +1270,29 @@ export default function ItemDetailsPage() {
             </div>
           </div>
 
-
           {/* Item Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Item description
+            <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center justify-between">
+              <span>Item description</span>
+              {isFromSkeleton && (
+                <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                  🔒 Locked by Parent Structure
+                </span>
+              )}
             </label>
             <div className="relative">
               <textarea
                 value={itemDescription}
+                disabled={isFromSkeleton}
                 onChange={(e) => setItemDescription(e.target.value)}
                 maxLength={maxDescriptionLength}
                 rows={4}
                 placeholder="Eg: Yummy veg paneer burger with a soft patty, veggies, cheese, and special sauce"
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+                className={`w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-sm text-gray-900 resize-none ${
+                  isFromSkeleton ? "bg-gray-100 text-gray-500 cursor-not-allowed font-semibold" : "bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                }`}
               />
-              <button className="absolute right-3 top-3 p-1 rounded-full hover:bg-gray-100">
+              <button className="absolute right-3 top-3 p-1 rounded-full hover:bg-gray-100" disabled={isFromSkeleton}>
                 <EditIcon className="w-4 h-4 text-gray-500" />
               </button>
             </div>

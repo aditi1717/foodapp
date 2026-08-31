@@ -28,6 +28,7 @@ export const adminSidebarMenu = [
         subItems: [
           { label: "Category", path: "/admin/food/categories" },
           { label: "Subcategory", path: "/admin/food/subcategories" },
+          { label: "Product Skeletons", path: "/admin/food/product-skeletons" },
         ],
       },
       {

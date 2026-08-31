@@ -8,6 +8,7 @@ import * as businessSettingsController from '../controllers/businessSettings.con
 import * as feedbackExperienceController from '../controllers/feedbackExperience.controller.js';
 import * as notificationBroadcastController from '../controllers/notificationBroadcast.controller.js';
 import * as subscriptionController from '../controllers/subscription.controller.js';
+import * as productSkeletonController from '../controllers/productSkeleton.controller.js';
 import * as orderController from '../../orders/controllers/order.controller.js';
 import {
     ADMIN_PERMISSION_PATHS,
@@ -119,6 +120,14 @@ router.patch('/support-tickets/:id', adminController.updateSupportTicketControll
 router.get('/global-search', adminController.globalSearch);
 router.get('/shops/complaints', adminController.getShopComplaints);
 router.patch('/shops/complaints/:id', adminController.updateShopComplaint);
+
+// ----- Product Skeletons (Parent Food Structures) -----
+router.post('/product-skeletons', productSkeletonController.createProductSkeletonController);
+router.get('/product-skeletons', productSkeletonController.getProductSkeletonsController);
+router.get('/product-skeletons/by-category', productSkeletonController.getSkeletonsByCategoryController);
+router.get('/product-skeletons/:id', productSkeletonController.getProductSkeletonByIdController);
+router.put('/product-skeletons/:id', productSkeletonController.updateProductSkeletonController);
+router.delete('/product-skeletons/:id', productSkeletonController.deleteProductSkeletonController);
 
 // ----- Shops -----
 router.get('/shops', adminController.getShops);

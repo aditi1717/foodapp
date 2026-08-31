@@ -16,6 +16,7 @@ const Category = lazy(() => import("@food/pages/admin/categories/Category"));
 const EditCategoryPage = lazy(() => import("@food/pages/shared/EditCategoryPage"));
 const Subcategory = lazy(() => import("@food/pages/admin/subcategories/Subcategory"));
 const EditSubcategoryPage = lazy(() => import("@food/pages/shared/EditSubcategoryPage"));
+const ProductSkeletons = lazy(() => import("@food/pages/admin/ProductSkeletons"));
 const FeeSettings = lazy(() => import("@food/pages/admin/fee-settings/FeeSettings"));
 // Shop Management
 const ZoneSetup = lazy(() => import("@food/pages/admin/shop/ZoneSetup"));
@@ -212,6 +213,7 @@ export default function AdminRouter() {
             <Route path="subcategories" element={<Subcategory />} />
             <Route path="subcategories/add" element={<EditSubcategoryPage />} />
             <Route path="subcategories/edit/:id" element={<EditSubcategoryPage />} />
+            <Route path="product-skeletons" element={<ProductSkeletons />} />
             <Route path="fee-settings" element={<FeeSettings />} />
             <Route path="foods" element={<FoodsList />} />
             <Route path="food/list" element={<FoodsList />} />

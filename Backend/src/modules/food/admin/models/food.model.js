@@ -25,6 +25,8 @@ const foodSchema = new mongoose.Schema(
         categoryName: { type: String, trim: true, default: '' },
         subcategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodSubcategory', index: true },
         subcategoryName: { type: String, trim: true, default: '' },
+        skeletonId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodProductSkeleton', default: null, index: true },
+        isFromSkeleton: { type: Boolean, default: false },
         name: { type: String, required: true, trim: true, index: true },
         description: { type: String, trim: true, default: '' },
         price: { type: Number, required: true, min: 0 },

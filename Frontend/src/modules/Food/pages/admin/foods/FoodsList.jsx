@@ -33,6 +33,8 @@ const createFoodForm = () => ({
   categoryName: "",
   subcategoryId: "",
   subcategoryName: "",
+  skeletonId: null,
+  isFromSkeleton: false,
   name: "",
   price: "",
   variants: [],
@@ -68,11 +70,59 @@ export default function FoodsList() {
   const [subcategoryOptions, setSubcategoryOptions] = useState([])
   const [subcategorySearch, setSubcategorySearch] = useState("")
   const [subcategoryPopoverOpen, setSubcategoryPopoverOpen] = useState(false)
+  const [productSkeletons, setProductSkeletons] = useState([])
+  const [selectedSkeletonId, setSelectedSkeletonId] = useState("")
   const [selectedImageFile, setSelectedImageFile] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [imageVersion, setImageVersion] = useState(Date.now())
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchSkeletons = async () => {
+      if (!foodForm.categoryId) {
+        setProductSkeletons([])
+        return
+      }
+      try {
+        const params = { categoryId: foodForm.categoryId }
+        if (foodForm.subcategoryId) params.subcategoryId = foodForm.subcategoryId
+        const res = await adminAPI.getProductSkeletons(params)
+        const list = res?.data?.data?.items || res?.data?.items || []
+        if (isMounted) setProductSkeletons(Array.isArray(list) ? list : [])
+      } catch {
+        if (isMounted) setProductSkeletons([])
+      }
+    }
+    fetchSkeletons()
+    return () => { isMounted = false }
+  }, [foodForm.categoryId, foodForm.subcategoryId])
+
+  const handleSkeletonSelectInAdminForm = (skelId) => {
+    setSelectedSkeletonId(skelId)
+    if (!skelId) {
+      setFoodForm((prev) => ({
+        ...prev,
+        skeletonId: null,
+        isFromSkeleton: false
+      }))
+      return
+    }
+    const skel = productSkeletons.find((s) => String(s._id) === String(skelId))
+    if (skel) {
+      setFoodForm((prev) => ({
+        ...prev,
+        skeletonId: skel._id,
+        isFromSkeleton: true,
+        name: skel.name || prev.name,
+        description: skel.description || prev.description,
+        image: skel.image || prev.image
+      }))
+      if (skel.image) setImagePreviewUrl(skel.image)
+      toast.info(`Loaded Parent Food Structure "${skel.name}". Name, Image & Description loaded from master skeleton.`)
+    }
+  }
 
   const getItemCreatedMs = (item = {}) => {
     const direct = [item.createdAt, item.addedAt, item.requestedAt, item.updatedAt]
@@ -92,6 +142,7 @@ export default function FoodsList() {
   const toArray = (value) => (Array.isArray(value) ? value : [])
   const withImageVersion = (url) => {
     if (!url || typeof url !== "string") return "https://via.placeholder.com/40"
+    if (url.startsWith("data:") || url.startsWith("blob:")) return url
     return `${url}${url.includes("?") ? "&" : "?"}v=${imageVersion}`
   }
 
@@ -508,6 +559,8 @@ export default function FoodsList() {
         categoryName: String(foodForm.categoryName || "").trim(),
         subcategoryId: foodForm.subcategoryId || undefined,
         subcategoryName: String(foodForm.subcategoryName || "").trim(),
+        skeletonId: foodForm.skeletonId || undefined,
+        isFromSkeleton: Boolean(foodForm.isFromSkeleton),
         name: foodForm.name.trim(),
         price: hasVariants ? undefined : parsedPrice,
         variants: normalizedVariants.map((variant) => ({
@@ -1017,13 +1070,52 @@ export default function FoodsList() {
                   </PopoverContent>
                 </Popover>
               </div>
+
+              {productSkeletons.length > 0 && (
+                <div className="md:col-span-2 bg-amber-50/70 border border-amber-200 rounded-xl p-3 sm:p-3.5 space-y-2 max-w-full overflow-hidden">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-amber-900 truncate">
+                      Parent Food Structure (Product Skeleton)
+                    </span>
+                    <span className="shrink-0 text-[10px] font-semibold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full uppercase">
+                      Optional
+                    </span>
+                  </div>
+                  <select
+                    value={selectedSkeletonId || foodForm.skeletonId || ""}
+                    onChange={(e) => handleSkeletonSelectInAdminForm(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-amber-300 rounded-lg text-xs sm:text-sm outline-none focus:ring-2 focus:ring-amber-500 font-semibold text-slate-800 truncate"
+                  >
+                    <option value="">Custom Food (Enter custom details)</option>
+                    {productSkeletons.map((skel) => (
+                      <option key={skel._id} value={skel._id}>
+                        {skel.name} ({skel.foodType})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] sm:text-xs text-amber-800 font-medium leading-tight">
+                    Selecting a master skeleton auto-fills & locks Name, Image, and Description for uniformity, or select Custom to enter your own.
+                  </p>
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Food Name</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Food Name</span>
+                  {foodForm.isFromSkeleton && (
+                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                      🔒 Locked by Parent Structure
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   value={foodForm.name}
+                  disabled={foodForm.isFromSkeleton}
                   onChange={(e) => setFoodForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                  className={`w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm ${
+                    foodForm.isFromSkeleton ? "bg-slate-100 text-slate-500 cursor-not-allowed font-semibold" : "bg-white"
+                  }`}
                 />
               </div>
               <div>
@@ -1042,10 +1134,18 @@ export default function FoodsList() {
                 ) : null}
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Upload Image</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Upload Image</span>
+                  {foodForm.isFromSkeleton && (
+                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                      🔒 Locked by Parent Structure
+                    </span>
+                  )}
+                </label>
                 <input
                   type="file"
                   accept="image/*"
+                  disabled={foodForm.isFromSkeleton}
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null
                     setSelectedImageFile(file)
@@ -1055,7 +1155,9 @@ export default function FoodsList() {
                       setImagePreviewUrl(foodForm.image.trim())
                     }
                   }}
-                  className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm"
+                  className={`w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm ${
+                    foodForm.isFromSkeleton ? "cursor-not-allowed opacity-50 bg-slate-100" : ""
+                  }`}
                 />
               </div>
               <div>
@@ -1099,12 +1201,22 @@ export default function FoodsList() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
+                <span>Description</span>
+                {foodForm.isFromSkeleton && (
+                  <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                    🔒 Locked by Parent Structure
+                  </span>
+                )}
+              </label>
               <textarea
                 rows={4}
                 value={foodForm.description}
+                disabled={foodForm.isFromSkeleton}
                 onChange={(e) => setFoodForm((prev) => ({ ...prev, description: e.target.value }))}
-                className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white resize-none"
+                className={`w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm resize-none ${
+                  foodForm.isFromSkeleton ? "bg-slate-100 text-slate-500 cursor-not-allowed font-semibold" : "bg-white"
+                }`}
               />
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">

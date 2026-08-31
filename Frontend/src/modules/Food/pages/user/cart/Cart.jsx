@@ -324,29 +324,45 @@ export default function Cart() {
     }
   }, [isTakeawayCashBlocked, bulkOrderMode, selectedPaymentMethod])
 
+  const DEFAULT_SHOP_TIMINGS = useMemo(() => ({
+    Sunday: { isOpen: true, openingTime: "08:00", closingTime: "23:00" },
+    Monday: { isOpen: true, openingTime: "08:00", closingTime: "23:00" },
+    Tuesday: { isOpen: true, openingTime: "08:00", closingTime: "23:00" },
+    Wednesday: { isOpen: true, openingTime: "08:00", closingTime: "23:00" },
+    Thursday: { isOpen: true, openingTime: "08:00", closingTime: "23:00" },
+    Friday: { isOpen: true, openingTime: "08:00", closingTime: "23:00" },
+    Saturday: { isOpen: true, openingTime: "08:00", closingTime: "23:00" },
+  }), [])
+
   useEffect(() => {
     const fetchTimings = async () => {
       const rId = shopData?._id || shopData?.shopId || cart[0]?.shopId || null;
-      if (!rId) return;
+      if (!rId) {
+        setShopTimings(DEFAULT_SHOP_TIMINGS);
+        return;
+      }
       try {
         setLoadingTimings(true);
         const res = await shopAPI.getOutletTimingsByShopId(rId);
         if (res?.data?.success && res?.data?.data?.outletTimings) {
           setShopTimings(res.data.data.outletTimings);
+        } else {
+          setShopTimings(DEFAULT_SHOP_TIMINGS);
         }
       } catch (err) {
         debugError("Error fetching shop timings:", err);
+        setShopTimings(DEFAULT_SHOP_TIMINGS);
       } finally {
         setLoadingTimings(false);
       }
     };
     fetchTimings();
-  }, [shopData, cart]);
+  }, [shopData, cart, DEFAULT_SHOP_TIMINGS]);
 
   const dateOptions = useMemo(() => {
     const dates = [];
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 14; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
       
@@ -374,17 +390,25 @@ export default function Cart() {
   }, [dateOptions, selectedDate]);
 
   const timeSlots = useMemo(() => {
-    if (!shopTimings || !selectedDate) return [];
+    if (!selectedDate) return [];
     
-    const dateObj = dateOptions.find(d => d.dateStr === selectedDate);
-    if (!dateObj) return [];
+    const dateObj = dateOptions.find(d => d.dateStr === selectedDate) || {
+      dateStr: selectedDate,
+      dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(selectedDate).getDay() || 0]
+    };
     
-    const dayTimings = shopTimings[dateObj.dayName];
-    if (!dayTimings || !dayTimings.isOpen) return [];
+    const effectiveTimings = shopTimings || DEFAULT_SHOP_TIMINGS;
+    const dayTimings = effectiveTimings[dateObj.dayName] || {
+      isOpen: true,
+      openingTime: "08:00",
+      closingTime: "23:00"
+    };
+    
+    if (!dayTimings.isOpen) return [];
     
     const slots = [];
-    const openingTime = dayTimings.openingTime || "09:00";
-    const closingTime = dayTimings.closingTime || "22:00";
+    const openingTime = dayTimings.openingTime || "08:00";
+    const closingTime = dayTimings.closingTime || "23:00";
     
     const [openH, openM] = openingTime.split(':').map(Number);
     const [closeH, closeM] = closingTime.split(':').map(Number);
@@ -398,7 +422,7 @@ export default function Cart() {
     
     const now = new Date();
     const isToday = selectedDate === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const minStartMinutes = isToday ? (now.getHours() * 60 + now.getMinutes() + 60) : openMinutes;
+    const minStartMinutes = isToday ? (now.getHours() * 60 + now.getMinutes() + 45) : openMinutes;
     
     const latestSlotStart = closeMinutes - 30;
     
@@ -430,7 +454,14 @@ export default function Cart() {
     }
     
     return slots;
-  }, [shopTimings, selectedDate, dateOptions]);
+  }, [shopTimings, selectedDate, dateOptions, DEFAULT_SHOP_TIMINGS]);
+
+  // Auto-switch to Tomorrow if Today has no remaining time slots
+  useEffect(() => {
+    if (dateOptions.length > 1 && selectedDate === dateOptions[0]?.dateStr && timeSlots.length === 0) {
+      setSelectedDate(dateOptions[1].dateStr);
+    }
+  }, [timeSlots, dateOptions, selectedDate]);
 
   useEffect(() => {
     if (timeSlots.length > 0) {
@@ -3065,16 +3096,17 @@ export default function Cart() {
                     <div className="mt-2 space-y-3 pt-3 border-t border-slate-100 dark:border-gray-800">
                       {loadingTimings ? (
                         <div className="text-center py-2 text-xs text-gray-500 animate-pulse">Loading timings...</div>
-                      ) : !shopTimings ? (
-                        <div className="text-center py-2 text-xs text-red-500">Could not load shop timings</div>
                       ) : (
                         <>
                           {/* Date Selector */}
                           <div className="flex flex-col gap-1.5">
-                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                              Select {isTakeaway ? "Pickup" : "Delivery"} Date
-                            </label>
-                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                            <div className="flex items-center justify-between">
+                              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                Select {isTakeaway ? "Pickup" : "Delivery"} Date
+                              </label>
+                              <span className="text-[10px] text-gray-400 font-medium">14 Days Available</span>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-none">
                               {dateOptions.map((opt) => {
                                 const isSel = opt.dateStr === selectedDate;
                                 return (
@@ -3082,9 +3114,9 @@ export default function Cart() {
                                     key={opt.dateStr}
                                     type="button"
                                     onClick={() => setSelectedDate(opt.dateStr)}
-                                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                                    className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all shadow-sm ${
                                       isSel
-                                        ? 'text-white border-transparent'
+                                        ? 'text-white border-transparent shadow-md scale-105'
                                         : 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 hover:bg-slate-100'
                                     }`}
                                     style={isSel ? { backgroundColor: BRAND_THEME.colors.brand.primary } : undefined}

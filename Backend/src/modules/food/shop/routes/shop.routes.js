@@ -14,6 +14,7 @@ import {
     uploadShopMenuImagesController,
     getShopComplaintsController
 } from '../controllers/shop.controller.js';
+import { getSkeletonsByCategoryController } from '../../admin/controllers/productSkeleton.controller.js';
 import {
     createShopSupportTicketController,
     listShopSupportTicketsController,
@@ -285,6 +286,9 @@ router.post('/delivery-partners/invite', authMiddleware, requireShop, sendExclus
 router.post('/delivery-partners/cancel', authMiddleware, requireShop, cancelExclusivityInviteController);
 router.post('/delivery-partners/remove', authMiddleware, requireShop, removeExclusivityRiderController);
 router.get('/delivery-partners', authMiddleware, requireShop, listExclusivityPartnersController);
+
+// Product Skeletons for Shop Product Creation
+router.get('/product-skeletons/by-category', getSkeletonsByCategoryController);
 
 // Wallet routes
 router.get('/wallet', authMiddleware, requireShop, getWalletDetailsController);

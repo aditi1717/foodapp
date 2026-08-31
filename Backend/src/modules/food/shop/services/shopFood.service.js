@@ -260,6 +260,10 @@ export async function createShopFood(shopId, body = {}) {
         isAvailable,
         preparationTime,
         bulkOrderPricing,
+        skeletonId: body.skeletonId && mongoose.Types.ObjectId.isValid(String(body.skeletonId))
+            ? new mongoose.Types.ObjectId(String(body.skeletonId))
+            : null,
+        isFromSkeleton: Boolean(body.isFromSkeleton),
         approvalStatus: 'pending',
         requestedAt: new Date()
     });
@@ -356,6 +360,15 @@ export async function updateShopFood(shopId, foodId, body = {}) {
             update.subcategoryId = new mongoose.Types.ObjectId(String(body.subcategoryId));
         } else {
             update.subcategoryId = undefined;
+        }
+    }
+    if (body.skeletonId !== undefined) {
+        if (body.skeletonId && mongoose.Types.ObjectId.isValid(String(body.skeletonId))) {
+            update.skeletonId = new mongoose.Types.ObjectId(String(body.skeletonId));
+            update.isFromSkeleton = true;
+        } else {
+            update.skeletonId = null;
+            update.isFromSkeleton = false;
         }
     }
     if (body.subcategoryName !== undefined) {

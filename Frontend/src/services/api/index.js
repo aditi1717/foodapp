@@ -420,6 +420,28 @@ export const adminAPI = {
     apiClient.delete(`/food/admin/notifications/broadcast/${String(id)}`, {
       contextModule: "admin",
     }),
+  getProductSkeletons: (params = {}) =>
+    apiClient.get("/food/admin/product-skeletons", {
+      params,
+      contextModule: "admin",
+    }),
+  createProductSkeleton: (body = {}) =>
+    apiClient.post("/food/admin/product-skeletons", body ?? {}, {
+      contextModule: "admin",
+    }),
+  updateProductSkeleton: (id, body = {}) =>
+    apiClient.put(`/food/admin/product-skeletons/${id}`, body ?? {}, {
+      contextModule: "admin",
+    }),
+  deleteProductSkeleton: (id) =>
+    apiClient.delete(`/food/admin/product-skeletons/${id}`, {
+      contextModule: "admin",
+    }),
+  getProductSkeletonsByCategoryAdmin: (params = {}) =>
+    apiClient.get("/food/admin/product-skeletons/by-category", {
+      params,
+      contextModule: "admin",
+    }),
   /** List shops for admin. Requires admin auth. */
   getShops: (params = {}, config = {}) =>
     apiClient.get("/food/admin/shops", {
@@ -1657,6 +1679,11 @@ export const adminAPI = {
       contextModule: "shop",
     }),
   /** Shop support tickets */
+  getProductSkeletonsByCategory: (params = {}) =>
+    apiClient.get("/food/shop/product-skeletons/by-category", {
+      params,
+      contextModule: "shop",
+    }),
   createSupportTicket: (body = {}) =>
     apiClient.post("/food/shop/support/tickets", body ?? {}, {
       contextModule: "shop",

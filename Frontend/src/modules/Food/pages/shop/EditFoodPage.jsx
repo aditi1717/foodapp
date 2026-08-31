@@ -82,6 +82,74 @@ export default function EditFoodPage() {
   }, [])
 
   const [formData, setFormData] = useState(defaultFormData)
+  const [productSkeletons, setProductSkeletons] = useState([])
+  const [subcategories, setSubcategories] = useState([])
+  const [selectedSkeletonId, setSelectedSkeletonId] = useState("")
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchSubcats = async () => {
+      if (!formData.category) {
+        setSubcategories([])
+        return
+      }
+      try {
+        const res = await shopAPI.getSubcategories({ categoryId: formData.category })
+        const list = res?.data?.data?.subcategories || res?.data?.subcategories || []
+        if (isMounted) setSubcategories(Array.isArray(list) ? list : [])
+      } catch {
+        if (isMounted) setSubcategories([])
+      }
+    }
+    fetchSubcats()
+    return () => { isMounted = false }
+  }, [formData.category])
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchSkeletons = async () => {
+      if (!formData.category) {
+        setProductSkeletons([])
+        return
+      }
+      try {
+        const params = { categoryId: formData.category }
+        if (formData.subcategoryId) params.subcategoryId = formData.subcategoryId
+        const res = await shopAPI.getProductSkeletonsByCategory(params)
+        const list = res?.data?.data?.skeletons || []
+        if (isMounted) setProductSkeletons(Array.isArray(list) ? list : [])
+      } catch {
+        if (isMounted) setProductSkeletons([])
+      }
+    }
+    fetchSkeletons()
+    return () => { isMounted = false }
+  }, [formData.category, formData.subcategoryId])
+
+  const handleSkeletonSelect = (skelId) => {
+    setSelectedSkeletonId(skelId)
+    if (!skelId) {
+      setFormData((prev) => ({
+        ...prev,
+        skeletonId: null,
+        isFromSkeleton: false
+      }))
+      return
+    }
+    const skel = productSkeletons.find((s) => String(s._id) === String(skelId))
+    if (skel) {
+      setFormData((prev) => ({
+        ...prev,
+        skeletonId: skel._id,
+        isFromSkeleton: true,
+        name: skel.name || prev.name,
+        image: skel.image || prev.image,
+        description: skel.description || prev.description,
+        foodType: skel.foodType || prev.foodType
+      }))
+      toast.info(`Selected Parent Structure "${skel.name}". Name, Image & Description locked for uniformity.`)
+    }
+  }
 
   // Reload food data from backend menu when id changes
   useEffect(() => {
@@ -107,11 +175,14 @@ export default function EditFoodPage() {
           setFormData({
             ...defaultFormData,
             ...existingFood,
+            skeletonId: existingFood.skeletonId || null,
+            isFromSkeleton: Boolean(existingFood.isFromSkeleton),
             nameArabic: existingFood.nameArabic || "",
             availabilityTimeStart: existingFood.availabilityTimeStart || "12:01 AM",
             availabilityTimeEnd: existingFood.availabilityTimeEnd || "11:57 PM",
             description: existingFood.description || "",
             category: existingFood.categoryId || existingFood.category || "",
+            subcategoryId: existingFood.subcategoryId || "",
             discountType: existingFood.discountType || "Percent",
             discountAmount: existingFood.discountAmount || 0.0,
             variations: existingFood.variations || [],
@@ -119,6 +190,9 @@ export default function EditFoodPage() {
             nutrition: existingFood.nutrition || [],
             allergies: existingFood.allergies || [],
           })
+          if (existingFood.skeletonId) {
+            setSelectedSkeletonId(existingFood.skeletonId)
+          }
         }
       } catch {
         if (isMounted) {
@@ -358,6 +432,11 @@ export default function EditFoodPage() {
       return
     }
 
+    if (subcategories.length > 0 && !formData.subcategoryId) {
+      toast.error("Please select a subcategory")
+      return
+    }
+
     if (normalizedVariations.some((variation) => !variation.name)) {
       alert("Each variant must have a name")
       return
@@ -420,6 +499,8 @@ export default function EditFoodPage() {
           ...foodDataToSave,
           categoryId: matchedCategory.id,
           categoryName: matchedCategory.name,
+          skeletonId: formData.skeletonId || undefined,
+          isFromSkeleton: Boolean(formData.isFromSkeleton),
         })
         const created = res?.data?.data?.food || res?.data?.food
         window.dispatchEvent(new CustomEvent("foodsChanged"))
@@ -440,6 +521,8 @@ export default function EditFoodPage() {
         ...foodDataToSave,
         categoryId: matchedCategory.id,
         categoryName: matchedCategory.name,
+        skeletonId: formData.skeletonId || undefined,
+        isFromSkeleton: Boolean(formData.isFromSkeleton),
       })
       const updated = res?.data?.data?.food || res?.data?.food
       window.dispatchEvent(new CustomEvent("foodsChanged"))
@@ -475,7 +558,14 @@ export default function EditFoodPage() {
           {/* Food Image */}
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
-              <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Food Image</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900">Food Image</h2>
+                {formData.isFromSkeleton && (
+                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                    🔒 Image Preserved from Parent Structure
+                  </span>
+                )}
+              </div>
               <div className="flex justify-center">
                 <div className="relative">
                   <img 
@@ -483,26 +573,30 @@ export default function EditFoodPage() {
                     alt={formData.name}
                     className="w-32 h-32 md:w-40 md:h-40 rounded-lg object-cover"
                   />
-                  <label 
-                    onClick={handleImageClick}
-                    className="absolute bottom-0 right-0 bg-[#ff8100] text-white p-2 rounded-full cursor-pointer hover:bg-[#e67300]"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload("image", e.target.files[0])}
-                      className="hidden"
-                    />
-                  </label>
+                  {!formData.isFromSkeleton && (
+                    <label 
+                      onClick={handleImageClick}
+                      className="absolute bottom-0 right-0 bg-[#ff8100] text-white p-2 rounded-full cursor-pointer hover:bg-[#e67300]"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload("image", e.target.files[0])}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
-              <DocumentUploadActions
-                onFileSelect={(file) => handleImageUpload("image", file)}
-                fileNamePrefix="dish-photo"
-                galleryInputRef={fileInputRef}
-              />
+              {!formData.isFromSkeleton && (
+                <DocumentUploadActions
+                  onFileSelect={(file) => handleImageUpload("image", file)}
+                  fileNamePrefix="dish-photo"
+                  galleryInputRef={fileInputRef}
+                />
+              )}
             </CardContent>
           </Card>
 
@@ -513,14 +607,22 @@ export default function EditFoodPage() {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Food Name (English)
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+                    <span>Food Name (English)</span>
+                    {formData.isFromSkeleton && (
+                      <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                        🔒 Locked by Parent Structure
+                      </span>
+                    )}
                   </label>
                   <input
                     type="text"
                     value={formData.name}
+                    disabled={formData.isFromSkeleton}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none"
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none ${
+                      formData.isFromSkeleton ? "bg-gray-100 text-gray-500 cursor-not-allowed font-semibold" : ""
+                    }`}
                     required
                   />
                 </div>
@@ -538,14 +640,22 @@ export default function EditFoodPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+                    <span>Description</span>
+                    {formData.isFromSkeleton && (
+                      <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                        🔒 Locked by Parent Structure
+                      </span>
+                    )}
                   </label>
                   <textarea
                     value={formData.description}
+                    disabled={formData.isFromSkeleton}
                     onChange={(e) => handleInputChange("description", e.target.value)}
                     rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none resize-none"
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none resize-none ${
+                      formData.isFromSkeleton ? "bg-gray-100 text-gray-500 cursor-not-allowed font-semibold" : ""
+                    }`}
                   />
                 </div>
               </div>
@@ -579,6 +689,55 @@ export default function EditFoodPage() {
                     </p>
                   )}
                 </div>
+
+                {subcategories.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Subcategory *
+                    </label>
+                    <select
+                      required
+                      value={formData.subcategoryId || ""}
+                      onChange={(e) => handleInputChange("subcategoryId", e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none font-semibold"
+                    >
+                      <option value="">Select Subcategory</option>
+                      {subcategories.map((sub) => (
+                        <option key={sub._id || sub.id} value={sub._id || sub.id}>
+                          {sub.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {productSkeletons.length > 0 && (
+                  <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 sm:p-4 space-y-2 max-w-full overflow-hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-amber-900 truncate">
+                        Parent Food Structure (Product Skeleton)
+                      </span>
+                      <span className="shrink-0 text-[10px] font-semibold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full uppercase">
+                        Optional
+                      </span>
+                    </div>
+                    <select
+                      value={selectedSkeletonId || formData.skeletonId || ""}
+                      onChange={(e) => handleSkeletonSelect(e.target.value)}
+                      className="w-full px-3 sm:px-4 py-2.5 bg-white border border-amber-300 rounded-lg text-xs sm:text-sm outline-none focus:ring-2 focus:ring-amber-500 font-semibold truncate"
+                    >
+                      <option value="">Custom Item (Enter custom details)</option>
+                      {productSkeletons.map((skel) => (
+                        <option key={skel._id} value={skel._id}>
+                          {skel.name} ({skel.foodType})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] sm:text-xs text-amber-800 font-medium leading-tight">
+                      Selecting a parent structure auto-fills & locks Name, Image, and Description for brand uniformity.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

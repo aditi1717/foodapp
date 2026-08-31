@@ -106,8 +106,10 @@ export default function CategoryPage() {
     )
   const isShopInSelectedZone = (shop) => {
     const selectedZoneId = normalizeZoneValue(zoneId)
-    if (!selectedZoneId) return false
-    return getShopZoneId(shop) === selectedZoneId
+    if (!selectedZoneId) return true
+    const shopZoneId = getShopZoneId(shop)
+    if (!shopZoneId) return true
+    return shopZoneId === selectedZoneId
   }
   const normalizeCategoryToken = (value) =>
     String(value || "")
@@ -349,7 +351,7 @@ export default function CategoryPage() {
         const matchedShop =
           shopsById.get(shopId) ||
           shopsByName.get(shopName.toLowerCase()) ||
-          null
+          (shopId ? { id: shopId, shopId: shopId, name: shopName || "Restaurant" } : null)
 
         if (!matchedShop) {
           return null
@@ -873,11 +875,7 @@ export default function CategoryPage() {
     const fetchShops = async () => {
       try {
         setLoadingShops(true)
-        if (!zoneId) {
-          setShopsData([])
-          return
-        }
-        const params = { zoneId }
+        const params = zoneId ? { zoneId } : {}
         const response = await shopAPI.getShops(params)
 
         if (response.data && response.data.success && response.data.data && response.data.data.shops) {

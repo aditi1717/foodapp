@@ -4509,6 +4509,10 @@ export async function createFood(body) {
         categoryName: resolvedCategoryName,
         subcategoryId: body.subcategoryId && mongoose.Types.ObjectId.isValid(body.subcategoryId) ? body.subcategoryId : undefined,
         subcategoryName: typeof body.subcategoryName === 'string' ? body.subcategoryName.trim() : '',
+        skeletonId: body.skeletonId && mongoose.Types.ObjectId.isValid(String(body.skeletonId))
+            ? new mongoose.Types.ObjectId(String(body.skeletonId))
+            : null,
+        isFromSkeleton: Boolean(body.isFromSkeleton),
         name,
         description: typeof body.description === 'string' ? body.description.trim() : '',
         price,
@@ -4567,6 +4571,15 @@ export async function updateFood(id, body) {
     }
     if (body.subcategoryName !== undefined) {
         doc.subcategoryName = String(body.subcategoryName || '').trim();
+    }
+    if (body.skeletonId !== undefined) {
+        if (body.skeletonId && mongoose.Types.ObjectId.isValid(String(body.skeletonId))) {
+            doc.skeletonId = new mongoose.Types.ObjectId(String(body.skeletonId));
+            doc.isFromSkeleton = true;
+        } else {
+            doc.skeletonId = null;
+            doc.isFromSkeleton = false;
+        }
     }
     if (body.bulkOrderPricing !== undefined) {
         doc.bulkOrderPricing = normalizeAdminBulkOrderPricing(body.bulkOrderPricing);
