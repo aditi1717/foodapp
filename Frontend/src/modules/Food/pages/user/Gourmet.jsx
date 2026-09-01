@@ -6,7 +6,8 @@ import { Card, CardContent } from "@food/components/ui/card"
 import api from "@food/api"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
 import { toast } from "sonner"
-import { API_BASE_URL } from "@food/api/config"
+import { API_ORIGIN } from "@food/api/config"
+import { normalizeImageUrl } from "@food/utils/common"
 import OptimizedImage from "@food/components/OptimizedImage"
 import { ShopGridSkeleton } from "@food/components/ui/loading-skeletons"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
@@ -30,16 +31,7 @@ export default function Gourmet() {
   const { location } = useLocation()
   const showGourmetSkeleton = useDelayedLoading(loading)
 
-  const backendOrigin = (API_BASE_URL || "").replace(/\/api\/v1\/?$/, "")
-
-  const resolveImageUrl = (url) => {
-    if (typeof url !== "string") return ""
-    const trimmed = url.trim()
-    if (!trimmed) return ""
-    if (/^(https?:|\/\/|data:|blob:)/i.test(trimmed)) return trimmed
-    if (!backendOrigin) return trimmed
-    return `${backendOrigin.replace(/\/$/, "")}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`
-  }
+  const resolveImageUrl = (url) => normalizeImageUrl(url, API_ORIGIN)
 
   // Fetch Gourmet shops from public API
   useEffect(() => {

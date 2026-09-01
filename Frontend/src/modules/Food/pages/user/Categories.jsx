@@ -8,7 +8,7 @@ import OptimizedImage from "@food/components/OptimizedImage";
 import { useLocation } from "@food/hooks/useLocation";
 import { useZone } from "@food/hooks/useZone";
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation";
-import { API_BASE_URL } from "@food/api/config";
+import { API_ORIGIN } from "@food/api/config";
 import BRAND_THEME from "@/config/brandTheme";
 
 export default function Categories() {
@@ -20,7 +20,7 @@ export default function Categories() {
   const { location } = useLocation();
   const { zoneId } = useZone(location);
 
-  const BACKEND_ORIGIN = useMemo(() => API_BASE_URL.replace(/\/api\/?$/, ""), []);
+  const BACKEND_ORIGIN = useMemo(() => API_ORIGIN, []);
 
   const normalizeImageUrl = (imageUrl) => {
     if (typeof imageUrl !== "string") return "";

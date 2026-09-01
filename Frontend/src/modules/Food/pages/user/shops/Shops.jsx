@@ -12,10 +12,10 @@ import { useProfile } from "@food/context/ProfileContext"
 import { useZone } from "@food/hooks/useZone"
 import { useLocation } from "@food/hooks/useLocation"
 import { shopAPI } from "@food/api"
-import { API_BASE_URL } from "@food/api/config"
+import { API_ORIGIN } from "@food/api/config"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 
-const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "")
+const BACKEND_ORIGIN = API_ORIGIN
 
 const normalizeImageUrl = (imageUrl) => {
   if (typeof imageUrl !== "string" || !imageUrl.trim()) return ""

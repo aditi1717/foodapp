@@ -89,7 +89,7 @@ import { useZone } from "@food/hooks/useZone";
 import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png";
 import offerImage from "@food/assets/offerimage.png";
 import api, { publicGetOnce, shopAPI, adminAPI } from "@food/api";
-import { API_BASE_URL } from "@food/api/config";
+import { API_ORIGIN } from "@food/api/config";
 import OptimizedImage from "@food/components/OptimizedImage";
 import { getShopAvailabilityStatus } from "@food/utils/shopAvailability";
 import FoodHeroHeaderShell from "@food/components/user/home/FoodHeroHeaderShell";
@@ -423,7 +423,7 @@ const ShopImageCarousel = React.memo(
 
 export default function Home() {
   const HERO_BANNER_AUTO_SLIDE_MS = 3500;
-  const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
+  const BACKEND_ORIGIN = API_ORIGIN;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const modalOpenedViaClickRef = useRef(false);

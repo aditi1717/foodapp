@@ -4,10 +4,13 @@
  * - `API_BASE_URL` is used by UI (e.g. banners/debug) and should reflect the same value.
  */
 
-import { getApiBaseUrl } from "./baseUrl.js";
+import { getApiBaseUrl, getApiOrigin } from "./baseUrl.js";
 
 export const API_BASE_URL =
   getApiBaseUrl();
+
+// Static media is served by the backend at /uploads, outside of /api/v1.
+export const API_ORIGIN = getApiOrigin();
 
 // Minimal shape so existing API_ENDPOINTS.* references do not break
 export const API_ENDPOINTS = {
@@ -84,4 +87,4 @@ export const API_ENDPOINTS = {
   DINING: { SHOPS: "", SHOP_BY_SLUG: "", CATEGORIES: "", BOOKING_CREATE: "", BOOKING_MY: "", BOOKING_SHOP: "", BOOKING_STATUS: "", BOOKING_STATUS_SHOP: "", OFFER_BANNERS: "", REVIEW_CREATE: "" },
 };
 
-export default { API_BASE_URL, API_ENDPOINTS };
+export default { API_BASE_URL, API_ORIGIN, API_ENDPOINTS };

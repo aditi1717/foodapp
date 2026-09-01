@@ -1,13 +1,17 @@
 /**
  * Common utility functions for the Food module
  */
+import { getApiOrigin } from "@food/api/baseUrl";
 
 /**
  * Normalizes an image URL to handle relative paths and backend origins
  */
-export const normalizeImageUrl = (imageUrl, backendOrigin = "") => {
-  if (typeof imageUrl !== "string") return "";
-  const trimmed = imageUrl.trim();
+export const normalizeImageUrl = (imageUrl, backendOrigin = getApiOrigin()) => {
+  const raw = typeof imageUrl === "string"
+    ? imageUrl
+    : imageUrl?.url || imageUrl?.secure_url || imageUrl?.imageUrl || imageUrl?.image || imageUrl?.src || imageUrl?.path;
+  if (typeof raw !== "string") return "";
+  const trimmed = raw.trim();
   if (!trimmed || /^data:/i.test(trimmed) || /^blob:/i.test(trimmed)) return trimmed;
 
   const appProtocol = typeof window !== "undefined" ? window.location?.protocol : "";

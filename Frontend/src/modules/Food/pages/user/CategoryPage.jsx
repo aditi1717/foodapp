@@ -16,7 +16,7 @@ import {
 import { foodImages } from "@food/constants/images"
 import api from "@food/api"
 import { shopAPI, adminAPI } from "@food/api"
-import { API_BASE_URL } from "@food/api/config"
+import { API_ORIGIN } from "@food/api/config"
 import { useProfile } from "@food/context/ProfileContext"
 import { useLocation } from "@food/hooks/useLocation"
 import { useZone } from "@food/hooks/useZone"
@@ -89,7 +89,7 @@ export default function CategoryPage() {
     vegModePreference === "pure-veg" || storedUserVegModePreference === "pure-veg"
       ? "pure-veg"
       : "all"
-  const BACKEND_ORIGIN = useMemo(() => API_BASE_URL.replace(/\/api\/?$/, ""), [])
+  const BACKEND_ORIGIN = useMemo(() => API_ORIGIN, [])
   const slugify = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
   const normalizeZoneValue = (value) => {
     if (!value) return ""
