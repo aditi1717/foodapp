@@ -3,7 +3,6 @@ import { FoodOrder, FoodSettings } from '../models/order.model.js';
 import { FoodShop } from '../../shop/models/shop.model.js';
 import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
 import { FoodDeliveryExclusivity } from '../../delivery/models/deliveryExclusivity.model.js';
-import { FoodBusinessSettings } from '../../admin/models/businessSettings.model.js';
 import { ValidationError, NotFoundError } from '../../../../core/auth/errors.js';
 import { logger } from '../../../../utils/logger.js';
 import { config } from '../../../../config/env.js';
@@ -17,6 +16,59 @@ import {
   notifyOwnerSafely,
   notifyOwnersSafely,
 } from './order.helpers.js';
+
+const DEFAULT_DISPATCH_ATTEMPTS = [
+  { attempt: 1, distanceKm: 2 },
+  { attempt: 2, distanceKm: 4 },
+  { attempt: 3, distanceKm: 6 },
+  { attempt: 4, distanceKm: 8 },
+];
+
+function formatDispatchSettings(doc = {}) {
+  const maxDispatchAttempts = Math.min(
+    20,
+    Math.max(1, Number(doc?.maxDispatchAttempts) || DEFAULT_DISPATCH_ATTEMPTS.length),
+  );
+  const maxDispatchDistanceKm = Math.max(
+    0.1,
+    Number(doc?.maxDispatchDistanceKm) || DEFAULT_DISPATCH_ATTEMPTS.at(-1).distanceKm,
+  );
+  const savedAttempts = Array.isArray(doc?.dispatchAttempts) && doc.dispatchAttempts.length
+    ? doc.dispatchAttempts
+    : DEFAULT_DISPATCH_ATTEMPTS;
+  const distanceByAttempt = new Map(
+    savedAttempts.map((row) => [
+      Number(row?.attempt),
+      Math.min(maxDispatchDistanceKm, Math.max(0.1, Number(row?.distanceKm) || maxDispatchDistanceKm)),
+    ]),
+  );
+
+  const dispatchAttempts = Array.from({ length: maxDispatchAttempts }, (_, index) => {
+    const attempt = index + 1;
+    const fallbackDistance =
+      DEFAULT_DISPATCH_ATTEMPTS.find((row) => row.attempt === attempt)?.distanceKm ||
+      maxDispatchDistanceKm;
+    return {
+      attempt,
+      distanceKm: Math.min(maxDispatchDistanceKm, distanceByAttempt.get(attempt) || fallbackDistance),
+    };
+  });
+
+  return {
+    dispatchMode: "auto",
+    maxDispatchAttempts,
+    dispatchAttempts,
+    maxDispatchDistanceKm,
+  };
+}
+
+function getLastDispatchAttempt(offeredTo = []) {
+  const attempts = (offeredTo || [])
+    .map((entry) => Number(entry?.attempt))
+    .filter((attempt) => Number.isInteger(attempt) && attempt > 0);
+  if (attempts.length) return Math.max(...attempts);
+  return offeredTo?.length || 0;
+}
 
 async function filterEligibleDeliveryPartners(partnerIds, order = null) {
   if (!partnerIds || !partnerIds.length) return [];
@@ -123,7 +175,6 @@ async function listNearbyOnlineDeliveryPartners(
 
     const isStale = !p.lastLocationAt || (Date.now() - new Date(p.lastLocationAt).getTime()) > STALE_GPS_MS;
     if (p.lastLat == null || p.lastLng == null || isStale) {
-      scored.push({ partnerId: p._id, distanceKm: 999, status: p.status });
       continue;
     }
 
@@ -136,26 +187,7 @@ async function listNearbyOnlineDeliveryPartners(
   scored.sort((a, b) => a.distanceKm - b.distanceKm);
   const picked = scored.slice(0, Math.max(1, limit));
 
-  if (picked.length === 0) {
-    const anyOnline = await FoodDeliveryPartner.find({
-      status: { $in: allowedStatuses },
-      availabilityStatus: "online",
-    })
-      .select("_id status name")
-      .lean();
-
-    const eligibleAnyIds = await filterEligibleDeliveryPartners(anyOnline.map(p => p._id), order);
-    const eligibleAnySet = new Set(eligibleAnyIds.map(id => String(id)));
-    const filteredAnyOnline = anyOnline.filter(p => eligibleAnySet.has(String(p._id)));
-
-    return {
-      partners: filteredAnyOnline.slice(0, Math.max(1, limit)).map((p) => ({
-        partnerId: p._id,
-        distanceKm: null,
-        status: p.status,
-      })),
-    };
-  }
+  if (picked.length === 0) return { partners: [] };
 
   const final = (config.env === 'production')
     ? picked.filter(p => p.status === 'approved')
@@ -167,19 +199,25 @@ async function listNearbyOnlineDeliveryPartners(
 export async function getDispatchSettings() {
   let doc = await FoodSettings.findOne({ key: "dispatch" }).lean();
   if (!doc) {
-    await FoodSettings.create({ key: "dispatch", dispatchMode: "manual" });
+    await FoodSettings.create({
+      key: "dispatch",
+      dispatchMode: "auto",
+      maxDispatchAttempts: DEFAULT_DISPATCH_ATTEMPTS.length,
+      dispatchAttempts: DEFAULT_DISPATCH_ATTEMPTS,
+      maxDispatchDistanceKm: DEFAULT_DISPATCH_ATTEMPTS.at(-1).distanceKm,
+    });
     doc = await FoodSettings.findOne({ key: "dispatch" }).lean();
   }
-  return { dispatchMode: doc?.dispatchMode || "manual" };
+  return formatDispatchSettings(doc);
 }
 
-export async function updateDispatchSettings(dispatchMode, adminId) {
-  const normalizedMode = dispatchMode === "auto" ? "auto" : "manual";
+export async function updateDispatchSettings(settings, adminId) {
+  const normalizedSettings = formatDispatchSettings(settings);
   await FoodSettings.findOneAndUpdate(
     { key: "dispatch" },
     {
       $set: {
-        dispatchMode: normalizedMode,
+        ...normalizedSettings,
         updatedBy: { role: "ADMIN", adminId, at: new Date() },
       },
     },
@@ -197,7 +235,6 @@ export async function tryAutoAssign(orderId, options = {}) {
     return null;
   }
 
-  const attempt = options.attempt || 1;
   const lockTimeout = 55000; // 55 seconds lock interval
 
   const order = await FoodOrder.findOneAndUpdate(
@@ -225,14 +262,28 @@ export async function tryAutoAssign(orderId, options = {}) {
   }
 
   try {
-    const offeredIds = (order.dispatch?.offeredTo || []).map(o => o.partnerId.toString());
-    
-    // RADIUS EXPANSION LOGIC
-    // Attempt 1: 15km, Attempt 2: 25km, Attempt 3: 40km, Attempt 4+: 60km
-    let maxKm = 15;
-    if (attempt === 2) maxKm = 25;
-    if (attempt === 3) maxKm = 40;
-    if (attempt >= 4) maxKm = 60;
+    const offeredTo = order.dispatch?.offeredTo || [];
+    const offeredIds = offeredTo.map(o => o.partnerId.toString());
+
+    const currentAttempt = Math.max(
+      1,
+      Number(options.attempt) || getLastDispatchAttempt(offeredTo) + 1,
+    );
+    if (currentAttempt > settings.maxDispatchAttempts) {
+      logger.info(`tryAutoAssign: Max dispatch attempts reached for order ${order._id}.`);
+      return order;
+    }
+
+    const attemptSetting = settings.dispatchAttempts.find((row) => row.attempt === currentAttempt);
+    if (!attemptSetting) {
+      logger.info(`tryAutoAssign: No dispatch distance configured for attempt ${currentAttempt}.`);
+      return order;
+    }
+
+    const maxKm = Math.min(
+      Number(attemptSetting.distanceKm),
+      Number(settings.maxDispatchDistanceKm),
+    );
 
     const searchOptions = { maxKm, limit: 15 };
     const { partners } = await listNearbyOnlineDeliveryPartners(order.shopId, { ...searchOptions, order });
@@ -240,18 +291,18 @@ export async function tryAutoAssign(orderId, options = {}) {
     // TIERED ALERT LOGIC
     // Phase 2: Broadcast to all (Attempt 3+)
     // Phase 3: Admin Alert (Attempt 5+ or roughly 5 mins)
-    const isPhase2 = attempt >= 3;
-    const isPhase3 = attempt >= 6; // ~6 minutes (60s * 6)
+    const isPhase2 = currentAttempt >= 3;
+    const isPhase3 = currentAttempt >= 6; // ~6 minutes (60s * 6)
 
     if (isPhase3) {
-      logger.error(`[CRITICAL] Order ${order._id} unassigned for ${attempt} mins. Triggering Admin Alert (Phase 3).`);
+      logger.error(`[CRITICAL] Order ${order._id} unassigned after ${currentAttempt} attempts. Triggering Admin Alert (Phase 3).`);
       // Notify Admin via Push (Web/Mobile)
       try {
         await notifyOwnersSafely(
           [{ ownerType: 'ADMIN', ownerId: 'GLOBAL' }], // Use GLOBAL or specific admin group if defined
           {
             title: 'Unassigned Order Crisis!',
-            body: `Order #${order.order_id || order._id} has not been picked up for 5+ minutes. Manual intervention required!`,
+            body: `Order #${order.orderId || order._id} has not been picked up for 5+ minutes. Manual intervention required!`,
             data: { type: 'admin_alert_unassigned', orderId: order._id.toString() }
           }
         );
@@ -275,13 +326,14 @@ export async function tryAutoAssign(orderId, options = {}) {
         }
       }
 
-      // Re-queue itself to keep trying
-      await addOrderJob({
-        action: 'DISPATCH_TIMEOUT_CHECK',
-        orderMongoId: order._id.toString(),
-        orderId: order._id.toString(),
-        attempt: attempt + 1
-      }, { delay: 30000 }); // Retry faster (30s) if no one found
+      if (currentAttempt < settings.maxDispatchAttempts) {
+        await addOrderJob({
+          action: 'DISPATCH_TIMEOUT_CHECK',
+          orderMongoId: order._id.toString(),
+          orderId: order._id.toString(),
+          attempt: currentAttempt + 1
+        }, { delay: 30000 }); // Retry faster (30s) if no one found
+      }
 
       return order;
     }
@@ -308,7 +360,7 @@ export async function tryAutoAssign(orderId, options = {}) {
           { ownerType: 'DELIVERY_PARTNER', ownerId: p.partnerId },
           {
             title: 'New order assigned!',
-            body: `You have 60 seconds to accept Order #${order.order_id || order._id}.`,
+            body: `You have 60 seconds to accept Order #${order.orderId || order._id}.`,
             data: { type: 'new_order', orderId: order._id.toString() },
           },
         );
@@ -319,6 +371,7 @@ export async function tryAutoAssign(orderId, options = {}) {
 
     const offeredToEntries = eligible.map(p => ({
       partnerId: p.partnerId,
+      attempt: currentAttempt,
       at: new Date(),
       action: 'offered'
     }));
@@ -328,13 +381,14 @@ export async function tryAutoAssign(orderId, options = {}) {
     order.dispatch.offeredTo.push(...offeredToEntries);
     await order.save();
 
-    // Re-check in 60s
-    await addOrderJob({
-      action: 'DISPATCH_TIMEOUT_CHECK',
-      orderMongoId: order._id.toString(),
-      orderId: order._id.toString(),
-      attempt: attempt + 1
-    }, { delay: 60000 });
+    if (currentAttempt < settings.maxDispatchAttempts) {
+      await addOrderJob({
+        action: 'DISPATCH_TIMEOUT_CHECK',
+        orderMongoId: order._id.toString(),
+        orderId: order._id.toString(),
+        attempt: currentAttempt + 1
+      }, { delay: 60000 });
+    }
 
     return order;
   } finally {
@@ -345,7 +399,7 @@ export async function tryAutoAssign(orderId, options = {}) {
 }
 
 
-export async function processDispatchTimeout(orderId, partnerId) {
+export async function processDispatchTimeout(orderId, partnerId, data = {}) {
   const order = await FoodOrder.findById(orderId);
   if (!order) return;
 
@@ -364,17 +418,18 @@ export async function processDispatchTimeout(orderId, partnerId) {
     order.dispatch.deliveryPartnerId = null;
     await order.save();
     
-    const attempt = (order.dispatch?.offeredTo?.length || 0) + 1;
+    const attempt = Math.max(1, Number(data?.attempt) || getLastDispatchAttempt(order.dispatch?.offeredTo || []) + 1);
     await tryAutoAssign(orderId, { attempt });
   } else if (order.dispatch?.status === 'unassigned') {
     // If it's already unassigned (e.g. from a previous timeout), just keep hunting
-    const attempt = (order.dispatch?.offeredTo?.length || 0) + 1;
+    const attempt = Math.max(1, Number(data?.attempt) || getLastDispatchAttempt(order.dispatch?.offeredTo || []) + 1);
     await tryAutoAssign(orderId, { attempt });
   }
 }
 
 
 export async function resendDeliveryNotificationShop(orderId, shopId) {
+  const settings = await getDispatchSettings();
   const identity = buildOrderIdentityFilter(orderId);
   const order = await FoodOrder.findOne({
     ...identity,
@@ -392,9 +447,12 @@ export async function resendDeliveryNotificationShop(orderId, shopId) {
     throw new ValidationError('A delivery partner has already accepted this order.');
   }
 
+  if (getLastDispatchAttempt(order.dispatch?.offeredTo || []) >= settings.maxDispatchAttempts) {
+    throw new ValidationError('Maximum dispatch attempts reached for this order.');
+  }
+
   order.dispatch.status = 'unassigned';
   order.dispatch.deliveryPartnerId = null;
-  order.dispatch.offeredTo = [];
   await order.save();
 
   await tryAutoAssign(order._id);

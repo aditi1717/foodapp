@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { FoodOrder, FoodSettings } from '../models/order.model.js';
+import { FoodOrder } from '../models/order.model.js';
 import { FoodUserDebt } from '../models/userDebt.model.js';
 // import { paymentSnapshotFromOrder } from './foodOrderPayment.service.js';
 import { logger } from '../../../../utils/logger.js';
@@ -44,6 +44,7 @@ import { addOrderJob } from '../../../../queues/producers/order.producer.js';
 import { fetchPolyline, fetchRouteDistanceKm } from '../utils/googleMaps.js';
 import { getFirebaseDB } from '../../../../config/firebase.js';
 import * as foodTransactionService from './foodTransaction.service.js';
+import * as dispatchService from './order-dispatch.service.js';
 import { deductWalletBalance, refundWalletBalance } from '../../user/services/userWallet.service.js';
 import { getWalletBalance } from '../../../../core/payments/wallet.service.js';
 import {
@@ -1266,7 +1267,7 @@ async function filterEligibleDeliveryPartners(partnerIds, order = null) {
 
 export async function listNearbyOnlineDeliveryPartners(
   shopId,
-  { maxKm = 15, limit = 25, order = null } = {},
+  { maxKm = 8, limit = 25, order = null } = {},
 ) {
   const shop = await FoodShop.findById(shopId)
     .select("location")
@@ -1342,26 +1343,11 @@ export async function listNearbyOnlineDeliveryPartners(
 
 // ----- Settings -----
 export async function getDispatchSettings() {
-  let doc = await FoodSettings.findOne({ key: "dispatch" }).lean();
-  if (!doc) {
-    await FoodSettings.create({ key: "dispatch", dispatchMode: "manual" });
-    doc = await FoodSettings.findOne({ key: "dispatch" }).lean();
-  }
-  return { dispatchMode: doc?.dispatchMode || "manual" };
+  return dispatchService.getDispatchSettings();
 }
 
-export async function updateDispatchSettings(dispatchMode, adminId) {
-  await FoodSettings.findOneAndUpdate(
-    { key: "dispatch" },
-    {
-      $set: {
-        dispatchMode,
-        updatedBy: { role: "ADMIN", adminId, at: new Date() },
-      },
-    },
-    { upsert: true, new: true },
-  );
-  return getDispatchSettings();
+export async function updateDispatchSettings(settings, adminId) {
+  return dispatchService.updateDispatchSettings(settings, adminId);
 }
 
 // ----- Calculate (validation + return pricing from payload) -----
@@ -2450,8 +2436,10 @@ export async function tryAutoAssign(orderId, options = {}) {
     // Find ineligible partners (who already rejected it or were already offered if we want fresh ones)
     const offeredIds = (order.dispatch?.offeredTo || []).map(o => o.partnerId.toString());
     
-    // Find nearby online partners
-    const { partners } = await listNearbyOnlineDeliveryPartners(order.shopId, { maxKm: 15, limit: 10, order });
+    // Find nearby online partners using dynamic admin dispatch settings
+    const dispatchSettings = await getDispatchSettings();
+    const maxKm = Number(dispatchSettings?.maxDispatchDistanceKm) || 8;
+    const { partners } = await listNearbyOnlineDeliveryPartners(order.shopId, { maxKm, limit: 10, order });
     
     // Filter out already offered/rejected partners
     const eligible = partners.filter(p => !offeredIds.includes(p.partnerId.toString()));

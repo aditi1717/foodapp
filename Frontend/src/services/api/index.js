@@ -210,6 +210,10 @@ export const adminAPI = {
     apiClient.put(`/food/admin/store/orders/${orderId}/status`, body, { contextModule: "admin" }),
   getSidebarBadges: () =>
     apiClient.get("/food/admin/sidebar-badges", { contextModule: "admin" }),
+  getDispatchSettings: () =>
+    apiClient.get("/food/admin/dispatch-settings", { contextModule: "admin" }),
+  updateDispatchSettings: (body = {}) =>
+    apiClient.patch("/food/admin/dispatch-settings", body ?? {}, { contextModule: "admin" }),
   login: (email, password) => authService.adminLogin(email, password),
   /** POST /auth/admin/forgot-password/request-otp – only accepts registered admin email */
   requestForgotPasswordOtp: (email) =>

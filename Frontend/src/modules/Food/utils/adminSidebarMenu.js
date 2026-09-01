@@ -182,6 +182,7 @@ export const adminSidebarMenu = [
     label: "DELIVERYMAN MANAGEMENT",
     items: [
       { type: "link", label: "Delivery Boy Heatmap", path: "/admin/food/zone-setup/delivery-boy-view", icon: "MapPin" },
+      { type: "link", label: "Dispatch Settings", path: "/admin/food/settings", icon: "Settings" },
       { type: "link", label: "Delivery & Platform Fee", path: "/admin/food/fee-settings", icon: "DollarSign" },
       { type: "link", label: "Delivery Boy Earning Setup", path: "/admin/food/delivery-boy-commission", icon: "DollarSign" },
       { type: "link", label: "Delivery Emergency Help", path: "/admin/food/delivery-emergency-help", icon: "Phone" },

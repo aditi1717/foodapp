@@ -141,6 +141,7 @@ const dispatchSchema = new mongoose.Schema(
         /** List of partners who were offered this order (to avoid repeats and track timeouts) */
         offeredTo: [{
             partnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner' },
+            attempt: { type: Number, min: 1 },
             at: { type: Date, default: Date.now },
             action: { type: String, enum: ['offered', 'rejected', 'timeout'], default: 'offered' }
         }]
@@ -418,6 +419,20 @@ const settingsSchema = new mongoose.Schema(
     {
         key: { type: String, required: true, unique: true, trim: true },
         dispatchMode: { type: String, enum: ['auto', 'manual'], default: 'manual' },
+        maxDispatchAttempts: { type: Number, min: 1, max: 20, default: 4 },
+        dispatchAttempts: {
+            type: [{
+                attempt: { type: Number, required: true, min: 1 },
+                distanceKm: { type: Number, required: true, min: 0.1 }
+            }],
+            default: [
+                { attempt: 1, distanceKm: 15 },
+                { attempt: 2, distanceKm: 25 },
+                { attempt: 3, distanceKm: 40 },
+                { attempt: 4, distanceKm: 60 }
+            ]
+        },
+        maxDispatchDistanceKm: { type: Number, min: 0.1, default: 60 },
         updatedBy: {
             role: { type: String },
             adminId: { type: mongoose.Schema.Types.ObjectId },

@@ -226,13 +226,39 @@ export function validateAssignDeliveryDto(body) {
 
 export function validateDispatchSettingsDto(body) {
     const schema = z.object({
-        dispatchMode: z.enum(['auto', 'manual'])
+        dispatchMode: z.enum(['auto', 'manual']),
+        maxDispatchAttempts: z.coerce.number().int().min(1).max(20),
+        dispatchAttempts: z.array(z.object({
+            attempt: z.coerce.number().int().min(1),
+            distanceKm: z.coerce.number().positive()
+        })).min(1).max(20),
+        maxDispatchDistanceKm: z.coerce.number().positive()
     });
     const result = schema.safeParse(body);
     if (!result.success) {
         throw new ValidationError(result.error.errors?.[0]?.message || 'Validation failed');
     }
-    return result.data;
+    const data = result.data;
+    if (data.dispatchAttempts.length !== data.maxDispatchAttempts) {
+        throw new ValidationError('Attempt distance count must match max dispatch attempts');
+    }
+
+    const sortedAttempts = [...data.dispatchAttempts].sort((a, b) => a.attempt - b.attempt);
+    for (let index = 0; index < sortedAttempts.length; index += 1) {
+        const expectedAttempt = index + 1;
+        const row = sortedAttempts[index];
+        if (row.attempt !== expectedAttempt) {
+            throw new ValidationError('Dispatch attempts must be numbered consecutively from 1');
+        }
+        if (row.distanceKm > data.maxDispatchDistanceKm) {
+            throw new ValidationError('Attempt distance cannot exceed max dispatch distance');
+        }
+    }
+
+    return {
+        ...data,
+        dispatchAttempts: sortedAttempts
+    };
 }
 
 export function validateOrderRatingsDto(body) {

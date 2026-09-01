@@ -241,6 +241,10 @@ router.delete('/subscription-packages/:id', subscriptionController.deleteSubscri
 router.get('/delivery-cash-limit', adminController.getDeliveryCashLimit);
 router.patch('/delivery-cash-limit', adminController.updateDeliveryCashLimit);
 
+// ----- Dispatch Settings -----
+router.get('/dispatch-settings', orderController.getDispatchSettingsController);
+router.patch('/dispatch-settings', orderController.updateDispatchSettingsController);
+
 // ----- Delivery Emergency Help -----
 router.get('/delivery-emergency-help', adminController.getEmergencyHelp);
 router.put('/delivery-emergency-help', adminController.createOrUpdateEmergencyHelp);

@@ -1,5 +1,6 @@
 import { sendResponse } from '../../../../utils/response.js';
 import * as orderService from '../services/order.service.js';
+import * as dispatchService from '../services/order-dispatch.service.js';
 import * as foodOrderPaymentService from '../services/foodOrderPayment.service.js';
 import {
     validateCalculateOrderDto,
@@ -139,7 +140,7 @@ export async function updateOrderInstructionsController(req, res, next) {
 
 export async function getDispatchSettingsController(req, res, next) {
     try {
-        const result = await orderService.getDispatchSettings();
+        const result = await dispatchService.getDispatchSettings();
         return sendResponse(res, 200, 'Dispatch settings retrieved', result);
     } catch (err) {
         next(err);
@@ -150,7 +151,7 @@ export async function updateDispatchSettingsController(req, res, next) {
     try {
         const adminId = req.user?.userId;
         const dto = validateDispatchSettingsDto(req.body);
-        const result = await orderService.updateDispatchSettings(dto.dispatchMode, adminId);
+        const result = await dispatchService.updateDispatchSettings(dto, adminId);
         return sendResponse(res, 200, 'Dispatch settings updated', result);
     } catch (err) {
         next(err);
@@ -418,7 +419,7 @@ export async function autoAssignDeliveryPartnerShopController(req, res, next) {
     try {
         const shopId = req.user?.userId;
         const orderId = req.params.orderId;
-        const result = await orderService.resendDeliveryNotificationShop(orderId, shopId);
+        const result = await dispatchService.resendDeliveryNotificationShop(orderId, shopId);
         return sendResponse(res, 200, 'Auto-assign request sent', result);
     } catch (err) {
         next(err);
@@ -451,7 +452,7 @@ export async function resendDeliveryNotificationShopController(req, res, next) {
     try {
         const shopId = req.user?.userId;
         const orderId = req.params.orderId;
-        const result = await orderService.resendDeliveryNotificationShop(orderId, shopId);
+        const result = await dispatchService.resendDeliveryNotificationShop(orderId, shopId);
         return sendResponse(res, 200, 'Notification resent successfully', result);
     } catch (err) {
         next(err);
