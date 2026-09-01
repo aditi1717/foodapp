@@ -108,7 +108,6 @@ export default function CategoryPage() {
     const selectedZoneId = normalizeZoneValue(zoneId)
     if (!selectedZoneId) return true
     const shopZoneId = getShopZoneId(shop)
-    if (!shopZoneId) return true
     return shopZoneId === selectedZoneId
   }
   const normalizeCategoryToken = (value) =>

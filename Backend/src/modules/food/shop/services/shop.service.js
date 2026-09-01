@@ -2,7 +2,6 @@ import { FoodShop } from '../models/shop.model.js';
 import { uploadImageBuffer } from '../../../../services/cloudinary.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import mongoose from 'mongoose';
-import { FoodZone } from '../../admin/models/zone.model.js';
 import { FoodShopCommission } from '../../admin/models/shopCommission.model.js';
 import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodOfferUsage } from '../../admin/models/offerUsage.model.js';
@@ -221,35 +220,17 @@ const attachPriorityListingFlag = (shops = [], priorityShopIds = []) => {
     }));
 };
 
-const zoneToPolygon = (zoneDoc) => {
-    const coords = Array.isArray(zoneDoc?.coordinates) ? zoneDoc.coordinates : [];
-    if (coords.length < 3) return null;
-    const ring = coords
-        .map((c) => [Number(c.longitude), Number(c.latitude)])
-        .filter((pair) => pair.every((n) => Number.isFinite(n)));
-    if (ring.length < 3) return null;
-    const first = ring[0];
-    const last = ring[ring.length - 1];
-    if (first[0] !== last[0] || first[1] !== last[1]) ring.push(first);
-    return { type: 'Polygon', coordinates: [ring] };
-};
-
-const buildZoneShopFilter = async (zoneIdRaw) => {
+const buildZoneShopFilter = (zoneIdRaw) => {
     const trimmedZoneId = String(zoneIdRaw || '').trim();
-    if (!trimmedZoneId || !mongoose.Types.ObjectId.isValid(trimmedZoneId)) {
+    if (!trimmedZoneId) {
         return null;
     }
-
-    const targetZoneId = new mongoose.Types.ObjectId(trimmedZoneId);
-    const zoneDoc = await FoodZone.findOne({ _id: trimmedZoneId, isActive: true }).lean();
-    const polygon = zoneToPolygon(zoneDoc);
-
-    const clauses = [{ zoneId: targetZoneId }];
-    if (polygon) {
-        clauses.push({ location: { $geoWithin: { $geometry: polygon } } });
+    if (!mongoose.Types.ObjectId.isValid(trimmedZoneId)) {
+        // A malformed selected zone must not fall back to showing every shop.
+        return { _id: { $exists: false } };
     }
-
-    return { $or: clauses };
+    // Zone-selected category and shop pages must only show shops assigned to that zone.
+    return { zoneId: new mongoose.Types.ObjectId(trimmedZoneId) };
 };
 
 const notifyAdminsAboutShopProfileReview = async (shopId, shopName) => {
@@ -1268,7 +1249,7 @@ export const listApprovedShops = async (query = {}) => {
         }
     }
 
-    // Optional zone polygon filter (when shop.zoneId is not set yet).
+    // Strict zone filter: do not include shops assigned to another zone.
     const zoneFilter = await buildZoneShopFilter(query.zoneId);
     if (zoneFilter) {
         filter.$and = [...(filter.$and || []), zoneFilter];
