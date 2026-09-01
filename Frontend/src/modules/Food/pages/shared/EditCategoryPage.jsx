@@ -17,7 +17,7 @@ import useShopBackNavigation from "@food/hooks/useShopBackNavigation"
 
 const defaultFormData = {
   name: "",
-  foodTypeScope: "Both", // Enum
+  foodTypeScope: "Veg", // Enum: Veg or Non-Veg
   image: "",
   isActive: true,
   sortOrder: 0,
@@ -105,7 +105,7 @@ export default function EditCategoryPage() {
       if (category) {
         setFormData({
           name: category.name || "",
-          foodTypeScope: category.foodTypeScope || "Both",
+          foodTypeScope: (category.foodTypeScope && category.foodTypeScope !== "Both") ? category.foodTypeScope : "Veg",
           image: category.image || "",
           isActive: category.isActive ?? category.status ?? true,
           sortOrder: category.sortOrder || 0,
@@ -333,7 +333,6 @@ export default function EditCategoryPage() {
                       <>
                         <option value="Veg">Veg Only</option>
                         <option value="Non-Veg">Non-Veg</option>
-                        <option value="Both">Both</option>
                       </>
                     )}
                   </select>
