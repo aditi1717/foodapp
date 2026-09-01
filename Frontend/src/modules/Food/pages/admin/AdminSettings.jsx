@@ -45,6 +45,7 @@ export default function AdminSettings() {
             ...DEFAULT_DISPATCH_SETTINGS,
             ...data,
             dispatchMode: "auto",
+            maxDispatchAttempts: 4,
             dispatchAttempts: Array.isArray(data.dispatchAttempts) && data.dispatchAttempts.length
               ? data.dispatchAttempts
               : DEFAULT_DISPATCH_SETTINGS.dispatchAttempts,
@@ -63,21 +64,7 @@ export default function AdminSettings() {
   }, []);
 
   const updateDispatchAttemptCount = (value) => {
-    const nextCount = Math.min(20, Math.max(1, Number(value) || 1));
-    setDispatchSettings((prev) => {
-      const currentRows = Array.isArray(prev.dispatchAttempts) ? prev.dispatchAttempts : [];
-      const dispatchAttempts = Array.from({ length: nextCount }, (_, index) => {
-        const attempt = index + 1;
-        const existing = currentRows.find((row) => Number(row.attempt) === attempt);
-        return existing || { attempt, distanceKm: prev.maxDispatchDistanceKm || 60 };
-      });
-
-      return {
-        ...prev,
-        maxDispatchAttempts: nextCount,
-        dispatchAttempts,
-      };
-    });
+    // Max attempts is fixed at 4
   };
 
   const updateDispatchAttemptDistance = (attempt, value) => {
@@ -92,11 +79,30 @@ export default function AdminSettings() {
   };
 
   const saveDispatchSettings = async () => {
+    const maxDist = Number(dispatchSettings.maxDispatchDistanceKm) || 0;
+    if (maxDist <= 0) {
+      toast.error("Max Distance must be greater than 0");
+      return;
+    }
+
+    const attempts = dispatchSettings.dispatchAttempts || [];
+    for (const row of attempts) {
+      const dist = Number(row.distanceKm) || 0;
+      if (dist <= 0) {
+        toast.error(`Attempt ${row.attempt} distance must be greater than 0`);
+        return;
+      }
+      if (dist > maxDist) {
+        toast.error(`Attempt ${row.attempt} distance (${dist} km) cannot be greater than Max Distance (${maxDist} km)`);
+        return;
+      }
+    }
+
     const payload = {
       dispatchMode: "auto",
-      maxDispatchAttempts: Number(dispatchSettings.maxDispatchAttempts) || 1,
-      maxDispatchDistanceKm: Number(dispatchSettings.maxDispatchDistanceKm) || 1,
-      dispatchAttempts: (dispatchSettings.dispatchAttempts || []).map((row, index) => ({
+      maxDispatchAttempts: 4,
+      maxDispatchDistanceKm: maxDist,
+      dispatchAttempts: attempts.map((row, index) => ({
         attempt: index + 1,
         distanceKm: Number(row.distanceKm) || 0,
       })),
@@ -110,6 +116,7 @@ export default function AdminSettings() {
         ...DEFAULT_DISPATCH_SETTINGS,
         ...data,
         dispatchMode: "auto",
+        maxDispatchAttempts: 4,
         dispatchAttempts: Array.isArray(data.dispatchAttempts) && data.dispatchAttempts.length
           ? data.dispatchAttempts
           : payload.dispatchAttempts,
@@ -157,7 +164,7 @@ export default function AdminSettings() {
                     id="dispatchMode"
                     value="auto"
                     disabled
-                    className="h-11 w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 text-sm text-neutral-700 font-semibold cursor-not-allowed"
+                    className="h-11 w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 text-sm text-neutral-700 font-semibold cursor-not-allowed appearance-none"
                   >
                     <option value="auto">Auto</option>
                   </select>
@@ -168,12 +175,10 @@ export default function AdminSettings() {
                   <Input
                     id="maxDispatchAttempts"
                     type="number"
-                    min="1"
-                    max="20"
-                    value={dispatchSettings.maxDispatchAttempts}
-                    onChange={(event) => updateDispatchAttemptCount(event.target.value)}
-                    disabled={savingDispatchSettings}
-                    className="h-11"
+                    value={4}
+                    disabled
+                    readOnly
+                    className="h-11 bg-neutral-100 text-neutral-700 font-semibold cursor-not-allowed"
                   />
                 </div>
 
@@ -200,28 +205,39 @@ export default function AdminSettings() {
               <div className="space-y-3">
                 <Label>Attempt Distances</Label>
                 <div className="grid gap-3 md:grid-cols-2">
-                  {(dispatchSettings.dispatchAttempts || []).map((row) => (
-                    <div
-                      key={row.attempt}
-                      className="flex items-center gap-3 rounded-md border border-neutral-200 p-3"
-                    >
-                      <div className="min-w-24 text-sm font-medium text-neutral-700">
-                        Attempt {row.attempt}
+                  {(dispatchSettings.dispatchAttempts || []).map((row) => {
+                    const isExceeding = Number(row.distanceKm) > Number(dispatchSettings.maxDispatchDistanceKm);
+                    return (
+                      <div key={row.attempt} className="space-y-1">
+                        <div
+                          className={`flex items-center gap-3 rounded-md border p-3 ${
+                            isExceeding ? "border-red-500 bg-red-50/30" : "border-neutral-200"
+                          }`}
+                        >
+                          <div className="min-w-24 text-sm font-medium text-neutral-700">
+                            Attempt {row.attempt}
+                          </div>
+                          <Input
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            value={row.distanceKm}
+                            onChange={(event) =>
+                              updateDispatchAttemptDistance(row.attempt, event.target.value)
+                            }
+                            disabled={savingDispatchSettings}
+                            className={`h-10 ${isExceeding ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                          />
+                          <span className="text-sm text-neutral-500">km</span>
+                        </div>
+                        {isExceeding && (
+                          <p className="text-[11px] text-red-500 font-medium ml-1">
+                            Cannot exceed Max Distance ({dispatchSettings.maxDispatchDistanceKm || 0} km)
+                          </p>
+                        )}
                       </div>
-                      <Input
-                        type="number"
-                        min="0.1"
-                        step="0.1"
-                        value={row.distanceKm}
-                        onChange={(event) =>
-                          updateDispatchAttemptDistance(row.attempt, event.target.value)
-                        }
-                        disabled={savingDispatchSettings}
-                        className="h-10"
-                      />
-                      <span className="text-sm text-neutral-500">km</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <p className="text-xs text-neutral-500">
                   Resend continues to the next attempt and cannot go beyond the max attempts or max distance.

@@ -212,6 +212,15 @@ export async function getDispatchSettings() {
 }
 
 export async function updateDispatchSettings(settings, adminId) {
+  const maxDist = Number(settings?.maxDispatchDistanceKm) || 8;
+  const attempts = settings?.dispatchAttempts || [];
+  for (const row of attempts) {
+    const dist = Number(row?.distanceKm) || 0;
+    if (dist > maxDist) {
+      throw new ValidationError(`Attempt ${row.attempt} distance (${dist} km) cannot exceed Max Distance (${maxDist} km)`);
+    }
+  }
+
   const normalizedSettings = formatDispatchSettings(settings);
   await FoodSettings.findOneAndUpdate(
     { key: "dispatch" },
