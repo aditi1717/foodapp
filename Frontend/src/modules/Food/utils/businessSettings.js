@@ -7,6 +7,7 @@ import apiClient from "@food/api/axios";
 import { API_ENDPOINTS } from "@food/api/config";
 import { publicGetOnce } from "@food/api";
 import BRAND_THEME from "@/config/brandTheme";
+import { DEFAULT_FOOD_LOGO } from "@food/utils/defaultBranding";
 
 const SETTINGS_KEY = 'food_business_settings';
 
@@ -77,8 +78,8 @@ export const loadBusinessSettings = async () => {
 /**
  * Update favicon in document
  */
-export const updateFavicon = (url) => {
-  if (!url || typeof document === 'undefined') return;
+export const updateFavicon = (url = DEFAULT_FOOD_LOGO) => {
+  if (typeof document === 'undefined') return;
 
   // Remove existing favicons
   const existingFavicons = document.querySelectorAll("link[rel*='icon']");
@@ -88,7 +89,7 @@ export const updateFavicon = (url) => {
   const link = document.createElement("link");
   link.rel = "icon";
   link.type = "image/png";
-  link.href = url;
+  link.href = url || DEFAULT_FOOD_LOGO;
   // Prevent third-party cookie warning (Cloudinary)
   link.crossOrigin = "anonymous";
   document.head.appendChild(link);

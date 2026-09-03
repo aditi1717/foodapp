@@ -141,7 +141,7 @@ async function loadFirebaseWebConfig() {
   
       self.registration.showNotification(title, {
         body,
-        icon: "/favicon.ico",
+        icon: "/FC%20-%20Logo%201.png",
         image,
         tag: notificationKey,
         renotify: false,

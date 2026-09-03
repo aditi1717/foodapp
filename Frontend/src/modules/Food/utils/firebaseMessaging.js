@@ -557,7 +557,7 @@ function showForegroundNotification(payload = {}) {
           if (registration) {
             registration.showNotification(title, {
               body,
-              icon: "/favicon.ico",
+              icon: "/FC%20-%20Logo%201.png",
               image,
               tag: notificationKey || undefined,
               data: payload?.data || {},
@@ -567,7 +567,7 @@ function showForegroundNotification(payload = {}) {
           } else {
             new Notification(title, {
               body,
-              icon: "/favicon.ico",
+              icon: "/FC%20-%20Logo%201.png",
               image,
               tag: notificationKey || undefined,
               requireInteraction: true
@@ -576,7 +576,7 @@ function showForegroundNotification(payload = {}) {
         }).catch(() => {
           new Notification(title, {
             body,
-            icon: "/favicon.ico",
+            icon: "/FC%20-%20Logo%201.png",
             image,
             tag: notificationKey || undefined,
           });
@@ -584,7 +584,7 @@ function showForegroundNotification(payload = {}) {
       } else {
         new Notification(title, {
           body,
-          icon: "/favicon.ico",
+          icon: "/FC%20-%20Logo%201.png",
           image,
           tag: notificationKey || undefined,
         });

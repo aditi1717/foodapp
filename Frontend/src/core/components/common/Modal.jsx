@@ -63,7 +63,7 @@ export default function SeoHead() {
             }
         }
         if (linkFavicon) {
-            linkFavicon.href = faviconUrl || '/vite.svg';
+            linkFavicon.href = faviconUrl || '/FC%20-%20Logo%201.png';
         }
     }, [settings]);
 

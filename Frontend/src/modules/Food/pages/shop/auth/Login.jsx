@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom"
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
+import { DEFAULT_FOOD_LOGO } from "@food/utils/defaultBranding"
 import BRAND_THEME from "@/config/brandTheme"
 
 import { shopAPI } from "@food/api"
@@ -12,7 +13,7 @@ export default function ShopLogin() {
   const [phone, setPhone] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [logoUrl, setLogoUrl] = useState("")
+  const [logoUrl, setLogoUrl] = useState(DEFAULT_FOOD_LOGO)
   const isValid = phone.replace(/\D/g, "").length === 10
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export default function ShopLogin() {
 
     const handleSettingsUpdate = () => {
       const cached = getCachedSettings()
-      setLogoUrl(cached?.logo?.url || "")
+      setLogoUrl(cached?.logo?.url || DEFAULT_FOOD_LOGO)
     }
 
     window.addEventListener("businessSettingsUpdated", handleSettingsUpdate)
@@ -83,7 +84,7 @@ export default function ShopLogin() {
                 src={logoUrl}
                 alt="Company logo"
                 className="h-16 w-16 object-contain"
-                onError={() => setLogoUrl("")}
+                onError={() => setLogoUrl(DEFAULT_FOOD_LOGO)}
               />
             ) : (
               <span className="text-white text-xl font-semibold">R</span>

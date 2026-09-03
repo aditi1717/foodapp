@@ -269,7 +269,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         requireInteraction: true,
         silent: false,
         vibrate: [200, 100, 200, 100, 300],
-        icon: "/favicon.ico",
+        icon: "/FC%20-%20Logo%201.png",
         data: { targetUrl: "/admin/orders/all" },
       }
 

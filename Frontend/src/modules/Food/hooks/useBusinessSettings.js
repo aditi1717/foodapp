@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { loadBusinessSettings, getCachedSettings } from '@food/utils/businessSettings';
 import BRAND_THEME from "@/config/brandTheme";
+import { DEFAULT_FOOD_LOGO } from "@food/utils/defaultBranding";
 
 /**
  * Custom hook to get business settings
@@ -10,8 +11,8 @@ export const useBusinessSettings = () => {
   const [settings, setSettings] = useState(() => {
     return getCachedSettings() || {
       companyName: BRAND_THEME.brandName,
-      logo: { url: "" },
-      favicon: { url: "" }
+      logo: { url: DEFAULT_FOOD_LOGO },
+      favicon: { url: DEFAULT_FOOD_LOGO }
     };
   });
 

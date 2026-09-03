@@ -11,6 +11,7 @@ import {
 import { checkOnboardingStatus, isShopOnboardingComplete } from "@food/utils/onboardingUtils"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
+import { DEFAULT_FOOD_LOGO } from "@food/utils/defaultBranding"
 import BRAND_THEME from "@/config/brandTheme"
 
 const debugLog = (...args) => {}
@@ -28,7 +29,7 @@ export default function ShopOTP() {
   const [contactInfo, setContactInfo] = useState("") 
   const [focusedIndex, setFocusedIndex] = useState(null)
   const [keyboardOffset, setKeyboardOffset] = useState(0)
-  const [logoUrl, setLogoUrl] = useState("")
+  const [logoUrl, setLogoUrl] = useState(DEFAULT_FOOD_LOGO)
   const inputRefs = useRef([])
   const hasSubmittedRef = useRef(false)
   const otpSectionRef = useRef(null)

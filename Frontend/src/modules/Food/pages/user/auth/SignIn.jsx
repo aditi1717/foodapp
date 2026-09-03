@@ -7,6 +7,7 @@ import { Input } from "@food/components/ui/input"
 import { authAPI } from "@food/api"
 import loginBanner from "@food/assets/loginbanner.png"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
+import { DEFAULT_FOOD_LOGO } from "@food/utils/defaultBranding"
 import BRAND_THEME from "@/config/brandTheme"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -24,7 +25,7 @@ export default function SignIn() {
 
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [logoUrl, setLogoUrl] = useState("")
+  const [logoUrl, setLogoUrl] = useState(DEFAULT_FOOD_LOGO)
   const [companyName, setCompanyName] = useState(BRAND_THEME.brandName)
   const submittingRef = useRef(false)
 
@@ -73,7 +74,7 @@ export default function SignIn() {
 
     const handleSettingsUpdate = () => {
       const cached = getCachedSettings()
-      setLogoUrl(cached?.logo?.url || "")
+      setLogoUrl(cached?.logo?.url || DEFAULT_FOOD_LOGO)
       setCompanyName(cached?.companyName || BRAND_THEME.brandName)
     }
 

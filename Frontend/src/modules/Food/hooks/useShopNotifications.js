@@ -264,7 +264,7 @@ export const useShopNotifications = () => {
             requireInteraction: true,
             silent: false,
             vibrate: [200, 100, 200, 100, 300],
-            icon: '/favicon.ico',
+            icon: '/FC%20-%20Logo%201.png',
             data: notificationOptions.data,
           });
           return;
@@ -276,7 +276,7 @@ export const useShopNotifications = () => {
         tag: notificationOptions.tag,
         requireInteraction: true,
         silent: false,
-        icon: '/favicon.ico',
+        icon: '/FC%20-%20Logo%201.png',
         data: notificationOptions.data,
       });
     } catch (error) {
