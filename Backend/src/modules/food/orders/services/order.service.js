@@ -1273,22 +1273,7 @@ export async function listNearbyOnlineDeliveryPartners(
     .select("location")
     .lean();
   if (!shop?.location?.coordinates?.length) {
-    // Fallback: if shop location is missing, notify any online approved partners.
-    const partners = await FoodDeliveryPartner.find({
-      status: "approved",
-      availabilityStatus: "online",
-    })
-      .select("_id")
-      .lean();
-
-    const eligibleIds = await filterEligibleDeliveryPartners(partners.map(p => p._id), order);
-    const eligibleSet = new Set(eligibleIds.map(id => String(id)));
-    const filteredPartners = partners.filter(p => eligibleSet.has(String(p._id)));
-
-    return {
-      shop: null,
-      partners: filteredPartners.slice(0, Math.max(1, limit)).map((p) => ({ partnerId: p._id, distanceKm: null })),
-    };
+    return { shop: null, partners: [] };
   }
 
   const [rLng, rLat] = shop.location.coordinates;
@@ -1318,25 +1303,6 @@ export async function listNearbyOnlineDeliveryPartners(
 
   scored.sort((a, b) => a.distanceKm - b.distanceKm);
   const picked = scored.slice(0, Math.max(1, limit));
-
-  // Fallback: if no one has GPS yet, still notify online partners (common right after login).
-  if (picked.length === 0) {
-    const anyOnline = await FoodDeliveryPartner.find({
-      status: "approved",
-      availabilityStatus: "online",
-    })
-      .select("_id")
-      .lean();
-
-    const eligibleAnyIds = await filterEligibleDeliveryPartners(anyOnline.map(p => p._id), order);
-    const eligibleAnySet = new Set(eligibleAnyIds.map(id => String(id)));
-    const filteredAnyOnline = anyOnline.filter(p => eligibleAnySet.has(String(p._id)));
-
-    return {
-      shop,
-      partners: filteredAnyOnline.slice(0, Math.max(1, limit)).map((p) => ({ partnerId: p._id, distanceKm: null })),
-    };
-  }
 
   return { shop, partners: picked };
 }
@@ -3410,16 +3376,10 @@ export async function assignDeliveryPartnerShop(orderId, shopId, deliveryPartner
   }
 
   const partner = await FoodDeliveryPartner.findById(deliveryPartnerId)
-    .select("status zoneId")
+    .select("status")
     .lean();
   if (!partner || partner.status !== "approved") {
     throw new ValidationError("Delivery partner not available");
-  }
-  if (!partner.zoneId) {
-    throw new ValidationError("Delivery partner is not mapped to any zone");
-  }
-  if (String(partner.zoneId) !== String(order.zoneId || "")) {
-    throw new ValidationError("Delivery partner does not belong to this order zone");
   }
 
   // Security balance check for COD orders

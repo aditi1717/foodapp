@@ -8,7 +8,6 @@ export default function AddDeliveryman() {
     lastName: "",
     email: "",
     deliverymanType: "",
-    zone: "",
     vehicle: "",
     identityType: "Passport",
     identityNumber: "",
@@ -46,7 +45,6 @@ export default function AddDeliveryman() {
       errors.drivingLicenseNumber = "Invalid DL format (e.g., MH1220110012345)"
     }
     if (!formData.deliverymanType) errors.deliverymanType = "Deliveryman type is required"
-    if (!formData.zone) errors.zone = "Zone is required"
     if (!formData.vehicle) errors.vehicle = "Vehicle is required"
     if (!formData.identityNumber.trim()) errors.identityNumber = "Identity number is required"
     if (!formData.age || parseInt(formData.age) < 18) errors.age = "Age must be at least 18"
@@ -76,7 +74,6 @@ export default function AddDeliveryman() {
       lastName: "",
       email: "",
       deliverymanType: "",
-      zone: "",
       vehicle: "",
       identityType: "Passport",
       identityNumber: "",
@@ -164,21 +161,6 @@ export default function AddDeliveryman() {
                     <option value="">Delivery man type</option>
                     <option value="full-time">Full Time</option>
                     <option value="part-time">Part Time</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Zone <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.zone}
-                    onChange={(e) => handleInputChange("zone", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
-                  >
-                    <option value="">Select Zone</option>
-                    <option value="asia">Asia</option>
-                    <option value="europe">Europe</option>
                   </select>
                 </div>
 

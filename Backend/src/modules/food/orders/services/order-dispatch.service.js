@@ -138,21 +138,7 @@ async function listNearbyOnlineDeliveryPartners(
   const allowedStatuses = process.env.NODE_ENV === 'production' ? ['approved'] : ['approved', 'pending'];
 
   if (!shop?.location?.coordinates?.length) {
-    const partners = await FoodDeliveryPartner.find({
-      status: { $in: allowedStatuses },
-      availabilityStatus: "online",
-    })
-      .select("_id status name")
-      .lean();
-
-    const eligibleIds = await filterEligibleDeliveryPartners(partners.map(p => p._id), order);
-    const eligibleSet = new Set(eligibleIds.map(id => String(id)));
-    const filteredPartners = partners.filter(p => eligibleSet.has(String(p._id)));
-
-    return {
-      shop: null,
-      partners: filteredPartners.slice(0, Math.max(1, limit)).map((p) => ({ partnerId: p._id, distanceKm: null })),
-    };
+    return { shop: null, partners: [] };
   }
 
   const [rLng, rLat] = shop.location.coordinates;
