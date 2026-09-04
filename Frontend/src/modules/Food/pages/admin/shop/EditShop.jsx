@@ -26,6 +26,91 @@ const normalizeZoneId = (zoneId) => {
   return zoneId?._id || zoneId?.id || ""
 }
 
+const isPointInPolygon = (latitude, longitude, polygonCoordinates) => {
+  if (!Array.isArray(polygonCoordinates) || polygonCoordinates.length < 3) return true
+  const lat = Number(latitude)
+  const lng = Number(longitude)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
+  let inside = false
+  for (let i = 0, j = polygonCoordinates.length - 1; i < polygonCoordinates.length; j = i++) {
+    const xi = Number(polygonCoordinates[i].longitude)
+    const yi = Number(polygonCoordinates[i].latitude)
+    const xj = Number(polygonCoordinates[j].longitude)
+    const yj = Number(polygonCoordinates[j].latitude)
+    const intersect =
+      (yi > lat) !== (yj > lat) &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi + 0.0000000001) + xi
+    if (intersect) inside = !inside
+  }
+  return inside
+}
+
+const getZonePolygonCoordinates = (zone) => {
+  const geoCoords = zone?.location?.coordinates?.[0]
+  if (Array.isArray(geoCoords)) {
+    return geoCoords
+      .map((point) => {
+        const v0 = Number(point?.[0])
+        const v1 = Number(point?.[1])
+        if (Math.abs(v0) > 45 && Math.abs(v1) <= 45) {
+          return { latitude: v1, longitude: v0 }
+        }
+        return { latitude: v0, longitude: v1 }
+      })
+      .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
+  }
+
+  if (Array.isArray(zone?.coordinates)) {
+    return zone.coordinates
+      .map((point) => {
+        if (point && typeof point === "object" && !Array.isArray(point)) {
+          const lat = Number(point.latitude ?? point.lat)
+          const lng = Number(point.longitude ?? point.lng)
+          return { latitude: lat, longitude: lng }
+        }
+        if (Array.isArray(point)) {
+          const v0 = Number(point[0])
+          const v1 = Number(point[1])
+          if (Math.abs(v0) > 45 && Math.abs(v1) <= 45) {
+            return { latitude: v1, longitude: v0 }
+          }
+          return { latitude: v0, longitude: v1 }
+        }
+        return null
+      })
+      .filter((p) => p && Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
+  }
+
+  return []
+}
+
+const haversineKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+const isLocationWithinZone = (zone, latitude, longitude) => {
+  if (!zone) return true
+  const polygon = getZonePolygonCoordinates(zone)
+  if (polygon.length >= 3) return isPointInPolygon(latitude, longitude, polygon)
+
+  const centerLat = Number(zone?.location?.latitude ?? zone?.latitude ?? zone?.lat)
+  const centerLng = Number(zone?.location?.longitude ?? zone?.longitude ?? zone?.lng)
+  const radiusKm = Number(zone?.radiusKm ?? zone?.radius ?? zone?.serviceRadiusKm)
+  if (Number.isFinite(centerLat) && Number.isFinite(centerLng) && Number.isFinite(radiusKm) && radiusKm > 0) {
+    return haversineKm(Number(latitude), Number(longitude), centerLat, centerLng) <= radiusKm
+  }
+
+  return true
+}
+
 const normalizeLocationFormFromShop = (shop) => {
   const loc =
     shop?.location ||
@@ -142,6 +227,17 @@ export default function EditShop() {
 
   const locationSearchInputRef = useRef(null)
   const placesAutocompleteRef = useRef(null)
+
+  const locationFormRef = useRef(locationForm)
+  const zonesRef = useRef(zones)
+
+  useEffect(() => {
+    locationFormRef.current = locationForm
+  }, [locationForm])
+
+  useEffect(() => {
+    zonesRef.current = zones
+  }, [zones])
 
   const shopId = useMemo(() => {
     if (id) return id
@@ -263,6 +359,29 @@ export default function EditShop() {
       placesAutocompleteRef.current.addListener("place_changed", () => {
         const place = placesAutocompleteRef.current.getPlace()
         const parsed = parsePlace(place)
+
+        const currentLocationForm = locationFormRef.current
+        const currentZones = zonesRef.current
+        const selectedZoneId = normalizeZoneId(currentLocationForm.zoneId)
+        const selectedZone = currentZones.find((zone) => normalizeZoneId(zone) === selectedZoneId)
+
+        if (!selectedZoneId || !selectedZone) {
+          setLocationError("Please select a valid service zone before selecting location")
+          if (locationSearchInputRef.current) {
+            locationSearchInputRef.current.value = currentLocationForm.formattedAddress || ""
+          }
+          return
+        }
+
+        if (!isLocationWithinZone(selectedZone, parsed.latitude, parsed.longitude)) {
+          setLocationError("Selected location is outside the selected service zone")
+          if (locationSearchInputRef.current) {
+            locationSearchInputRef.current.value = currentLocationForm.formattedAddress || ""
+          }
+          return
+        }
+
+        setLocationError("")
         setLocationForm((prev) => ({
           ...prev,
           formattedAddress: parsed.formattedAddress || prev.formattedAddress,
@@ -277,6 +396,25 @@ export default function EditShop() {
 
         if (locationSearchInputRef.current) {
           locationSearchInputRef.current.value = parsed.formattedAddress || ""
+        }
+
+        if (!parsed.pincode && parsed.latitude && parsed.longitude && window.google?.maps?.Geocoder) {
+          const geocoder = new window.google.maps.Geocoder()
+          geocoder.geocode({ location: { lat: Number(parsed.latitude), lng: Number(parsed.longitude) } }, (results, status) => {
+            if (status !== "OK" || !Array.isArray(results)) return
+
+            const resultWithPostalCode = results.find((result) =>
+              result.address_components?.some((component) => component.types.includes("postal_code")),
+            )
+            const components = resultWithPostalCode?.address_components || []
+            const fallbackPincode = components.find((c) => c.types.includes("postal_code"))?.long_name || ""
+            if (!fallbackPincode) return
+
+            setLocationForm((prev) => ({
+              ...prev,
+              pincode: fallbackPincode,
+            }))
+          })
         }
       })
     }

@@ -57,8 +57,92 @@ const ACCOUNT_HOLDER_NAME_REGEX = /^[A-Za-z ]+$/
 const GST_LEGAL_NAME_REGEX = /^[A-Za-z ]+$/
 const FEATURED_DISH_NAME_REGEX = /^[A-Za-z ]+$/
 const LOCAL_IMAGE_FILE_ACCEPT = ".jpg,.jpeg,.png,.webp,.heic,.heif"
-const GALLERY_IMAGE_ACCEPT =
-  ".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
+const getZoneIdValue = (zone) => String(zone?._id || zone?.id || "").trim()
+
+const isPointInPolygon = (latitude, longitude, polygonCoordinates) => {
+  if (!Array.isArray(polygonCoordinates) || polygonCoordinates.length < 3) return true
+  const lat = Number(latitude)
+  const lng = Number(longitude)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
+  let inside = false
+  for (let i = 0, j = polygonCoordinates.length - 1; i < polygonCoordinates.length; j = i++) {
+    const xi = Number(polygonCoordinates[i].longitude)
+    const yi = Number(polygonCoordinates[i].latitude)
+    const xj = Number(polygonCoordinates[j].longitude)
+    const yj = Number(polygonCoordinates[j].latitude)
+    const intersect =
+      (yi > lat) !== (yj > lat) &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi + 0.0000000001) + xi
+    if (intersect) inside = !inside
+  }
+  return inside
+}
+
+const getZonePolygonCoordinates = (zone) => {
+  const geoCoords = zone?.location?.coordinates?.[0]
+  if (Array.isArray(geoCoords)) {
+    return geoCoords
+      .map((point) => {
+        const v0 = Number(point?.[0])
+        const v1 = Number(point?.[1])
+        if (Math.abs(v0) > 45 && Math.abs(v1) <= 45) {
+          return { latitude: v1, longitude: v0 }
+        }
+        return { latitude: v0, longitude: v1 }
+      })
+      .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
+  }
+
+  if (Array.isArray(zone?.coordinates)) {
+    return zone.coordinates
+      .map((point) => {
+        if (point && typeof point === "object" && !Array.isArray(point)) {
+          const lat = Number(point.latitude ?? point.lat)
+          const lng = Number(point.longitude ?? point.lng)
+          return { latitude: lat, longitude: lng }
+        }
+        if (Array.isArray(point)) {
+          const v0 = Number(point[0])
+          const v1 = Number(point[1])
+          if (Math.abs(v0) > 45 && Math.abs(v1) <= 45) {
+            return { latitude: v1, longitude: v0 }
+          }
+          return { latitude: v0, longitude: v1 }
+        }
+        return null
+      })
+      .filter((p) => p && Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
+  }
+
+  return []
+}
+
+const haversineKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+const isLocationWithinZone = (zone, latitude, longitude) => {
+  if (!zone) return true
+  const polygon = getZonePolygonCoordinates(zone)
+  if (polygon.length >= 3) return isPointInPolygon(latitude, longitude, polygon)
+
+  const centerLat = Number(zone?.location?.latitude ?? zone?.latitude ?? zone?.lat)
+  const centerLng = Number(zone?.location?.longitude ?? zone?.longitude ?? zone?.lng)
+  const radiusKm = Number(zone?.radiusKm ?? zone?.radius ?? zone?.serviceRadiusKm)
+  if (Number.isFinite(centerLat) && Number.isFinite(centerLng) && Number.isFinite(radiusKm) && radiusKm > 0) {
+    return haversineKm(Number(latitude), Number(longitude), centerLat, centerLng) <= radiusKm
+  }
+
+  return true
+}
 
 /**
  * Robust de-duplication for files and URLs in menu images.
@@ -726,6 +810,17 @@ export default function ShopOnboarding() {
     }
   })
 
+  const step1Ref = useRef(step1)
+  const zonesRef = useRef(zones)
+
+  useEffect(() => {
+    step1Ref.current = step1
+  }, [step1])
+
+  useEffect(() => {
+    zonesRef.current = zones
+  }, [zones])
+
   const [step2, setStep2] = useState({
     menuImages: [],
     profileImage: null,
@@ -1211,6 +1306,26 @@ export default function ShopOnboarding() {
         const lat = place?.geometry?.location?.lat?.()
         const lng = place?.geometry?.location?.lng?.()
 
+        const currentStep1 = step1Ref.current
+        const currentZones = zonesRef.current
+        const selectedZone = currentZones.find((z) => String(z?._id || z?.id || "") === String(currentStep1.zoneId || ""))
+
+        if (!currentStep1.zoneId || !selectedZone) {
+          toast.error("Please select a valid service zone before selecting location")
+          if (locationSearchInputRef.current) {
+            locationSearchInputRef.current.value = currentStep1.location?.formattedAddress || ""
+          }
+          return
+        }
+
+        if (!isLocationWithinZone(selectedZone, lat, lng)) {
+          toast.error("Selected location is outside the selected service zone")
+          if (locationSearchInputRef.current) {
+            locationSearchInputRef.current.value = currentStep1.location?.formattedAddress || ""
+          }
+          return
+        }
+
         const locationData = {
           formattedAddress,
           area,
@@ -1232,6 +1347,28 @@ export default function ShopOnboarding() {
 
         if (locationSearchInputRef.current) {
           locationSearchInputRef.current.value = formattedAddress || ""
+        }
+
+        if (!pincode && Number.isFinite(lat) && Number.isFinite(lng) && window.google?.maps?.Geocoder) {
+          const geocoder = new window.google.maps.Geocoder()
+          geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            if (status !== "OK" || !Array.isArray(results)) return
+
+            const resultWithPostalCode = results.find((result) =>
+              result.address_components?.some((component) => component.types.includes("postal_code")),
+            )
+            const components = resultWithPostalCode?.address_components || []
+            const fallbackPincode = components.find((c) => c.types.includes("postal_code"))?.long_name || ""
+            if (!fallbackPincode) return
+
+            setStep1((prev) => ({
+              ...prev,
+              location: {
+                ...prev.location,
+                pincode: fallbackPincode,
+              },
+            }))
+          })
         }
       })
     }
@@ -1308,7 +1445,7 @@ export default function ShopOnboarding() {
           if (circleBounds) {
             placesAutocompleteRef.current.setOptions({
               bounds: circleBounds,
-              strictBounds: true,
+              strictBounds: false,
               componentRestrictions: { country: "in" },
             })
             return
@@ -1319,7 +1456,7 @@ export default function ShopOnboarding() {
       if (hasValidBounds) {
         placesAutocompleteRef.current.setOptions({
           bounds,
-          strictBounds: true,
+          strictBounds: false,
           componentRestrictions: { country: "in" },
         })
       } else {

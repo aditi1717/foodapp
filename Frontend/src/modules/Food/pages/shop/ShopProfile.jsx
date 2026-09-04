@@ -44,23 +44,92 @@ import { clearModuleAuth } from "@food/utils/auth"
 
 const isPointInPolygon = (latitude, longitude, polygonCoordinates) => {
   if (!Array.isArray(polygonCoordinates) || polygonCoordinates.length < 3) return true
-  const x = Number(latitude)
-  const y = Number(longitude)
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return false
+
+  const lat = Number(latitude)
+  const lng = Number(longitude)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
   let inside = false
   for (let i = 0, j = polygonCoordinates.length - 1; i < polygonCoordinates.length; j = i++) {
-    const xi = Number(polygonCoordinates[i].latitude)
-    const yi = Number(polygonCoordinates[i].longitude)
-    const xj = Number(polygonCoordinates[j].latitude)
-    const yj = Number(polygonCoordinates[j].longitude)
-    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+    const xi = Number(polygonCoordinates[i].longitude)
+    const yi = Number(polygonCoordinates[i].latitude)
+    const xj = Number(polygonCoordinates[j].longitude)
+    const yj = Number(polygonCoordinates[j].latitude)
+    const intersect =
+      (yi > lat) !== (yj > lat) &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi + 0.0000000001) + xi
     if (intersect) inside = !inside
   }
   return inside
 }
 
+const getZonePolygonCoordinates = (zone) => {
+  const geoCoords = zone?.location?.coordinates?.[0]
+  if (Array.isArray(geoCoords)) {
+    return geoCoords
+      .map((point) => {
+        const v0 = Number(point?.[0])
+        const v1 = Number(point?.[1])
+        if (Math.abs(v0) > 45 && Math.abs(v1) <= 45) {
+          return { latitude: v1, longitude: v0 }
+        }
+        return { latitude: v0, longitude: v1 }
+      })
+      .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
+  }
+
+  if (Array.isArray(zone?.coordinates)) {
+    return zone.coordinates
+      .map((point) => {
+        if (point && typeof point === "object" && !Array.isArray(point)) {
+          const lat = Number(point.latitude ?? point.lat)
+          const lng = Number(point.longitude ?? point.lng)
+          return { latitude: lat, longitude: lng }
+        }
+        if (Array.isArray(point)) {
+          const v0 = Number(point[0])
+          const v1 = Number(point[1])
+          if (Math.abs(v0) > 45 && Math.abs(v1) <= 45) {
+            return { latitude: v1, longitude: v0 }
+          }
+          return { latitude: v0, longitude: v1 }
+        }
+        return null
+      })
+      .filter((p) => p && Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
+  }
+
+  return []
+}
+
+const haversineKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+const isLocationWithinZone = (zone, latitude, longitude) => {
+  if (!zone) return true
+  const polygon = getZonePolygonCoordinates(zone)
+  if (polygon.length >= 3) return isPointInPolygon(latitude, longitude, polygon)
+
+  const centerLat = Number(zone?.location?.latitude ?? zone?.latitude ?? zone?.lat)
+  const centerLng = Number(zone?.location?.longitude ?? zone?.longitude ?? zone?.lng)
+  const radiusKm = Number(zone?.radiusKm ?? zone?.radius ?? zone?.serviceRadiusKm)
+  if (Number.isFinite(centerLat) && Number.isFinite(centerLng) && Number.isFinite(radiusKm) && radiusKm > 0) {
+    return haversineKm(Number(latitude), Number(longitude), centerLat, centerLng) <= radiusKm
+  }
+
+  return true
+}
+
 const buildBoundsFromZone = (zone) => {
-  const coordinates = Array.isArray(zone?.coordinates) ? zone.coordinates : []
+  const coordinates = getZonePolygonCoordinates(zone)
   if (coordinates.length < 3 || !window.google?.maps?.LatLngBounds) return null
   const bounds = new window.google.maps.LatLngBounds()
   coordinates.forEach((point) => {
@@ -212,6 +281,17 @@ const ShopProfile = () => {
   const mapsScriptLoadedRef = useRef(false)
   const selectedZoneRef = useRef(null)
 
+  const locationRef = useRef(location)
+  const zonesRef = useRef(zones)
+
+  useEffect(() => {
+    locationRef.current = location
+  }, [location])
+
+  useEffect(() => {
+    zonesRef.current = zones
+  }, [zones])
+
   const isAutofilled = !!(location.latitude && location.longitude)
 
   useEffect(() => {
@@ -348,6 +428,26 @@ const ShopProfile = () => {
         const lat = place?.geometry?.location?.lat?.()
         const lng = place?.geometry?.location?.lng?.()
 
+        const nextLat = Number.isFinite(lat) ? Number(lat.toFixed(6)) : 0
+        const nextLng = Number.isFinite(lng) ? Number(lng.toFixed(6)) : 0
+
+        const currentLocation = locationRef.current
+        const currentZones = zonesRef.current
+        const selectedZoneId = normalizeProfileZoneId(currentLocation.zoneId)
+        const selectedZone = currentZones.find((zone) => getZoneIdValue(zone) === selectedZoneId)
+
+        if (!selectedZoneId || !selectedZone) {
+          toast.error("Please select a valid service zone before selecting location")
+          if (locationSearchInputRef.current) locationSearchInputRef.current.value = currentLocation.formattedAddress || ""
+          return
+        }
+
+        if (!isLocationWithinZone(selectedZone, nextLat, nextLng)) {
+          toast.error("Selected location is outside the selected service zone")
+          if (locationSearchInputRef.current) locationSearchInputRef.current.value = currentLocation.formattedAddress || ""
+          return
+        }
+
         setLocation((prev) => ({
           ...prev,
           formattedAddress,
@@ -355,12 +455,33 @@ const ShopProfile = () => {
           city,
           state,
           pincode,
-          latitude: Number.isFinite(lat) ? Number(lat.toFixed(6)) : prev.latitude,
-          longitude: Number.isFinite(lng) ? Number(lng.toFixed(6)) : prev.longitude,
+          latitude: nextLat || prev.latitude,
+          longitude: nextLng || prev.longitude,
         }))
 
         if (locationSearchInputRef.current) {
-          locationSearchInputRef.current.value = pincode || ""
+          locationSearchInputRef.current.value = formattedAddress
+        }
+
+        // If Google Places Autocomplete did not return postal_code (common for locality/area searches),
+        // reverse geocode using lat/lng to automatically fetch the pincode.
+        if (!pincode && nextLat && nextLng && window.google?.maps?.Geocoder) {
+          const geocoder = new window.google.maps.Geocoder()
+          geocoder.geocode({ location: { lat: nextLat, lng: nextLng } }, (results, status) => {
+            if (status !== "OK" || !Array.isArray(results)) return
+
+            const resultWithPostalCode = results.find((result) =>
+              result.address_components?.some((component) => component.types.includes("postal_code")),
+            )
+            const components = resultWithPostalCode?.address_components || []
+            const fallbackPincode = components.find((c) => c.types.includes("postal_code"))?.long_name || ""
+            if (!fallbackPincode) return
+
+            setLocation((prev) => ({
+              ...prev,
+              pincode: fallbackPincode,
+            }))
+          })
         }
       })
     }
@@ -386,7 +507,7 @@ const ShopProfile = () => {
       if (bounds) {
         placesAutocompleteRef.current.setBounds(bounds)
         placesAutocompleteRef.current.setOptions({
-          strictBounds: true,
+          strictBounds: false,
           componentRestrictions: { country: "in" }
         })
       } else {
