@@ -136,7 +136,7 @@ const getShopContext = async (shopId) => {
     }
 
     const shop = await FoodShop.findById(shopId)
-        .select('pureVegShop')
+        .select('pureVegShop shopName name')
         .lean();
     if (!shop?._id) {
         throw new ValidationError('Shop not found');
@@ -144,7 +144,8 @@ const getShopContext = async (shopId) => {
 
     return {
         shopId: new mongoose.Types.ObjectId(String(shopId)),
-        pureVegShop: shop.pureVegShop === true
+        pureVegShop: shop.pureVegShop === true,
+        shopName: shop.shopName || shop.name || 'Shop'
     };
 };
 
@@ -271,8 +272,8 @@ export async function createShopFood(shopId, body = {}) {
     try {
         const { notifyAdminsSafely } = await import('../../../../core/notifications/firebase.service.js');
         void notifyAdminsSafely({
-            title: 'New Product Approval Request ðŸ”',
-            body: `Shop has submitted a new item "${doc.name}" for approval.`,
+            title: 'New Product Approval Request 🍔',
+            body: `Shop "${context.shopName}" has submitted a new item "${doc.name}" for approval.`,
             data: {
                 type: 'approval_request',
                 subType: 'food',
@@ -397,8 +398,8 @@ export async function updateShopFood(shopId, foodId, body = {}) {
         try {
             const { notifyAdminsSafely } = await import('../../../../core/notifications/firebase.service.js');
             void notifyAdminsSafely({
-                title: 'Updated Product Approval Request',
-                body: `Shop has updated and resubmitted "${updated.name}" for approval.`,
+                title: 'Updated Product Approval Request 🍔',
+                body: `Shop "${context.shopName}" has updated and resubmitted "${updated.name}" for approval.`,
                 data: {
                     type: 'approval_request',
                     subType: 'food',

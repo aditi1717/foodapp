@@ -45,6 +45,10 @@ import { FoodDeliveryWallet } from '../../delivery/models/deliveryWallet.model.j
 import { FoodDeliveryCashDeposit } from '../../delivery/models/foodDeliveryCashDeposit.model.js';
 import { FoodPayoutSettlement } from '../models/foodPayoutSettlement.model.js';
 import {
+    sendDeliveryRegistrationStatusEmail,
+    sendShopRegistrationStatusEmail
+} from '../../../../utils/email.js';
+import {
     backfillLegacyCategoryWorkflow,
     categoryAllowsFoodType,
     normalizeCategoryVisibilityTime,
@@ -4747,6 +4751,12 @@ export async function approveShop(id) {
 
     if (updated) {
         try {
+            await sendShopRegistrationStatusEmail(updated, 'approved');
+        } catch (e) {
+            console.error('Failed to send shop approval email:', e);
+        }
+
+        try {
             const { notifyOwnersSafely } = await import('../../../../core/notifications/firebase.service.js');
             await notifyOwnersSafely(
                 [{ ownerType: 'SHOP', ownerId: updated._id }],
@@ -4783,6 +4793,12 @@ export async function rejectShop(id, reason) {
     ).lean();
 
     if (updated) {
+        try {
+            await sendShopRegistrationStatusEmail(updated, 'rejected', reason || 'Incomplete documents');
+        } catch (e) {
+            console.error('Failed to send shop rejection email:', e);
+        }
+
         try {
             const { notifyOwnersSafely } = await import('../../../../core/notifications/firebase.service.js');
             await notifyOwnersSafely(
@@ -6359,6 +6375,12 @@ export async function approveDeliveryPartner(id) {
     await partner.save();
 
     try {
+        await sendDeliveryRegistrationStatusEmail(partner, 'approved');
+    } catch (e) {
+        console.error('Failed to send delivery partner approval email:', e);
+    }
+
+    try {
         const { notifyOwnerSafely } = await import('../../../../core/notifications/firebase.service.js');
         await notifyOwnerSafely(
             { ownerType: 'DELIVERY_PARTNER', ownerId: partner._id },
@@ -6439,6 +6461,12 @@ export async function rejectDeliveryPartner(id, reason) {
     ).lean();
 
     if (updated) {
+        try {
+            await sendDeliveryRegistrationStatusEmail(updated, 'rejected', reason || 'Incomplete documents');
+        } catch (e) {
+            console.error('Failed to send delivery partner rejection email:', e);
+        }
+
         try {
             const { notifyOwnerSafely } = await import('../../../../core/notifications/firebase.service.js');
             await notifyOwnerSafely(

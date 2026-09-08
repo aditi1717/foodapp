@@ -283,9 +283,6 @@ export const listExclusivityPartnersController = async (req, res, next) => {
                     if (partner.status !== 'approved' || partner.availabilityStatus !== 'online') {
                         continue;
                     }
-                    if (targetZoneId && String(partner.zoneId) !== String(targetZoneId)) {
-                        continue;
-                    }
 
                     // Security balance check for COD orders
                     if (orderObj && orderObj.payment?.method === 'cash') {

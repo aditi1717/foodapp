@@ -3073,7 +3073,7 @@ export default function ShopOnboarding() {
               }
             }}
             className="mt-1 bg-white text-sm"
-            placeholder="e.g., Butter Chicken Special"
+            placeholder="Enter your featured dish"
           />
         </div>
 

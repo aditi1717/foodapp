@@ -1260,7 +1260,7 @@ const ShopProfile = () => {
                 onChange={e => setOpsInfo({...opsInfo, featuredDish: e.target.value})}
                 disabled={!editStates.operations}
                 className="rounded-xl bg-slate-50/50"
-                placeholder="e.g. Butter Chicken Special"
+                placeholder="Enter your featured dish"
               />
             </div>
             <div className="space-y-2 md:col-span-2">

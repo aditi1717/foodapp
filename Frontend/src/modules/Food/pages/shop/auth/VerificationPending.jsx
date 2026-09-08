@@ -106,12 +106,7 @@ export default function VerificationPending() {
               <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-600" />
               <div className="text-sm text-slate-700">
                 <p className="font-semibold text-slate-900">What happens next</p>
-                <p className="mt-1">We will notify you once the verification is approved.</p>
-                {pendingPhone ? (
-                  <p className="mt-2 text-slate-500">
-                    Registered phone: <span className="font-medium text-slate-700">{pendingPhone}</span>
-                  </p>
-                ) : null}
+                <p className="mt-1">We will inform you through email once the verification is approved.</p>
               </div>
             </div>
           </div>

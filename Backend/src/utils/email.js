@@ -23,6 +23,116 @@ function getTransporter() {
     return transporter;
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+async function sendRegistrationStatusEmail({
+    to,
+    recipientName,
+    accountType,
+    accountName,
+    status,
+    reason = '',
+}) {
+    const normalizedTo = String(to || '').trim();
+    if (!normalizedTo) {
+        logger.warn(`${accountType} registration ${status} email skipped: recipient email missing`);
+        return false;
+    }
+
+    const trans = getTransporter();
+    if (!trans) {
+        logger.warn(`${accountType} registration ${status} email skipped: SMTP not configured`);
+        return false;
+    }
+
+    const from = config.emailFrom || config.emailUser;
+    const isApproved = status === 'approved';
+    const safeRecipientName = escapeHtml(recipientName || 'Partner');
+    const safeAccountType = escapeHtml(accountType);
+    const safeAccountName = escapeHtml(accountName || accountType);
+    const safeReason = escapeHtml(reason || 'Incomplete documents');
+    const subject = isApproved
+        ? `Your ${accountType} registration has been approved`
+        : `Your ${accountType} registration has been rejected`;
+    const statusLabel = isApproved ? 'Approved' : 'Rejected';
+    const accentColor = isApproved ? '#0f766e' : '#b91c1c';
+    const statusBg = isApproved ? '#ecfdf5' : '#fef2f2';
+    const statusBorder = isApproved ? '#99f6e4' : '#fecaca';
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f8fafc; margin: 0; padding: 24px 12px;">
+  <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+    <div style="padding: 22px 24px; background: #111827; color: #ffffff;">
+      <h1 style="margin: 0; font-size: 22px;">FreshCut Local</h1>
+      <p style="margin: 4px 0 0; color: #d1d5db; font-size: 13px;">Registration update</p>
+    </div>
+    <div style="padding: 24px;">
+      <p style="margin: 0 0 14px;">Hi ${safeRecipientName},</p>
+      <div style="background: ${statusBg}; border: 1px solid ${statusBorder}; border-radius: 10px; padding: 16px; margin-bottom: 18px;">
+        <p style="margin: 0; color: ${accentColor}; font-size: 18px; font-weight: 700;">${statusLabel}</p>
+        <p style="margin: 6px 0 0;">Your ${safeAccountType} registration for <strong>${safeAccountName}</strong> has been ${isApproved ? 'approved' : 'rejected'}.</p>
+      </div>
+      ${isApproved
+        ? '<p style="margin: 0 0 14px;">You can now login to your account and continue using the app.</p>'
+        : `<p style="margin: 0 0 14px;"><strong>Reason:</strong> ${safeReason}</p><p style="margin: 0 0 14px;">Please update the required details and contact support if you need help.</p>`}
+      <p style="margin: 20px 0 0; color: #6b7280; font-size: 13px;">Thank you,<br>FreshCut Local Team</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const text = isApproved
+        ? `Hi ${recipientName || 'Partner'}, your ${accountType} registration for ${accountName || accountType} has been approved. You can now login to your account.`
+        : `Hi ${recipientName || 'Partner'}, your ${accountType} registration for ${accountName || accountType} has been rejected. Reason: ${reason || 'Incomplete documents'}.`;
+
+    try {
+        await trans.sendMail({
+            from: typeof from === 'string' && from.includes('<') ? from : `FreshCut Local <${from}>`,
+            to: normalizedTo,
+            subject,
+            text,
+            html
+        });
+        logger.info(`${accountType} registration ${status} email sent to ${normalizedTo}`);
+        return true;
+    } catch (err) {
+        logger.error(`Failed to send ${accountType} registration ${status} email to ${normalizedTo}:`, err.message);
+        return false;
+    }
+}
+
+export async function sendShopRegistrationStatusEmail(shop, status, reason = '') {
+    return sendRegistrationStatusEmail({
+        to: shop?.ownerEmail,
+        recipientName: shop?.ownerName,
+        accountType: 'restaurant',
+        accountName: shop?.shopName,
+        status,
+        reason
+    });
+}
+
+export async function sendDeliveryRegistrationStatusEmail(partner, status, reason = '') {
+    return sendRegistrationStatusEmail({
+        to: partner?.email,
+        recipientName: partner?.name,
+        accountType: 'delivery partner',
+        accountName: partner?.name,
+        status,
+        reason
+    });
+}
+
 /**
  * Send OTP email for admin forgot password.
  * @param {string} to - Recipient email

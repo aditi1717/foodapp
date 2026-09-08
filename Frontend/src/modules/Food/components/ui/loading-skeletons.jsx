@@ -468,6 +468,26 @@ function ShopShellSkeleton({ className }) {
   )
 }
 
+function DeliveryAuthSkeleton({ className }) {
+  return (
+    <LoadingSkeletonRegion label="Loading delivery registration" className={cn("min-h-screen bg-slate-50 flex items-center justify-center p-4 dark:bg-[#0a0a0a]", className)}>
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl space-y-6 dark:border-slate-800 dark:bg-[#141414]">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Skeleton className="h-16 w-16 rounded-2xl" />
+          <Skeleton className="h-4 w-32 rounded-full" />
+          <Skeleton className="h-7 w-48 rounded-md" />
+          <Skeleton className="h-4 w-60 rounded-md" />
+        </div>
+        <div className="space-y-4 pt-2">
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <Skeleton className="h-12 w-full rounded-xl mt-4" />
+        </div>
+      </div>
+    </LoadingSkeletonRegion>
+  )
+}
+
 function DeliveryShellSkeleton({ className }) {
   return (
     <LoadingSkeletonRegion label="Loading delivery panel" className={cn("min-h-screen bg-slate-50 dark:bg-[#0a0a0a]", className)}>
@@ -505,6 +525,7 @@ export {
   AppShellSkeleton,
   CategoryChipRowSkeleton,
   ContentPageSkeleton,
+  DeliveryAuthSkeleton,
   DeliveryShellSkeleton,
   ExploreGridSkeleton,
   HeroBannerSkeleton,

@@ -473,6 +473,10 @@ function setSavedToken(moduleName, token) {
 
 async function saveTokenByModule(moduleName, token, platform = "web") {
   pushDebugLog(PUSH_DEBUG_PREFIX, "saveTokenByModule starting", { moduleName, platform, tokenPreview: `${token?.slice(0, 10)}...` });
+  if (moduleName === "admin") {
+    await adminAPI.saveFcmToken(token, platform);
+    return;
+  }
   if (moduleName === "shop") {
     await shopAPI.saveFcmToken(token, platform);
     return;
@@ -710,7 +714,6 @@ async function attachForegroundListener(firebaseAppInstance) {
 
 export async function registerWebPushForCurrentModule(pathname = window.location.pathname) {
   const moduleName = normalizeModuleFromPath(pathname);
-  if (moduleName === "admin") return;
   initPushNotificationClient();
 
   const accessToken = localStorage.getItem(`${moduleName}_accessToken`);

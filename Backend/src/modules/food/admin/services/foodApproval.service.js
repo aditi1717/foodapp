@@ -127,7 +127,7 @@ export async function approveFoodItem(id) {
         await invalidateCache('shop_menu:*');
         
         try {
-            const { notifyOwnersSafely } = await import('../../../core/notifications/firebase.service.js');
+            const { notifyOwnersSafely } = await import('../../../../core/notifications/firebase.service.js');
             await notifyOwnersSafely(
                 [{ ownerType: 'SHOP', ownerId: updated.shopId }],
                 {
@@ -167,7 +167,7 @@ export async function rejectFoodItem(id, reason) {
         await invalidateCache('shop_menu:*');
         
         try {
-            const { notifyOwnersSafely } = await import('../../../core/notifications/firebase.service.js');
+            const { notifyOwnersSafely } = await import('../../../../core/notifications/firebase.service.js');
             await notifyOwnersSafely(
                 [{ ownerType: 'SHOP', ownerId: updated.shopId }],
                 {

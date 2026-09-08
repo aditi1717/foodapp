@@ -55,6 +55,30 @@ const formatLocationAddress = (source = {}, fallback = "—") => {
   return fallback
 }
 
+const formatShopId = (id) => {
+  if (!id) return "N/A"
+  const idString = String(id).trim()
+  const isMongoId = /^[0-9a-fA-F]{24}$/.test(idString)
+  if (!isMongoId && idString.length < 15) {
+    return idString
+  }
+
+  const digits = idString.match(/\d+/g)
+  let lastDigits = ""
+  if (digits && digits.length > 0) {
+    const combinedDigits = digits.join("")
+    lastDigits = combinedDigits.slice(-6).padStart(6, "0")
+  }
+
+  if (!lastDigits) {
+    const hash = idString.split("").reduce((acc, char) => {
+      return ((acc << 5) - acc) + char.charCodeAt(0) | 0
+    }, 0)
+    lastDigits = Math.abs(hash).toString().slice(-6).padStart(6, "0")
+  }
+
+  return `REST${lastDigits}`
+}
 
 export default function JoiningRequest() {
   const [activeTab, setActiveTab] = useState("pending")
@@ -791,7 +815,7 @@ export default function JoiningRequest() {
                         )}
                         <div className="flex items-center gap-1 text-slate-600">
                           <Building2 className="w-4 h-4" />
-                          <span className="text-sm">{r?.shopId || r?._id || "N/A"}</span>
+                          <span className="text-sm font-semibold" title={r?.shopId || r?._id || ""}>{formatShopId(r?.shopId || r?._id)}</span>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           approvalStatus === "approved" ? "bg-green-100 text-green-700" : approvalStatus === "rejected" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
