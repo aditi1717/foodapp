@@ -8,13 +8,38 @@ import BRAND_THEME from "@/config/brandTheme"
 
 import { shopAPI } from "@food/api"
 
+const SHOP_AUTH_DATA_KEY = "shopAuthData"
+const SHOP_AUTH_DATA_BACKUP_KEY = "shopAuthDataBackup"
+
+const persistShopAuthData = (authData) => {
+  const serialized = JSON.stringify(authData)
+  sessionStorage.setItem(SHOP_AUTH_DATA_KEY, serialized)
+  localStorage.setItem(SHOP_AUTH_DATA_BACKUP_KEY, serialized)
+}
+
 export default function ShopLogin() {
   const navigate = useNavigate()
-  const [phone, setPhone] = useState("")
+  const [phone, setPhone] = useState(() => {
+    if (typeof window !== "undefined") {
+      const draft = sessionStorage.getItem("shopLoginDraftPhone")
+      if (draft) return draft
+      const storedPhone = sessionStorage.getItem("shopLoginPhone")
+      if (storedPhone) return storedPhone.replace("+91", "").trim()
+    }
+    return ""
+  })
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [logoUrl, setLogoUrl] = useState(DEFAULT_FOOD_LOGO)
   const isValid = phone.replace(/\D/g, "").length === 10
+
+  const handlePhoneChange = (val) => {
+    const digitsOnly = val.replace(/\D/g, "")
+    setPhone(digitsOnly)
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("shopLoginDraftPhone", digitsOnly)
+    }
+  }
 
   useEffect(() => {
     const syncBranding = async () => {
@@ -58,11 +83,11 @@ export default function ShopLogin() {
       const formattedPhone = `+91${phone}`
       await shopAPI.sendOTP(formattedPhone, "login")
 
-      sessionStorage.setItem("shopAuthData", JSON.stringify({
+      persistShopAuthData({
         method: "phone",
         phone: formattedPhone,
         isSignUp: false
-      }))
+      })
       sessionStorage.setItem("shopLoginPhone", formattedPhone)
 
       navigate("/food/shop/otp")
@@ -105,7 +130,7 @@ export default function ShopLogin() {
               inputMode="numeric"
               maxLength={10}
               value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) => handlePhoneChange(e.target.value)}
               placeholder="Enter 10-digit number"
               className="h-12 flex-1"
             />

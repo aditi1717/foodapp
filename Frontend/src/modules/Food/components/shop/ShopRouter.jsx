@@ -82,6 +82,7 @@ export default function ShopRouter() {
         <Route path="login" element={<Login />} />
         <Route path="otp" element={<OTP />} />
         <Route path="signup" element={<Signup />} />
+        <Route path="register" element={<Signup />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="pending-verification" element={<VerificationPending />} />
 
@@ -156,4 +157,3 @@ export default function ShopRouter() {
     </Suspense>
   )
 }
-

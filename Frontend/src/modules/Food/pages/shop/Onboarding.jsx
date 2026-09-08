@@ -55,6 +55,7 @@ const BANK_ACCOUNT_NUMBER_REGEX = /^\d{9,18}$/
 const IFSC_CODE_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/
 const ACCOUNT_HOLDER_NAME_REGEX = /^[A-Za-z ]+$/
 const GST_LEGAL_NAME_REGEX = /^[A-Za-z ]+$/
+const FEATURED_DISH_NAME_REGEX = /^[A-Za-z][A-Za-z\s.'-]*$/
 const GALLERY_IMAGE_ACCEPT = ".jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
 const LOCAL_IMAGE_FILE_ACCEPT = GALLERY_IMAGE_ACCEPT
 const getZoneIdValue = (zone) => String(zone?._id || zone?.id || "").trim()

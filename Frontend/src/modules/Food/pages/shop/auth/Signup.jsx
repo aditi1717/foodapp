@@ -17,12 +17,22 @@ import loginBg from "@food/assets/loginbanner.png"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import BRAND_THEME from "@/config/brandTheme"
 
+const SHOP_AUTH_DATA_KEY = "shopAuthData"
+const SHOP_AUTH_DATA_BACKUP_KEY = "shopAuthDataBackup"
+
+const persistShopAuthData = (authData) => {
+  const serialized = JSON.stringify(authData)
+  sessionStorage.setItem(SHOP_AUTH_DATA_KEY, serialized)
+  localStorage.setItem(SHOP_AUTH_DATA_BACKUP_KEY, serialized)
+}
+
 const countryCodes = [
   { code: "+91", country: "IN", flag: "🇮🇳" },
 ]
 
 export default function ShopSignup() {
   const navigate = useNavigate()
+  const companyName = useCompanyName()
   const [formData, setFormData] = useState({
     phone: "",
     countryCode: "+91",
@@ -113,7 +123,7 @@ export default function ShopSignup() {
       // Send OTP with purpose 'register'
       await shopAPI.sendOTP(fullPhone, "register")
 
-      // Store auth data in sessionStorage for OTP page
+      // Keep a local fallback so refresh inside mobile/web shells preserves the shop flow.
       const authData = {
         method: "phone",
         phone: fullPhone,
@@ -121,7 +131,7 @@ export default function ShopSignup() {
         isSignUp: true,
         module: "shop",
       }
-      sessionStorage.setItem("shopAuthData", JSON.stringify(authData))
+      persistShopAuthData(authData)
 
       navigate("/food/shop/otp")
     } catch (error) {

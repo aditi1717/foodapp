@@ -23,7 +23,13 @@ const countryCodes = [{ code: "+91", country: "IN", flag: "IN" }]
 export default function DeliverySignIn() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({ phone: "", countryCode: "+91" })
+  const [formData, setFormData] = useState(() => {
+    let initialPhone = ""
+    if (typeof window !== "undefined") {
+      initialPhone = sessionStorage.getItem("deliveryLoginDraftPhone") || ""
+    }
+    return { phone: initialPhone, countryCode: "+91" }
+  })
   const [error, setError] = useState("")
   const [isSending, setIsSending] = useState(false)
   const [showFallbackLogo, setShowFallbackLogo] = useState(false)
@@ -54,16 +60,21 @@ export default function DeliverySignIn() {
       })
     }
 
-    const stored = sessionStorage.getItem("deliveryAuthData")
-    if (stored) {
-      try {
-        const data = JSON.parse(stored)
-        if (data.phone) {
-          const phoneDigits = data.phone.replace("+91", "").trim()
-          setFormData(prev => ({ ...prev, phone: phoneDigits }))
+    const storedDraft = sessionStorage.getItem("deliveryLoginDraftPhone")
+    if (storedDraft) {
+      setFormData(prev => ({ ...prev, phone: storedDraft }))
+    } else {
+      const stored = sessionStorage.getItem("deliveryAuthData")
+      if (stored) {
+        try {
+          const data = JSON.parse(stored)
+          if (data.phone) {
+            const phoneDigits = data.phone.replace("+91", "").trim()
+            setFormData(prev => ({ ...prev, phone: phoneDigits }))
+          }
+        } catch (err) {
+          debugError("Error parsing stored auth data:", err)
         }
-      } catch (err) {
-        debugError("Error parsing stored auth data:", err)
       }
     }
   }, [])
@@ -101,6 +112,9 @@ export default function DeliverySignIn() {
   const handlePhoneChange = (e) => {
     const digitsOnly = e.target.value.replace(/\D/g, "")
     setFormData(prev => ({ ...prev, phone: digitsOnly }))
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("deliveryLoginDraftPhone", digitsOnly)
+    }
   }
 
   const isValid = validatePhone(formData.phone) === ""

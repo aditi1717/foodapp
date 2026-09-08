@@ -10,7 +10,12 @@ import BRAND_THEME from "@/config/brandTheme"
 
 export default function UnifiedOTPFastLogin() {
   const RESEND_COOLDOWN_SECONDS = 60
-  const [phoneNumber, setPhoneNumber] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("userLoginDraftPhone") || ""
+    }
+    return ""
+  })
   const [otp, setOtp] = useState("")
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -22,6 +27,14 @@ export default function UnifiedOTPFastLogin() {
   const [searchParams] = useSearchParams()
   const referralCode = String(searchParams.get("ref") || "").trim().toUpperCase() || null
   const submitting = useRef(false)
+
+  const handlePhoneChange = (val) => {
+    const digitsOnly = String(val || "").replace(/\D/g, "").slice(0, 10)
+    setPhoneNumber(digitsOnly)
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("userLoginDraftPhone", digitsOnly)
+    }
+  }
 
   useEffect(() => {
     const syncBranding = async () => {
@@ -302,7 +315,7 @@ export default function UnifiedOTPFastLogin() {
                        required
                        autoFocus
                        value={phoneNumber}
-                       onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                       onChange={(e) => handlePhoneChange(e.target.value)}
                        maxLength={10}
                        className="flex-1 bg-transparent text-gray-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-[15px]"
                        placeholder="Phone number"
@@ -456,4 +469,3 @@ export default function UnifiedOTPFastLogin() {
     </div>
   )
 }
-

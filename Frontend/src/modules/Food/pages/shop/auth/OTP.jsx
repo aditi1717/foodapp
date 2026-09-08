@@ -17,6 +17,34 @@ import BRAND_THEME from "@/config/brandTheme"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
+const SHOP_AUTH_DATA_KEY = "shopAuthData"
+const SHOP_AUTH_DATA_BACKUP_KEY = "shopAuthDataBackup"
+
+const getStoredShopAuthData = () => {
+  const stored =
+    sessionStorage.getItem(SHOP_AUTH_DATA_KEY) ||
+    localStorage.getItem(SHOP_AUTH_DATA_BACKUP_KEY)
+
+  if (!stored) return null
+
+  try {
+    const data = JSON.parse(stored)
+    if (data?.module && data.module !== "shop") return null
+    if (!data?.phone && !data?.email) return null
+
+    sessionStorage.setItem(SHOP_AUTH_DATA_KEY, JSON.stringify(data))
+    return data
+  } catch {
+    sessionStorage.removeItem(SHOP_AUTH_DATA_KEY)
+    localStorage.removeItem(SHOP_AUTH_DATA_BACKUP_KEY)
+    return null
+  }
+}
+
+const clearStoredShopAuthData = () => {
+  sessionStorage.removeItem(SHOP_AUTH_DATA_KEY)
+  localStorage.removeItem(SHOP_AUTH_DATA_BACKUP_KEY)
+}
 
 export default function ShopOTP() {
   const companyName = useCompanyName()
@@ -35,9 +63,8 @@ export default function ShopOTP() {
   const otpSectionRef = useRef(null)
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("shopAuthData")
-    if (stored) {
-      const data = JSON.parse(stored)
+    const data = getStoredShopAuthData()
+    if (data) {
       setAuthData(data)
 
       if (data.method === "email" && data.email) {
@@ -53,7 +80,7 @@ export default function ShopOTP() {
         }
       }
     } else {
-      navigate("/food/shop/login")
+      navigate("/food/shop/register", { replace: true })
       return
     }
 
@@ -244,7 +271,7 @@ export default function ShopOTP() {
 
       if (needsRegistration) {
         setShopPendingPhone(normalizedPhone)
-        sessionStorage.removeItem("shopAuthData")
+        clearStoredShopAuthData()
         sessionStorage.removeItem("shopLoginPhone")
         navigate("/food/shop/onboarding", { replace: true })
         return
@@ -257,7 +284,7 @@ export default function ShopOTP() {
       if (accessToken && shop) {
         setShopAuthData("shop", accessToken, shop, refreshToken)
         window.dispatchEvent(new Event("shopAuthChanged"))
-        sessionStorage.removeItem("shopAuthData")
+        clearStoredShopAuthData()
         sessionStorage.removeItem("shopLoginPhone")
 
         setTimeout(async () => {
@@ -292,7 +319,7 @@ export default function ShopOTP() {
         if (pendingPhone) {
           setShopPendingPhone(pendingPhone)
         }
-        sessionStorage.removeItem("shopAuthData")
+        clearStoredShopAuthData()
         sessionStorage.removeItem("shopLoginPhone")
         navigate("/food/shop/pending-verification", {
           replace: true,
