@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Suspense, lazy, useEffect } from 'react'
-import { AppShellSkeleton } from '@food/components/ui/loading-skeletons'
+import Loader from '@food/components/Loader'
 
 const NATIVE_LAST_ROUTE_KEY = 'native_last_route'
 
@@ -8,7 +8,7 @@ const FoodApp = lazy(() => import('../modules/Food/routes'))
 const AuthApp = lazy(() => import('../modules/auth/routes'))
 const AdminRouter = lazy(() => import('../modules/Food/components/admin/AdminRouter'))
 
-const PageLoader = () => <AppShellSkeleton />
+const PageLoader = () => <Loader />
 
 const FoodAppWrapper = () => {
   return (

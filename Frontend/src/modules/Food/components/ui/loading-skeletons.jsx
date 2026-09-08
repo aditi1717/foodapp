@@ -354,17 +354,167 @@ function AppShellSkeleton({ className }) {
   )
 }
 
+function AdminAuthSkeleton({ className }) {
+  return (
+    <LoadingSkeletonRegion label="Loading admin login" className={cn("min-h-screen bg-slate-100 flex items-center justify-center p-4 dark:bg-[#0a0a0a]", className)}>
+      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 shadow-xl space-y-6 dark:border-slate-800 dark:bg-[#141414]">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-12 w-28 rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-40 rounded-md" />
+            <Skeleton className="h-4 w-56 rounded-md" />
+          </div>
+        </div>
+        <div className="space-y-5 pt-2">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-16 rounded-md" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20 rounded-md" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-12 w-full rounded-xl mt-6" />
+        </div>
+      </div>
+    </LoadingSkeletonRegion>
+  )
+}
+
+function AdminShellSkeleton({ className }) {
+  return (
+    <LoadingSkeletonRegion label="Loading admin dashboard" className={cn("min-h-screen bg-slate-50 dark:bg-[#0a0a0a]", className)}>
+      <div className="flex h-screen overflow-hidden">
+        <div className="hidden w-64 flex-col border-r border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141414] lg:flex">
+          <div className="flex items-center gap-3 px-2 py-3">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <Skeleton className="h-6 w-32 rounded-lg" />
+          </div>
+          <div className="mt-6 space-y-3">
+            {Array.from({ length: 9 }, (_, i) => (
+              <Skeleton key={i} className="h-10 w-full rounded-xl" />
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 dark:border-white/10 dark:bg-[#141414]">
+            <Skeleton className="h-8 w-48 rounded-lg" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded-full" />
+              <Skeleton className="h-9 w-28 rounded-xl" />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#141414] space-y-3">
+                  <Skeleton className="h-4 w-24 rounded-md" />
+                  <Skeleton className="h-8 w-32 rounded-lg" />
+                </div>
+              ))}
+            </div>
+            <TableSkeleton rows={7} columns={6} />
+          </div>
+        </div>
+      </div>
+    </LoadingSkeletonRegion>
+  )
+}
+
+function ShopAuthSkeleton({ className }) {
+  return (
+    <LoadingSkeletonRegion label="Loading merchant login" className={cn("min-h-screen bg-amber-50/50 flex items-center justify-center p-4 dark:bg-[#0a0a0a]", className)}>
+      <div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-8 shadow-xl space-y-6 dark:border-white/10 dark:bg-[#141414]">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Skeleton className="h-16 w-16 rounded-2xl" />
+          <Skeleton className="h-7 w-48 rounded-md" />
+          <Skeleton className="h-4 w-64 rounded-md" />
+        </div>
+        <div className="space-y-4 pt-2">
+          <Skeleton className="h-12 w-full rounded-2xl" />
+          <Skeleton className="h-12 w-full rounded-2xl" />
+          <Skeleton className="h-12 w-full rounded-2xl mt-4" />
+        </div>
+      </div>
+    </LoadingSkeletonRegion>
+  )
+}
+
+function ShopShellSkeleton({ className }) {
+  return (
+    <LoadingSkeletonRegion label="Loading merchant panel" className={cn("min-h-screen bg-slate-50 dark:bg-[#0a0a0a]", className)}>
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48 rounded-xl" />
+            <Skeleton className="h-4 w-32 rounded-md" />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton className="h-10 w-24 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#141414] space-y-3">
+              <Skeleton className="h-4 w-28 rounded-md" />
+              <Skeleton className="h-8 w-24 rounded-lg" />
+            </div>
+          ))}
+        </div>
+        <TableSkeleton rows={6} columns={5} />
+      </div>
+    </LoadingSkeletonRegion>
+  )
+}
+
+function DeliveryShellSkeleton({ className }) {
+  return (
+    <LoadingSkeletonRegion label="Loading delivery panel" className={cn("min-h-screen bg-slate-50 dark:bg-[#0a0a0a]", className)}>
+      <div className="mx-auto max-w-md px-4 py-6 space-y-5">
+        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#141414]">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-32 rounded-md" />
+              <Skeleton className="h-3 w-20 rounded-md" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-16 rounded-full" />
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3 dark:border-white/10 dark:bg-[#141414]">
+              <div className="flex justify-between">
+                <Skeleton className="h-5 w-28 rounded-md" />
+                <Skeleton className="h-5 w-16 rounded-md" />
+              </div>
+              <Skeleton className="h-4 w-3/4 rounded-md" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </LoadingSkeletonRegion>
+  )
+}
+
 export {
+  AdminAuthSkeleton,
+  AdminShellSkeleton,
   AppShellSkeleton,
   CategoryChipRowSkeleton,
   ContentPageSkeleton,
+  DeliveryShellSkeleton,
   ExploreGridSkeleton,
   HeroBannerSkeleton,
   LoadingSkeletonRegion,
   OrdersDashboardSkeleton,
+  ShopAuthSkeleton,
   ShopCardSkeleton,
   ShopDetailSkeleton,
   ShopGridSkeleton,
+  ShopShellSkeleton,
   SkeletonLines,
   TableSkeleton,
   WalletSkeleton,
