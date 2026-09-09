@@ -2723,7 +2723,7 @@ export default function Home() {
   }, [displayCategories, showCategorySkeleton, navigate, homeUnderRoute, homeUnderPriceLimit, searchParams, setSearchParams]);
 
   return (
-    <div className={`relative min-h-screen ${BRAND_THEME.tokens.homepage.shared.pageBackground} pb-16 md:pb-6 overflow-x-clip`}>
+    <div className={`relative min-h-screen ${BRAND_THEME.tokens.homepage.shared.pageBackground} pb-28 md:pb-6 overflow-x-clip`}>
       {activeTab === "food" && (
         <FoodHeroHeaderShell
           stickyHeaderRef={stickyHeaderRef}

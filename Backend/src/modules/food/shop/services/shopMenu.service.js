@@ -3,6 +3,7 @@ import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodShop } from '../models/shop.model.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { FoodCategory } from '../../admin/models/category.model.js';
+import { FoodProductSkeleton } from '../../admin/models/productSkeleton.model.js';
 import { getFoodDisplayPrice, serializeFoodVariants } from '../../admin/services/foodVariant.service.js';
 import { isCategoryVisibleNow } from '../../shared/categoryWorkflow.js';
 
@@ -31,6 +32,20 @@ const buildMenuFromFoods = async (foods = [], options = {}) => {
             .map((doc) => String(doc._id))
     );
 
+    const skeletonIds = Array.from(
+        new Set(
+            (foods || [])
+                .map((food) => (food?.skeletonId ? String(food.skeletonId) : ''))
+                .filter((value) => mongoose.Types.ObjectId.isValid(value))
+        )
+    );
+    const skeletonDocs = skeletonIds.length
+        ? await FoodProductSkeleton.find({ _id: { $in: skeletonIds } })
+            .select('name image description foodType')
+            .lean()
+        : [];
+    const skeletonMap = new Map(skeletonDocs.map((doc) => [String(doc._id), doc]));
+
     const byCategory = new Map();
     for (const food of foods) {
         const categoryId = food?.categoryId ? String(food.categoryId) : '';
@@ -53,9 +68,17 @@ const buildMenuFromFoods = async (foods = [], options = {}) => {
             });
         }
 
+        const skelDoc = food?.skeletonId ? skeletonMap.get(String(food.skeletonId)) : null;
+        const resolvedImage = food.image || (Array.isArray(food.images) && food.images[0]) || skelDoc?.image || '';
+        const resolvedImages = Array.isArray(food.images) && food.images.length > 0
+            ? food.images.filter(Boolean)
+            : (resolvedImage ? [resolvedImage] : []);
+
         const normalizedItem = {
             id: String(food._id),
             _id: food._id,
+            skeletonId: food.skeletonId ? String(food.skeletonId) : null,
+            isFromSkeleton: Boolean(food.isFromSkeleton),
             categoryId: categoryId || null,
             categoryName: sectionName,
             category: sectionName,
@@ -75,7 +98,16 @@ const buildMenuFromFoods = async (foods = [], options = {}) => {
                     ? Number(food.bulkOrderPricing.bulkPrice)
                     : null
             },
-            image: food.image || '',
+            image: resolvedImage,
+            images: resolvedImages,
+            servesInfo: food.servesInfo || '',
+            itemSizeQuantity: food.itemSizeQuantity || '',
+            itemSizeUnit: food.itemSizeUnit || 'piece',
+            gst: food.gst != null ? food.gst : '5.0',
+            isRecommended: Boolean(food.isRecommended),
+            tags: Array.isArray(food.tags) ? food.tags : [],
+            nutrition: Array.isArray(food.nutrition) ? food.nutrition : [],
+            allergies: Array.isArray(food.allergies) ? food.allergies : [],
             foodType: food.foodType || 'Non-Veg',
             isAvailable: food.isAvailable !== false,
             approvalStatus: food.approvalStatus || 'approved',

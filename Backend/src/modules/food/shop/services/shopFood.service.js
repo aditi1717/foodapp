@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { FoodCategory } from '../../admin/models/category.model.js';
+import { FoodProductSkeleton } from '../../admin/models/productSkeleton.model.js';
 import { FoodShop } from '../models/shop.model.js';
 import {
     extractRawFoodVariants,
@@ -236,13 +237,24 @@ export async function createShopFood(shopId, body = {}) {
     const { price, variants } = getCreateFoodPricing(body);
 
     const description = toStr(body.description);
-    const image = toStr(body.image);
+    let image = toStr(body.image);
     const subcategoryName = toStr(body.subcategoryName);
     const isAvailable = body.isAvailable !== false;
     const foodType = normalizeFoodType(body.foodType);
     const preparationTime = toStr(body.preparationTime);
     const bulkOrderPricing = normalizeBulkOrderPricing(body.bulkOrderPricing);
     const { categoryObjectId, categoryName } = await resolveCategoryForShop(context, { ...body, foodType });
+
+    const skeletonObjectId = body.skeletonId && mongoose.Types.ObjectId.isValid(String(body.skeletonId))
+        ? new mongoose.Types.ObjectId(String(body.skeletonId))
+        : null;
+
+    if (skeletonObjectId && !image) {
+        const skel = await FoodProductSkeleton.findById(skeletonObjectId).lean();
+        if (skel?.image) {
+            image = skel.image;
+        }
+    }
 
     const doc = await FoodItem.create({
         shopId,
@@ -261,10 +273,8 @@ export async function createShopFood(shopId, body = {}) {
         isAvailable,
         preparationTime,
         bulkOrderPricing,
-        skeletonId: body.skeletonId && mongoose.Types.ObjectId.isValid(String(body.skeletonId))
-            ? new mongoose.Types.ObjectId(String(body.skeletonId))
-            : null,
-        isFromSkeleton: Boolean(body.isFromSkeleton),
+        skeletonId: skeletonObjectId,
+        isFromSkeleton: Boolean(body.isFromSkeleton || skeletonObjectId),
         approvalStatus: 'pending',
         requestedAt: new Date()
     });
@@ -365,8 +375,13 @@ export async function updateShopFood(shopId, foodId, body = {}) {
     }
     if (body.skeletonId !== undefined) {
         if (body.skeletonId && mongoose.Types.ObjectId.isValid(String(body.skeletonId))) {
-            update.skeletonId = new mongoose.Types.ObjectId(String(body.skeletonId));
+            const skelObjectId = new mongoose.Types.ObjectId(String(body.skeletonId));
+            update.skeletonId = skelObjectId;
             update.isFromSkeleton = true;
+            if (!update.image && !existing.image) {
+                const skel = await FoodProductSkeleton.findById(skelObjectId).lean();
+                if (skel?.image) update.image = skel.image;
+            }
         } else {
             update.skeletonId = null;
             update.isFromSkeleton = false;

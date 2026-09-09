@@ -234,7 +234,7 @@ export default function UserLayout() {
                     {showBottomNav && <DesktopNavbar showLogo={!isUnder250} />}
                   </div>
                   <LocationPrompt />
-                  <main className={showBottomNav ? "md:pt-40" : ""}>
+                  <main className={showBottomNav ? "pb-24 md:pb-0 md:pt-40" : ""}>
                     <Outlet />
                   </main>
                   <OrderTrackingCard otpOnly showOtpBanner hasBottomNav={showBottomNav} />
