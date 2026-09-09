@@ -29,6 +29,26 @@ const debugError = (...args) => {}
 
 const INVENTORY_RECOMMENDED_KEY = "shop_inventory_recommended_map"
 
+const resolveImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return ''
+  const trimmed = url.trim()
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:')) {
+    return trimmed
+  }
+  const apiBase = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL
+    ? String(import.meta.env.VITE_API_BASE_URL)
+    : ''
+  if (apiBase) {
+    try {
+      const origin = new URL(apiBase).origin
+      return `${origin}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`
+    } catch {
+      return trimmed
+    }
+  }
+  return trimmed
+}
+
 
 const getUploadErrorMessage = (error, fileName = "image") => {
   const message =
@@ -125,7 +145,6 @@ export default function ItemDetailsPage() {
       }
       try {
         const params = { categoryId: selectedCategoryId }
-        if (selectedSubcategoryId) params.subcategoryId = selectedSubcategoryId
         const res = await shopAPI.getProductSkeletonsByCategory(params)
         const list = res?.data?.data?.skeletons || res?.data?.skeletons || []
         if (isMounted) setProductSkeletons(Array.isArray(list) ? list : [])
@@ -135,7 +154,23 @@ export default function ItemDetailsPage() {
     }
     fetchSkeletons()
     return () => { isMounted = false }
-  }, [selectedCategoryId, selectedSubcategoryId])
+  }, [selectedCategoryId])
+
+  // Sync skeleton image and details if item was created from a skeleton
+  useEffect(() => {
+    if (selectedSkeletonId && productSkeletons.length > 0) {
+      const skel = productSkeletons.find((s) => String(s._id) === String(selectedSkeletonId))
+      if (skel) {
+        setIsFromSkeleton(true)
+        if (skel.image) {
+          const resolvedSkelImage = resolveImageUrl(skel.image)
+          setImages((prev) => (prev.length === 0 ? [resolvedSkelImage] : prev.map(resolveImageUrl)))
+        }
+        if (skel.name) setItemName((prev) => prev || skel.name)
+        if (skel.description) setItemDescription((prev) => prev || skel.description)
+      }
+    }
+  }, [selectedSkeletonId, productSkeletons])
 
   const handleSkeletonSelectInItemDetails = (skelId) => {
     setSelectedSkeletonId(skelId)
@@ -149,7 +184,7 @@ export default function ItemDetailsPage() {
       setItemName(skel.name || itemName)
       setItemDescription(skel.description || itemDescription)
       if (skel.image) {
-        setImages([skel.image])
+        setImages([resolveImageUrl(skel.image)])
       }
       toast.info(`Selected Parent Structure "${skel.name}". Item Name, Image & Description locked for brand uniformity.`)
     }
@@ -215,9 +250,10 @@ export default function ItemDetailsPage() {
     setIsInStock(item.isAvailable !== false)
     setSelectedTags(item.tags || [])
 
-    const existingImages = Array.isArray(item.images) && item.images.length > 0
+    const rawImages = Array.isArray(item.images) && item.images.length > 0
       ? item.images.filter(Boolean)
       : (item.image ? [item.image] : [])
+    const existingImages = rawImages.map(resolveImageUrl)
     setImages(existingImages)
 
     setWeightPerServing("")

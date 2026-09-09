@@ -917,7 +917,7 @@ export default function ExploreMore() {
         duration: 0.2,
         ease: [0.25, 0.1, 0.25, 1]
       }}
-      className="min-h-screen bg-white overflow-x-hidden pb-24"
+      className="min-h-screen bg-white pt-16 pb-24"
     >
       {/* Header */}
       <motion.div
@@ -927,7 +927,7 @@ export default function ExploreMore() {
           duration: 0.25,
           ease: [0.25, 0.1, 0.25, 1]
         }}
-        className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-50"
+        className="bg-white border-b border-gray-200 px-4 py-3 fixed top-0 left-0 right-0 z-50 shadow-sm"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
