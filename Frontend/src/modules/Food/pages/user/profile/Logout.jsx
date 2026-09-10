@@ -158,7 +158,7 @@ export default function Logout() {
             <div className="space-y-3 md:space-y-4">
               <Button
                 onClick={handleLogout}
-                className="w-full bg-red-600 hover:bg-red-700 text-white text-sm md:text-base h-10 md:h-12"
+                className="w-full bg-[#8B9543] hover:bg-[#727a37] text-white text-sm md:text-base h-10 md:h-12 font-semibold"
               >
                 Yes, Log out
               </Button>

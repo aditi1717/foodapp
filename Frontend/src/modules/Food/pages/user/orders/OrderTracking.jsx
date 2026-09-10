@@ -37,6 +37,7 @@ import { useCompanyName } from "@food/hooks/useCompanyName"
 import circleIcon from "@food/assets/circleicon.png"
 import { SHOP_PIN_SVG, CUSTOMER_PIN_SVG, RIDER_BIKE_SVG } from "@food/constants/mapIcons"
 import BRAND_THEME from "@/config/brandTheme"
+import { formatFullOrderAddress } from "@food/utils/orderAddressFormatter"
 
 // Fallback definitions in case imports fail at runtime or are shadowed
 const DEFAULT_CUSTOMER_PIN = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#10B981"><path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/><circle cx="12" cy="9" r="3" fill="#FFFFFF"/></svg>`;
@@ -49,8 +50,50 @@ const debugWarn = (...args) => console.warn('[OrderTracking]', ...args)
 const debugError = (...args) => console.error('[OrderTracking]', ...args)
 
 
+const formatUserFacingCancellationReason = (rawReason) => {
+  if (!rawReason) return "Not accepted by restaurant";
+  const str = String(rawReason).trim();
+  if (!str) return "Not accepted by restaurant";
+
+  const lower = str.toLowerCase();
+
+  if (
+    lower.includes("acceptance timeout") ||
+    lower.includes("auto-cancelled") ||
+    lower.includes("not accepted") ||
+    lower.includes("acceptance") ||
+    lower.includes("timeout") ||
+    lower.includes("5 minutes") ||
+    lower.includes("shop did not respond") ||
+    lower.includes("rejected by shop") ||
+    lower.includes("shop rejected")
+  ) {
+    return "Not accepted by restaurant";
+  }
+
+  if (
+    lower.includes("busy") ||
+    lower.includes("store closed") ||
+    lower.includes("shop closed")
+  ) {
+    return "Restaurant is currently busy or closed";
+  }
+
+  if (lower.includes("out of stock") || lower.includes("item unavailable")) {
+    return "Items unavailable at restaurant";
+  }
+
+  const cleaned = str
+    .replace(/^auto-cancelled:\s*/i, "")
+    .replace(/^reject:\s*/i, "")
+    .replace(/^cancelled:\s*/i, "")
+    .trim();
+
+  return cleaned || "Not accepted by restaurant";
+};
+
 // Section item component
-const SectionItem = ({ icon: Icon, iconNode, title, subtitle, onClick, showArrow = true, rightContent }) => (
+const SectionItem = ({ icon: Icon, iconNode, title, subtitle, onClick, showArrow = true, rightContent, truncateSubtitle = false }) => (
   <motion.button
     onClick={onClick}
     className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left border-b border-dashed border-gray-200 last:border-0"
@@ -68,8 +111,8 @@ const SectionItem = ({ icon: Icon, iconNode, title, subtitle, onClick, showArrow
       )}
     </div>
     <div className="flex-1 min-w-0">
-      <p className="font-medium text-gray-900 truncate">{title}</p>
-      {subtitle && <p className="text-sm text-gray-500 truncate">{subtitle}</p>}
+      <p className="font-medium text-gray-900">{title}</p>
+      {subtitle && <p className={`text-sm text-gray-500 break-words ${truncateSubtitle ? 'truncate' : ''}`}>{subtitle}</p>}
     </div>
     {rightContent || (showArrow && <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />)}
   </motion.button>
@@ -1486,7 +1529,7 @@ export default function OrderTracking() {
     },
     cancelled: {
       title: "Order cancelled",
-      subtitle: order?.cancellationReason ? `Reason: ${order.cancellationReason}` : "This order has been cancelled",
+      subtitle: `Reason: ${formatUserFacingCancellationReason(order?.cancellationReason)}`,
       color: "bg-red-600",
       iconType: 'cancelled'
     }
@@ -1839,57 +1882,12 @@ export default function OrderTracking() {
               }
               title={order?.address?.label ? `Delivery at ${order.address.label}` : "Delivery at Location"}
               subtitle={(() => {
-                const isCoordinateLikeText = (value) => {
-                  const text = String(value || "").trim()
-                  if (!text) return false
-                  return /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(text)
-                }
+                const orderFormatted = formatFullOrderAddress(order?.address)
+                if (orderFormatted) return orderFormatted
 
-                // Priority 1: Use order address formattedAddress (live location address) if it is NOT coordinate-like
-                if (
-                  order?.address?.formattedAddress &&
-                  order.address.formattedAddress !== "Select location" &&
-                  !isCoordinateLikeText(order.address.formattedAddress)
-                ) {
-                  return order.address.formattedAddress
-                }
+                const defaultFormatted = formatFullOrderAddress(defaultAddress)
+                if (defaultFormatted) return defaultFormatted
 
-                // Priority 2: Build full address from order address parts
-                if (order?.address) {
-                  const orderAddressParts = []
-                  if (order.address.street) orderAddressParts.push(order.address.street)
-                  if (order.address.additionalDetails) orderAddressParts.push(order.address.additionalDetails)
-                  if (order.address.city) orderAddressParts.push(order.address.city)
-                  if (order.address.state) orderAddressParts.push(order.address.state)
-                  if (order.address.zipCode) orderAddressParts.push(order.address.zipCode)
-                  if (orderAddressParts.length > 0) {
-                    return orderAddressParts.join(', ')
-                  }
-                }
-
-                // Priority 3: Use defaultAddress formattedAddress (live location address) if it is NOT coordinate-like
-                if (
-                  defaultAddress?.formattedAddress &&
-                  defaultAddress.formattedAddress !== "Select location" &&
-                  !isCoordinateLikeText(defaultAddress.formattedAddress)
-                ) {
-                  return defaultAddress.formattedAddress
-                }
-
-                // Priority 4: Build full address from defaultAddress parts
-                if (defaultAddress) {
-                  const defaultAddressParts = []
-                  if (defaultAddress.street) defaultAddressParts.push(defaultAddress.street)
-                  if (defaultAddress.additionalDetails) defaultAddressParts.push(defaultAddress.additionalDetails)
-                  if (defaultAddress.city) defaultAddressParts.push(defaultAddress.city)
-                  if (defaultAddress.state) defaultAddressParts.push(defaultAddress.state)
-                  if (defaultAddress.zipCode) defaultAddressParts.push(defaultAddress.zipCode)
-                  if (defaultAddressParts.length > 0) {
-                    return defaultAddressParts.join(', ')
-                  }
-                }
-
-                // Fallback: If it's a coordinate but we have no other parts, return it, otherwise 'Add delivery address'
                 if (order?.address?.formattedAddress && order.address.formattedAddress !== "Select location") {
                   return order.address.formattedAddress
                 }

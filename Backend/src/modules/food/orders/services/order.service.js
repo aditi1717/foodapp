@@ -1718,13 +1718,35 @@ function isRefundableRazorpayPayment(order) {
   );
 }
 
-async function processCancellationRefund(order, contextLabel) {
-  const method = String(order?.payment?.method || "").toLowerCase();
-  const status = String(order?.payment?.status || "").toLowerCase();
+export async function processCancellationRefund(order, contextLabel = "cancellation") {
+  if (!order) return { attempted: false };
 
-  if (method === "wallet" && status === "paid" && order?.payment?.refund?.status !== "processed") {
-    const refundAmount = Number(order?.pricing?.totalPayable || order?.pricing?.total || order?.payment?.amountDue || 0);
+  const method = String(
+    order?.payment?.method ||
+    order?.paymentMethod ||
+    order?.paymentType ||
+    ""
+  ).toLowerCase();
+  
+  const status = String(
+    order?.payment?.status ||
+    order?.paymentStatus ||
+    order?.status ||
+    ""
+  ).toLowerCase();
+
+  const isWallet = method === "wallet" || method === "user_wallet" || method === "wallet_payment";
+  const isRefundAlreadyProcessed = order?.payment?.refund?.status === "processed";
+
+  if (isWallet && !isRefundAlreadyProcessed) {
+    const refundAmount = Number(
+      order?.pricing?.totalPayable ||
+      order?.pricing?.total ||
+      order?.payment?.amountDue ||
+      0
+    );
     if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
+      order.payment = order.payment || {};
       order.payment.refund = { status: "failed", amount: 0 };
       return { attempted: true, success: false };
     }
@@ -1732,9 +1754,10 @@ async function processCancellationRefund(order, contextLabel) {
       await refundWalletBalance(
         order.userId,
         refundAmount,
-        `Refund for cancelled Order #${order.orderId}`,
-        { orderId: String(order.orderId), orderMongoId: order._id?.toString?.() || "" }
+        `Instant refund for cancelled Order #${order.orderId || order._id}`,
+        { orderId: String(order.orderId || order._id), orderMongoId: order._id?.toString?.() || "", context: contextLabel }
       );
+      order.payment = order.payment || {};
       order.payment.status = "refunded";
       order.payment.refund = {
         status: "processed",
@@ -1746,6 +1769,7 @@ async function processCancellationRefund(order, contextLabel) {
       logger.warn(
         `Cancellation wallet refund failed for order ${order?.orderId || order?._id} (${contextLabel}): ${err?.message || err}`,
       );
+      order.payment = order.payment || {};
       order.payment.refund = { status: "failed", amount: refundAmount };
       return { attempted: true, success: false };
     }
@@ -1868,8 +1892,8 @@ export async function createOrder(userId, dto) {
       if (isToday) {
         const diffMs = scheduledDate.getTime() - now.getTime();
         const diffMins = Math.floor(diffMs / 60000);
-        if (diffMins < 60) {
-          throw new ValidationError("Scheduled time must be at least 60 minutes in advance from now");
+        if (diffMins < 15) {
+          throw new ValidationError("Scheduled time must be at least 15 minutes in advance from now");
         }
       }
     }
@@ -2586,12 +2610,15 @@ export async function getOrderById(
   const orderUserId = order.userId?._id?.toString() || order.userId?.toString();
   const orderShopId = order.shopId?._id?.toString() || order.shopId?.toString();
   const orderPartnerId = order.dispatch?.deliveryPartnerId?._id?.toString() || order.dispatch?.deliveryPartnerId?.toString();
+  const offeredToPartners = (order.dispatch?.offeredTo || []).map(o => String(o.partnerId?._id || o.partnerId));
+  const isOfferedToRider = deliveryPartnerId && offeredToPartners.includes(deliveryPartnerId.toString());
+  const isUnassignedOrder = order.dispatch?.status === 'unassigned' || !orderPartnerId;
 
   if (userId && orderUserId !== userId.toString())
     throw new ForbiddenError("Not your order");
   if (shopId && orderShopId !== shopId.toString())
     throw new ForbiddenError("Not your shop order");
-  if (deliveryPartnerId && orderPartnerId !== deliveryPartnerId.toString())
+  if (deliveryPartnerId && orderPartnerId !== deliveryPartnerId.toString() && !isOfferedToRider && !isUnassignedOrder)
     throw new ForbiddenError("Not assigned to you");
 
   if (deliveryPartnerId) {
@@ -2653,65 +2680,8 @@ export async function cancelOrder(orderId, userId, reason) {
     note: reason || "",
   });
 
-  // ✅ NEW: Automated Razorpay Refund on User Cancel
-  if (
-    order.payment.status === "paid" &&
-    order.payment.method === "razorpay" &&
-    order.payment.razorpay?.paymentId &&
-    (!order.payment.refund || order.payment.refund.status !== "processed")
-  ) {
-    try {
-      const refundResult = await initiateRazorpayRefund(
-        order.payment.razorpay.paymentId,
-        order.pricing.total
-      );
-
-      if (refundResult.success) {
-        order.payment.status = "refunded";
-        order.payment.refund = {
-          status: "processed",
-          amount: order.pricing.total,
-          refundId: refundResult.refundId,
-          processedAt: new Date()
-        };
-      } else {
-        // Log failure but let order cancellation proceed
-        order.payment.refund = {
-          status: "failed",
-          amount: order.pricing.total
-        };
-      }
-    } catch (err) {
-      console.error(`Refund processing error for Order ${orderId}:`, err);
-      order.payment.refund = { status: "failed", amount: order.pricing.total };
-    }
-  }
-
-  // Refund to wallet on User Cancel
-  if (
-    order.payment.status === "paid" &&
-    order.payment.method === "wallet" &&
-    (!order.payment.refund || order.payment.refund.status !== "processed")
-  ) {
-    try {
-      const refundAmount = Number(order?.pricing?.totalPayable || order?.pricing?.total || 0);
-      await refundWalletBalance(
-        userId,
-        refundAmount,
-        `Refund for cancelled Order #${order.orderId}`,
-        { orderId: String(order.orderId), orderMongoId: order._id?.toString?.() || "" }
-      );
-      order.payment.status = "refunded";
-      order.payment.refund = {
-        status: "processed",
-        amount: refundAmount,
-        processedAt: new Date()
-      };
-    } catch (err) {
-      console.error(`Wallet refund processing error for Order ${orderId}:`, err);
-      order.payment.refund = { status: "failed", amount: order?.pricing?.totalPayable || order?.pricing?.total || 0 };
-    }
-  }
+  // Automated refund (Wallet or Razorpay) on User Cancel
+  await processCancellationRefund(order, "user_cancel");
 
   try {
     await releaseOrderSubscriptionBenefit(order);
@@ -3254,70 +3224,14 @@ export async function updateOrderStatusShop(
         to: orderStatus
     });
 
-    // ✅ NEW: Automated Razorpay Refund on Shop Cancel
-    // Triggers if the shop sets status to a cancelled state (e.g., cancelled_by_shop)
-    if (
-      String(orderStatus).includes("cancel") &&
-      order.payment.status === "paid" &&
-      order.payment.method === "razorpay" &&
-      order.payment.razorpay?.paymentId &&
-      (!order.payment.refund || order.payment.refund.status !== "processed")
-    ) {
-      try {
-        const refundResult = await initiateRazorpayRefund(
-          order.payment.razorpay.paymentId,
-          order.pricing.total
-        );
+    // Automated Refund (Wallet or Razorpay) on Cancel / Reject / Timeout
+    const isCancelledOrRejected =
+      String(orderStatus).toLowerCase().includes("cancel") ||
+      String(orderStatus).toLowerCase().includes("reject") ||
+      ["cancelled", "rejected", "cancelled_by_shop", "cancelled_by_user", "cancelled_by_admin", "cancelled_by_user_unavailable"].includes(String(orderStatus).toLowerCase());
 
-        if (refundResult.success) {
-          order.payment.status = "refunded";
-          order.payment.refund = {
-            status: "processed",
-            amount: order.pricing.total,
-            refundId: refundResult.refundId,
-            processedAt: new Date()
-          };
-        } else {
-          // Record failure so admin knows a manual refund might be needed
-          order.payment.refund = {
-            status: "failed",
-            amount: order.pricing.total
-          };
-        }
-      } catch (err) {
-        console.error(`Automated refund failed for Order ${orderId} (Shop Cancel):`, err);
-        order.payment.refund = { status: "failed", amount: order.pricing.total };
-      }
-      // Re-save order with updated payment status
-      await order.save();
-    }
-
-    // Refund to wallet on Shop Cancel
-    if (
-      String(orderStatus).includes("cancel") &&
-      order.payment.status === "paid" &&
-      order.payment.method === "wallet" &&
-      (!order.payment.refund || order.payment.refund.status !== "processed")
-    ) {
-      try {
-        const refundAmount = Number(order?.pricing?.totalPayable || order?.pricing?.total || 0);
-        await refundWalletBalance(
-          order.userId,
-          refundAmount,
-          `Refund for cancelled Order #${order.orderId}`,
-          { orderId: String(order.orderId), orderMongoId: order._id?.toString?.() || "" }
-        );
-        order.payment.status = "refunded";
-        order.payment.refund = {
-          status: "processed",
-          amount: refundAmount,
-          processedAt: new Date()
-        };
-      } catch (err) {
-        console.error(`Wallet refund processing error on Shop cancel for Order ${order.orderId}:`, err);
-        order.payment.refund = { status: "failed", amount: order?.pricing?.totalPayable || order?.pricing?.total || 0 };
-      }
-      // Re-save order with updated payment status
+    if (isCancelledOrRejected) {
+      await processCancellationRefund(order, `status_change_${orderStatus}`);
       await order.save();
     }
 

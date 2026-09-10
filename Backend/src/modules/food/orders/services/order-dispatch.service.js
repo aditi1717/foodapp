@@ -73,13 +73,20 @@ function getLastDispatchAttempt(offeredTo = []) {
 async function filterEligibleDeliveryPartners(partnerIds, order = null) {
   if (!partnerIds || !partnerIds.length) return [];
 
-  // 1. Exclude exclusive/associated riders (from ANY shop)
+  // 1. Exclude riders associated exclusively to OTHER existing shops (riders exclusive to THIS shop or global are eligible)
   const exclusiveRows = await FoodDeliveryExclusivity.find({
     status: "associated",
   })
-    .select("deliveryPartnerId")
+    .populate("shopId", "_id")
+    .select("deliveryPartnerId shopId")
     .lean();
-  const exclusiveSet = new Set(exclusiveRows.map(row => String(row.deliveryPartnerId)));
+  
+  const orderShopIdStr = order?.shopId ? String(order.shopId._id || order.shopId) : null;
+  const otherShopExclusiveSet = new Set(
+    exclusiveRows
+      .filter(row => row.shopId && (!orderShopIdStr || String(row.shopId._id || row.shopId) !== orderShopIdStr))
+      .map(row => String(row.deliveryPartnerId))
+  );
 
   // 2. Auto-assignment only allows a single active order per rider
   const maxActiveOrders = 1;
@@ -105,7 +112,7 @@ async function filterEligibleDeliveryPartners(partnerIds, order = null) {
   const eligibleIds = [];
   for (const id of partnerIds) {
     const idStr = String(id);
-    if (exclusiveSet.has(idStr)) continue;
+    if (otherShopExclusiveSet.has(idStr)) continue;
     const activeCount = activeCountMap.get(idStr) || 0;
     if (activeCount >= maxActiveOrders) continue;
 

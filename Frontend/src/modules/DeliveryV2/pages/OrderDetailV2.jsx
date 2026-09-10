@@ -935,7 +935,7 @@ const OrderDetailV2 = () => {
     if (isShopMarkedReady(order)) return { label: 'Ready for pickup', tone: 'emerald' };
     if (phase === 'at_pickup' || rawStatus === 'reached_pickup') return { label: 'Arrived at pickup', tone: 'amber' };
     if (dispatchStatus === 'accepted') return { label: 'Accepted', tone: 'brand' };
-    if (dispatchStatus === 'unassigned') return { label: 'Passed Task', tone: 'amber' };
+    if (dispatchStatus === 'unassigned' && !isClosedOrder) return { label: 'Incoming Request', tone: 'brand' };
     if (dispatchStatus) return { label: dispatchStatus.toUpperCase(), tone: 'amber' };
     return { label: 'New Request', tone: 'brand' };
   }, [order]);
@@ -1045,8 +1045,25 @@ const OrderDetailV2 = () => {
     });
   }, [mapDestination, mapDestinationAddress]);
 
-  const isPassedTaskFlow = dispatchStatus === 'unassigned' && !isClosedOrder;
-  const isAcceptedFlow = dispatchStatus === 'accepted' && !isClosedOrder;
+  const currentPartnerId = useMemo(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('delivery_user') || '{}');
+      return u?._id || u?.id || useDeliveryStore.getState().user?._id || '';
+    } catch {
+      return useDeliveryStore.getState().user?._id || '';
+    }
+  }, []);
+
+  const isExplicitlyPassed = useMemo(() => {
+    if (!order || !currentPartnerId) return false;
+    const offeredTo = order.dispatch?.offeredTo || [];
+    const entry = offeredTo.find((o) => String(o.partnerId?._id || o.partnerId) === String(currentPartnerId));
+    return Boolean(entry && ['rejected', 'passed', 'timeout'].includes(String(entry.action || '').toLowerCase()));
+  }, [order, currentPartnerId]);
+
+  const isPassedTaskFlow = isExplicitlyPassed && !isClosedOrder;
+  const canAccept = ['unassigned', 'assigned'].includes(dispatchStatus) && !isClosedOrder && !isExplicitlyPassed;
+  const isAcceptedFlow = (dispatchStatus === 'accepted' || String(order?.deliveryPartnerId || order?.dispatch?.deliveryPartnerId) === String(currentPartnerId)) && !isClosedOrder;
 
   useEffect(() => {
     if (hasPickedOrder || isClosedOrder) {
@@ -1166,7 +1183,6 @@ const OrderDetailV2 = () => {
     },
     'OTP resent to customer',
   ), [resolvedLookupOrderId, runAction]);
-  const canAccept = order && dispatchStatus === 'assigned' && !isClosedOrder;
 
   const sliderStepConfig = useMemo(() => {
     if (!isAcceptedFlow || isPassedTaskFlow) return null;

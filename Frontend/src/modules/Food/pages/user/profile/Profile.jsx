@@ -1097,7 +1097,7 @@ export default function Profile() {
               </Button>
               <Button
                 type="button"
-                className={`flex-1 rounded-xl ${BRAND_THEME.tokens.profile.destructiveButton}`}
+                className="flex-1 rounded-xl bg-[#8B9543] hover:bg-[#727a37] text-white font-semibold"
                 onClick={() => {
                   setLogoutConfirmOpen(false);
                   handleLogout();

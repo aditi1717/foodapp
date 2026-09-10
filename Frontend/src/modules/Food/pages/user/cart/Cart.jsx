@@ -422,7 +422,7 @@ export default function Cart() {
     
     const now = new Date();
     const isToday = selectedDate === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const minStartMinutes = isToday ? (now.getHours() * 60 + now.getMinutes() + 45) : openMinutes;
+    const minStartMinutes = isToday ? (now.getHours() * 60 + now.getMinutes() + 60) : openMinutes;
     
     const latestSlotStart = closeMinutes - 30;
     
@@ -1952,7 +1952,7 @@ export default function Cart() {
     }
 
     if (isTakeawayCashBlocked && selectedPaymentMethod === "cash") {
-      toast.error(takeawayCashOption.reason || "Takeaway COD is not available for this order")
+      toast.error("Cash on Delivery is not available for this order")
       return
     }
 
@@ -3469,7 +3469,7 @@ export default function Cart() {
                       <span className="text-gray-800 dark:text-gray-200 font-medium">{RUPEE_SYMBOL}{platformFee.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">GST and Shop Charges</span>
+                      <span className="text-gray-600 dark:text-gray-400">GST</span>
                       <span className="text-gray-800 dark:text-gray-200 font-medium">{RUPEE_SYMBOL}{gstCharges.toFixed(2)}</span>
                     </div>
                     {autoOfferDiscount > 0 && (
@@ -3850,7 +3850,7 @@ export default function Cart() {
                           disabled: isTakeawayCashBlocked || bulkOrderMode,
                           disabledText: bulkOrderMode
                             ? 'NOT AVAILABLE FOR BULK ORDERS'
-                            : takeawayCashOption.reason || 'COD UNAVAILABLE'
+                            : 'CASH ON DELIVERY IS NOT AVAILABLE'
                         }
                       ]
                         .filter((option) => !(bulkOrderMode && option.id === "cash"))
@@ -3923,12 +3923,6 @@ export default function Cart() {
                         </button>
                       ))}
                     </div>
-
-                    {isTakeawayCashBlocked && (
-                      <p className="mt-1 text-[11px] font-medium text-amber-600">
-                        {takeawayCashOption.reason}
-                      </p>
-                    )}
 
                     <div
                       className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center gap-4 bg-white dark:bg-[#1a1a1a]"

@@ -417,8 +417,8 @@ export default function Wallet() {
                                   <ArrowUpRight className="h-4 w-4" />
                                 )}
                               </div>
-                              <div className="min-w-0">
-                                <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm break-words leading-tight">
                                   {transaction.description}
                                 </h4>
                                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">

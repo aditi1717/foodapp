@@ -109,19 +109,65 @@ export const sendExclusivityInviteController = async (req, res, next) => {
             { upsert: true, new: true }
         );
 
-        // Push notify delivery partner for new exclusivity invite
+        const notificationTitle = 'New Exclusivity Invite';
+        const notificationBody = `${shop?.shopName || 'A shop'} invited you to join as an exclusive delivery partner.`;
+        const notificationData = {
+            type: 'delivery_exclusivity_invite',
+            requestId: invitation?._id?.toString?.() || '',
+            shopId: String(shopId || ''),
+            shopName: String(shop?.shopName || 'A shop'),
+        };
+
+        // 1. Push notify delivery partner for new exclusivity invite (FCM Push)
         await notifyOwnersSafely(
             [{ ownerType: 'DELIVERY_PARTNER', ownerId: partner._id }],
             {
-                title: 'New exclusivity invite',
-                body: `${shop?.shopName || 'A shop'} invited you to join as an exclusive delivery partner.`,
-                data: {
-                    type: 'delivery_exclusivity_invite',
-                    requestId: invitation?._id?.toString?.() || '',
-                    shopId: String(shopId || ''),
-                },
+                title: notificationTitle,
+                body: notificationBody,
+                data: notificationData,
             },
         );
+
+        // 2. Real-time Socket.IO emission to the delivery partner's active room
+        try {
+            const { getIO, rooms } = await import('../../../../config/socket.js');
+            const io = getIO();
+            if (io) {
+                const targetRoom = rooms.delivery(partner._id);
+                io.to(targetRoom).emit('exclusivity_invite', {
+                    title: notificationTitle,
+                    body: notificationBody,
+                    data: notificationData,
+                    invitedAt: new Date(),
+                });
+                io.to(targetRoom).emit('notification', {
+                    title: notificationTitle,
+                    body: notificationBody,
+                    data: notificationData,
+                });
+            }
+        } catch (socketErr) {
+            // Log & catch socket broadcast failure defensively
+        }
+
+        // 3. Save to In-App Notification Inbox so it persists in partner notifications
+        try {
+            const { createInboxNotifications } = await import('../../../../core/notifications/notification.service.js');
+            await createInboxNotifications({
+                notifications: [{
+                    ownerType: 'DELIVERY_PARTNER',
+                    ownerId: partner._id,
+                    title: notificationTitle,
+                    message: notificationBody,
+                    link: '/food/delivery/profile/exclusivity-requests',
+                    category: 'invite',
+                    source: 'SHOP_INVITE',
+                    metadata: notificationData,
+                }]
+            });
+        } catch (inboxErr) {
+            // Log & catch inbox notification creation failure defensively
+        }
 
         return sendResponse(res, 200, `Invitation sent to ${partner.name}`);
     } catch (error) {
@@ -423,19 +469,70 @@ export const acceptExclusivityRequestController = async (req, res, next) => {
             }
         );
 
-        // Push notify shop after rider accepts
+        // Fetch rider name & details for notification
+        const partner = await FoodDeliveryPartner.findById(deliveryPartnerId).select('name phone').lean();
+        const partnerName = partner?.name || 'A delivery partner';
+        const partnerPhone = partner?.phone ? ` (+91 ${partner.phone})` : '';
+
+        const shopOwnerId = request.shopId?._id || request.shopId;
+        const notificationTitle = 'Exclusivity Invite Accepted';
+        const notificationBody = `${partnerName}${partnerPhone} accepted your exclusivity invitation and joined your active fleet!`;
+        const notificationData = {
+            type: 'delivery_exclusivity_accepted',
+            requestId: request._id?.toString?.() || '',
+            deliveryPartnerId: String(deliveryPartnerId || ''),
+            partnerName,
+        };
+
+        // 1. FCM Push notify shop
         await notifyOwnersSafely(
-            [{ ownerType: 'SHOP', ownerId: request.shopId._id }],
+            [{ ownerType: 'SHOP', ownerId: shopOwnerId }],
             {
-                title: 'Delivery partner accepted',
-                body: `Your exclusivity invite was accepted by a delivery partner.`,
-                data: {
-                    type: 'delivery_exclusivity_accepted',
-                    requestId: request._id?.toString?.() || '',
-                    deliveryPartnerId: String(deliveryPartnerId || ''),
-                },
+                title: notificationTitle,
+                body: notificationBody,
+                data: notificationData,
             },
         );
+
+        // 2. Real-time Socket.IO emission to shop room
+        try {
+            const { getIO, rooms } = await import('../../../../config/socket.js');
+            const io = getIO();
+            if (io) {
+                const targetRoom = rooms.shop(shopOwnerId);
+                io.to(targetRoom).emit('exclusivity_accepted', {
+                    title: notificationTitle,
+                    body: notificationBody,
+                    data: notificationData,
+                });
+                io.to(targetRoom).emit('notification', {
+                    title: notificationTitle,
+                    body: notificationBody,
+                    data: notificationData,
+                });
+            }
+        } catch (socketErr) {
+            // Log & catch socket broadcast failure defensively
+        }
+
+        // 3. Save to In-App Inbox Notification for shop
+        try {
+            const { createInboxNotifications } = await import('../../../../core/notifications/notification.service.js');
+            await createInboxNotifications({
+                notifications: [{
+                    ownerType: 'SHOP',
+                    ownerId: shopOwnerId,
+                    title: notificationTitle,
+                    message: notificationBody,
+                    link: '/food/shop/delivery-partners',
+                    category: 'invite',
+                    source: 'RIDER_ACCEPT_INVITE',
+                    metadata: notificationData,
+                }]
+            });
+        } catch (inboxErr) {
+            // Log & catch inbox creation failure defensively
+        }
 
         return sendResponse(res, 200, `Exclusivity request from ${request.shopId.shopName} accepted!`);
     } catch (error) {
@@ -466,19 +563,70 @@ export const rejectExclusivityRequestController = async (req, res, next) => {
         request.rejectedAt = new Date();
         await request.save();
 
-        // Push notify shop after rider rejects
+        // Fetch rider name & details for notification
+        const partner = await FoodDeliveryPartner.findById(deliveryPartnerId).select('name phone').lean();
+        const partnerName = partner?.name || 'A delivery partner';
+        const partnerPhone = partner?.phone ? ` (+91 ${partner.phone})` : '';
+
+        const shopOwnerId = request.shopId?._id || request.shopId;
+        const notificationTitle = 'Exclusivity Invite Declined';
+        const notificationBody = `${partnerName}${partnerPhone} declined your exclusivity invitation.`;
+        const notificationData = {
+            type: 'delivery_exclusivity_rejected',
+            requestId: request._id?.toString?.() || '',
+            deliveryPartnerId: String(deliveryPartnerId || ''),
+            partnerName,
+        };
+
+        // 1. FCM Push notify shop
         await notifyOwnersSafely(
-            [{ ownerType: 'SHOP', ownerId: request.shopId._id }],
+            [{ ownerType: 'SHOP', ownerId: shopOwnerId }],
             {
-                title: 'Delivery partner declined',
-                body: `Your exclusivity invite was declined by a delivery partner.`,
-                data: {
-                    type: 'delivery_exclusivity_rejected',
-                    requestId: request._id?.toString?.() || '',
-                    deliveryPartnerId: String(deliveryPartnerId || ''),
-                },
+                title: notificationTitle,
+                body: notificationBody,
+                data: notificationData,
             },
         );
+
+        // 2. Real-time Socket.IO emission to shop room
+        try {
+            const { getIO, rooms } = await import('../../../../config/socket.js');
+            const io = getIO();
+            if (io) {
+                const targetRoom = rooms.shop(shopOwnerId);
+                io.to(targetRoom).emit('exclusivity_rejected', {
+                    title: notificationTitle,
+                    body: notificationBody,
+                    data: notificationData,
+                });
+                io.to(targetRoom).emit('notification', {
+                    title: notificationTitle,
+                    body: notificationBody,
+                    data: notificationData,
+                });
+            }
+        } catch (socketErr) {
+            // Log & catch socket broadcast failure defensively
+        }
+
+        // 3. Save to In-App Inbox Notification for shop
+        try {
+            const { createInboxNotifications } = await import('../../../../core/notifications/notification.service.js');
+            await createInboxNotifications({
+                notifications: [{
+                    ownerType: 'SHOP',
+                    ownerId: shopOwnerId,
+                    title: notificationTitle,
+                    message: notificationBody,
+                    link: '/food/shop/delivery-partners',
+                    category: 'invite',
+                    source: 'RIDER_REJECT_INVITE',
+                    metadata: notificationData,
+                }]
+            });
+        } catch (inboxErr) {
+            // Log & catch inbox creation failure defensively
+        }
 
         return sendResponse(res, 200, `Exclusivity request from ${request.shopId.shopName} declined`);
     } catch (error) {
@@ -494,13 +642,78 @@ export const leaveExclusivityPartnershipController = async (req, res, next) => {
     try {
         const deliveryPartnerId = req.user?.userId;
 
-        const result = await FoodDeliveryExclusivity.deleteOne({
+        const record = await FoodDeliveryExclusivity.findOne({
             deliveryPartnerId,
             status: 'associated'
-        });
+        }).populate('shopId', 'shopName');
 
-        if (result.deletedCount === 0) {
+        if (!record) {
             return res.status(400).json({ success: false, message: 'You do not have any active partnership to leave' });
+        }
+
+        const shopOwnerId = record.shopId?._id || record.shopId;
+        const partner = await FoodDeliveryPartner.findById(deliveryPartnerId).select('name phone').lean();
+        const partnerName = partner?.name || 'A delivery partner';
+        const partnerPhone = partner?.phone ? ` (+91 ${partner.phone})` : '';
+
+        await FoodDeliveryExclusivity.deleteOne({ _id: record._id });
+
+        const notificationTitle = 'Delivery Partner Left Fleet';
+        const notificationBody = `${partnerName}${partnerPhone} has left your exclusivity partnership and is now a global rider.`;
+        const notificationData = {
+            type: 'delivery_exclusivity_left',
+            deliveryPartnerId: String(deliveryPartnerId || ''),
+            partnerName,
+        };
+
+        // 1. FCM Push notify shop
+        await notifyOwnersSafely(
+            [{ ownerType: 'SHOP', ownerId: shopOwnerId }],
+            {
+                title: notificationTitle,
+                body: notificationBody,
+                data: notificationData,
+            },
+        );
+
+        // 2. Real-time Socket.IO emission to shop room
+        try {
+            const { getIO, rooms } = await import('../../../../config/socket.js');
+            const io = getIO();
+            if (io) {
+                const targetRoom = rooms.shop(shopOwnerId);
+                io.to(targetRoom).emit('exclusivity_left', {
+                    title: notificationTitle,
+                    body: notificationBody,
+                    data: notificationData,
+                });
+                io.to(targetRoom).emit('notification', {
+                    title: notificationTitle,
+                    body: notificationBody,
+                    data: notificationData,
+                });
+            }
+        } catch (socketErr) {
+            // Log & catch socket broadcast failure defensively
+        }
+
+        // 3. Save to In-App Inbox Notification for shop
+        try {
+            const { createInboxNotifications } = await import('../../../../core/notifications/notification.service.js');
+            await createInboxNotifications({
+                notifications: [{
+                    ownerType: 'SHOP',
+                    ownerId: shopOwnerId,
+                    title: notificationTitle,
+                    message: notificationBody,
+                    link: '/food/shop/delivery-partners',
+                    category: 'invite',
+                    source: 'RIDER_LEAVE_FLEET',
+                    metadata: notificationData,
+                }]
+            });
+        } catch (inboxErr) {
+            // Log & catch inbox creation failure defensively
         }
 
         return sendResponse(res, 200, 'You have successfully left the partnership and are now a global rider');

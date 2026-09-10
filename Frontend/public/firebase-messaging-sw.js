@@ -4,7 +4,7 @@ importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-com
 
 const sanitize = (value) => String(value || "").trim().replace(/^['"]|['"]$/g, "");
 const PUSH_DEBUG_PREFIX = "[push-sw]";
-const pushDebugLog = () => {};
+
 const getNotificationKey = (payload) =>
   payload?.data?.notificationId ||
   payload?.data?.messageId ||
@@ -17,61 +17,17 @@ const getNotificationKey = (payload) =>
   ].join("::");
 
 async function notifyOpenClients(payload) {
-  pushDebugLog(PUSH_DEBUG_PREFIX, "Broadcasting push to open clients", { payload });
-  const windowClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
-  windowClients.forEach((client) => {
-    client.postMessage({
-      type: "push-notification-received",
-      payload,
-    });
-  });
-}
-
-function getTargetPathFromPayload(payload = {}) {
-  const rawTarget =
-    payload?.data?.targetUrl ||
-    payload?.data?.link ||
-    payload?.data?.click_action ||
-    payload?.fcmOptions?.link ||
-    "/";
-
   try {
-    const url = new URL(rawTarget, self.location.origin);
-    return url.pathname || "/";
-  } catch {
-    return "/";
+    const windowClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
+    windowClients.forEach((client) => {
+      client.postMessage({
+        type: "push-notification-received",
+        payload,
+      });
+    });
+  } catch (e) {
+    console.error(PUSH_DEBUG_PREFIX, "Error notifying open clients:", e);
   }
-}
-
-async function hasVisibleClientForTarget(payload = {}) {
-  const windowClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
-  const targetPath = getTargetPathFromPayload(payload);
-  const targetRoot = `/${String(targetPath).split("/").filter(Boolean)[0] || ""}`;
-  const visibleClient = windowClients.find((client) => {
-    const isVisible = client.visibilityState === "visible" || client.focused;
-    if (!isVisible) return false;
-    try {
-      const clientUrl = new URL(client.url);
-      if (targetRoot === "/" || !targetRoot) {
-        return true;
-      }
-      return clientUrl.pathname.startsWith(targetRoot);
-    } catch {
-      return false;
-    }
-  });
-  pushDebugLog(PUSH_DEBUG_PREFIX, "Visible client check", {
-    count: windowClients.length,
-    targetPath,
-    targetRoot,
-    hasVisibleClient: Boolean(visibleClient),
-    clients: windowClients.map((client) => ({
-      url: client.url,
-      visibilityState: client.visibilityState,
-      focused: client.focused,
-    })),
-  });
-  return Boolean(visibleClient);
 }
 
 async function loadFirebaseWebConfig() {
@@ -96,7 +52,6 @@ async function loadFirebaseWebConfig() {
       };
 
       if (config.apiKey && config.projectId && config.appId && config.messagingSenderId) {
-        pushDebugLog(PUSH_DEBUG_PREFIX, "Loaded Firebase web config");
         return config;
       }
     } catch {
@@ -114,46 +69,10 @@ async function loadFirebaseWebConfig() {
   }
 
   firebase.initializeApp(config);
-  pushDebugLog(PUSH_DEBUG_PREFIX, "Firebase messaging service worker initialized");
   const messaging = firebase.messaging();
 
   messaging.onBackgroundMessage(async (payload) => {
-    pushDebugLog(PUSH_DEBUG_PREFIX, "Received Firebase background message", { payload });
-    
-    const visibleClient = await hasVisibleClientForTarget(payload);
-    
-    if (!visibleClient) {
-      const title = payload?.notification?.title || payload?.data?.title || "New Notification";
-      const body = payload?.notification?.body || payload?.data?.body || "";
-      const image =
-        payload?.notification?.image ||
-        payload?.data?.image ||
-        payload?.data?.imageUrl ||
-        undefined;
-      const notificationKey = getNotificationKey(payload);
-      
-      pushDebugLog(PUSH_DEBUG_PREFIX, "Showing service worker notification", {
-        title,
-        body,
-        image,
-        notificationKey,
-      });
-  
-      self.registration.showNotification(title, {
-        body,
-        icon: "/FC%20-%20Logo%201.png",
-        image,
-        tag: notificationKey,
-        renotify: false,
-        silent: false,
-        requireInteraction: false,
-        vibrate: [200, 100, 200, 100, 300],
-        data: payload?.data || {},
-      });
-    }
-
-    // Always notify clients regardless of visibility
-    await notifyOpenClients(payload);
+    console.log(PUSH_DEBUG_PREFIX, "Received Firebase background message", payload);
   });
 })();
 
@@ -162,26 +81,56 @@ self.addEventListener("push", (event) => {
 
   try {
     const payload = event.data.json();
-    pushDebugLog(PUSH_DEBUG_PREFIX, "Received raw push event", { payload });
-    // No client relay here. onBackgroundMessage handles delivery, and relaying in both
-    // places can produce duplicate notifications in web clients.
-    event.waitUntil(Promise.resolve());
-  } catch {
-    // Ignore malformed payloads.
+    console.log(PUSH_DEBUG_PREFIX, "Received raw push event payload:", payload);
+
+    const title =
+      payload?.notification?.title ||
+      payload?.data?.title ||
+      payload?.data?.heading ||
+      "New Notification";
+    const body =
+      payload?.notification?.body ||
+      payload?.data?.body ||
+      payload?.data?.message ||
+      "";
+    const image =
+      payload?.notification?.image ||
+      payload?.data?.image ||
+      payload?.data?.imageUrl ||
+      undefined;
+
+    const notificationKey = getNotificationKey(payload);
+
+    event.waitUntil(
+      Promise.all([
+        self.registration.showNotification(title, {
+          body,
+          icon: "/FC%20-%20Logo%201.png",
+          image,
+          tag: notificationKey || undefined,
+          renotify: true,
+          silent: false,
+          requireInteraction: true,
+          vibrate: [200, 100, 200, 100, 300],
+          data: payload?.data || {},
+        }),
+        notifyOpenClients(payload)
+      ])
+    );
+  } catch (error) {
+    console.error(PUSH_DEBUG_PREFIX, "Error displaying push notification:", error);
   }
 });
 
 self.addEventListener("notificationclick", (event) => {
-  pushDebugLog(PUSH_DEBUG_PREFIX, "Notification click received", {
-    data: event?.notification?.data || {},
-  });
+  console.log(PUSH_DEBUG_PREFIX, "Notification click received", event?.notification?.data || {});
   event.notification.close();
   const rawLink =
     event?.notification?.data?.link ||
     event?.notification?.data?.click_action ||
     event?.notification?.data?.targetUrl ||
-    "/";
-  const targetUrl = String(rawLink || "/").startsWith("/") ? String(rawLink || "/") : "/";
+    "/admin/food-approval";
+  const targetUrl = String(rawLink || "/admin/food-approval").startsWith("/") ? String(rawLink || "/admin/food-approval") : "/admin/food-approval";
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
       const client = windowClients.find((c) => c.url.includes(self.location.origin));

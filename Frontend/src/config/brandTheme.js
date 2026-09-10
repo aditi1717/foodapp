@@ -209,7 +209,7 @@ export const BRAND_THEME = {
       secondaryButton: "bg-white border border-[#D9E7FF] text-slate-700 hover:bg-slate-50",
       highlightSurface: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50",
       warningSurface: "bg-amber-50 border-amber-200 text-amber-800",
-      destructiveButton: "#FA0000",
+      destructiveButton: "bg-[#8B9543] hover:bg-[#727a37] text-white",
       linkText: `text-[${COLORS.brand.primary}]`,
       legalLinkHover: `group-hover:text-[${COLORS.brand.primary}] dark:group-hover:text-emerald-300`,
     },

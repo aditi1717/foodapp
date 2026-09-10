@@ -51,6 +51,14 @@ export default function TransactionReport() {
         ? transaction.items
         : (Array.isArray(rawOrder.items) && rawOrder.items.length > 0 ? rawOrder.items : [])
 
+      const customerName = (transaction.customerName && transaction.customerName !== "Guest" && transaction.customerName !== "Invalid Customer Data" && transaction.customerName !== "Customer")
+        ? transaction.customerName
+        : (rawOrder.customerName || rawOrder.customer?.name || rawOrder.user?.name || rawOrder.userId?.name || rawOrder.customerAddress?.name || rawOrder.address?.name || rawOrder.deliveryAddress?.name || "Customer")
+
+      const customerPhone = (transaction.customerPhone && transaction.customerPhone !== "N/A")
+        ? transaction.customerPhone
+        : (rawOrder.customerPhone || rawOrder.customer?.phone || rawOrder.user?.phone || rawOrder.userId?.phone || rawOrder.customerAddress?.phone || rawOrder.address?.phone || rawOrder.deliveryAddress?.phone || rawOrder.customerAddress?.contactNumber || "N/A")
+
       const normalizedOrder = {
         ...rawOrder,
         ...transaction,
@@ -58,13 +66,13 @@ export default function TransactionReport() {
         orderId: transaction.orderId || rawOrder.orderId || transaction.id,
         date: rawOrder.date || transaction.date || (transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() : new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase()),
         time: rawOrder.time || transaction.time || "",
-        customerName: (transaction.customerName && transaction.customerName !== "Guest" && transaction.customerName !== "Invalid Customer Data")
-          ? transaction.customerName
-          : (rawOrder.customerName || "Customer"),
-        customerPhone: transaction.customerPhone && transaction.customerPhone !== "N/A"
-          ? transaction.customerPhone
-          : (rawOrder.customerPhone || rawOrder.customerAddress?.phone || "N/A"),
+        customerName: customerName,
+        customerPhone: customerPhone,
         shop: transaction.shop && transaction.shop !== "N/A" ? transaction.shop : (rawOrder.shop || "Shop"),
+        shopPhone: (transaction.shopPhone && transaction.shopPhone !== "N/A")
+          ? transaction.shopPhone
+          : (rawOrder.shopPhone || rawOrder.shop?.phone || rawOrder.shop?.contactNumber || rawOrder.vendorPhone || rawOrder.restaurantPhone || "N/A"),
+        shopAddress: transaction.shopAddress || rawOrder.shopAddress || rawOrder.shop?.address || rawOrder.vendorAddress || null,
         items: items,
         totalItemAmount: transaction.totalItemAmount || rawOrder.totalItemAmount || rawOrder.pricing?.subtotal || 0,
         subtotal: transaction.totalItemAmount || rawOrder.totalItemAmount || rawOrder.pricing?.subtotal || 0,
@@ -76,8 +84,8 @@ export default function TransactionReport() {
         discountAmount: (transaction.couponByAdmin || 0) + (transaction.couponByShop || 0) + (transaction.offerByShop || 0) || rawOrder.discountAmount || rawOrder.pricing?.discount || 0,
         totalAmount: transaction.orderAmount || rawOrder.totalAmount || rawOrder.pricing?.total || 0,
         paymentType: rawOrder.paymentType || rawOrder.payment?.method || transaction.paymentType || "Paid",
-        paymentStatus: transaction.status || rawOrder.paymentStatus || "Paid",
-        orderStatus: transaction.displayStatus || transaction.orderStatus || rawOrder.orderStatus || "Delivered",
+        paymentStatus: rawOrder.paymentStatus || transaction.status || "Paid",
+        orderStatus: rawOrder.orderStatus || rawOrder.status || transaction.displayStatus || transaction.orderStatus || "Delivered",
         address: transaction.address || rawOrder.address || rawOrder.customerAddress || rawOrder.deliveryAddress,
         couponCode: transaction.couponCode || rawOrder.couponCode || rawOrder.pricing?.appliedCoupon?.code || "",
       }

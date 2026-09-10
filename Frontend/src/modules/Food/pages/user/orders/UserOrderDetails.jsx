@@ -22,9 +22,51 @@ import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import { getCompanyNameAsync } from "@food/utils/businessSettings"
 import BRAND_THEME from "@/config/brandTheme"
+import { formatFullOrderAddress } from "@food/utils/orderAddressFormatter"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
-const debugError = (...args) => {}
+const formatUserFacingCancellationReason = (rawReason) => {
+  if (!rawReason) return "Not accepted by restaurant";
+  const str = String(rawReason).trim();
+  if (!str) return "Not accepted by restaurant";
+
+  const lower = str.toLowerCase();
+
+  if (
+    lower.includes("acceptance timeout") ||
+    lower.includes("auto-cancelled") ||
+    lower.includes("not accepted") ||
+    lower.includes("acceptance") ||
+    lower.includes("timeout") ||
+    lower.includes("5 minutes") ||
+    lower.includes("shop did not respond") ||
+    lower.includes("rejected by shop") ||
+    lower.includes("shop rejected")
+  ) {
+    return "Not accepted by restaurant";
+  }
+
+  if (
+    lower.includes("busy") ||
+    lower.includes("store closed") ||
+    lower.includes("shop closed")
+  ) {
+    return "Restaurant is currently busy or closed";
+  }
+
+  if (lower.includes("out of stock") || lower.includes("item unavailable")) {
+    return "Items unavailable at restaurant";
+  }
+
+  const cleaned = str
+    .replace(/^auto-cancelled:\s*/i, "")
+    .replace(/^reject:\s*/i, "")
+    .replace(/^cancelled:\s*/i, "")
+    .trim();
+
+  return cleaned || "Not accepted by restaurant";
+};
+
 const getNormalizedFoodType = (item = {}) =>
   String(item?.foodType || item?.type || item?.category || "")
     .trim()
@@ -240,11 +282,7 @@ export default function UserOrderDetails() {
     })
     : ""
 
-  const addressText =
-    order.address?.formattedAddress ||
-    [order.address?.street, order.address?.city, order.address?.state, order.address?.zipCode]
-      .filter(Boolean)
-      .join(", ")
+  const addressText = formatFullOrderAddress(order?.address) || "Address not available"
 
   const savings =
     (pricing.discount || 0) +
@@ -460,9 +498,9 @@ export default function UserOrderDetails() {
                 Scheduled for {new Date(order.scheduledAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} at {new Date(order.scheduledAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
               </p>
             )}
-            {order.status && String(order.status).toLowerCase().includes("cancel") && order.cancellationReason && (
+            {order.status && String(order.status).toLowerCase().includes("cancel") && (
               <p className="text-red-600 text-xs mt-1 font-medium italic">
-                Reason: {order.cancellationReason}
+                Reason: {formatUserFacingCancellationReason(order.cancellationReason)}
               </p>
             )}
             {refundInfo && (

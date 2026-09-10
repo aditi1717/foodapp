@@ -22,6 +22,8 @@ import {
   Users,
   MessageSquare,
   Package,
+  Wallet,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import BottomNavOrders from "@food/components/shop/BottomNavOrders";
@@ -29,13 +31,17 @@ import ShopNavbar from "@food/components/shop/ShopNavbar";
 import notificationSound from "@food/assets/audio/alert.mp3";
 import { shopAPI } from "@food/api";
 import { useShopNotifications } from "@food/hooks/useShopNotifications";
-import { formatOrderAddressWithLabels } from "@food/utils/orderAddressFormatter";
+import {
+  formatOrderAddressWithLabels,
+  formatFullOrderAddress,
+} from "@food/utils/orderAddressFormatter";
+import { DEFAULT_FOOD_LOGO } from "@food/utils/defaultBranding";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import BRAND_THEME from "@/config/brandTheme";
 const debugLog = (...args) => {};
 const debugWarn = (...args) => {};
-const debugError = (...args) => {};
+const debugError = (...args) => console.error(...args);
 
 const STORAGE_KEY = "shop_online_status";
 
@@ -1216,7 +1222,7 @@ export default function OrdersMain() {
   const [popupOrder, setPopupOrder] = useState(null); // Store order for popup (from Socket.IO or API)
   const [isMuted, setIsMuted] = useState(false);
   const [prepTime, setPrepTime] = useState(11);
-  const [countdown, setCountdown] = useState(240); // 4 minutes in seconds
+  const [countdown, setCountdown] = useState(300); // 5 minutes in seconds
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(true);
   const [showRejectPopup, setShowRejectPopup] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -1235,6 +1241,10 @@ export default function OrdersMain() {
     rejectionReason: null,
     onboarding: null,
     isLoading: true,
+  });
+  const [shopWalletInfo, setShopWalletInfo] = useState({
+    balance: null,
+    loading: true,
   });
   const [isReverifying, setIsReverifying] = useState(false);
   const audioUnlockedRef = useRef(false);
@@ -1650,11 +1660,26 @@ export default function OrdersMain() {
       }
     };
 
+    const fetchWalletInfo = async () => {
+      try {
+        const walletRes = await shopAPI.getWallet();
+        const wData = walletRes?.data?.data || walletRes?.data;
+        if (wData) {
+          const balance = Number(wData.availableBalance ?? wData.balance ?? 0);
+          setShopWalletInfo({ balance, loading: false });
+        }
+      } catch (err) {
+        setShopWalletInfo((prev) => ({ ...prev, loading: false }));
+      }
+    };
+
     fetchShopStatus();
+    fetchWalletInfo();
 
     // Listen for shop profile updates
     const handleProfileRefresh = () => {
       fetchShopStatus();
+      fetchWalletInfo();
     };
 
     window.addEventListener("shopProfileRefresh", handleProfileRefresh);
@@ -1772,7 +1797,7 @@ export default function OrdersMain() {
           markOrderAsShown(newOrder);
           setPopupOrder((prev) => normalizePopupOrderForModal(newOrder, prev));
           setShowNewOrderPopup(true);
-          setCountdown(240);
+          setCountdown(getRemainingSecondsForOrder(newOrder));
           requestOrdersRefresh();
         }
         return;
@@ -1880,7 +1905,7 @@ export default function OrdersMain() {
     setSelectedOrder(null);
     setPopupOrder((prev) => normalizePopupOrderForModal(orderLike, prev));
     setShowNewOrderPopup(true);
-    setCountdown(240);
+    setCountdown(getRemainingSecondsForOrder(orderLike));
   };
 
   // Real-time: close popup if the order currently shown gets cancelled by user
@@ -2216,7 +2241,7 @@ export default function OrdersMain() {
               normalizePopupOrderForModal(orderForPopup, prev),
             );
             setShowNewOrderPopup(true);
-            setCountdown(240);
+            setCountdown(getRemainingSecondsForOrder(orderForPopup));
           }
         }
       } catch (error) {
@@ -2251,13 +2276,50 @@ export default function OrdersMain() {
     }
   }, [showNewOrderPopup, isMuted]);
 
-  // Countdown timer
+  const getRemainingSecondsForOrder = (order) => {
+    const defaultSecs = 300; // 5 minutes in seconds
+    if (!order?.createdAt) return defaultSecs;
+    const createdTime = new Date(order.createdAt).getTime();
+    if (isNaN(createdTime)) return defaultSecs;
+    const elapsedSecs = Math.floor((Date.now() - createdTime) / 1000);
+    const remaining = defaultSecs - elapsedSecs;
+    return remaining > 0 ? remaining : 0;
+  };
+
+  const handleAutoCancelOrder = async () => {
+    const orderToCancel = popupOrder || newOrder;
+    const orderId = orderToCancel?.orderMongoId || orderToCancel?.orderId;
+    debugLog("⏱️ Order acceptance 5-min timer expired. Auto-cancelling order:", orderId);
+
+    if (orderId) {
+      try {
+        await shopAPI.rejectOrder(orderId, "Not accepted by restaurant");
+        toast.error("Order auto-cancelled: 5-minute acceptance timeout expired");
+        requestOrdersRefresh();
+      } catch (error) {
+        debugError("Error auto-cancelling order on timeout:", error);
+      }
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setShowNewOrderPopup(false);
+    setPopupOrder(null);
+    clearNewOrder();
+    setCountdown(300);
+  };
+
+  // Countdown timer (5 minutes / 300 seconds)
   useEffect(() => {
     if (showNewOrderPopup && countdown > 0) {
       const timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
+        setCountdown((prev) => Math.max(0, prev - 1));
       }, 1000);
       return () => clearInterval(timer);
+    } else if (showNewOrderPopup && countdown <= 0) {
+      handleAutoCancelOrder();
     }
   }, [showNewOrderPopup, countdown]);
 
@@ -2476,7 +2538,7 @@ export default function OrdersMain() {
     setPopupOrder(null);
     clearNewOrder();
     setRejectReason("");
-    setCountdown(240);
+    setCountdown(300);
     setPrepTime(11);
   };
 
@@ -2486,7 +2548,7 @@ export default function OrdersMain() {
     setPopupOrder(null);
     clearNewOrder();
     setRejectReason("");
-    setCountdown(240);
+    setCountdown(300);
   };
 
   // Handle cancel order (for preparing orders)
@@ -2597,19 +2659,119 @@ export default function OrdersMain() {
           ? "Cash on Delivery"
           : "Online";
 
-      const addressText = formatOrderAddressWithLabels(
+      const addressText = formatFullOrderAddress(
+        orderToPrint.customerAddress || orderToPrint.deliveryAddress || orderToPrint.address || null,
+      ) || formatOrderAddressWithLabels(
         orderToPrint.customerAddress || orderToPrint.deliveryAddress || orderToPrint.address || null,
       );
 
-      doc.setFillColor(15, 23, 42);
-      doc.rect(0, 0, 210, 28, "F");
+      let savedShopUser = null;
+      try {
+        const raw = localStorage.getItem("shop_user") || localStorage.getItem("user");
+        if (raw) savedShopUser = JSON.parse(raw);
+      } catch (e) {}
+
+      const shopName =
+        orderToPrint?.shopName ||
+        orderToPrint?.shopId?.name ||
+        orderToPrint?.shopId?.shopName ||
+        orderToPrint?.shop?.name ||
+        orderToPrint?.shop?.shopName ||
+        orderToPrint?.vendorName ||
+        savedShopUser?.shopName ||
+        savedShopUser?.name ||
+        localStorage.getItem("shop_name") ||
+        localStorage.getItem("shopName") ||
+        "FreshCuts Shop";
+
+      const appName = "FreshCuts Local";
+
+      // Header Banner - Brand Theme Color (#8B9543)
+      doc.setFillColor(139, 149, 67);
+      doc.rect(0, 0, 210, 30, "F");
+
+      // App Name & Receipt Title
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text("Order Receipt", 14, 17);
-      doc.setFontSize(11);
+      doc.setFontSize(16);
+      doc.text(appName, 14, 13);
+
+      doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(orderToPrint.shopName || "Shop", 14, 24);
+      doc.text(`Order Receipt  |  Shop: ${shopName}`, 14, 23);
+
+      // Render Shop / Brand Logo
+      const candidateLogos = [
+        orderToPrint?.shopLogo,
+        orderToPrint?.shopId?.logo,
+        orderToPrint?.shopId?.profileImage,
+        orderToPrint?.shop?.logo,
+        orderToPrint?.shop?.profileImage,
+        savedShopUser?.logo,
+        savedShopUser?.profileImage,
+        savedShopUser?.shopLogo,
+        DEFAULT_FOOD_LOGO,
+        "/FC%20-%20Logo%201.png",
+      ].filter((url) => typeof url === "string" && url.trim().length > 0);
+
+      let loadedLogoDataUrl = null;
+
+      for (const logoCandidate of candidateLogos) {
+        try {
+          const resolvedUrl =
+            logoCandidate.startsWith("http") || logoCandidate.startsWith("data:")
+              ? logoCandidate
+              : new URL(logoCandidate, window.location.origin).href;
+
+          const dataUrl = await new Promise((resolve) => {
+            const timeout = setTimeout(() => resolve(null), 1500);
+            const img = new Image();
+            if (resolvedUrl.startsWith("http://") || resolvedUrl.startsWith("https://")) {
+              img.crossOrigin = "Anonymous";
+            }
+            img.onload = () => {
+              clearTimeout(timeout);
+              try {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.naturalWidth || img.width || 120;
+                canvas.height = img.naturalHeight || img.height || 120;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL("image/png"));
+              } catch (e) {
+                resolve(null);
+              }
+            };
+            img.onerror = () => {
+              clearTimeout(timeout);
+              resolve(null);
+            };
+            img.src = resolvedUrl;
+          });
+
+          if (dataUrl && dataUrl.startsWith("data:image")) {
+            loadedLogoDataUrl = dataUrl;
+            break;
+          }
+        } catch (e) {
+          // continue checking candidates
+        }
+      }
+
+      if (loadedLogoDataUrl) {
+        // Draw white background card for logo
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(170, 3, 24, 24, 3, 3, "F");
+        doc.addImage(loadedLogoDataUrl, "PNG", 172, 5, 20, 20);
+      } else {
+        // Fallback Logo Badge
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(170, 3, 24, 24, 3, 3, "F");
+        doc.setTextColor(139, 149, 67);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text("FC", 182, 18, { align: "center" });
+      }
 
       doc.setTextColor(17, 24, 39);
       doc.setFont("helvetica", "bold");
@@ -2629,49 +2791,74 @@ export default function OrdersMain() {
         yPos += 6 + addressLines.length * 5 + 5;
       }
 
-      autoTable(doc, {
-        startY: yPos,
-        head: [["Item", "Qty", "Unit Price", "Line Total"]],
-        body:
-          lineItems.length > 0
-            ? lineItems.map((item) => [
-                item.name,
-                String(item.qty),
-                formatMoney(item.price),
-                formatMoney(item.total),
-              ])
-            : [["No items", "-", "-", "-"]],
-        theme: "grid",
-        headStyles: {
-          fillColor: [15, 23, 42],
-          textColor: 255,
-          fontStyle: "bold",
-          halign: "left",
-        },
-        bodyStyles: {
-          textColor: [31, 41, 55],
-        },
-        styles: { fontSize: 9, cellPadding: 2.5 },
-        columnStyles: {
-          0: { cellWidth: 95 },
-          1: { cellWidth: 20, halign: "center" },
-          2: { cellWidth: 35, halign: "right" },
-          3: { cellWidth: 40, halign: "right" },
-        },
-      });
+      const runAutoTable =
+        typeof autoTable === "function"
+          ? autoTable
+          : autoTable?.default || doc.autoTable || (typeof window !== "undefined" && window.autoTable);
 
-      yPos = (doc.lastAutoTable?.finalY || yPos) + 8;
+      if (typeof runAutoTable === "function") {
+        runAutoTable(doc, {
+          startY: yPos,
+          head: [["Item", "Qty", "Unit Price", "Line Total"]],
+          body:
+            lineItems.length > 0
+              ? lineItems.map((item) => [
+                  item.name,
+                  String(item.qty),
+                  formatMoney(item.price),
+                  formatMoney(item.total),
+                ])
+              : [["No items", "-", "-", "-"]],
+          theme: "grid",
+          headStyles: {
+            fillColor: [139, 149, 67],
+            textColor: 255,
+            fontStyle: "bold",
+            halign: "left",
+          },
+          bodyStyles: {
+            textColor: [31, 41, 55],
+          },
+          styles: { fontSize: 9, cellPadding: 2.5 },
+          columnStyles: {
+            0: { cellWidth: 95 },
+            1: { cellWidth: 20, halign: "center" },
+            2: { cellWidth: 35, halign: "right" },
+            3: { cellWidth: 40, halign: "right" },
+          },
+        });
+      }
+
+      yPos = (doc.lastAutoTable?.finalY || yPos + 30) + 8;
       doc.setDrawColor(229, 231, 235);
       doc.line(14, yPos, 196, yPos);
       yPos += 8;
+
+      const offerDiscount = Number(
+        orderToPrint?.pricing?.offerDiscount ??
+        orderToPrint?.pricing?.autoOfferDiscount ??
+        orderToPrint?.offerDiscount ?? 0
+      );
+      const couponDiscount = Number(
+        orderToPrint?.pricing?.couponDiscount ??
+        orderToPrint?.couponDiscount ?? 0
+      );
+      const referralDiscount = Number(
+        orderToPrint?.pricing?.referralDiscount ??
+        orderToPrint?.referralDiscount ?? 0
+      );
 
       const summaryRows = [
         ["Subtotal", bill.itemTotal],
         ...(bill.packagingFee > 0 ? [["Packaging Fee", bill.packagingFee]] : []),
         ...(bill.deliveryFee > 0 ? [["Delivery Fee", bill.deliveryFee]] : []),
         ...(bill.platformFee > 0 ? [["Platform Fee", bill.platformFee]] : []),
-        ...(bill.taxes > 0 ? [["Tax", bill.taxes]] : []),
-        ...(bill.discount > 0 ? [["Discount", -Math.abs(bill.discount)]] : []),
+        ...(bill.taxes > 0 ? [["GST / Taxes", bill.taxes]] : []),
+        ...(bill.dueAmount > 0 ? [["Previous Due / Penalty", bill.dueAmount]] : []),
+        ...(offerDiscount > 0 ? [["Offer Discount", -Math.abs(offerDiscount)]] : []),
+        ...(couponDiscount > 0 ? [["Coupon Discount", -Math.abs(couponDiscount)]] : []),
+        ...(referralDiscount > 0 ? [["Referral Discount", -Math.abs(referralDiscount)]] : []),
+        ...(bill.discount > 0 && !offerDiscount && !couponDiscount ? [["Total Discount", -Math.abs(bill.discount)]] : []),
       ];
 
       if (summaryRows.length > 0) {
@@ -2725,11 +2912,11 @@ export default function OrdersMain() {
 
       const fileName = `Order-${orderToPrint.orderId || "Receipt"}-${Date.now()}.pdf`;
       doc.save(fileName);
-
-      debugLog("? PDF generated successfully:", fileName);
+      toast.success("Receipt PDF downloaded successfully");
+      debugLog("? PDF generated and downloaded:", fileName);
     } catch (error) {
       debugError("? Error generating PDF:", error);
-      alert("Failed to generate PDF. Please try again.");
+      toast.error("Failed to generate PDF. Please try again.");
     }
   };
 
@@ -3146,6 +3333,37 @@ export default function OrdersMain() {
             </motion.div>
           )}
 
+        {/* Wallet Balance COD Warning Card for Shop */}
+        {shopWalletInfo.balance !== null && shopWalletInfo.balance <= 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 mb-3 rounded-2xl bg-amber-50 border border-amber-200 p-4 shadow-sm"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 rounded-full p-2 bg-amber-100 text-amber-700">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-bold text-amber-950">
+                  Insufficient Wallet Balance for Takeaway COD Orders
+                </h4>
+                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                  Your wallet balance is ₹{Number(shopWalletInfo.balance).toFixed(2)}. Add funds to your wallet to accept Cash on Delivery (COD) takeaway orders.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate("/food/shop/wallet")}
+                  className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-all active:scale-[0.97]"
+                >
+                  <Wallet className="w-3.5 h-3.5" />
+                  Recharge Wallet
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <AnimatePresence mode="wait">
           <motion.div
             key={activeFilter}
@@ -3185,9 +3403,15 @@ export default function OrdersMain() {
                 {/* Header */}
                 <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-white border-b border-gray-200 flex items-center justify-between">
                   <div className="flex-1">
-                    <h3 className="text-base font-bold text-gray-900">
-                      {(popupOrder || newOrder)?.orderId || "#Order"}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-gray-900">
+                        {(popupOrder || newOrder)?.orderId || "#Order"}
+                      </h3>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full animate-pulse">
+                        <Clock className="w-3.5 h-3.5 text-rose-500" />
+                        {formatTime(countdown)}
+                      </span>
+                    </div>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {(popupOrder || newOrder)?.shopName || "Shop"}
                     </p>
@@ -3672,7 +3896,7 @@ export default function OrdersMain() {
                         className="absolute inset-y-0 left-0"
                         style={{ backgroundColor: `${BRAND_THEME.colors.brand.primary}cc` }}
                         initial={{ width: "100%" }}
-                        animate={{ width: `${(countdown / 240) * 100}%` }}
+                        animate={{ width: `${(countdown / 300) * 100}%` }}
                         transition={{ duration: 1, ease: "linear" }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center px-16">

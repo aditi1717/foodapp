@@ -216,10 +216,11 @@ export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
     deliveryPartnerId: new mongoose.Types.ObjectId(deliveryPartnerId),
     status: "associated",
   })
+    .populate("shopId", "_id")
     .select("shopId")
     .lean();
-  const exclusiveShopId = activeAssociation?.shopId
-    ? new mongoose.Types.ObjectId(activeAssociation.shopId)
+  const exclusiveShopId = (activeAssociation?.shopId && (activeAssociation.shopId._id || activeAssociation.shopId))
+    ? new mongoose.Types.ObjectId(activeAssociation.shopId._id || activeAssociation.shopId)
     : null;
 
   const unassignedBranch = {

@@ -314,8 +314,8 @@ function OrdersTabV2({
   actionBusyType,
 }) {
   const currentActiveOrder = activeOrder && !isClosedOrderLike(activeOrder) && isSameCalendarDay(getOrderEventDate(activeOrder)) ? activeOrder : null;
-  const currentIncomingOrder = incomingOrder && isSameCalendarDay(getOrderEventDate(incomingOrder)) ? incomingOrder : null;
-  const currentQueuedOrders = advancedOrders.filter((order) => isSameCalendarDay(getOrderEventDate(order)));
+  const currentIncomingOrder = incomingOrder && (!getOrderEventDate(incomingOrder) || isSameCalendarDay(getOrderEventDate(incomingOrder))) ? incomingOrder : null;
+  const currentQueuedOrders = advancedOrders.filter((order) => !getOrderEventDate(order) || isSameCalendarDay(getOrderEventDate(order)));
   const currentOrderId = getOrderIdentity(currentActiveOrder);
   const currentIncomingOrderId = getOrderIdentity(currentIncomingOrder);
   const dedupedQueuedOrders = currentQueuedOrders.filter((order) => {
@@ -327,11 +327,11 @@ function OrdersTabV2({
   });
   const incomingOrders = useMemo(() => {
     const list = [];
-    if (currentIncomingOrder && normalizeQueueStatus(currentIncomingOrder) === 'assigned') {
+    if (currentIncomingOrder && ['unassigned', 'assigned'].includes(normalizeQueueStatus(currentIncomingOrder))) {
       list.push(currentIncomingOrder);
     }
     dedupedQueuedOrders.forEach((order) => {
-      if (normalizeQueueStatus(order) === 'assigned') list.push(order);
+      if (['unassigned', 'assigned'].includes(normalizeQueueStatus(order))) list.push(order);
     });
     const seen = new Set();
     return list.filter((order) => {
@@ -348,6 +348,22 @@ function OrdersTabV2({
   const totalVisibleOrders = (currentActiveOrder ? 1 : 0) + incomingOrders.length + liveOrders.length;
   const todayHistoryCount = Array.isArray(todayHistoryOrders) ? todayHistoryOrders.length : 0;
   const [ordersViewTab, setOrdersViewTab] = useState('live');
+  const [walletBalance, setWalletBalance] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    deliveryAPI.getWallet()
+      .then((res) => {
+        if (!isMounted) return;
+        const wallet = res?.data?.data?.wallet || {};
+        const pocket = Number(wallet.pocketBalance ?? wallet.totalBalance ?? 0);
+        setWalletBalance(pocket);
+      })
+      .catch(() => {
+        if (isMounted) setWalletBalance(null);
+      });
+    return () => { isMounted = false; };
+  }, []);
 
   const Card = ({
     title,
@@ -445,9 +461,13 @@ function OrdersTabV2({
                 Order #{orderDisplayId}
               </p>
             ) : null}
-            <p className="mt-1.5 text-[14px] font-bold leading-5 text-slate-950 truncate">{getShopTitle(order)}</p>
-            {itemLine ? <p className="mt-1 text-[11px] leading-4 text-slate-600 truncate">{itemLine}</p> : null}
             <p className="mt-1 text-[11px] leading-4 text-slate-500 line-clamp-1">{subtitle}</p>
+            {walletBalance !== null && walletBalance <= 0 && (
+              <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 border border-amber-100 text-[10px] font-bold text-amber-700">
+                <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                <span>Wallet minimum amount is required to accept order</span>
+              </div>
+            )}
           </div>
           <p className="text-[11px] font-black text-slate-950 shrink-0">
             ₹{Number(order?.riderEarning || order?.deliveryEarning || 0).toFixed(2)}
@@ -564,6 +584,23 @@ function OrdersTabV2({
       <div className="mt-4 space-y-4">
         {ordersViewTab === 'live' && (
           <>
+            {/* Delivery Wallet Minimum Amount Notice Banner - ONLY shown if wallet balance is 0 or less */}
+            {walletBalance !== null && walletBalance <= 0 && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3.5 shadow-sm">
+                <div className="flex items-start gap-2.5">
+                  <div className="rounded-full bg-amber-100 p-1.5 text-amber-700 shrink-0 mt-0.5">
+                    <Wallet className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-amber-950">Wallet Minimum Amount Required</p>
+                    <p className="text-[11px] text-amber-800 mt-0.5 leading-snug">
+                      A minimum wallet balance is required to receive and accept delivery order requests.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {incomingOrders.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
@@ -1268,10 +1305,17 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
           }).catch(() => { });
         }
       }
-    }, () => toast.error('GPS Needed!'), {
+    }, (err) => {
+      // Only show permission denied error once (deduplicated), ignore temporary 15s timeouts in background
+      if (err?.code === 1) {
+        toast.error('Location permission is denied. Please enable location access.', {
+          id: 'delivery-gps-permission-error'
+        });
+      }
+    }, {
       enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 5000
+      maximumAge: 10000,
+      timeout: 15000
     });
 
     return () => navigator.geolocation.clearWatch(watchId);
@@ -1420,7 +1464,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
           if (nextIncomingOrderId && nextIncomingOrderId !== getOrderIdentity(incomingOrder)) {
             announceIncomingRequest(nextIncomingOrder);
           }
-        } else if (!cancelled && !activeOrderId) {
+        } else if (!cancelled && !activeOrderId && !incomingOrder) {
           setIncomingOrder(null);
           clearPersistedIncomingOrder();
         }

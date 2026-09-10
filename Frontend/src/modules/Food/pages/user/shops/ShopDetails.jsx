@@ -997,24 +997,18 @@ function ShopDetailsContent() {
                 // Only include items that are both recommended (isRecommended === true) AND available (isAvailable !== false)
                 const recommendedItems = []
                 menuSections.forEach(section => {
-                  // Check direct items - only include if isRecommended is explicitly true (strict check) AND item is available
                   if (section.items && Array.isArray(section.items)) {
                     section.items.forEach(item => {
-                      // Strict check: isRecommended must be exactly boolean true
-                      // This will exclude: false, undefined, null, 0, "", and any other falsy values
-                      if (isRecommendedItem(item) && item.isAvailable !== false) {
+                      if ((item.isRecommended === true || String(item.isRecommended) === "true") && item.isAvailable !== false) {
                         recommendedItems.push(item)
                       }
                     })
                   }
-                  // Check subsection items - only include if isRecommended is explicitly true (strict check) AND item is available
                   if (section.subsections && Array.isArray(section.subsections)) {
                     section.subsections.forEach(subsection => {
                       if (subsection.items && Array.isArray(subsection.items)) {
                         subsection.items.forEach(item => {
-                          // Strict check: isRecommended must be exactly boolean true
-                          // This will exclude: false, undefined, null, 0, "", and any other falsy values
-                          if (isRecommendedItem(item) && item.isAvailable !== false) {
+                          if ((item.isRecommended === true || String(item.isRecommended) === "true") && item.isAvailable !== false) {
                             recommendedItems.push(item)
                           }
                         })
@@ -1063,8 +1057,14 @@ function ShopDetailsContent() {
                   }
                 }
 
-                let finalMenuSections = [...menuSections]
-                if (hasPreviousOrderForShop) {
+                // Exclude raw section named "Recommended for you" to prevent duplicate headers
+                const filteredMenuSections = menuSections.filter(section => {
+                  const sectionName = (section?.name || section?.title || "").trim().toLowerCase()
+                  return sectionName !== "recommended for you"
+                })
+
+                let finalMenuSections = [...filteredMenuSections]
+                if (recommendedItems.length > 0) {
                   finalMenuSections = [{ name: "Recommended for you", items: recommendedItems, subsections: [] }, ...finalMenuSections]
                 }
                 if (searchedDishSection) {
@@ -3506,18 +3506,6 @@ function ShopDetailsContent() {
                           {selectedItem.name}
                         </h2>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          handleShareClick(selectedItem)
-                        }}
-                        className="p-2 border border-gray-200 dark:border-gray-800 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center cursor-pointer shadow-sm flex-shrink-0"
-                        aria-label="Share dish"
-                      >
-                        <Share2 className="h-5 w-5" />
-                      </button>
                     </div>
 
                     {/* Description */}

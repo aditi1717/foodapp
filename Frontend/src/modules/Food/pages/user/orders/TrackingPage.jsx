@@ -96,7 +96,7 @@ const TrackingPage = () => {
               <Home className="w-5 h-5 text-gray-400" />
               <div className="flex-1">
                 <p className="font-semibold text-white">Delivery at Location</p>
-                <p className="text-sm text-gray-400">X2RJ+QHR, Dewas, Madhya Pradesh 45...</p>
+                <p className="text-sm text-gray-400">X2RJ+QHR, Dewas, Madhya Pradesh 452001</p>
               </div>
             </div>
           </div>

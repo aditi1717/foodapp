@@ -281,18 +281,39 @@ export async function createShopFood(shopId, body = {}) {
 
     try {
         const { notifyAdminsSafely } = await import('../../../../core/notifications/firebase.service.js');
-        void notifyAdminsSafely({
+        await notifyAdminsSafely({
             title: 'New Product Approval Request 🍔',
             body: `Shop "${context.shopName}" has submitted a new item "${doc.name}" for approval.`,
             data: {
                 type: 'approval_request',
                 subType: 'food',
-                id: String(doc._id)
+                id: String(doc._id),
+                link: '/admin/food-approval',
+                targetUrl: '/admin/food-approval'
             }
         });
     } catch (e) {
         // eslint-disable-next-line no-console
         console.error('Failed to notify admins of new food approval request:', e);
+    }
+
+    try {
+        const { getIO, rooms } = await import('../../../../config/socket.js');
+        const io = getIO();
+        if (io) {
+            io.to(rooms.admin()).emit('food_approval_request', {
+                title: 'New Product Approval Request 🍔',
+                message: `Shop "${context.shopName}" has submitted a new item "${doc.name}" for approval.`,
+                type: 'approval_request',
+                subType: 'food',
+                id: String(doc._id),
+                shopName: context.shopName,
+                itemName: doc.name,
+                createdAt: new Date().toISOString()
+            });
+        }
+    } catch (e) {
+        console.error('Failed to emit socket notification for new food approval:', e);
     }
 
     return doc.toObject();
@@ -393,7 +414,7 @@ export async function updateShopFood(shopId, foodId, body = {}) {
 
     const SENSITIVE_FIELDS = ['name', 'description', 'image', 'price', 'variants', 'foodType', 'categoryId', 'categoryName', 'bulkOrderPricing'];
     const hasSensitiveChanges = Object.keys(update).some(key => SENSITIVE_FIELDS.includes(key));
-    const shouldResubmitForApproval = hasSensitiveChanges;
+    const shouldResubmitForApproval = hasSensitiveChanges || String(existing.approvalStatus || '').toLowerCase() === 'pending';
 
     if (shouldResubmitForApproval) {
         update.approvalStatus = 'pending';
@@ -412,17 +433,38 @@ export async function updateShopFood(shopId, foodId, body = {}) {
     if (updated && shouldResubmitForApproval) {
         try {
             const { notifyAdminsSafely } = await import('../../../../core/notifications/firebase.service.js');
-            void notifyAdminsSafely({
+            await notifyAdminsSafely({
                 title: 'Updated Product Approval Request 🍔',
                 body: `Shop "${context.shopName}" has updated and resubmitted "${updated.name}" for approval.`,
                 data: {
                     type: 'approval_request',
                     subType: 'food',
-                    id: String(updated._id)
+                    id: String(updated._id),
+                    link: '/admin/food-approval',
+                    targetUrl: '/admin/food-approval'
                 }
             });
         } catch (e) {
             console.error('Failed to notify admins of resubmitted food approval request:', e);
+        }
+
+        try {
+            const { getIO, rooms } = await import('../../../../config/socket.js');
+            const io = getIO();
+            if (io) {
+                io.to(rooms.admin()).emit('food_approval_request', {
+                    title: 'Updated Product Approval Request 🍔',
+                    message: `Shop "${context.shopName}" has updated and resubmitted "${updated.name}" for approval.`,
+                    type: 'approval_request',
+                    subType: 'food',
+                    id: String(updated._id),
+                    shopName: context.shopName,
+                    itemName: updated.name,
+                    createdAt: new Date().toISOString()
+                });
+            }
+        } catch (e) {
+            console.error('Failed to emit socket notification for updated food approval:', e);
         }
     }
 

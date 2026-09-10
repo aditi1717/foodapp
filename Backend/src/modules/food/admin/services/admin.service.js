@@ -1150,7 +1150,7 @@ export async function getTransactionReport(query = {}) {
     const transactionRows = await FoodTransaction.find(match)
         .populate('orderId')
         .populate('userId', 'name phone email')
-        .populate('shopId', 'shopName')
+        .populate('shopId', 'shopName ownerPhone phone address formattedAddress area city state pincode location')
         .sort({ createdAt: -1 })
         .lean();
 
@@ -1224,6 +1224,8 @@ export async function getTransactionReport(query = {}) {
             id: tx._id,
             orderId: tx.orderReadableId || order.orderId || 'N/A',
             shop: tx.shopId?.shopName || order.shopName || order.shop || 'N/A',
+            shopPhone: tx.shopId?.phone || tx.shopId?.ownerPhone || order.shopPhone || order.shop?.phone || order.vendorPhone || 'N/A',
+            shopAddress: tx.shopId?.formattedAddress || tx.shopId?.address || tx.shopId?.location || order.shopAddress || order.shop?.address || order.vendorAddress || null,
             customerName: order.customerName || tx.userId?.name || 'Guest',
             customerPhone: order.customerPhone || tx.userId?.phone || order.deliveryAddress?.phone || 'N/A',
             address: order.deliveryAddress || order.address || null,
@@ -9064,6 +9066,26 @@ export async function updateStoreOrderStatus(orderId, body = {}) {
                     updateSet.refundAmount = refundAmount;
                     updateSet.refundReason = reason;
                     updateSet.refundMeta = { error: err?.message || 'Refund initiation failed' };
+                }
+            } else if ((paymentMethod === 'wallet' || paymentMethod === 'user_wallet') && refundAmount > 0) {
+                try {
+                    const { refundWalletBalance } = await import('../../user/services/userWallet.service.js');
+                    await refundWalletBalance(
+                        existingOrder.userId,
+                        refundAmount,
+                        `Instant refund for cancelled Store Order #${existingOrder._id}`,
+                        { orderId: String(existingOrder._id) }
+                    );
+                    updateSet.paymentStatus = 'refunded';
+                    updateSet.refundStatus = 'processed';
+                    updateSet.refundAmount = refundAmount;
+                    updateSet.refundReason = reason;
+                    updateSet.refundedAt = new Date();
+                } catch (walletErr) {
+                    updateSet.refundStatus = 'failed';
+                    updateSet.refundAmount = refundAmount;
+                    updateSet.refundReason = reason;
+                    updateSet.refundMeta = { error: walletErr?.message || 'Wallet refund failed' };
                 }
             } else if (refundAmount > 0) {
                 // For non-razorpay paid flows, mark as not_required for now.

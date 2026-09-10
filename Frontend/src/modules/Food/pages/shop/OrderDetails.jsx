@@ -525,7 +525,7 @@ export default function OrderDetails() {
       body: itemsTableData,
       theme: "grid",
       headStyles: {
-        fillColor: [55, 65, 81],
+        fillColor: [139, 149, 67],
         textColor: [255, 255, 255],
         fontSize: 10,
         fontStyle: "bold"
@@ -673,13 +673,12 @@ export default function OrderDetails() {
     yPosition += 5
     doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: "center" })
 
-    // Save the PDF
-    doc.save(`Order_Receipt_${orderData.id}.pdf`)
-    
-    // Show success message
-    setToastMessage("Receipt downloaded successfully!")
+    const fileName = `Order_Receipt_${orderData.id}.pdf`
+    doc.save(fileName)
+    setToastMessage("Receipt PDF downloaded successfully!")
     setShowToast(true)
     setTimeout(() => setShowToast(false), 2000)
+
     } catch (error) {
       debugError("Error generating PDF:", error)
       debugError("Error details:", error.message, error.stack)

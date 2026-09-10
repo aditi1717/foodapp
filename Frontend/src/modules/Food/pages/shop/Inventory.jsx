@@ -903,8 +903,9 @@ export default function Inventory() {
           // Add direct items from section
           if (Array.isArray(section.items)) {
             section.items.forEach(item => {
+              const itemIdKey = String(item.id || item._id || item.foodId || "")
               allItems.push({
-                id: String(item.id || Date.now() + Math.random()),
+                id: itemIdKey || `${Date.now()}-${Math.random()}`,
                 name: item.name || "Unnamed Item",
                 description: item.description || "",
                 image: item.image || "",
@@ -919,9 +920,7 @@ export default function Inventory() {
                 foodType: item.foodType || "Non-Veg",
                 approvalStatus: String(item.approvalStatus || "approved").toLowerCase(),
                 rejectionReason: item.rejectionReason || "",
-                // Backend menu is generated from food_items and currently doesn't persist "recommended".
-                // Keep as a local UI preference keyed by food item id.
-                isRecommended: Boolean(recommendedMap?.[String(item.id)]),
+                isRecommended: recommendedMap?.[itemIdKey] !== undefined ? Boolean(recommendedMap[itemIdKey]) : Boolean(item.isRecommended),
                 stockQuantity: item.stock || "Unlimited",
                 unit: item.itemSizeUnit || "piece",
                 expiryDate: null,
@@ -935,8 +934,9 @@ export default function Inventory() {
             section.subsections.forEach(subsection => {
               if (Array.isArray(subsection.items)) {
                 subsection.items.forEach(item => {
+                  const itemIdKey = String(item.id || item._id || item.foodId || "")
                   allItems.push({
-                    id: String(item.id || Date.now() + Math.random()),
+                    id: itemIdKey || `${Date.now()}-${Math.random()}`,
                     name: item.name || "Unnamed Item",
                     description: item.description || "",
                     image: item.image || "",
@@ -951,7 +951,7 @@ export default function Inventory() {
                     foodType: item.foodType || "Non-Veg",
                     approvalStatus: String(item.approvalStatus || "approved").toLowerCase(),
                     rejectionReason: item.rejectionReason || "",
-                    isRecommended: Boolean(recommendedMap?.[String(item.id)]),
+                    isRecommended: recommendedMap?.[itemIdKey] !== undefined ? Boolean(recommendedMap[itemIdKey]) : Boolean(item.isRecommended),
                     stockQuantity: item.stock || "Unlimited",
                     unit: item.itemSizeUnit || "piece",
                     expiryDate: null,
@@ -1822,35 +1822,69 @@ export default function Inventory() {
   // Update menu API when recommendation toggle changes
   // Handle item recommendation toggle
   const handleRecommendToggle = async (categoryId, itemId) => {
-    // Find current recommendation status
-    const category = categories.find(cat => cat.id === categoryId)
-    const item = category?.items.find(i => i.id === itemId)
-    const newRecommendationStatus = !item?.isRecommended
+    const targetItemId = String(itemId || "")
+    if (!targetItemId) return
 
-    // Update local state
+    // Find target item across all categories
+    let currentStatus = false
+    let found = false
+
+    for (const cat of categories) {
+      const matched = (cat.items || []).find(i => String(i.id || i._id || i.foodId || "") === targetItemId)
+      if (matched) {
+        currentStatus = Boolean(matched.isRecommended)
+        found = true
+        break
+      }
+    }
+
+    if (!found) return
+
+    const newRecommendationStatus = !currentStatus
+
+    // 1. Update React state instantly on SINGLE click
     setCategories(prev =>
-      prev.map(category => {
-        if (category.id !== categoryId) return category
-        const updatedItems = category.items.map(item =>
-          item.id === itemId ? { ...item, isRecommended: newRecommendationStatus } : item
+      prev.map(cat => ({
+        ...cat,
+        items: (cat.items || []).map(i =>
+          String(i.id || i._id || i.foodId || "") === targetItemId
+            ? { ...i, isRecommended: newRecommendationStatus }
+            : i
         )
-        return {
-          ...category,
-          items: updatedItems,
-        }
-      })
+      }))
     )
 
-    // Persist local recommended preference (backend doesn't support it yet).
+    // 2. Update recommendedMap in React state & localStorage
     try {
       setRecommendedMap((prev) => {
         const next = { ...(prev || {}) }
-        next[String(itemId)] = Boolean(newRecommendationStatus)
+        next[targetItemId] = Boolean(newRecommendationStatus)
         localStorage.setItem(INVENTORY_RECOMMENDED_KEY, JSON.stringify(next))
         return next
       })
     } catch (error) {
-      debugWarn("Failed to persist recommended state:", error)
+      debugWarn("Failed to persist recommended state to localStorage:", error)
+    }
+
+    // 3. Update database via shopAPI.updateFood
+    try {
+      await shopAPI.updateFood(targetItemId, { isRecommended: newRecommendationStatus })
+      window.dispatchEvent(new CustomEvent("foodsChanged"))
+      toast.success(newRecommendationStatus ? "Item marked as recommended" : "Item removed from recommended")
+    } catch (error) {
+      debugError("Failed to update recommended status on backend:", error)
+      toast.error("Failed to update recommendation status")
+      // Revert state on failure
+      setCategories(prev =>
+        prev.map(cat => ({
+          ...cat,
+          items: (cat.items || []).map(i =>
+            String(i.id || i._id || i.foodId || "") === targetItemId
+              ? { ...i, isRecommended: currentStatus }
+              : i
+          )
+        }))
+      )
     }
   }
 
